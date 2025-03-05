@@ -72,8 +72,8 @@ export function testGraphQL(
     if (errors) {
       expect(errors).toMatchSnapshot("errors");
     }
-    expect(data).toMatchSnapshot("data");
-    expect(queries).toMatchSnapshot("queries");
+    expect(data).toMatchSnapshot("result");
+    expect(queries).toMatchSnapshot("sql");
     // TODO: plan?
 
     return result;
