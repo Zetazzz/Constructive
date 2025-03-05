@@ -18,6 +18,9 @@ const preset = {
       schemas: ["test"],
     }),
   ],
+  schema: {
+    connectionFilterRelations: true,
+  },
   grafast: {
     explain: true,
   },
