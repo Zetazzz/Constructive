@@ -70,9 +70,9 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
     },
 
     entityBehavior: {
-      pgResource: "relatedAggregates:orderBy",
-      pgCodecRelation: ["select", "aggregates:orderBy"],
-      pgCodecAttribute: ["aggregate:orderBy"],
+      pgResource: "resource:relatedAggregates:orderBy",
+      pgCodecRelation: ["select", "manyRelation:aggregates:orderBy"],
+      pgCodecAttribute: ["attribute:aggregate:orderBy"],
     },
 
     hooks: {
