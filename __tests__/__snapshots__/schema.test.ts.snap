@@ -157,6 +157,17 @@ type FilmConnection {
   Aggregates across the matching connection (ignoring before/after/first/last/offset)
   """
   aggregates: FilmAggregates
+
+  """
+  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
+  """
+  groupedAggregates(
+    """The method to use when grouping \`Film\` for these aggregates."""
+    groupBy: [FilmGroupBy!]!
+
+    """Conditions on the grouped aggregates."""
+    having: FilmHavingInput
+  ): [FilmAggregates!]
 }
 
 type FilmDistinctCountAggregates {
@@ -221,6 +232,182 @@ input FilmFilter {
 
   """Negates the expression."""
   not: FilmFilter
+}
+
+"""Grouping methods for \`Film\` for usage during aggregation."""
+enum FilmGroupBy {
+  NAME
+  YEAR_OF_RELEASE
+  BOX_OFFICE_IN_BILLIONS
+  DURATION_IN_MINUTES
+}
+
+input FilmHavingAverageFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingAverageFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingAverageFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingAverageInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingAverageFilmsComputedColumnWithArgumentsInput
+}
+
+input FilmHavingDistinctCountFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingDistinctCountFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingDistinctCountFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingDistinctCountInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingDistinctCountFilmsComputedColumnWithArgumentsInput
+}
+
+"""Conditions for \`Film\` aggregates."""
+input FilmHavingInput {
+  AND: [FilmHavingInput!]
+  OR: [FilmHavingInput!]
+  sum: FilmHavingSumInput
+  distinctCount: FilmHavingDistinctCountInput
+  min: FilmHavingMinInput
+  max: FilmHavingMaxInput
+  average: FilmHavingAverageInput
+  stddevSample: FilmHavingStddevSampleInput
+  stddevPopulation: FilmHavingStddevPopulationInput
+  varianceSample: FilmHavingVarianceSampleInput
+  variancePopulation: FilmHavingVariancePopulationInput
+}
+
+input FilmHavingMaxFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingMaxFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingMaxFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingMaxInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingMaxFilmsComputedColumnWithArgumentsInput
+}
+
+input FilmHavingMinFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingMinFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingMinFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingMinInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingMinFilmsComputedColumnWithArgumentsInput
+}
+
+input FilmHavingStddevPopulationFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingStddevPopulationFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingStddevPopulationFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingStddevPopulationInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingStddevPopulationFilmsComputedColumnWithArgumentsInput
+}
+
+input FilmHavingStddevSampleFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingStddevSampleFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingStddevSampleFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingStddevSampleInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingStddevSampleFilmsComputedColumnWithArgumentsInput
+}
+
+input FilmHavingSumFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingSumFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingSumFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingSumInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingSumFilmsComputedColumnWithArgumentsInput
+}
+
+input FilmHavingVariancePopulationFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingVariancePopulationFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingVariancePopulationFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingVariancePopulationInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingVariancePopulationFilmsComputedColumnWithArgumentsInput
+}
+
+input FilmHavingVarianceSampleFilmsComputedColumnWithArgumentsArgsInput {
+  numberToAdd: Int!
+}
+
+input FilmHavingVarianceSampleFilmsComputedColumnWithArgumentsInput {
+  args: FilmHavingVarianceSampleFilmsComputedColumnWithArgumentsArgsInput!
+  filter: HavingIntFilter!
+}
+
+input FilmHavingVarianceSampleInput {
+  rowId: HavingIntFilter
+  yearOfRelease: HavingIntFilter
+  boxOfficeInBillions: HavingFloatFilter
+  durationInMinutes: HavingIntFilter
+  computedColumnWithArguments: FilmHavingVarianceSampleFilmsComputedColumnWithArgumentsInput
 }
 
 type FilmMaxAggregates {
@@ -512,6 +699,33 @@ input FloatFilter {
 
   """Greater than or equal to the specified value."""
   greaterThanOrEqualTo: Float
+}
+
+input HavingDatetimeFilter {
+  equalTo: Datetime
+  notEqualTo: Datetime
+  greaterThan: Datetime
+  greaterThanOrEqualTo: Datetime
+  lessThan: Datetime
+  lessThanOrEqualTo: Datetime
+}
+
+input HavingFloatFilter {
+  equalTo: Float
+  notEqualTo: Float
+  greaterThan: Float
+  greaterThanOrEqualTo: Float
+  lessThan: Float
+  lessThanOrEqualTo: Float
+}
+
+input HavingIntFilter {
+  equalTo: Int
+  notEqualTo: Int
+  greaterThan: Int
+  greaterThanOrEqualTo: Int
+  lessThan: Int
+  lessThanOrEqualTo: Int
 }
 
 """
@@ -884,6 +1098,17 @@ type MatchStatConnection {
   Aggregates across the matching connection (ignoring before/after/first/last/offset)
   """
   aggregates: MatchStatAggregates
+
+  """
+  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
+  """
+  groupedAggregates(
+    """The method to use when grouping \`MatchStat\` for these aggregates."""
+    groupBy: [MatchStatGroupBy!]!
+
+    """Conditions on the grouped aggregates."""
+    having: MatchStatHavingInput
+  ): [MatchStatAggregates!]
 }
 
 type MatchStatDistinctCountAggregates {
@@ -948,6 +1173,241 @@ input MatchStatFilter {
 
   """Negates the expression."""
   not: MatchStatFilter
+}
+
+"""Grouping methods for \`MatchStat\` for usage during aggregation."""
+enum MatchStatGroupBy {
+  MATCH_ID
+  PLAYER_ID
+  TEAM_POSITION
+  POINTS
+  GOALS
+  SAVES
+  CREATED_AT
+  CREATED_AT_TRUNCATED_TO_HOUR
+  CREATED_AT_TRUNCATED_TO_DAY
+}
+
+input MatchStatHavingAverageInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingAverageMatchStatsRatingInput
+}
+
+input MatchStatHavingAverageMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingAverageMatchStatsRatingInput {
+  args: MatchStatHavingAverageMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+input MatchStatHavingDistinctCountInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingDistinctCountMatchStatsRatingInput
+}
+
+input MatchStatHavingDistinctCountMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingDistinctCountMatchStatsRatingInput {
+  args: MatchStatHavingDistinctCountMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+"""Conditions for \`MatchStat\` aggregates."""
+input MatchStatHavingInput {
+  AND: [MatchStatHavingInput!]
+  OR: [MatchStatHavingInput!]
+  sum: MatchStatHavingSumInput
+  distinctCount: MatchStatHavingDistinctCountInput
+  min: MatchStatHavingMinInput
+  max: MatchStatHavingMaxInput
+  average: MatchStatHavingAverageInput
+  stddevSample: MatchStatHavingStddevSampleInput
+  stddevPopulation: MatchStatHavingStddevPopulationInput
+  varianceSample: MatchStatHavingVarianceSampleInput
+  variancePopulation: MatchStatHavingVariancePopulationInput
+}
+
+input MatchStatHavingMaxInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingMaxMatchStatsRatingInput
+}
+
+input MatchStatHavingMaxMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingMaxMatchStatsRatingInput {
+  args: MatchStatHavingMaxMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+input MatchStatHavingMinInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingMinMatchStatsRatingInput
+}
+
+input MatchStatHavingMinMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingMinMatchStatsRatingInput {
+  args: MatchStatHavingMinMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+input MatchStatHavingStddevPopulationInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingStddevPopulationMatchStatsRatingInput
+}
+
+input MatchStatHavingStddevPopulationMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingStddevPopulationMatchStatsRatingInput {
+  args: MatchStatHavingStddevPopulationMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+input MatchStatHavingStddevSampleInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingStddevSampleMatchStatsRatingInput
+}
+
+input MatchStatHavingStddevSampleMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingStddevSampleMatchStatsRatingInput {
+  args: MatchStatHavingStddevSampleMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+input MatchStatHavingSumInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingSumMatchStatsRatingInput
+}
+
+input MatchStatHavingSumMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingSumMatchStatsRatingInput {
+  args: MatchStatHavingSumMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+input MatchStatHavingVariancePopulationInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingVariancePopulationMatchStatsRatingInput
+}
+
+input MatchStatHavingVariancePopulationMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingVariancePopulationMatchStatsRatingInput {
+  args: MatchStatHavingVariancePopulationMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
+}
+
+input MatchStatHavingVarianceSampleInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+  rating: MatchStatHavingVarianceSampleMatchStatsRatingInput
+}
+
+input MatchStatHavingVarianceSampleMatchStatsRatingArgsInput {
+  goalWeight: Float
+  saveWeight: Float
+  positionWeight: Float
+}
+
+input MatchStatHavingVarianceSampleMatchStatsRatingInput {
+  args: MatchStatHavingVarianceSampleMatchStatsRatingArgsInput
+  filter: HavingFloatFilter!
 }
 
 type MatchStatMaxAggregates {
@@ -1344,6 +1804,17 @@ type PlayerConnection {
   Aggregates across the matching connection (ignoring before/after/first/last/offset)
   """
   aggregates: PlayerAggregates
+
+  """
+  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
+  """
+  groupedAggregates(
+    """The method to use when grouping \`Player\` for these aggregates."""
+    groupBy: [PlayerGroupBy!]!
+
+    """Conditions on the grouped aggregates."""
+    having: PlayerHavingInput
+  ): [PlayerAggregates!]
 }
 
 type PlayerDistinctCountAggregates {
@@ -1384,6 +1855,62 @@ input PlayerFilter {
 
   """Negates the expression."""
   not: PlayerFilter
+}
+
+"""Grouping methods for \`Player\` for usage during aggregation."""
+enum PlayerGroupBy {
+  NAME
+}
+
+input PlayerHavingAverageInput {
+  rowId: HavingIntFilter
+}
+
+input PlayerHavingDistinctCountInput {
+  rowId: HavingIntFilter
+}
+
+"""Conditions for \`Player\` aggregates."""
+input PlayerHavingInput {
+  AND: [PlayerHavingInput!]
+  OR: [PlayerHavingInput!]
+  sum: PlayerHavingSumInput
+  distinctCount: PlayerHavingDistinctCountInput
+  min: PlayerHavingMinInput
+  max: PlayerHavingMaxInput
+  average: PlayerHavingAverageInput
+  stddevSample: PlayerHavingStddevSampleInput
+  stddevPopulation: PlayerHavingStddevPopulationInput
+  varianceSample: PlayerHavingVarianceSampleInput
+  variancePopulation: PlayerHavingVariancePopulationInput
+}
+
+input PlayerHavingMaxInput {
+  rowId: HavingIntFilter
+}
+
+input PlayerHavingMinInput {
+  rowId: HavingIntFilter
+}
+
+input PlayerHavingStddevPopulationInput {
+  rowId: HavingIntFilter
+}
+
+input PlayerHavingStddevSampleInput {
+  rowId: HavingIntFilter
+}
+
+input PlayerHavingSumInput {
+  rowId: HavingIntFilter
+}
+
+input PlayerHavingVariancePopulationInput {
+  rowId: HavingIntFilter
+}
+
+input PlayerHavingVarianceSampleInput {
+  rowId: HavingIntFilter
 }
 
 type PlayerMaxAggregates {
@@ -1815,6 +2342,17 @@ type ViewMatchStatConnection {
   Aggregates across the matching connection (ignoring before/after/first/last/offset)
   """
   aggregates: ViewMatchStatAggregates
+
+  """
+  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
+  """
+  groupedAggregates(
+    """The method to use when grouping \`ViewMatchStat\` for these aggregates."""
+    groupBy: [ViewMatchStatGroupBy!]!
+
+    """Conditions on the grouped aggregates."""
+    having: ViewMatchStatHavingInput
+  ): [ViewMatchStatAggregates!]
 }
 
 type ViewMatchStatDistinctCountAggregates {
@@ -1876,6 +2414,134 @@ input ViewMatchStatFilter {
 
   """Negates the expression."""
   not: ViewMatchStatFilter
+}
+
+"""Grouping methods for \`ViewMatchStat\` for usage during aggregation."""
+enum ViewMatchStatGroupBy {
+  ID
+  MATCH_ID
+  PLAYER_ID
+  TEAM_POSITION
+  POINTS
+  GOALS
+  SAVES
+  CREATED_AT
+  CREATED_AT_TRUNCATED_TO_HOUR
+  CREATED_AT_TRUNCATED_TO_DAY
+}
+
+input ViewMatchStatHavingAverageInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+input ViewMatchStatHavingDistinctCountInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+"""Conditions for \`ViewMatchStat\` aggregates."""
+input ViewMatchStatHavingInput {
+  AND: [ViewMatchStatHavingInput!]
+  OR: [ViewMatchStatHavingInput!]
+  sum: ViewMatchStatHavingSumInput
+  distinctCount: ViewMatchStatHavingDistinctCountInput
+  min: ViewMatchStatHavingMinInput
+  max: ViewMatchStatHavingMaxInput
+  average: ViewMatchStatHavingAverageInput
+  stddevSample: ViewMatchStatHavingStddevSampleInput
+  stddevPopulation: ViewMatchStatHavingStddevPopulationInput
+  varianceSample: ViewMatchStatHavingVarianceSampleInput
+  variancePopulation: ViewMatchStatHavingVariancePopulationInput
+}
+
+input ViewMatchStatHavingMaxInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+input ViewMatchStatHavingMinInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+input ViewMatchStatHavingStddevPopulationInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+input ViewMatchStatHavingStddevSampleInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+input ViewMatchStatHavingSumInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+input ViewMatchStatHavingVariancePopulationInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
+}
+
+input ViewMatchStatHavingVarianceSampleInput {
+  rowId: HavingIntFilter
+  matchId: HavingIntFilter
+  playerId: HavingIntFilter
+  teamPosition: HavingIntFilter
+  points: HavingIntFilter
+  goals: HavingIntFilter
+  saves: HavingIntFilter
+  createdAt: HavingDatetimeFilter
 }
 
 type ViewMatchStatMaxAggregates {
