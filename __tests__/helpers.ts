@@ -64,9 +64,18 @@ export function testGraphQL(
       resolvedPreset,
       requestContext: {},
     });
-    expect(result).toMatchSnapshot("result");
+    if ("next" in result) {
+      throw new Error(`Don't support iterable result`);
+    }
+
+    const { data, errors } = result;
+    if (errors) {
+      expect(errors).toMatchSnapshot("errors");
+    }
+    expect(data).toMatchSnapshot("data");
     expect(queries).toMatchSnapshot("queries");
     // TODO: plan?
+
     return result;
   };
 }
