@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "clean": "rm -Rf dist",
-    "build": "tsc",
-    "watch": "tsc --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "watch": "tsc -p tsconfig.build.json --watch",
     "test": "jest -i",
     "tslint": "prettier --list-different 'src/**/*' && tslint --config tslint.json --project tsconfig.json",
     "lint:fix": "yarn run eslint --fix . && yarn prettier:fix",
@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@localrepo/prettier2-for-jest": "npm:prettier@^2",
+    "@tsconfig/node20": "^20.1.4",
     "@types/node": "^18.15.11",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
     "@typescript-eslint/parser": "^7.9.0",
