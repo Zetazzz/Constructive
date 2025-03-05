@@ -42,7 +42,7 @@ const Plugin: GraphileConfig.Plugin = {
     },
 
     entityBehavior: {
-      pgCodecAttribute: ["groupBy"],
+      pgCodecAttribute: ["attribute:groupBy"],
     },
 
     hooks: {
@@ -68,15 +68,15 @@ const Plugin: GraphileConfig.Plugin = {
               PgCodecAttribute
             ][]
           ).reduce((memo, [attributeName, attribute]) => {
-            // Grouping requires ordering.
-            if (
-              !build.behavior.pgCodecAttributeMatches(
-                [table.codec, attributeName],
-                "orderBy"
-              )
-            ) {
-              return memo;
-            }
+            //// Grouping requires ordering.
+            //if (
+            //  !build.behavior.pgCodecAttributeMatches(
+            //    [table.codec, attributeName],
+            //    "orderBy"
+            //  )
+            //) {
+            //  return memo;
+            //}
             if (
               !build.behavior.pgCodecAttributeMatches(
                 [table.codec, attributeName],

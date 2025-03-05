@@ -51,6 +51,12 @@ const Plugin: GraphileConfig.Plugin = {
         },
       },
     },
+    entityBehavior: {
+      pgResource: [
+        "resource:groupedAggregates",
+        "resource:groupedAggregates:having",
+      ],
+    },
 
     hooks: {
       GraphQLObjectType_fields(fields, build, context) {
