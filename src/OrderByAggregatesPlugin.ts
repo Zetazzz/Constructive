@@ -271,7 +271,7 @@ where ${sql.parens(
                         const conditions: SQL[] = [];
                         const tableAlias = sql.identifier(Symbol(table.name));
                         relation.localAttributes.forEach(
-                          (localAttribute: string, i) => {
+                          (localAttribute, i) => {
                             const remoteAttribute = relation.remoteAttributes[
                               i
                             ] as string;

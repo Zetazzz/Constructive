@@ -62,108 +62,110 @@ const Plugin: GraphileConfig.Plugin = {
         }
         return extend(
           values,
-          Object.entries(table.codec.attributes).reduce(
-            (memo, [attributeName, attribute]: [string, PgCodecAttribute]) => {
-              // Grouping requires ordering.
-              if (
-                !build.behavior.pgCodecAttributeMatches(
-                  [table.codec, attributeName],
-                  "orderBy"
-                )
-              ) {
-                return memo;
-              }
-              if (
-                !build.behavior.pgCodecAttributeMatches(
-                  [table.codec, attributeName],
-                  `attribute:groupBy`
-                )
-              ) {
-                return memo;
-              }
-              const unique = !!(table.uniques as PgResourceUnique[]).find(
-                (u) =>
-                  u.attributes.length === 1 && u.attributes[0] === attributeName
-              );
-              if (unique) return memo; // No point grouping by something that's unique.
+          (
+            Object.entries(table.codec.attributes) as [
+              string,
+              PgCodecAttribute
+            ][]
+          ).reduce((memo, [attributeName, attribute]) => {
+            // Grouping requires ordering.
+            if (
+              !build.behavior.pgCodecAttributeMatches(
+                [table.codec, attributeName],
+                "orderBy"
+              )
+            ) {
+              return memo;
+            }
+            if (
+              !build.behavior.pgCodecAttributeMatches(
+                [table.codec, attributeName],
+                `attribute:groupBy`
+              )
+            ) {
+              return memo;
+            }
+            const unique = !!(table.uniques as PgResourceUnique[]).find(
+              (u) =>
+                u.attributes.length === 1 && u.attributes[0] === attributeName
+            );
+            if (unique) return memo; // No point grouping by something that's unique.
 
-              const fieldName = inflection.aggregateGroupByAttributeEnum({
-                resource: table,
-                attributeName,
-              });
-              memo = extend(
-                memo,
-                {
-                  [fieldName]: {
-                    extensions: {
-                      grafast: {
-                        applyPlan: EXPORTABLE(
-                          (attributeName, sql) =>
-                            function ($pgSelect: PgSelectStep<any>) {
-                              $pgSelect.groupBy({
-                                fragment: sql.fragment`${
-                                  $pgSelect.alias
-                                }.${sql.identifier(attributeName)}`,
-                              });
-                            },
-                          [attributeName, sql]
-                        ),
-                      },
+            const fieldName = inflection.aggregateGroupByAttributeEnum({
+              resource: table,
+              attributeName,
+            });
+            memo = extend(
+              memo,
+              {
+                [fieldName]: {
+                  extensions: {
+                    grafast: {
+                      applyPlan: EXPORTABLE(
+                        (attributeName, sql) =>
+                          function ($pgSelect: PgSelectStep<any>) {
+                            $pgSelect.groupBy({
+                              fragment: sql.fragment`${
+                                $pgSelect.alias
+                              }.${sql.identifier(attributeName)}`,
+                            });
+                          },
+                        [attributeName, sql]
+                      ),
                     },
                   },
                 },
-                `Adding groupBy enum value for ${table.name}.${attributeName}.`
-              );
+              },
+              `Adding groupBy enum value for ${table.name}.${attributeName}.`
+            );
 
-              // Derivatives of this attribute
-              pgAggregateGroupBySpecs.forEach((aggregateGroupBySpec) => {
-                if (
-                  (!aggregateGroupBySpec.shouldApplyToEntity ||
-                    aggregateGroupBySpec.shouldApplyToEntity({
-                      type: "attribute",
-                      codec: table.codec,
-                      attributeName,
-                    })) &&
-                  aggregateGroupBySpec.isSuitableType(attribute.codec)
-                ) {
-                  const fieldName =
-                    inflection.aggregateGroupByAttributeDerivativeEnum({
-                      resource: table,
-                      attributeName,
-                      aggregateGroupBySpec,
-                    });
-                  memo = extend(
-                    memo,
-                    {
-                      [fieldName]: {
-                        extensions: {
-                          grafast: {
-                            applyPlan: EXPORTABLE(
-                              (aggregateGroupBySpec, attributeName, sql) =>
-                                function ($pgSelect: PgSelectStep<any>) {
-                                  $pgSelect.groupBy({
-                                    fragment: aggregateGroupBySpec.sqlWrap(
-                                      sql`${$pgSelect.alias}.${sql.identifier(
-                                        attributeName
-                                      )}`
-                                    ),
-                                  });
-                                },
-                              [aggregateGroupBySpec, attributeName, sql]
-                            ),
-                          },
+            // Derivatives of this attribute
+            pgAggregateGroupBySpecs.forEach((aggregateGroupBySpec) => {
+              if (
+                (!aggregateGroupBySpec.shouldApplyToEntity ||
+                  aggregateGroupBySpec.shouldApplyToEntity({
+                    type: "attribute",
+                    codec: table.codec,
+                    attributeName,
+                  })) &&
+                aggregateGroupBySpec.isSuitableType(attribute.codec)
+              ) {
+                const fieldName =
+                  inflection.aggregateGroupByAttributeDerivativeEnum({
+                    resource: table,
+                    attributeName,
+                    aggregateGroupBySpec,
+                  });
+                memo = extend(
+                  memo,
+                  {
+                    [fieldName]: {
+                      extensions: {
+                        grafast: {
+                          applyPlan: EXPORTABLE(
+                            (aggregateGroupBySpec, attributeName, sql) =>
+                              function ($pgSelect: PgSelectStep<any>) {
+                                $pgSelect.groupBy({
+                                  fragment: aggregateGroupBySpec.sqlWrap(
+                                    sql`${$pgSelect.alias}.${sql.identifier(
+                                      attributeName
+                                    )}`
+                                  ),
+                                });
+                              },
+                            [aggregateGroupBySpec, attributeName, sql]
+                          ),
                         },
-                      } as GraphQLEnumValueConfig,
-                    },
-                    `Adding groupBy enum value for '${aggregateGroupBySpec.id}' derivative of ${table.name}.${attributeName}.`
-                  );
-                }
-              });
+                      },
+                    } as GraphQLEnumValueConfig,
+                  },
+                  `Adding groupBy enum value for '${aggregateGroupBySpec.id}' derivative of ${table.name}.${attributeName}.`
+                );
+              }
+            });
 
-              return memo;
-            },
-            Object.create(null) as GraphQLEnumValueConfigMap
-          ),
+            return memo;
+          }, Object.create(null) as GraphQLEnumValueConfigMap),
           `Adding group by values for attributes from table '${table.name}'`
         );
       },

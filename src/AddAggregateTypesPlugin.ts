@@ -270,93 +270,88 @@ attributes and computed columns.`,
           fields = build.extend(
             fields,
             // Figure out the attributes that we're allowed to do a `SUM(...)` of
-            Object.entries(resource.codec.attributes).reduce(
-              (
-                memo: GraphQLFieldConfigMap<any, any>,
-                [attributeName, attribute]: [string, PgCodecAttribute]
-              ) => {
-                if (
-                  !build.behavior.pgCodecAttributeMatches(
-                    [resource.codec, attributeName],
-                    `${spec.id}:attribute:aggregate`
-                  )
-                ) {
-                  return memo;
-                }
-                if (
-                  (spec.shouldApplyToEntity &&
-                    !spec.shouldApplyToEntity({
-                      type: "attribute",
-                      codec: resource.codec,
-                      attributeName,
-                    })) ||
-                  !spec.isSuitableType(attribute.codec)
-                ) {
-                  return memo;
-                }
-                const codec = spec.pgTypeCodecModifier
-                  ? spec.pgTypeCodecModifier(attribute.codec)
-                  : attribute.codec;
-                const Type = build.getGraphQLTypeByPgCodec(
-                  codec,
-                  "output"
-                ) as GraphQLOutputType | null;
-                if (!Type) {
-                  return memo;
-                }
-                const fieldName = inflection.attribute({
-                  attributeName,
-                  codec: resource.codec,
-                });
-                return build.extend(
-                  memo,
-                  {
-                    [fieldName]: fieldWithHooks(
-                      {
-                        fieldName,
-                        // In case anyone wants to hook us, describe ourselves
-                        isPgConnectionAggregateField: true,
-                        //pgFieldIntrospection: attr,
-                        //TODO: add more details here
-                      },
-                      () => {
-                        const attributeCodec = attribute.codec;
-                        return {
-                          description: `${spec.HumanLabel} of ${fieldName} across the matching connection`,
-                          type: spec.isNonNull
-                            ? new GraphQLNonNull(Type)
-                            : Type,
-                          plan: EXPORTABLE(
-                            (attributeCodec, attributeName, codec, spec, sql) =>
-                              function plan(
-                                $pgSelectSingle: PgSelectSingleStep
-                              ) {
-                                // Note this expression is just an sql fragment, so you
-                                // could add CASE statements, function calls, or whatever
-                                // you need here
-                                const sqlAttribute = sql.fragment`${
-                                  $pgSelectSingle.getClassStep().alias
-                                }.${sql.identifier(attributeName)}`;
-                                const sqlAggregate = spec.sqlAggregateWrap(
-                                  sqlAttribute,
-                                  attributeCodec
-                                );
-                                return $pgSelectSingle.select(
-                                  sqlAggregate,
-                                  codec
-                                );
-                              },
-                            [attributeCodec, attributeName, codec, spec, sql]
-                          ),
-                        };
-                      }
-                    ),
-                  },
-                  `Add attribute '${attributeName}' compatible with this aggregate`
-                );
-              },
-              Object.create(null)
-            ),
+            (
+              Object.entries(resource.codec.attributes) as [
+                string,
+                PgCodecAttribute
+              ][]
+            ).reduce((memo, [attributeName, attribute]) => {
+              if (
+                !build.behavior.pgCodecAttributeMatches(
+                  [resource.codec, attributeName],
+                  `${spec.id}:attribute:aggregate`
+                )
+              ) {
+                return memo;
+              }
+              if (
+                (spec.shouldApplyToEntity &&
+                  !spec.shouldApplyToEntity({
+                    type: "attribute",
+                    codec: resource.codec,
+                    attributeName,
+                  })) ||
+                !spec.isSuitableType(attribute.codec)
+              ) {
+                return memo;
+              }
+              const codec = spec.pgTypeCodecModifier
+                ? spec.pgTypeCodecModifier(attribute.codec)
+                : attribute.codec;
+              const Type = build.getGraphQLTypeByPgCodec(
+                codec,
+                "output"
+              ) as GraphQLOutputType | null;
+              if (!Type) {
+                return memo;
+              }
+              const fieldName = inflection.attribute({
+                attributeName,
+                codec: resource.codec,
+              });
+              return build.extend(
+                memo,
+                {
+                  [fieldName]: fieldWithHooks(
+                    {
+                      fieldName,
+                      // In case anyone wants to hook us, describe ourselves
+                      isPgConnectionAggregateField: true,
+                      //pgFieldIntrospection: attr,
+                      //TODO: add more details here
+                    },
+                    () => {
+                      const attributeCodec = attribute.codec;
+                      return {
+                        description: `${spec.HumanLabel} of ${fieldName} across the matching connection`,
+                        type: spec.isNonNull ? new GraphQLNonNull(Type) : Type,
+                        plan: EXPORTABLE(
+                          (attributeCodec, attributeName, codec, spec, sql) =>
+                            function plan($pgSelectSingle: PgSelectSingleStep) {
+                              // Note this expression is just an sql fragment, so you
+                              // could add CASE statements, function calls, or whatever
+                              // you need here
+                              const sqlAttribute = sql.fragment`${
+                                $pgSelectSingle.getClassStep().alias
+                              }.${sql.identifier(attributeName)}`;
+                              const sqlAggregate = spec.sqlAggregateWrap(
+                                sqlAttribute,
+                                attributeCodec
+                              );
+                              return $pgSelectSingle.select(
+                                sqlAggregate,
+                                codec
+                              );
+                            },
+                          [attributeCodec, attributeName, codec, spec, sql]
+                        ),
+                      };
+                    }
+                  ),
+                },
+                `Add attribute '${attributeName}' compatible with this aggregate`
+              );
+            }, Object.create(null) as GraphQLFieldConfigMap<any, any>),
             "Add attributes compatible with this aggregate"
           );
 
