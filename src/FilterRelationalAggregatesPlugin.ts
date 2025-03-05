@@ -4,6 +4,9 @@ import type {
   PgConditionCapableParentStep,
   PgConditionStep,
   PgWhereConditionSpec,
+  PgResource,
+  PgResourceParameter,
+  PgRegistry,
 } from "@dataplan/pg";
 import type {
   ExecutableStep,
@@ -12,7 +15,10 @@ import type {
   ModifierStep,
 } from "grafast";
 import type {} from "graphile-build";
-import type { GraphQLInputObjectType } from "graphql";
+import type {
+  GraphQLInputFieldConfigMap,
+  GraphQLInputObjectType,
+} from "graphql";
 import type { PgSQL, SQL } from "pg-sql2";
 import type {} from "postgraphile-plugin-connection-filter";
 
@@ -561,7 +567,7 @@ group by ())`;
 
           const attributes: PgCodecAttributes = table.codec.attributes;
 
-          return extend(
+          fields = extend(
             fields,
             {
               ...Object.entries(attributes).reduce(
@@ -606,9 +612,6 @@ group by ())`;
                     return memo;
                   }
 
-                  const codec = spec.pgTypeCodecModifier
-                    ? spec.pgTypeCodecModifier(attribute.codec)
-                    : attribute.codec;
                   return build.extend(
                     memo,
                     {
@@ -619,7 +622,7 @@ group by ())`;
                             PgConditionStep,
                             attribute,
                             attributeName,
-                            codec,
+                            attrCodec,
                             spec,
                             sql
                           ) =>
@@ -629,7 +632,7 @@ group by ())`;
                             ) {
                               const $col = new PgConditionStep($parent);
                               $col.extensions.pgFilterAttribute = {
-                                codec,
+                                codec: attrCodec,
                                 expression: spec.sqlAggregateWrap(
                                   sql`${$col.alias}.${sql.identifier(
                                     attributeName
@@ -644,7 +647,7 @@ group by ())`;
                             PgConditionStep,
                             attribute,
                             attributeName,
-                            codec,
+                            attrCodec,
                             spec,
                             sql,
                           ]
@@ -657,80 +660,99 @@ group by ())`;
                 },
                 Object.create(null) as GrafastInputFieldConfigMap<any, any>
               ),
+            },
+            `Adding per-attribute '${spec.id}' aggregate filters for '${pgTypeResource.name}'`
+          );
 
-              /*
-              ...pgIntrospectionResultsByKind.procedure.reduce((memo, proc) => {
-                if (proc.returnsSet) {
-                  return memo;
-                }
-                const type =
-                  pgIntrospectionResultsByKind.typeById[proc.returnTypeId];
+          const computedAttributeResources = (
+            Object.values(build.input.pgRegistry.pgResources) as PgResource[]
+          ).filter(
+            (
+              s
+            ): s is PgResource<
+              string,
+              PgCodec,
+              never[],
+              PgResourceParameter[],
+              PgRegistry
+            > =>
+              isComputedScalarAttributeResource(s) &&
+              s.parameters[0].codec === table.codec &&
+              s.parameters.slice(1).every((p) => p.required === false)
+          );
+
+          fields = extend(
+            fields,
+            {
+              ...computedAttributeResources.reduce((memo, proc) => {
                 if (
                   (spec.shouldApplyToEntity &&
-                    !spec.shouldApplyToEntity(proc)) ||
-                  !spec.isSuitableType(type)
+                    !spec.shouldApplyToEntity({
+                      type: "computedAttribute",
+                      resource: proc,
+                    })) ||
+                  !spec.isSuitableType(proc.codec)
                 ) {
                   return memo;
                 }
-                const computedAttributeDetails = getComputedAttributeDetails(
-                  build,
-                  table,
-                  proc
-                );
-                if (!computedAttributeDetails) {
+                const fieldName = inflection.computedAttributeField({
+                  resource: proc,
+                });
+
+                const attrCodec = spec.pgTypeCodecModifier
+                  ? spec.pgTypeCodecModifier(proc.codec)
+                  : proc.codec;
+                const digest = build.connectionFilterOperatorsDigest(attrCodec);
+                if (!digest) {
                   return memo;
                 }
-                const { pseudoAttributeName } = computedAttributeDetails;
-                const fieldName = inflection.computedAttribute(
-                  pseudoAttributeName,
-                  proc,
-                  table
-                );
-
-                const OperatorsType: GraphQLInputObjectType | undefined =
-                  connectionFilterOperatorsType(newWithHooks, type.id, null);
+                const OperatorsType = build.getTypeByName(
+                  digest.operatorsTypeName
+                ) as GraphQLInputObjectType;
 
                 if (!OperatorsType) {
                   return memo;
                 }
 
-                const resolve: ConnectionFilterResolver = ({
-                  sourceAlias,
-                  fieldName,
-                  fieldValue,
-                  queryBuilder,
-                }) => {
-                  if (fieldValue == null) return null;
-                  const sqlComputedAttributeCall = sql.query`${sql.identifier(
-                    proc.namespaceName,
-                    proc.name
-                  )}(${sourceAlias})`;
-                  const sqlAggregate = spec.sqlAggregateWrap(
-                    sqlComputedAttributeCall
-                  );
-                  const frag = connectionFilterResolve(
-                    fieldValue,
-                    sqlAggregate,
-                    OperatorsType.name,
-                    queryBuilder,
-                    type,
-                    null,
-                    fieldName
-                  );
-                  return frag;
-                };
-                connectionFilterRegisterResolver(Self.name, fieldName, resolve);
+                return build.extend(
+                  memo,
+                  {
+                    [fieldName]: {
+                      type: OperatorsType,
+                      applyPlan: EXPORTABLE(
+                        (PgConditionStep, spec, sql) =>
+                          function (
+                            $parent: PgAggregateConditionExpressionStep,
+                            fieldArgs: FieldArgs
+                          ) {
+                            const $col = new PgConditionStep($parent);
+                            const sqlComputedAttributeCall = sql.query`${
+                              typeof proc.from === "function"
+                                ? proc.from({ placeholder: $col.alias })
+                                : proc.from
+                            }`;
+                            $col.extensions.pgFilterAttribute = {
+                              codec: attrCodec,
+                              expression: spec.sqlAggregateWrap(
+                                sqlComputedAttributeCall,
+                                proc.codec
+                              ),
+                            };
 
-                return build.extend(memo, {
-                  [fieldName]: {
-                    type: OperatorsType,
+                            fieldArgs.apply($col);
+                          },
+                        [PgConditionStep, spec, sql]
+                      ),
+                    },
                   },
-                });
+                  `Add computed aggregate '${fieldName}' filter for source '${table.name}' for spec '${spec.id}'`
+                );
               }, Object.create(null) as GraphQLInputFieldConfigMap),
-              */
             },
-            `Adding per-attribute '${spec.id}' aggregate filters for '${pgTypeResource.name}'`
+            `Adding per-computed-column '${spec.id}' aggregate filters for '${pgTypeResource.name}'`
           );
+
+          return fields;
         })();
 
         return fields;
@@ -792,4 +814,29 @@ interface PgAggregateConditionExpressionStepClass {
     spec: AggregateSpec,
     pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
   ): PgAggregateConditionExpressionStep;
+}
+
+function isComputedScalarAttributeResource(
+  s: PgResource<any, any, any, any, any>
+): s is PgResource<
+  string,
+  PgCodec,
+  never[],
+  PgResourceParameter[],
+  PgRegistry
+> {
+  if (!s.parameters || s.parameters.length < 1) {
+    return false;
+  }
+  if (s.codec.attributes) {
+    return false;
+  }
+  if (!s.isUnique) {
+    return false;
+  }
+  const firstParameter = s.parameters[0] as PgResourceParameter;
+  if (!firstParameter?.codec.attributes) {
+    return false;
+  }
+  return true;
 }
