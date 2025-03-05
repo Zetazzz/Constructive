@@ -96,6 +96,7 @@ const Plugin: GraphileConfig.Plugin = {
               resource: table,
               attributeName,
             });
+            const attrCodec = attribute.codec;
             memo = extend(
               memo,
               {
@@ -109,6 +110,7 @@ const Plugin: GraphileConfig.Plugin = {
                               fragment: sql.fragment`${
                                 $pgSelect.alias
                               }.${sql.identifier(attributeName)}`,
+                              codec: attrCodec,
                             });
                           },
                         [attributeName, sql]
@@ -152,6 +154,10 @@ const Plugin: GraphileConfig.Plugin = {
                                       attributeName
                                     )}`
                                   ),
+                                  codec:
+                                    aggregateGroupBySpec.sqlWrapCodec(
+                                      attrCodec
+                                    ),
                                 });
                               },
                             [aggregateGroupBySpec, attributeName, sql]
