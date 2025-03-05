@@ -1,0 +1,152 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`GameAggregates: result 1`] = `
+{
+  "allMatchStats": {
+    "aggregates": {
+      "max": {
+        "goals": 6,
+        "points": 457,
+        "saves": 2,
+      },
+      "min": {
+        "points": 22,
+      },
+    },
+  },
+  "allPlayers": {
+    "nodes": [
+      {
+        "matchStatsByPlayerId": {
+          "aggregates": {
+            "average": {
+              "goals": "2.5714285714285714",
+              "points": "253.0000000000000000",
+              "saves": "0.85714285714285714286",
+              "teamPosition": "1.8571428571428571",
+            },
+            "sum": {
+              "goals": "18",
+              "points": "1771",
+              "saves": "6",
+            },
+          },
+          "totalCount": 7,
+        },
+        "name": "Purge",
+      },
+      {
+        "matchStatsByPlayerId": {
+          "aggregates": {
+            "average": {
+              "goals": "2.5000000000000000",
+              "points": "219.6250000000000000",
+              "saves": "1.00000000000000000000",
+              "teamPosition": "3.2500000000000000",
+            },
+            "sum": {
+              "goals": "20",
+              "points": "1757",
+              "saves": "8",
+            },
+          },
+          "totalCount": 8,
+        },
+        "name": "Jmar25",
+      },
+      {
+        "matchStatsByPlayerId": {
+          "aggregates": {
+            "average": {
+              "goals": "2.8000000000000000",
+              "points": "283.4000000000000000",
+              "saves": "1.1000000000000000",
+              "teamPosition": "4.2000000000000000",
+            },
+            "sum": {
+              "goals": "28",
+              "points": "2834",
+              "saves": "11",
+            },
+          },
+          "totalCount": 10,
+        },
+        "name": "JutheKid",
+      },
+      {
+        "matchStatsByPlayerId": {
+          "aggregates": {
+            "average": {
+              "goals": "2.9000000000000000",
+              "points": "179.5000000000000000",
+              "saves": "0.90000000000000000000",
+              "teamPosition": "3.8000000000000000",
+            },
+            "sum": {
+              "goals": "29",
+              "points": "1795",
+              "saves": "9",
+            },
+          },
+          "totalCount": 10,
+        },
+        "name": "HollaDolla",
+      },
+      {
+        "matchStatsByPlayerId": {
+          "aggregates": {
+            "average": {
+              "goals": "3.0000000000000000",
+              "points": "217.5000000000000000",
+              "saves": "1.00000000000000000000",
+              "teamPosition": "4.0000000000000000",
+            },
+            "sum": {
+              "goals": "30",
+              "points": "2175",
+              "saves": "10",
+            },
+          },
+          "totalCount": 10,
+        },
+        "name": "BenjieG",
+      },
+    ],
+  },
+}
+`;
+
+exports[`GameAggregates: sql 1`] = `
+[
+  "select
+  (max(__match_stats__."points"))::text as "0",
+  (max(__match_stats__."goals"))::text as "1",
+  (max(__match_stats__."saves"))::text as "2",
+  (min(__match_stats__."points"))::text as "3"
+from "test"."match_stats" as __match_stats__;",
+  "/* UNSUPPORTED QUERY CALL! */",
+  "select
+  __players__."name" as "0",
+  (select json_agg(s) from (
+    select
+      (count(*))::text as "0",
+      (coalesce(sum(__match_stats__."points"), '0'))::text as "1",
+      (coalesce(sum(__match_stats__."goals"), '0'))::text as "2",
+      (coalesce(sum(__match_stats__."saves"), '0'))::text as "3",
+      (avg(__match_stats__."points"))::text as "4",
+      (avg(__match_stats__."goals"))::text as "5",
+      (avg(__match_stats__."saves"))::text as "6",
+      (avg(__match_stats__."team_position"))::text as "7"
+    from "test"."match_stats" as __match_stats__
+    where (
+      __players__."id"::"int4" = __match_stats__."player_id"
+    )
+  ) s) as "1"
+from "test"."players" as __players__
+order by (
+  select coalesce(sum(__match_stats_2."goals"), '0')
+  from "test"."match_stats" __match_stats_2
+  where (__match_stats_2."player_id" = __players__."id")
+) asc, __players__."id" asc;",
+]
+`;
