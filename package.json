@@ -7,7 +7,7 @@
     "clean": "rm -Rf dist",
     "build": "tsc -p tsconfig.build.json",
     "watch": "tsc -p tsconfig.build.json --watch",
-    "test": "psql -X1v ON_ERROR_STOP=1 -f __tests__/schema.sql \"${TEST_DATABASE_URL:-graphile_aggregates_test}\" && jest -i",
+    "test": "yarn build && psql -X1v ON_ERROR_STOP=1 -f __tests__/schema.sql \"${TEST_DATABASE_URL:-graphile_aggregates_test}\" && jest -i",
     "tslint": "prettier --list-different 'src/**/*' && tslint --config tslint.json --project tsconfig.json",
     "lint:fix": "yarn run eslint --fix . && yarn prettier:fix",
     "prettier": "prettier --cache --ignore-path ./.eslintignore",
