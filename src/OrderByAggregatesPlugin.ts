@@ -157,8 +157,8 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                     const foreignTableAlias = $select.alias;
                     const conditions: SQL[] = [];
                     const tableAlias = sql.identifier(Symbol(table.name));
-                    relation.localAttributes.forEach(
-                      (localAttribute: string, i) => {
+                    (relation.localAttributes as string[]).forEach(
+                      (localAttribute, i) => {
                         const remoteAttribute = relation.remoteAttributes[
                           i
                         ] as string;
@@ -270,7 +270,7 @@ where ${sql.parens(
                         const foreignTableAlias = $select.alias;
                         const conditions: SQL[] = [];
                         const tableAlias = sql.identifier(Symbol(table.name));
-                        relation.localAttributes.forEach(
+                        (relation.localAttributes as string[]).forEach(
                           (localAttribute, i) => {
                             const remoteAttribute = relation.remoteAttributes[
                               i
