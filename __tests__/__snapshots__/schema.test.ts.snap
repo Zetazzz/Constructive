@@ -1526,6 +1526,7 @@ input MatchStatAverageAggregateFilter {
   points: BigFloatFilter
   goals: BigFloatFilter
   saves: BigFloatFilter
+  rating: FloatFilter
 }
 
 type MatchStatAverageAggregates {
@@ -1629,6 +1630,7 @@ input MatchStatDistinctCountAggregateFilter {
   goals: BigIntFilter
   saves: BigIntFilter
   createdAt: BigIntFilter
+  rating: BigIntFilter
 }
 
 type MatchStatDistinctCountAggregates {
@@ -1959,6 +1961,7 @@ input MatchStatMaxAggregateFilter {
   points: IntFilter
   goals: IntFilter
   saves: IntFilter
+  rating: FloatFilter
 }
 
 type MatchStatMaxAggregates {
@@ -1995,6 +1998,7 @@ input MatchStatMinAggregateFilter {
   points: IntFilter
   goals: IntFilter
   saves: IntFilter
+  rating: FloatFilter
 }
 
 type MatchStatMinAggregates {
@@ -2054,6 +2058,7 @@ input MatchStatStddevPopulationAggregateFilter {
   points: BigFloatFilter
   goals: BigFloatFilter
   saves: BigFloatFilter
+  rating: FloatFilter
 }
 
 type MatchStatStddevPopulationAggregates {
@@ -2098,6 +2103,7 @@ input MatchStatStddevSampleAggregateFilter {
   points: BigFloatFilter
   goals: BigFloatFilter
   saves: BigFloatFilter
+  rating: FloatFilter
 }
 
 type MatchStatStddevSampleAggregates {
@@ -2138,6 +2144,7 @@ input MatchStatSumAggregateFilter {
   points: BigIntFilter
   goals: BigIntFilter
   saves: BigIntFilter
+  rating: FloatFilter
 }
 
 type MatchStatSumAggregates {
@@ -2174,6 +2181,7 @@ input MatchStatVariancePopulationAggregateFilter {
   points: BigFloatFilter
   goals: BigFloatFilter
   saves: BigFloatFilter
+  rating: FloatFilter
 }
 
 type MatchStatVariancePopulationAggregates {
@@ -2210,6 +2218,7 @@ input MatchStatVarianceSampleAggregateFilter {
   points: BigFloatFilter
   goals: BigFloatFilter
   saves: BigFloatFilter
+  rating: FloatFilter
 }
 
 type MatchStatVarianceSampleAggregates {
