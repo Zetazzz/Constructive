@@ -12,6 +12,7 @@ const preset = {
     PostGraphileConnectionFilterPreset,
     PgAggregatesPreset,
   ],
+  disablePlugins: ["PgIndexBehaviorsPlugin"],
   pgServices: [
     makePgService({
       connectionString: "postgres:///graphile_aggregates",
