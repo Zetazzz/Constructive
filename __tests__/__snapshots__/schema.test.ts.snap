@@ -1,0 +1,741 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`generates schema 1`] = `
+"""A location in a connection that can be used for resuming pagination."""
+scalar Cursor
+
+"""
+A point in time as described by the [ISO
+8601](https://en.wikipedia.org/wiki/ISO_8601) and, if it has a timezone, [RFC
+3339](https://datatracker.ietf.org/doc/html/rfc3339) standards. Input values
+that do not conform to both ISO 8601 and RFC 3339 may be coerced, which may lead
+to unexpected results.
+"""
+scalar Datetime
+
+type Film implements Node {
+  """
+  A globally unique identifier. Can be used in various places throughout the system to identify this single value.
+  """
+  nodeId: ID!
+
+  """Ten minutes longer than the film duration (in minutes)."""
+  computedColumn: Int
+
+  """
+  Your chosen number of minutes longer than the film duration (in minutes).
+  """
+  computedColumnWithArguments(numberToAdd: Int!): Int
+  id: Int!
+  name: String!
+  yearOfRelease: Int!
+  boxOfficeInBillions: Float!
+  durationInMinutes: Int!
+}
+
+"""
+A condition to be used against \`Film\` object types. All fields are tested for equality and combined with a logical ‘and.’
+"""
+input FilmCondition {
+  """Checks for equality with the object’s \`id\` field."""
+  id: Int
+
+  """Checks for equality with the object’s \`name\` field."""
+  name: String
+
+  """Checks for equality with the object’s \`yearOfRelease\` field."""
+  yearOfRelease: Int
+
+  """Checks for equality with the object’s \`boxOfficeInBillions\` field."""
+  boxOfficeInBillions: Float
+
+  """Checks for equality with the object’s \`durationInMinutes\` field."""
+  durationInMinutes: Int
+}
+
+"""A connection to a list of \`Film\` values."""
+type FilmsConnection {
+  """A list of \`Film\` objects."""
+  nodes: [Film]!
+
+  """
+  A list of edges which contains the \`Film\` and cursor to aid in pagination.
+  """
+  edges: [FilmsEdge]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* \`Film\` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A \`Film\` edge in the connection."""
+type FilmsEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The \`Film\` at the end of the edge."""
+  node: Film
+}
+
+"""Methods to use when ordering \`Film\`."""
+enum FilmsOrderBy {
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+  ID_ASC
+  ID_DESC
+  NAME_ASC
+  NAME_DESC
+  YEAR_OF_RELEASE_ASC
+  YEAR_OF_RELEASE_DESC
+  BOX_OFFICE_IN_BILLIONS_ASC
+  BOX_OFFICE_IN_BILLIONS_DESC
+  DURATION_IN_MINUTES_ASC
+  DURATION_IN_MINUTES_DESC
+}
+
+type Match implements Node {
+  """
+  A globally unique identifier. Can be used in various places throughout the system to identify this single value.
+  """
+  nodeId: ID!
+  id: Int!
+
+  """Reads and enables pagination through a set of \`MatchStat\`."""
+  matchStatsByMatchId(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`MatchStat\`."""
+    orderBy: [MatchStatsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: MatchStatCondition
+  ): MatchStatsConnection!
+
+  """Reads and enables pagination through a set of \`ViewMatchStat\`."""
+  viewMatchStats(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`ViewMatchStat\`."""
+    orderBy: [ViewMatchStatsOrderBy!] = [NATURAL]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: ViewMatchStatCondition
+  ): ViewMatchStatsConnection!
+}
+
+"""
+A condition to be used against \`Match\` object types. All fields are tested for equality and combined with a logical ‘and.’
+"""
+input MatchCondition {
+  """Checks for equality with the object’s \`id\` field."""
+  id: Int
+}
+
+type MatchStat implements Node {
+  """
+  A globally unique identifier. Can be used in various places throughout the system to identify this single value.
+  """
+  nodeId: ID!
+  rating(goalWeight: Float, saveWeight: Float, positionWeight: Float): Float
+  id: Int!
+  matchId: Int!
+  playerId: Int!
+  teamPosition: Int!
+  points: Int!
+  goals: Int!
+  saves: Int!
+  createdAt: Datetime!
+
+  """Reads a single \`Match\` that is related to this \`MatchStat\`."""
+  matchByMatchId: Match
+
+  """Reads a single \`Player\` that is related to this \`MatchStat\`."""
+  playerByPlayerId: Player
+}
+
+"""
+A condition to be used against \`MatchStat\` object types. All fields are tested
+for equality and combined with a logical ‘and.’
+"""
+input MatchStatCondition {
+  """Checks for equality with the object’s \`id\` field."""
+  id: Int
+
+  """Checks for equality with the object’s \`matchId\` field."""
+  matchId: Int
+
+  """Checks for equality with the object’s \`playerId\` field."""
+  playerId: Int
+
+  """Checks for equality with the object’s \`teamPosition\` field."""
+  teamPosition: Int
+
+  """Checks for equality with the object’s \`points\` field."""
+  points: Int
+
+  """Checks for equality with the object’s \`goals\` field."""
+  goals: Int
+
+  """Checks for equality with the object’s \`saves\` field."""
+  saves: Int
+
+  """Checks for equality with the object’s \`createdAt\` field."""
+  createdAt: Datetime
+}
+
+"""A connection to a list of \`MatchStat\` values."""
+type MatchStatsConnection {
+  """A list of \`MatchStat\` objects."""
+  nodes: [MatchStat]!
+
+  """
+  A list of edges which contains the \`MatchStat\` and cursor to aid in pagination.
+  """
+  edges: [MatchStatsEdge]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* \`MatchStat\` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A \`MatchStat\` edge in the connection."""
+type MatchStatsEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The \`MatchStat\` at the end of the edge."""
+  node: MatchStat
+}
+
+"""Methods to use when ordering \`MatchStat\`."""
+enum MatchStatsOrderBy {
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+  ID_ASC
+  ID_DESC
+  MATCH_ID_ASC
+  MATCH_ID_DESC
+  PLAYER_ID_ASC
+  PLAYER_ID_DESC
+  TEAM_POSITION_ASC
+  TEAM_POSITION_DESC
+  POINTS_ASC
+  POINTS_DESC
+  GOALS_ASC
+  GOALS_DESC
+  SAVES_ASC
+  SAVES_DESC
+  CREATED_AT_ASC
+  CREATED_AT_DESC
+}
+
+"""A connection to a list of \`Match\` values."""
+type MatchesConnection {
+  """A list of \`Match\` objects."""
+  nodes: [Match]!
+
+  """
+  A list of edges which contains the \`Match\` and cursor to aid in pagination.
+  """
+  edges: [MatchesEdge]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* \`Match\` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A \`Match\` edge in the connection."""
+type MatchesEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The \`Match\` at the end of the edge."""
+  node: Match
+}
+
+"""Methods to use when ordering \`Match\`."""
+enum MatchesOrderBy {
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+  ID_ASC
+  ID_DESC
+}
+
+"""An object with a globally unique \`ID\`."""
+interface Node {
+  """
+  A globally unique identifier. Can be used in various places throughout the system to identify this single value.
+  """
+  nodeId: ID!
+}
+
+"""Information about pagination in a connection."""
+type PageInfo {
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+
+  """When paginating backwards, the cursor to continue."""
+  startCursor: Cursor
+
+  """When paginating forwards, the cursor to continue."""
+  endCursor: Cursor
+}
+
+type Player implements Node {
+  """
+  A globally unique identifier. Can be used in various places throughout the system to identify this single value.
+  """
+  nodeId: ID!
+  id: Int!
+  name: String!
+
+  """Reads and enables pagination through a set of \`MatchStat\`."""
+  matchStatsByPlayerId(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`MatchStat\`."""
+    orderBy: [MatchStatsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: MatchStatCondition
+  ): MatchStatsConnection!
+
+  """Reads and enables pagination through a set of \`ViewMatchStat\`."""
+  viewMatchStats(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`ViewMatchStat\`."""
+    orderBy: [ViewMatchStatsOrderBy!] = [NATURAL]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: ViewMatchStatCondition
+  ): ViewMatchStatsConnection!
+}
+
+"""
+A condition to be used against \`Player\` object types. All fields are tested for equality and combined with a logical ‘and.’
+"""
+input PlayerCondition {
+  """Checks for equality with the object’s \`id\` field."""
+  id: Int
+
+  """Checks for equality with the object’s \`name\` field."""
+  name: String
+}
+
+"""A connection to a list of \`Player\` values."""
+type PlayersConnection {
+  """A list of \`Player\` objects."""
+  nodes: [Player]!
+
+  """
+  A list of edges which contains the \`Player\` and cursor to aid in pagination.
+  """
+  edges: [PlayersEdge]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* \`Player\` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A \`Player\` edge in the connection."""
+type PlayersEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The \`Player\` at the end of the edge."""
+  node: Player
+}
+
+"""Methods to use when ordering \`Player\`."""
+enum PlayersOrderBy {
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+  ID_ASC
+  ID_DESC
+  NAME_ASC
+  NAME_DESC
+}
+
+"""The root query type which gives access points into the data universe."""
+type Query implements Node {
+  """
+  Exposes the root query type nested one level down. This is helpful for Relay 1
+  which can only query top level fields if they are in a particular form.
+  """
+  query: Query!
+
+  """
+  The root query type must be a \`Node\` to work well with Relay 1 mutations. This just resolves to \`query\`.
+  """
+  nodeId: ID!
+
+  """Fetches an object given its globally unique \`ID\`."""
+  node(
+    """The globally unique \`ID\`."""
+    nodeId: ID!
+  ): Node
+
+  """Get a single \`Match\`."""
+  matchById(id: Int!): Match
+
+  """Get a single \`Player\`."""
+  playerById(id: Int!): Player
+
+  """Get a single \`Film\`."""
+  filmById(id: Int!): Film
+
+  """Get a single \`MatchStat\`."""
+  matchStatById(id: Int!): MatchStat
+
+  """Reads a single \`Match\` using its globally unique \`ID\`."""
+  match(
+    """The globally unique \`ID\` to be used in selecting a single \`Match\`."""
+    nodeId: ID!
+  ): Match
+
+  """Reads a single \`Player\` using its globally unique \`ID\`."""
+  player(
+    """The globally unique \`ID\` to be used in selecting a single \`Player\`."""
+    nodeId: ID!
+  ): Player
+
+  """Reads a single \`Film\` using its globally unique \`ID\`."""
+  film(
+    """The globally unique \`ID\` to be used in selecting a single \`Film\`."""
+    nodeId: ID!
+  ): Film
+
+  """Reads a single \`MatchStat\` using its globally unique \`ID\`."""
+  matchStat(
+    """The globally unique \`ID\` to be used in selecting a single \`MatchStat\`."""
+    nodeId: ID!
+  ): MatchStat
+
+  """Reads and enables pagination through a set of \`Match\`."""
+  allMatches(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`Match\`."""
+    orderBy: [MatchesOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: MatchCondition
+  ): MatchesConnection
+
+  """Reads and enables pagination through a set of \`Player\`."""
+  allPlayers(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`Player\`."""
+    orderBy: [PlayersOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: PlayerCondition
+  ): PlayersConnection
+
+  """Reads and enables pagination through a set of \`Film\`."""
+  allFilms(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`Film\`."""
+    orderBy: [FilmsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: FilmCondition
+  ): FilmsConnection
+
+  """Reads and enables pagination through a set of \`ViewMatchStat\`."""
+  allViewMatchStats(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`ViewMatchStat\`."""
+    orderBy: [ViewMatchStatsOrderBy!] = [NATURAL]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: ViewMatchStatCondition
+  ): ViewMatchStatsConnection
+
+  """Reads and enables pagination through a set of \`MatchStat\`."""
+  allMatchStats(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering \`MatchStat\`."""
+    orderBy: [MatchStatsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: MatchStatCondition
+  ): MatchStatsConnection
+}
+
+type ViewMatchStat {
+  id: Int
+  matchId: Int
+  playerId: Int
+  teamPosition: Int
+  points: Int
+  goals: Int
+  saves: Int
+  createdAt: Datetime
+
+  """Reads a single \`Match\` that is related to this \`ViewMatchStat\`."""
+  match: Match
+
+  """Reads a single \`Player\` that is related to this \`ViewMatchStat\`."""
+  player: Player
+}
+
+"""
+A condition to be used against \`ViewMatchStat\` object types. All fields are
+tested for equality and combined with a logical ‘and.’
+"""
+input ViewMatchStatCondition {
+  """Checks for equality with the object’s \`id\` field."""
+  id: Int
+
+  """Checks for equality with the object’s \`matchId\` field."""
+  matchId: Int
+
+  """Checks for equality with the object’s \`playerId\` field."""
+  playerId: Int
+
+  """Checks for equality with the object’s \`teamPosition\` field."""
+  teamPosition: Int
+
+  """Checks for equality with the object’s \`points\` field."""
+  points: Int
+
+  """Checks for equality with the object’s \`goals\` field."""
+  goals: Int
+
+  """Checks for equality with the object’s \`saves\` field."""
+  saves: Int
+
+  """Checks for equality with the object’s \`createdAt\` field."""
+  createdAt: Datetime
+}
+
+"""A connection to a list of \`ViewMatchStat\` values."""
+type ViewMatchStatsConnection {
+  """A list of \`ViewMatchStat\` objects."""
+  nodes: [ViewMatchStat]!
+
+  """
+  A list of edges which contains the \`ViewMatchStat\` and cursor to aid in pagination.
+  """
+  edges: [ViewMatchStatsEdge]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* \`ViewMatchStat\` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A \`ViewMatchStat\` edge in the connection."""
+type ViewMatchStatsEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The \`ViewMatchStat\` at the end of the edge."""
+  node: ViewMatchStat
+}
+
+"""Methods to use when ordering \`ViewMatchStat\`."""
+enum ViewMatchStatsOrderBy {
+  NATURAL
+  ID_ASC
+  ID_DESC
+  MATCH_ID_ASC
+  MATCH_ID_DESC
+  PLAYER_ID_ASC
+  PLAYER_ID_DESC
+  TEAM_POSITION_ASC
+  TEAM_POSITION_DESC
+  POINTS_ASC
+  POINTS_DESC
+  GOALS_ASC
+  GOALS_DESC
+  SAVES_ASC
+  SAVES_DESC
+  CREATED_AT_ASC
+  CREATED_AT_DESC
+}
+`;
