@@ -54,6 +54,7 @@
     }
   },
   "devDependencies": {
+    "@localrepo/prettier2-for-jest": "npm:prettier@^2",
     "@types/node": "^18.15.11",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
     "@typescript-eslint/parser": "^7.9.0",
@@ -69,6 +70,9 @@
     "graphile-build": "^5.0.0-beta.27",
     "graphile-build-pg": "^5.0.0-beta.31",
     "graphql": "16.1.0-experimental-stream-defer.6",
+    "jest": "^29.6.4",
+    "jest-serializer-graphql-schema": "^5.0.0-beta.3",
+    "jest-serializer-simple": "^5.0.0-beta.3",
     "nodemon": "^2.0.22",
     "pg": "^8.5.1",
     "postgraphile": "^5.0.0-beta.32",
