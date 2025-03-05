@@ -104,10 +104,9 @@ attributes and computed columns.`,
     hooks: {
       init(init, build, _context) {
         const {
-          sql,
           graphql: { GraphQLList, GraphQLString },
-          dataplanPg: { assertPgClassSingleStep, TYPES },
-          grafast: { constant },
+          grafast: { lambda },
+          dataplanPg: { assertPgClassSingleStep },
           inflection,
           input: {
             pgRegistry: { pgResources },
@@ -134,23 +133,24 @@ attributes and computed columns.`,
                 keys: {
                   type: new GraphQLList(GraphQLString),
                   plan: EXPORTABLE(
-                    (TYPES, constant, sql) =>
+                    () =>
                       function plan($pgSelectSingle: PgSelectSingleStep<any>) {
                         const $pgSelect = $pgSelectSingle.getClassStep();
-                        const groups = $pgSelect.getGroups();
-                        if (groups.length > 0) {
-                          return $pgSelectSingle.select(
-                            sql`json_build_array(${sql.join(
-                              groups.map((g) => g.fragment),
-                              ", "
-                            )})`,
-                            TYPES.json
-                          );
-                        } else {
-                          return constant(null);
-                        }
+                        const $groupDetails = $pgSelect.getGroupDetails();
+                        return lambda(
+                          [$groupDetails, $pgSelectSingle],
+                          ([groupDetails, item]) => {
+                            if (groupDetails.indicies.length === 0) {
+                              return null;
+                            } else {
+                              return groupDetails.indicies.map(
+                                ({ index }) => item[index]
+                              );
+                            }
+                          }
+                        );
                       },
-                    [TYPES, constant, sql]
+                    []
                   ),
                 },
               },
@@ -193,6 +193,7 @@ attributes and computed columns.`,
           inflection,
           sql,
           graphql: { GraphQLNonNull, isOutputType },
+          dataplanPg: { pgFromExpression },
           EXPORTABLE,
         } = build;
         const {
@@ -399,6 +400,7 @@ attributes and computed columns.`,
                 if (!targetType) {
                   return memo;
                 }
+
                 return build.extend(
                   memo,
                   {
@@ -407,11 +409,12 @@ attributes and computed columns.`,
                         fieldName,
                       },
                       () => {
-                        const { makeFieldArgs, makeExpression } =
+                        const { makeFieldArgs, makeArgs } =
                           build.pgGetArgDetailsFromParameters(
                             computedAttributeResource,
                             computedAttributeResource.parameters!.slice(1)
                           );
+
                         return {
                           type: targetType,
                           description: `${
@@ -426,7 +429,6 @@ attributes and computed columns.`,
                             (
                               codec,
                               computedAttributeResource,
-                              makeExpression,
                               spec,
                               targetCodec
                             ) =>
@@ -438,14 +440,19 @@ attributes and computed columns.`,
                                 // evaluated inline, we have to convert it to an
                                 // expression here; this is only needed because of the
                                 // aggregation.
-                                const src = makeExpression({
-                                  $placeholderable: $pgSelectSingle,
-                                  resource: computedAttributeResource,
-                                  fieldArgs,
-                                  initialArgs: [
-                                    $pgSelectSingle.getClassStep().alias,
-                                  ],
-                                });
+                                const src = pgFromExpression(
+                                  $pgSelectSingle,
+                                  computedAttributeResource.from,
+                                  computedAttributeResource.parameters!,
+                                  [
+                                    {
+                                      placeholder:
+                                        $pgSelectSingle.getClassStep().alias,
+                                      position: 0,
+                                    },
+                                    ...makeArgs(fieldArgs),
+                                  ]
+                                );
 
                                 const sqlAggregate = spec.sqlAggregateWrap(
                                   src,
@@ -459,7 +466,6 @@ attributes and computed columns.`,
                             [
                               codec,
                               computedAttributeResource,
-                              makeExpression,
                               spec,
                               targetCodec,
                             ]

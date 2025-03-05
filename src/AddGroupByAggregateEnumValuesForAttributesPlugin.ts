@@ -1,6 +1,7 @@
 import type {
   PgCodecAttribute,
   PgResourceUnique,
+  PgSelectQueryBuilder,
   PgSelectStep,
 } from "@dataplan/pg";
 import type {
@@ -101,9 +102,9 @@ const Plugin: GraphileConfig.Plugin = {
                 [fieldName]: {
                   extensions: {
                     grafast: {
-                      applyPlan: EXPORTABLE(
+                      apply: EXPORTABLE(
                         (attributeName, sql) =>
-                          function ($pgSelect: PgSelectStep<any>) {
+                          function ($pgSelect: PgSelectQueryBuilder) {
                             $pgSelect.groupBy({
                               fragment: sql.fragment`${
                                 $pgSelect.alias
@@ -142,9 +143,9 @@ const Plugin: GraphileConfig.Plugin = {
                     [fieldName]: {
                       extensions: {
                         grafast: {
-                          applyPlan: EXPORTABLE(
+                          apply: EXPORTABLE(
                             (aggregateGroupBySpec, attributeName, sql) =>
-                              function ($pgSelect: PgSelectStep<any>) {
+                              function ($pgSelect: PgSelectQueryBuilder) {
                                 $pgSelect.groupBy({
                                   fragment: aggregateGroupBySpec.sqlWrap(
                                     sql`${$pgSelect.alias}.${sql.identifier(

@@ -2,6 +2,7 @@ import type {
   PgCodecRelation,
   PgCodecWithAttributes,
   PgResource,
+  PgSelectQueryBuilder,
   PgSelectStep,
 } from "@dataplan/pg";
 import type { GraphQLEnumValueConfigMap } from "graphql";
@@ -150,10 +151,10 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                 relationName,
               });
 
-            const makeTotalCountApplyPlan = (direction: "ASC" | "DESC") => {
+            const makeTotalCountApply = (direction: "ASC" | "DESC") => {
               return EXPORTABLE(
                 (TYPES, direction, relation, sql, table) =>
-                  function applyPlan($select: PgSelectStep<any>) {
+                  function apply($select: PgSelectQueryBuilder) {
                     const foreignTableAlias = $select.alias;
                     const conditions: SQL[] = [];
                     const tableAlias = sql.identifier(Symbol(table.name));
@@ -199,14 +200,14 @@ where ${sql.parens(
                 [`${totalCountBaseName}_ASC`]: {
                   extensions: {
                     grafast: {
-                      applyPlan: makeTotalCountApplyPlan("ASC"),
+                      apply: makeTotalCountApply("ASC"),
                     },
                   },
                 },
                 [`${totalCountBaseName}_DESC`]: {
                   extensions: {
                     grafast: {
-                      applyPlan: makeTotalCountApplyPlan("DESC"),
+                      apply: makeTotalCountApply("DESC"),
                     },
                   },
                 },
@@ -255,7 +256,7 @@ where ${sql.parens(
                     aggregateSpec,
                   });
 
-                const makeApplyPlan = (direction: "ASC" | "DESC") => {
+                const makeApply = (direction: "ASC" | "DESC") => {
                   return EXPORTABLE(
                     (
                       aggregateSpec,
@@ -266,7 +267,7 @@ where ${sql.parens(
                       sql,
                       table
                     ) =>
-                      function applyPlan($select: PgSelectStep<any>) {
+                      function apply($select: PgSelectQueryBuilder) {
                         const foreignTableAlias = $select.alias;
                         const conditions: SQL[] = [];
                         const tableAlias = sql.identifier(Symbol(table.name));
@@ -327,14 +328,14 @@ where ${sql.join(
                     [`${baseName}_ASC`]: {
                       extensions: {
                         grafast: {
-                          applyPlan: makeApplyPlan("ASC"),
+                          apply: makeApply("ASC"),
                         },
                       },
                     },
                     [`${baseName}_DESC`]: {
                       extensions: {
                         grafast: {
-                          applyPlan: makeApplyPlan("DESC"),
+                          apply: makeApply("DESC"),
                         },
                       },
                     },
