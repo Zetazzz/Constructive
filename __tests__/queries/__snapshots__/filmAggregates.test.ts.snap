@@ -1,0 +1,553 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`calculates film aggregates: queries 1`] = `
+[
+  "select __films_result__.*
+from (select 0 as idx, $1::"int4" as "id0") as __films_identifiers__,
+lateral (
+  select
+    (count(distinct __films__."id"))::text as "0",
+    (count(distinct __films__."name"))::text as "1",
+    (count(distinct __films__."year_of_release"))::text as "2",
+    (count(distinct "test"."films_computed_column"(__films__)))::text as "3",
+    (coalesce(sum("test"."films_computed_column"(__films__)), '0'))::text as "4",
+    (coalesce(sum("test"."films_computed_column_with_arguments"(
+      __films__,
+      __films_identifiers__."id0"
+    )), '0'))::text as "5",
+    (coalesce(sum(__films__."year_of_release"), '0'))::text as "6",
+    (coalesce(sum(__films__."box_office_in_billions"), '0'))::text as "7",
+    __films_identifiers__.idx as "8"
+  from "test"."films" as __films__
+) as __films_result__;",
+]
+`;
+
+exports[`calculates film aggregates: result 1`] = `
+{
+  "data": {
+    "allFilms": {
+      "aggregates": {
+        "distinctCount": {
+          "computedColumn": "20",
+          "name": "20",
+          "rowId": "20",
+          "yearOfRelease": "9",
+        },
+        "sum": {
+          "boxOfficeInBillions": 30.61,
+          "computedColumn": "2937",
+          "computedColumnWithArguments": "2957",
+          "yearOfRelease": "40283",
+        },
+      },
+    },
+  },
+  "extensions": {
+    "explain": {
+      "operations": [
+        {
+          "plan": {
+            "rootBucket": {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "copyStepIds": [
+                        22,
+                      ],
+                      "id": 2,
+                      "parentSideEffectStepId": null,
+                      "phases": [
+                        {
+                          "normalStepIds": undefined,
+                          "unbatchedStepIds": [
+                            23,
+                            24,
+                            25,
+                            26,
+                            27,
+                            29,
+                            30,
+                            31,
+                          ],
+                        },
+                      ],
+                      "reason": {
+                        "parentStepId": 22,
+                        "type": "nullableBoundary",
+                      },
+                      "rootStepId": 22,
+                      "steps": [
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 23,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "count(dist...ms__."id")",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 24,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "count(dist...__."name")",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 25,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "count(dist..._release")",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 26,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "count(dist..._films__))",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 27,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "coalesce(s...__)), '0')",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 29,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "coalesce(s.../
+)), '0')",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 30,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "coalesce(s...se"), '0')",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                        {
+                          "bucketId": 2,
+                          "dependencyForbiddenFlags": [
+                            29,
+                          ],
+                          "dependencyIds": [
+                            22,
+                          ],
+                          "dependencyOnReject": [
+                            undefined,
+                          ],
+                          "extra": undefined,
+                          "hasSideEffects": undefined,
+                          "id": 31,
+                          "implicitSideEffectStepId": null,
+                          "isSyncAndSafe": true,
+                          "isUnary": true,
+                          "metaString": "coalesce(s...ns"), '0')",
+                          "polymorphicPaths": undefined,
+                          "stepClass": "PgClassExpressionStep",
+                          "supportsUnbatched": true,
+                        },
+                      ],
+                    },
+                  ],
+                  "copyStepIds": [
+                    2,
+                    19,
+                  ],
+                  "id": 1,
+                  "parentSideEffectStepId": null,
+                  "phases": [
+                    {
+                      "normalStepIds": undefined,
+                      "unbatchedStepIds": [
+                        16,
+                        17,
+                        32,
+                        18,
+                      ],
+                    },
+                    {
+                      "normalStepIds": [
+                        20,
+                      ],
+                      "unbatchedStepIds": [
+                        21,
+                        22,
+                      ],
+                    },
+                  ],
+                  "reason": {
+                    "parentStepId": 19,
+                    "type": "nullableBoundary",
+                  },
+                  "rootStepId": 19,
+                  "steps": [
+                    {
+                      "bucketId": 1,
+                      "dependencyForbiddenFlags": [
+                        29,
+                      ],
+                      "dependencyIds": [
+                        2,
+                      ],
+                      "dependencyOnReject": [
+                        undefined,
+                      ],
+                      "extra": undefined,
+                      "hasSideEffects": undefined,
+                      "id": 16,
+                      "implicitSideEffectStepId": null,
+                      "isSyncAndSafe": true,
+                      "isUnary": true,
+                      "metaString": "2.pgSettings",
+                      "polymorphicPaths": undefined,
+                      "stepClass": "AccessStep",
+                      "supportsUnbatched": true,
+                    },
+                    {
+                      "bucketId": 1,
+                      "dependencyForbiddenFlags": [
+                        29,
+                      ],
+                      "dependencyIds": [
+                        2,
+                      ],
+                      "dependencyOnReject": [
+                        undefined,
+                      ],
+                      "extra": undefined,
+                      "hasSideEffects": undefined,
+                      "id": 17,
+                      "implicitSideEffectStepId": null,
+                      "isSyncAndSafe": true,
+                      "isUnary": true,
+                      "metaString": "2.withPgClient",
+                      "polymorphicPaths": undefined,
+                      "stepClass": "AccessStep",
+                      "supportsUnbatched": true,
+                    },
+                    {
+                      "bucketId": 1,
+                      "dependencyForbiddenFlags": [
+                        29,
+                        29,
+                      ],
+                      "dependencyIds": [
+                        16,
+                        17,
+                      ],
+                      "dependencyOnReject": [
+                        undefined,
+                        undefined,
+                      ],
+                      "extra": undefined,
+                      "hasSideEffects": undefined,
+                      "id": 18,
+                      "implicitSideEffectStepId": null,
+                      "isSyncAndSafe": true,
+                      "isUnary": true,
+                      "metaString": "{pgSettings,withPgClient}",
+                      "polymorphicPaths": undefined,
+                      "stepClass": "ObjectStep",
+                      "supportsUnbatched": true,
+                    },
+                    {
+                      "bucketId": 1,
+                      "dependencyForbiddenFlags": [
+                        29,
+                        29,
+                        29,
+                      ],
+                      "dependencyIds": [
+                        18,
+                        19,
+                        32,
+                      ],
+                      "dependencyOnReject": [
+                        undefined,
+                        undefined,
+                        undefined,
+                      ],
+                      "extra": undefined,
+                      "hasSideEffects": undefined,
+                      "id": 20,
+                      "implicitSideEffectStepId": null,
+                      "isSyncAndSafe": undefined,
+                      "isUnary": true,
+                      "metaString": "films(aggregate)",
+                      "polymorphicPaths": undefined,
+                      "stepClass": "PgSelectStep",
+                      "supportsUnbatched": undefined,
+                    },
+                    {
+                      "bucketId": 1,
+                      "dependencyForbiddenFlags": [
+                        29,
+                      ],
+                      "dependencyIds": [
+                        20,
+                      ],
+                      "dependencyOnReject": [
+                        undefined,
+                      ],
+                      "extra": undefined,
+                      "hasSideEffects": undefined,
+                      "id": 21,
+                      "implicitSideEffectStepId": null,
+                      "isSyncAndSafe": true,
+                      "isUnary": true,
+                      "metaString": null,
+                      "polymorphicPaths": undefined,
+                      "stepClass": "FirstStep",
+                      "supportsUnbatched": true,
+                    },
+                    {
+                      "bucketId": 1,
+                      "dependencyForbiddenFlags": [
+                        29,
+                      ],
+                      "dependencyIds": [
+                        21,
+                      ],
+                      "dependencyOnReject": [
+                        undefined,
+                      ],
+                      "extra": undefined,
+                      "hasSideEffects": undefined,
+                      "id": 22,
+                      "implicitSideEffectStepId": null,
+                      "isSyncAndSafe": true,
+                      "isUnary": true,
+                      "metaString": "films",
+                      "polymorphicPaths": undefined,
+                      "stepClass": "PgSelectSingleStep",
+                      "supportsUnbatched": true,
+                    },
+                    {
+                      "bucketId": 1,
+                      "dependencyForbiddenFlags": [],
+                      "dependencyIds": [],
+                      "dependencyOnReject": [],
+                      "extra": undefined,
+                      "hasSideEffects": undefined,
+                      "id": 32,
+                      "implicitSideEffectStepId": null,
+                      "isSyncAndSafe": true,
+                      "isUnary": true,
+                      "metaString": "11",
+                      "polymorphicPaths": undefined,
+                      "stepClass": "ConstantStep",
+                      "supportsUnbatched": true,
+                    },
+                  ],
+                },
+              ],
+              "copyStepIds": [],
+              "id": 0,
+              "parentSideEffectStepId": null,
+              "phases": [
+                {
+                  "normalStepIds": undefined,
+                  "unbatchedStepIds": [
+                    19,
+                  ],
+                },
+              ],
+              "reason": {
+                "type": "root",
+              },
+              "rootStepId": null,
+              "steps": [
+                {
+                  "bucketId": 0,
+                  "dependencyForbiddenFlags": [],
+                  "dependencyIds": [],
+                  "dependencyOnReject": [],
+                  "extra": undefined,
+                  "hasSideEffects": undefined,
+                  "id": 2,
+                  "implicitSideEffectStepId": null,
+                  "isSyncAndSafe": true,
+                  "isUnary": true,
+                  "metaString": "context",
+                  "polymorphicPaths": undefined,
+                  "stepClass": "__ValueStep",
+                  "supportsUnbatched": undefined,
+                },
+                {
+                  "bucketId": 0,
+                  "dependencyForbiddenFlags": [],
+                  "dependencyIds": [],
+                  "dependencyOnReject": [],
+                  "extra": undefined,
+                  "hasSideEffects": undefined,
+                  "id": 4,
+                  "implicitSideEffectStepId": null,
+                  "isSyncAndSafe": true,
+                  "isUnary": true,
+                  "metaString": "rootValue",
+                  "polymorphicPaths": undefined,
+                  "stepClass": "__ValueStep",
+                  "supportsUnbatched": undefined,
+                },
+                {
+                  "bucketId": 0,
+                  "dependencyForbiddenFlags": [],
+                  "dependencyIds": [],
+                  "dependencyOnReject": [],
+                  "extra": undefined,
+                  "hasSideEffects": undefined,
+                  "id": 19,
+                  "implicitSideEffectStepId": null,
+                  "isSyncAndSafe": true,
+                  "isUnary": true,
+                  "metaString": "15",
+                  "polymorphicPaths": undefined,
+                  "stepClass": "ConnectionStep",
+                  "supportsUnbatched": true,
+                },
+              ],
+            },
+            "version": "v1",
+          },
+          "title": "Plan",
+          "type": "plan",
+        },
+        {
+          "explain": undefined,
+          "query": "select __films_result__.*
+from (select 0 as idx, $1::"int4" as "id0") as __films_identifiers__,
+lateral (
+  select
+    (count(distinct __films__."id"))::text as "0",
+    (count(distinct __films__."name"))::text as "1",
+    (count(distinct __films__."year_of_release"))::text as "2",
+    (count(distinct "test"."films_computed_column"(__films__)))::text as "3",
+    (coalesce(sum("test"."films_computed_column"(__films__)), '0'))::text as "4",
+    (coalesce(sum("test"."films_computed_column_with_arguments"(
+      __films__,
+      __films_identifiers__."id0"
+    )), '0'))::text as "5",
+    (coalesce(sum(__films__."year_of_release"), '0'))::text as "6",
+    (coalesce(sum(__films__."box_office_in_billions"), '0'))::text as "7",
+    __films_identifiers__.idx as "8"
+  from "test"."films" as __films__
+) as __films_result__;",
+          "title": "SQL query 'dd1c0cf...'",
+          "type": "sql",
+        },
+      ],
+    },
+  },
+}
+`;

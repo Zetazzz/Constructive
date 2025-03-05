@@ -14,7 +14,7 @@
     "prettier:all": "yarn prettier '**/*.{json,md,mdx,html,js,jsx,ts,tsx,yml}'",
     "prettier:fix": "yarn prettier:all --write",
     "prettier:check": "yarn prettier:all --list-different",
-    "dev": "psql -X1v ON_ERROR_STOP=1 -f __tests__/schema.sql graphile_aggregates && concurrently --kill-others 'yarn run watch' 'yarn nodemon --watch dist -x postgraphile'",
+    "dev": "psql -X1v ON_ERROR_STOP=1 -f __tests__/schema.sql graphile_aggregates && GRAPHILE_ENV=development concurrently --kill-others 'yarn run watch' 'yarn nodemon --watch dist -x postgraphile'",
     "prepack": "rm -Rf dist && npm run build"
   },
   "repository": {
