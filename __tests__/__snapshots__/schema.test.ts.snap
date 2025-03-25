@@ -955,9 +955,6 @@ type Match implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`MatchStat\`."""
-    orderBy: [MatchStatOrderBy!] = [PRIMARY_KEY_ASC]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -967,6 +964,9 @@ type Match implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: MatchStatFilter
+
+    """The method to use when ordering \`MatchStat\`."""
+    orderBy: [MatchStatOrderBy!] = [PRIMARY_KEY_ASC]
   ): MatchStatConnection!
 
   """Reads and enables pagination through a set of \`ViewMatchStat\`."""
@@ -989,9 +989,6 @@ type Match implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`ViewMatchStat\`."""
-    orderBy: [ViewMatchStatOrderBy!] = [NATURAL]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -1001,6 +998,9 @@ type Match implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: ViewMatchStatFilter
+
+    """The method to use when ordering \`ViewMatchStat\`."""
+    orderBy: [ViewMatchStatOrderBy!] = [NATURAL]
   ): ViewMatchStatConnection!
 }
 
@@ -2369,9 +2369,6 @@ type Player implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`MatchStat\`."""
-    orderBy: [MatchStatOrderBy!] = [PRIMARY_KEY_ASC]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -2381,6 +2378,9 @@ type Player implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: MatchStatFilter
+
+    """The method to use when ordering \`MatchStat\`."""
+    orderBy: [MatchStatOrderBy!] = [PRIMARY_KEY_ASC]
   ): MatchStatConnection!
 
   """Reads and enables pagination through a set of \`ViewMatchStat\`."""
@@ -2403,9 +2403,6 @@ type Player implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`ViewMatchStat\`."""
-    orderBy: [ViewMatchStatOrderBy!] = [NATURAL]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -2415,6 +2412,9 @@ type Player implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: ViewMatchStatFilter
+
+    """The method to use when ordering \`ViewMatchStat\`."""
+    orderBy: [ViewMatchStatOrderBy!] = [NATURAL]
   ): ViewMatchStatConnection!
 }
 
@@ -3048,9 +3048,6 @@ type Query implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`Match\`."""
-    orderBy: [MatchOrderBy!] = [PRIMARY_KEY_ASC]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -3060,6 +3057,9 @@ type Query implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: MatchFilter
+
+    """The method to use when ordering \`Match\`."""
+    orderBy: [MatchOrderBy!] = [PRIMARY_KEY_ASC]
   ): MatchConnection
 
   """Reads and enables pagination through a set of \`Player\`."""
@@ -3082,9 +3082,6 @@ type Query implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`Player\`."""
-    orderBy: [PlayerOrderBy!] = [PRIMARY_KEY_ASC]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -3094,6 +3091,9 @@ type Query implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: PlayerFilter
+
+    """The method to use when ordering \`Player\`."""
+    orderBy: [PlayerOrderBy!] = [PRIMARY_KEY_ASC]
   ): PlayerConnection
 
   """Reads and enables pagination through a set of \`Film\`."""
@@ -3116,9 +3116,6 @@ type Query implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`Film\`."""
-    orderBy: [FilmOrderBy!] = [PRIMARY_KEY_ASC]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -3128,6 +3125,9 @@ type Query implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: FilmFilter
+
+    """The method to use when ordering \`Film\`."""
+    orderBy: [FilmOrderBy!] = [PRIMARY_KEY_ASC]
   ): FilmConnection
 
   """Reads and enables pagination through a set of \`ViewMatchStat\`."""
@@ -3150,9 +3150,6 @@ type Query implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`ViewMatchStat\`."""
-    orderBy: [ViewMatchStatOrderBy!] = [NATURAL]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -3162,6 +3159,9 @@ type Query implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: ViewMatchStatFilter
+
+    """The method to use when ordering \`ViewMatchStat\`."""
+    orderBy: [ViewMatchStatOrderBy!] = [NATURAL]
   ): ViewMatchStatConnection
 
   """Reads and enables pagination through a set of \`MatchStat\`."""
@@ -3184,9 +3184,6 @@ type Query implements Node {
     """Read all values in the set after (below) this cursor."""
     after: Cursor
 
-    """The method to use when ordering \`MatchStat\`."""
-    orderBy: [MatchStatOrderBy!] = [PRIMARY_KEY_ASC]
-
     """
     A condition to be used in determining which values should be returned by the collection.
     """
@@ -3196,6 +3193,9 @@ type Query implements Node {
     A filter to be used in determining which values should be returned by the collection.
     """
     filter: MatchStatFilter
+
+    """The method to use when ordering \`MatchStat\`."""
+    orderBy: [MatchStatOrderBy!] = [PRIMARY_KEY_ASC]
   ): MatchStatConnection
 }
 

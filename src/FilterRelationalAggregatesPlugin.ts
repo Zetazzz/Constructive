@@ -1,23 +1,19 @@
 import type {
   PgCodec,
   PgCodecAttributes,
-  PgConditionCapableParentStep,
-  PgConditionStep,
-  PgWhereConditionSpec,
+  PgCondition,
+  PgConditionCapableParent,
+  PgRegistry,
   PgResource,
   PgResourceParameter,
-  PgRegistry,
+  PgWhereConditionSpec,
 } from "@dataplan/pg";
-import type {
-  ExecutableStep,
-  FieldArgs,
-  GrafastInputFieldConfigMap,
-  ModifierStep,
-} from "grafast";
+import type { GrafastInputFieldConfigMap, Modifier } from "grafast";
 import type {} from "graphile-build";
 import type {
-  GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLInputObjectTypeConfig,
+  GraphQLInputType,
 } from "graphql";
 import type { PgSQL, SQL } from "pg-sql2";
 import type {} from "postgraphile-plugin-connection-filter";
@@ -29,8 +25,8 @@ const { version } = require("../package.json");
 declare global {
   namespace GraphileBuild {
     interface Build {
-      PgAggregateConditionStep: PgAggregateConditionStepClass;
-      PgAggregateConditionExpressionStep: PgAggregateConditionExpressionStepClass;
+      PgAggregateCondition: PgAggregateConditionClass;
+      PgAggregateConditionExpression: PgAggregateConditionExpressionClass;
     }
     interface BehaviorStrings {
       "resource:aggregates:filterBy": true;
@@ -111,7 +107,7 @@ the sum of their points scored.`,
       build(build) {
         const {
           EXPORTABLE,
-          grafast: { ModifierStep },
+          grafast: { Modifier },
         } = build;
 
         if (!build.allPgCodecs) {
@@ -139,28 +135,21 @@ the sum of their points scored.`,
             }
           }
         }
-        const PgAggregateConditionExpressionStep = EXPORTABLE(
-          (ModifierStep) =>
-            class PgAggregateConditionExpressionStep
-              extends ModifierStep<PgAggregateConditionStep<any>>
-              implements PgConditionCapableParentStep
+        const PgAggregateConditionExpression = EXPORTABLE(
+          (Modifier) =>
+            class PgAggregateConditionExpression
+              extends Modifier<PgAggregateCondition<any>>
+              implements PgConditionCapableParent
             {
               alias: SQL;
               conditions: PgWhereConditionSpec<any>[] = [];
               constructor(
-                $parent: PgAggregateConditionStep<any>,
+                parent: PgAggregateCondition<any>,
                 private spec: AggregateSpec,
                 private pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
               ) {
-                super($parent);
-                this.alias = $parent.alias;
-              }
-
-              placeholder(
-                $step: ExecutableStep<any>,
-                codec: PgCodec<any, any, any, any>
-              ): SQL {
-                return this.$parent.placeholder($step, codec);
+                super(parent);
+                this.alias = parent.alias;
               }
 
               where(condition: PgWhereConditionSpec<any>): void {
@@ -173,24 +162,24 @@ the sum of their points scored.`,
                   this.conditions
                 );
                 if (sqlCondition) {
-                  this.$parent.expression(sqlCondition);
+                  this.parent.expression(sqlCondition);
                 }
               }
-            } as PgAggregateConditionExpressionStepClass,
-          [ModifierStep]
+            } as PgAggregateConditionExpressionClass,
+          [Modifier]
         );
-        const PgAggregateConditionStep = EXPORTABLE(
-          (ModifierStep, PgAggregateConditionExpressionStep) =>
-            class PgAggregateConditionStep<
-              TParentStep extends PgConditionCapableParentStep
-            > extends ModifierStep<TParentStep> {
+        const PgAggregateCondition = EXPORTABLE(
+          (Modifier, PgAggregateConditionExpression) =>
+            class PgAggregateCondition<
+              TParentStep extends PgConditionCapableParent
+            > extends Modifier<TParentStep> {
               sql: PgSQL;
               tableExpression: SQL;
               alias: SQL;
               conditions: PgWhereConditionSpec<any>[] = [];
               expressions: SQL[] = [];
               constructor(
-                $parent: TParentStep,
+                parent: TParentStep,
                 options: {
                   sql: PgSQL;
                   tableExpression: SQL;
@@ -198,18 +187,11 @@ the sum of their points scored.`,
                 },
                 private pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
               ) {
-                super($parent);
+                super(parent);
                 const { sql, tableExpression, alias } = options;
                 this.sql = sql;
                 this.alias = sql.identifier(Symbol(alias ?? "aggregate"));
                 this.tableExpression = tableExpression;
-              }
-
-              placeholder(
-                $step: ExecutableStep<any>,
-                codec: PgCodec<any, any, any, any>
-              ): SQL {
-                return this.$parent.placeholder($step, codec);
               }
 
               where(condition: PgWhereConditionSpec<any>): void {
@@ -222,8 +204,8 @@ the sum of their points scored.`,
 
               forAggregate(
                 spec: AggregateSpec
-              ): PgAggregateConditionExpressionStep {
-                return new PgAggregateConditionExpressionStep(
+              ): PgAggregateConditionExpression {
+                return new PgAggregateConditionExpression(
                   this,
                   spec,
                   this.pgWhereConditionSpecListToSQL
@@ -254,17 +236,17 @@ select ${boolExpr}
 from ${this.tableExpression} as ${this.alias}
 ${where}`}
 group by ())`;
-                return this.$parent.where(subquery);
+                return this.parent.where(subquery);
               }
-            } as PgAggregateConditionStepClass,
-          [ModifierStep, PgAggregateConditionExpressionStep]
+            } as PgAggregateConditionClass,
+          [Modifier, PgAggregateConditionExpression]
         );
 
         return build.extend(
           build,
           {
-            PgAggregateConditionStep,
-            PgAggregateConditionExpressionStep,
+            PgAggregateCondition,
+            PgAggregateConditionExpression,
           },
           "Adding step classes from postgraphile-plugin-connection-filter"
         );
@@ -273,7 +255,7 @@ group by ())`;
       init(_, build) {
         const {
           inflection,
-          dataplanPg: { PgConditionStep },
+          dataplanPg: { PgCondition },
           EXPORTABLE,
         } = build;
 
@@ -328,27 +310,28 @@ group by ())`;
                       [filterFieldName as string]: {
                         description: `A filter that must pass for the relevant \`${foreignTableTypeName}\` object to be included within the aggregate.`,
                         type,
-                        applyPlan: EXPORTABLE(
-                          (PgConditionStep) =>
+                        apply: EXPORTABLE(
+                          (PgCondition) =>
                             function (
-                              $subquery: PgAggregateConditionStep<any>,
-                              fieldArgs: FieldArgs
+                              $subquery: PgAggregateCondition<any>,
+                              input: unknown
                             ) {
+                              if (input == null) return;
                               // Enable all the helpers
-                              const $condition = new PgConditionStep(
+                              const $condition = new PgCondition(
                                 $subquery,
                                 false,
                                 "AND"
                               );
-                              fieldArgs.apply($condition);
+                              return $condition;
                             },
-                          [PgConditionStep]
+                          [PgCondition]
                         ),
                         // No need to auto-apply since we're applied manually via `fieldArgs.apply($subQuery)` below.
                       },
                     };
                   },
-                };
+                } as Omit<GraphQLInputObjectTypeConfig, "name">;
               },
               "Adding aggregate filter input type"
             );
@@ -394,8 +377,8 @@ group by ())`;
           inflection,
           sql,
           pgAggregateSpecs,
-          dataplanPg: { PgConditionStep, pgWhereConditionSpecListToSQL },
-          PgAggregateConditionStep,
+          dataplanPg: { PgCondition, pgWhereConditionSpecListToSQL },
+          PgAggregateCondition,
           EXPORTABLE,
         } = build;
 
@@ -430,7 +413,7 @@ group by ())`;
 
           const AggregateType = build.getTypeByName(
             foreignTableAggregateFilterTypeName
-          );
+          ) as GraphQLInputObjectType;
           if (!AggregateType) {
             return fields;
           }
@@ -446,16 +429,14 @@ group by ())`;
                 {
                   description: `Aggregates across related \`${foreignTableTypeName}\` match the filter criteria.`,
                   type: AggregateType,
-                  applyPlan: EXPORTABLE(
+                  apply: EXPORTABLE(
                     (
-                      PgAggregateConditionStep,
+                      PgAggregateCondition,
                       pgWhereConditionSpecListToSQL,
                       sql
                     ) =>
-                      function (
-                        $where: PgConditionStep<any>,
-                        fieldArgs: FieldArgs
-                      ) {
+                      function ($where: PgCondition<any>, input: unknown) {
+                        if (input == null) return;
                         // assertAllowed(fieldArgs, "object");
                         if (!$where.extensions.pgFilterRelation) {
                           throw new Error(
@@ -468,7 +449,7 @@ group by ())`;
                           tableExpression,
                           alias,
                         } = $where.extensions.pgFilterRelation;
-                        const $subQuery = new PgAggregateConditionStep(
+                        const $subQuery = new PgAggregateCondition(
                           $where,
                           {
                             sql,
@@ -487,13 +468,9 @@ group by ())`;
                             )}`
                           );
                         });
-                        fieldArgs.apply($subQuery);
+                        return $subQuery;
                       },
-                    [
-                      PgAggregateConditionStep,
-                      pgWhereConditionSpecListToSQL,
-                      sql,
-                    ]
+                    [PgAggregateCondition, pgWhereConditionSpecListToSQL, sql]
                   ),
                   // No need to auto-apply, postgraphile-plugin-connection-filter explicitly calls fieldArgs.apply()
                 }
@@ -524,7 +501,9 @@ group by ())`;
             );
             const fieldName = inflection.camelCase(spec.id);
 
-            const type = build.getTypeByName(filterTypeName);
+            const type = build.getTypeByName(
+              filterTypeName
+            ) as GraphQLInputType;
             if (!type) {
               return memo;
             }
@@ -534,17 +513,17 @@ group by ())`;
                 [fieldName]: fieldWithHooks({ fieldName }, () => ({
                   type,
                   description: `${spec.HumanLabel} aggregate over matching \`${foreignTableTypeName}\` objects.`,
-                  applyPlan: EXPORTABLE(
+                  apply: EXPORTABLE(
                     (spec) =>
                       function (
-                        $subquery: PgAggregateConditionStep<any>,
-                        fieldArgs: FieldArgs
+                        $subquery: PgAggregateCondition<any>,
+                        input: unknown
                       ) {
-                        fieldArgs.apply($subquery.forAggregate(spec));
+                        if (input == null) return;
+                        return $subquery.forAggregate(spec);
                       },
                     [spec]
                   ),
-                  // No need to auto-apply since we're applied manually via `fieldArgs.apply($subQuery)` above.
                 })),
               },
               `Adding aggregate '${spec.id}' filter input for '${pgResource.name}'. `
@@ -617,20 +596,21 @@ group by ())`;
                     {
                       [fieldName]: {
                         type: OperatorsType,
-                        applyPlan: EXPORTABLE(
+                        apply: EXPORTABLE(
                           (
-                            PgConditionStep,
+                            PgCondition,
+                            attrCodec,
                             attribute,
                             attributeName,
-                            attrCodec,
                             spec,
                             sql
                           ) =>
                             function (
-                              $parent: PgAggregateConditionExpressionStep,
-                              fieldArgs: FieldArgs
+                              $parent: PgAggregateConditionExpression,
+                              input: unknown
                             ) {
-                              const $col = new PgConditionStep($parent);
+                              if (input == null) return;
+                              const $col = new PgCondition($parent);
                               $col.extensions.pgFilterAttribute = {
                                 codec: attrCodec,
                                 expression: spec.sqlAggregateWrap(
@@ -641,13 +621,13 @@ group by ())`;
                                 ),
                               };
 
-                              fieldArgs.apply($col);
+                              return $col;
                             },
                           [
-                            PgConditionStep,
+                            PgCondition,
+                            attrCodec,
                             attribute,
                             attributeName,
-                            attrCodec,
                             spec,
                             sql,
                           ]
@@ -658,7 +638,7 @@ group by ())`;
                     `Add aggregate '${attributeName}' filter for source '${table.name}' for spec '${spec.id}'`
                   );
                 },
-                Object.create(null) as GrafastInputFieldConfigMap<any, any>
+                Object.create(null) as GrafastInputFieldConfigMap<any>
               ),
             },
             `Adding per-attribute '${spec.id}' aggregate filters for '${pgTypeResource.name}'`
@@ -719,13 +699,14 @@ group by ())`;
                   {
                     [fieldName]: {
                       type: OperatorsType,
-                      applyPlan: EXPORTABLE(
-                        (PgConditionStep, spec, sql) =>
-                          function (
-                            $parent: PgAggregateConditionExpressionStep,
-                            fieldArgs: FieldArgs
+                      apply: EXPORTABLE(
+                        (PgCondition, attrCodec, proc, spec, sql) =>
+                          function apply(
+                            $parent: PgAggregateConditionExpression,
+                            input: unknown
                           ) {
-                            const $col = new PgConditionStep($parent);
+                            if (input == null) return;
+                            const $col = new PgCondition($parent);
                             const sqlComputedAttributeCall = sql.query`${
                               typeof proc.from === "function"
                                 ? proc.from({ placeholder: $col.alias })
@@ -739,15 +720,15 @@ group by ())`;
                               ),
                             };
 
-                            fieldArgs.apply($col);
+                            return $col;
                           },
-                        [PgConditionStep, spec, sql]
+                        [PgCondition, attrCodec, proc, spec, sql]
                       ),
                     },
                   },
                   `Add computed aggregate '${fieldName}' filter for source '${table.name}' for spec '${spec.id}'`
                 );
-              }, Object.create(null) as GraphQLInputFieldConfigMap),
+              }, Object.create(null) as GrafastInputFieldConfigMap<PgAggregateConditionExpression>),
             },
             `Adding per-computed-column '${spec.id}' aggregate filters for '${pgTypeResource.name}'`
           );
@@ -763,26 +744,21 @@ group by ())`;
 
 export { Plugin as PgAggregatesFilterRelationalAggregatesPlugin };
 
-interface PgAggregateConditionStep<
-  TParentStep extends PgConditionCapableParentStep
-> extends ModifierStep<TParentStep> {
+interface PgAggregateCondition<TParentStep extends PgConditionCapableParent>
+  extends Modifier<TParentStep> {
   sql: PgSQL;
   tableExpression: SQL;
   alias: SQL;
   conditions: PgWhereConditionSpec<any>[];
   expressions: SQL[];
-  placeholder(
-    $step: ExecutableStep<any>,
-    codec: PgCodec<any, any, any, any>
-  ): SQL;
   where(condition: PgWhereConditionSpec<any>): void;
   expression(expression: SQL): void;
-  forAggregate(spec: AggregateSpec): PgAggregateConditionExpressionStep;
+  forAggregate(spec: AggregateSpec): PgAggregateConditionExpression;
   apply(): void;
 }
 
-interface PgAggregateConditionStepClass {
-  new <TParentStep extends PgConditionCapableParentStep>(
+interface PgAggregateConditionClass {
+  new <TParentStep extends PgConditionCapableParent>(
     $parent: TParentStep,
     options: {
       sql: PgSQL;
@@ -790,30 +766,25 @@ interface PgAggregateConditionStepClass {
       alias?: string;
     },
     pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
-  ): PgAggregateConditionStep<TParentStep>;
+  ): PgAggregateCondition<TParentStep>;
 }
 
-interface PgAggregateConditionExpressionStep
-  extends ModifierStep<PgAggregateConditionStep<any>> {
+interface PgAggregateConditionExpression
+  extends Modifier<PgAggregateCondition<any>> {
   alias: SQL;
   conditions: PgWhereConditionSpec<any>[];
-
-  placeholder(
-    $step: ExecutableStep<any>,
-    codec: PgCodec<any, any, any, any>
-  ): SQL;
 
   where(condition: PgWhereConditionSpec<any>): void;
 
   apply(): void;
 }
 
-interface PgAggregateConditionExpressionStepClass {
+interface PgAggregateConditionExpressionClass {
   new (
-    $parent: PgAggregateConditionStep<any>,
+    $parent: PgAggregateCondition<any>,
     spec: AggregateSpec,
     pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
-  ): PgAggregateConditionExpressionStep;
+  ): PgAggregateConditionExpression;
 }
 
 function isComputedScalarAttributeResource(

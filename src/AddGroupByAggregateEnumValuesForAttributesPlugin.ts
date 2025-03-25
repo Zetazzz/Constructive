@@ -1,7 +1,7 @@
 import type {
   PgCodecAttribute,
   PgResourceUnique,
-  PgSelectStep,
+  PgSelectQueryBuilder,
 } from "@dataplan/pg";
 import type {
   GraphQLEnumValueConfig,
@@ -95,22 +95,24 @@ const Plugin: GraphileConfig.Plugin = {
               resource: table,
               attributeName,
             });
+            const attrCodec = attribute.codec;
             memo = extend(
               memo,
               {
                 [fieldName]: {
                   extensions: {
                     grafast: {
-                      applyPlan: EXPORTABLE(
-                        (attributeName, sql) =>
-                          function ($pgSelect: PgSelectStep<any>) {
+                      apply: EXPORTABLE(
+                        (attrCodec, attributeName, sql) =>
+                          function ($pgSelect: PgSelectQueryBuilder) {
                             $pgSelect.groupBy({
                               fragment: sql.fragment`${
                                 $pgSelect.alias
                               }.${sql.identifier(attributeName)}`,
+                              codec: attrCodec,
                             });
                           },
-                        [attributeName, sql]
+                        [attrCodec, attributeName, sql]
                       ),
                     },
                   },
@@ -142,18 +144,32 @@ const Plugin: GraphileConfig.Plugin = {
                     [fieldName]: {
                       extensions: {
                         grafast: {
-                          applyPlan: EXPORTABLE(
-                            (aggregateGroupBySpec, attributeName, sql) =>
-                              function ($pgSelect: PgSelectStep<any>) {
+                          apply: EXPORTABLE(
+                            (
+                              aggregateGroupBySpec,
+                              attrCodec,
+                              attributeName,
+                              sql
+                            ) =>
+                              function ($pgSelect: PgSelectQueryBuilder) {
                                 $pgSelect.groupBy({
                                   fragment: aggregateGroupBySpec.sqlWrap(
                                     sql`${$pgSelect.alias}.${sql.identifier(
                                       attributeName
                                     )}`
                                   ),
+                                  codec:
+                                    aggregateGroupBySpec.sqlWrapCodec(
+                                      attrCodec
+                                    ),
                                 });
                               },
-                            [aggregateGroupBySpec, attributeName, sql]
+                            [
+                              aggregateGroupBySpec,
+                              attrCodec,
+                              attributeName,
+                              sql,
+                            ]
                           ),
                         },
                       },

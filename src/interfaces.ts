@@ -93,6 +93,13 @@ export interface AggregateGroupBySpec {
    * ```
    */
   sqlWrap: (sqlFrag: SQL) => SQL;
+
+  /**
+   * Which codec represents the type returned by sqlWrap?
+   */
+  sqlWrapCodec: (
+    codec: PgCodec<any, any, any, any, any, any, any>
+  ) => PgCodec<any, any, any, any, any, any, any>;
 }
 
 export interface AggregateSpec {

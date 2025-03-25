@@ -279,6 +279,9 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
               (sql) => (sqlFrag) => sql`date_trunc('hour', ${sqlFrag})`,
               [sql]
             ),
+            sqlWrapCodec(codec) {
+              return codec;
+            },
           },
           {
             id: "truncated-to-day",
@@ -291,6 +294,9 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
               (sql) => (sqlFrag) => sql`date_trunc('day', ${sqlFrag})`,
               [sql]
             ),
+            sqlWrapCodec(codec) {
+              return codec;
+            },
           },
         ];
 

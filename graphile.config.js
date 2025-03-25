@@ -1,3 +1,4 @@
+// @ts-check
 const { postgraphilePresetAmber } = require("postgraphile/presets/amber");
 const {
   PostGraphileConnectionFilterPreset,

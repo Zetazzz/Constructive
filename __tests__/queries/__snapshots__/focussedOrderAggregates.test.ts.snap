@@ -83,16 +83,17 @@ exports[`FocussedOrderedAggregate: sql 1`] = `
 [
   "select
   __players__."name" as "0",
-  (select json_agg(s) from (
-    select
-      (count(*))::text as "0",
-      (coalesce(sum(__match_stats__."goals"), '0'))::text as "1",
-      (avg(__match_stats__."points"))::text as "2"
+  array(
+    select array[
+      (count(*))::text,
+      (coalesce(sum(__match_stats__."goals"), '0'))::text,
+      (avg(__match_stats__."points"))::text
+    ]::text[]
     from "test"."match_stats" as __match_stats__
     where (
-      __players__."id"::"int4" = __match_stats__."player_id"
+      __match_stats__."player_id" = __players__."id"
     )
-  ) s) as "1"
+  )::text as "1"
 from "test"."players" as __players__
 order by (
   select avg(__match_stats_2."points")

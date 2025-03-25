@@ -1,4 +1,9 @@
-import type { PgSelectStep } from "@dataplan/pg";
+import type {
+  PgCursorStep,
+  PgSelectSingleStep,
+  PgSelectStep,
+} from "@dataplan/pg";
+import type { ConnectionStep, GrafastFieldConfig } from "grafast";
 import type { GraphQLEnumType, GraphQLObjectType } from "graphql";
 
 const { version } = require("../package.json");
@@ -62,7 +67,6 @@ const Plugin: GraphileConfig.Plugin = {
       GraphQLObjectType_fields(fields, build, context) {
         const {
           graphql: { GraphQLList, GraphQLNonNull },
-          grafast: { getEnumValueConfig },
           inflection,
           EXPORTABLE,
         } = build;
@@ -141,8 +145,10 @@ const Plugin: GraphileConfig.Plugin = {
                     "arg"
                   ),
                   applyPlan: EXPORTABLE(
-                    (TableGroupByType, getEnumValueConfig) =>
+                    () =>
                       function (_$parent, $pgSelect: PgSelectStep<any>, input) {
+                        return input.apply($pgSelect);
+                        /*
                         const $value = input.getRaw();
                         const val = $value.eval();
                         if (!Array.isArray(val)) {
@@ -161,10 +167,10 @@ const Plugin: GraphileConfig.Plugin = {
                           }
                         }
                         return null;
+                          */
                       },
-                    [TableGroupByType, getEnumValueConfig]
+                    []
                   ),
-                  autoApplyAfterParentPlan: true,
                 },
                 ...(TableHavingInputType
                   ? {
@@ -174,10 +180,19 @@ const Plugin: GraphileConfig.Plugin = {
                           `Conditions on the grouped aggregates.`,
                           "arg"
                         ),
-                        applyPlan(_$parent, $pgSelect: PgSelectStep<any>) {
-                          return $pgSelect.havingPlan();
-                        },
-                        autoApplyAfterParentPlan: true,
+                        applyPlan: EXPORTABLE(
+                          () =>
+                            function applyPlan(
+                              _$parent,
+                              $pgSelect: PgSelectStep<any>,
+                              input
+                            ) {
+                              return input.apply($pgSelect, (queryBuilder) =>
+                                queryBuilder.havingBuilder()
+                              );
+                            },
+                          []
+                        ),
                       },
                     }
                   : null),
@@ -191,7 +206,12 @@ const Plugin: GraphileConfig.Plugin = {
                   },
                 []
               ),
-            };
+            } as GrafastFieldConfig<
+              any,
+              ConnectionStep<PgSelectSingleStep, PgCursorStep<any>, any>,
+              any,
+              any
+            >;
           }),
         };
       },
