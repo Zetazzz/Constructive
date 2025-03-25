@@ -140,7 +140,10 @@ attributes and computed columns.`,
                         return lambda(
                           [$groupDetails, $pgSelectSingle],
                           ([groupDetails, item]) => {
-                            if (groupDetails.indicies.length === 0) {
+                            if (
+                              groupDetails.indicies.length === 0 ||
+                              item == null
+                            ) {
                               return null;
                             } else {
                               return groupDetails.indicies.map(
