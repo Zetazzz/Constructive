@@ -3,7 +3,6 @@ import type {
   PgCodecWithAttributes,
   PgResource,
   PgSelectQueryBuilder,
-  PgSelectStep,
 } from "@dataplan/pg";
 import type { GraphQLEnumValueConfigMap } from "graphql";
 import type { SQL } from "pg-sql2";

@@ -42,7 +42,6 @@ module.exports = {
     "no-await-in-loop": 0,
     "jest/no-focused-tests": 2,
     "jest/no-identical-title": 2,
-    "tsdoc/syntax": 2,
 
     // Rules that we should enable:
     "@typescript-eslint/no-inferrable-types": "warn",
@@ -90,6 +89,7 @@ module.exports = {
         "no-undef": "off",
         // This rule doesn't understand import of './js'
         "import/no-unresolved": "off",
+        "tsdoc/syntax": 2,
       },
     },
   ],

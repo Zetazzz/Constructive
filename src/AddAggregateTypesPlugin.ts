@@ -133,7 +133,7 @@ attributes and computed columns.`,
                 keys: {
                   type: new GraphQLList(GraphQLString),
                   plan: EXPORTABLE(
-                    () =>
+                    (lambda) =>
                       function plan($pgSelectSingle: PgSelectSingleStep<any>) {
                         const $pgSelect = $pgSelectSingle.getClassStep();
                         const $groupDetails = $pgSelect.getGroupDetails();
@@ -153,7 +153,7 @@ attributes and computed columns.`,
                           }
                         );
                       },
-                    []
+                    [lambda]
                   ),
                 },
               },
@@ -432,6 +432,8 @@ attributes and computed columns.`,
                             (
                               codec,
                               computedAttributeResource,
+                              makeArgs,
+                              pgFromExpression,
                               spec,
                               targetCodec
                             ) =>
@@ -469,6 +471,8 @@ attributes and computed columns.`,
                             [
                               codec,
                               computedAttributeResource,
+                              makeArgs,
+                              pgFromExpression,
                               spec,
                               targetCodec,
                             ]

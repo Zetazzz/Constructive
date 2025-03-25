@@ -2,7 +2,6 @@ import type {
   PgCodecAttribute,
   PgResourceUnique,
   PgSelectQueryBuilder,
-  PgSelectStep,
 } from "@dataplan/pg";
 import type {
   GraphQLEnumValueConfig,
@@ -104,7 +103,7 @@ const Plugin: GraphileConfig.Plugin = {
                   extensions: {
                     grafast: {
                       apply: EXPORTABLE(
-                        (attributeName, sql) =>
+                        (attrCodec, attributeName, sql) =>
                           function ($pgSelect: PgSelectQueryBuilder) {
                             $pgSelect.groupBy({
                               fragment: sql.fragment`${
@@ -113,7 +112,7 @@ const Plugin: GraphileConfig.Plugin = {
                               codec: attrCodec,
                             });
                           },
-                        [attributeName, sql]
+                        [attrCodec, attributeName, sql]
                       ),
                     },
                   },
@@ -146,7 +145,12 @@ const Plugin: GraphileConfig.Plugin = {
                       extensions: {
                         grafast: {
                           apply: EXPORTABLE(
-                            (aggregateGroupBySpec, attributeName, sql) =>
+                            (
+                              aggregateGroupBySpec,
+                              attrCodec,
+                              attributeName,
+                              sql
+                            ) =>
                               function ($pgSelect: PgSelectQueryBuilder) {
                                 $pgSelect.groupBy({
                                   fragment: aggregateGroupBySpec.sqlWrap(
@@ -160,7 +164,12 @@ const Plugin: GraphileConfig.Plugin = {
                                     ),
                                 });
                               },
-                            [aggregateGroupBySpec, attributeName, sql]
+                            [
+                              aggregateGroupBySpec,
+                              attrCodec,
+                              attributeName,
+                              sql,
+                            ]
                           ),
                         },
                       },

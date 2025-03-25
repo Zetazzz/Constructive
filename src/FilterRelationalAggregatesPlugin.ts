@@ -1,17 +1,16 @@
 import type {
   PgCodec,
   PgCodecAttributes,
-  PgConditionCapableParent,
   PgCondition,
-  PgWhereConditionSpec,
+  PgConditionCapableParent,
+  PgRegistry,
   PgResource,
   PgResourceParameter,
-  PgRegistry,
+  PgWhereConditionSpec,
 } from "@dataplan/pg";
-import type { FieldArgs, GrafastInputFieldConfigMap, Modifier } from "grafast";
+import type { GrafastInputFieldConfigMap, Modifier } from "grafast";
 import type {} from "graphile-build";
 import type {
-  GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLInputObjectTypeConfig,
   GraphQLInputType,
@@ -600,9 +599,9 @@ group by ())`;
                         apply: EXPORTABLE(
                           (
                             PgCondition,
+                            attrCodec,
                             attribute,
                             attributeName,
-                            attrCodec,
                             spec,
                             sql
                           ) =>
@@ -626,9 +625,9 @@ group by ())`;
                             },
                           [
                             PgCondition,
+                            attrCodec,
                             attribute,
                             attributeName,
-                            attrCodec,
                             spec,
                             sql,
                           ]
@@ -701,7 +700,7 @@ group by ())`;
                     [fieldName]: {
                       type: OperatorsType,
                       apply: EXPORTABLE(
-                        (PgCondition, spec, sql) =>
+                        (PgCondition, attrCodec, proc, spec, sql) =>
                           function apply(
                             $parent: PgAggregateConditionExpression,
                             input: unknown
@@ -723,7 +722,7 @@ group by ())`;
 
                             return $col;
                           },
-                        [PgCondition, spec, sql]
+                        [PgCondition, attrCodec, proc, spec, sql]
                       ),
                     },
                   },

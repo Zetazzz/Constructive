@@ -527,7 +527,14 @@ columns.`,
                               (
                                   PgBooleanFilter,
                                   aggregateSpec,
-                                  computedAttributeResource
+                                  computedAttributeResource,
+                                  from,
+                                  getNullableType,
+                                  isInputObjectType,
+                                  makeArgsRuntime,
+                                  parameterAnalysis,
+                                  parameters,
+                                  pgFromExpressionRuntime
                                 ) =>
                                 (
                                   $having: PgCondition,
@@ -601,6 +608,13 @@ columns.`,
                                 PgBooleanFilter,
                                 aggregateSpec,
                                 computedAttributeResource,
+                                from,
+                                getNullableType,
+                                isInputObjectType,
+                                makeArgsRuntime,
+                                parameterAnalysis,
+                                parameters,
+                                pgFromExpressionRuntime,
                               ]
                             ),
                             // No need to auto-apply, parent does `return $having;`
@@ -742,7 +756,7 @@ columns.`,
                   {
                     type: FieldType,
                     apply: EXPORTABLE(
-                      (codec, infix, sql) =>
+                      (codec, infix, sql, sqlValueWithCodec) =>
                         ($booleanFilter: PgBooleanFilter, input: unknown) => {
                           if (input == null) return;
                           $booleanFilter.having(
@@ -751,7 +765,7 @@ columns.`,
                             )} ${infix()} ${sqlValueWithCodec(input, codec!)})`
                           );
                         },
-                      [codec, infix, sql]
+                      [codec, infix, sql, sqlValueWithCodec]
                     ),
                     // No need to auto-apply
                   }

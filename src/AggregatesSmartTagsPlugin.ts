@@ -1,7 +1,7 @@
 import "graphile-config";
 
 import { gatherConfig } from "graphile-build";
-import { PgSmartTagsDict } from "graphile-build-pg/pg-introspection";
+import type { PgSmartTagsDict } from "graphile-build-pg/pg-introspection";
 
 // @ts-ignore
 const { version } = require("../package.json");

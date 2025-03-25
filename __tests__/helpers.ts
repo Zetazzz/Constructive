@@ -1,10 +1,11 @@
-import basePreset from "../graphile.config.js";
-import { makePgService } from "postgraphile/adaptors/pg";
-import { makeSchema } from "postgraphile";
-import { grafast } from "postgraphile/grafast";
 import { Pool } from "pg";
+import { makeSchema } from "postgraphile";
+import { makePgService } from "postgraphile/adaptors/pg";
+import { grafast } from "postgraphile/grafast";
 
-let queries: string[] = [];
+import basePreset from "../graphile.config.js";
+
+const queries: string[] = [];
 let pool: Pool | undefined;
 
 afterEach(() => {

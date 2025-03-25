@@ -3,8 +3,8 @@ import type {
   PgSelectSingleStep,
   PgSelectStep,
 } from "@dataplan/pg";
-import type { GraphQLEnumType, GraphQLObjectType } from "graphql";
 import type { ConnectionStep, GrafastFieldConfig } from "grafast";
+import type { GraphQLEnumType, GraphQLObjectType } from "graphql";
 
 const { version } = require("../package.json");
 
@@ -67,7 +67,6 @@ const Plugin: GraphileConfig.Plugin = {
       GraphQLObjectType_fields(fields, build, context) {
         const {
           graphql: { GraphQLList, GraphQLNonNull },
-          grafast: { getEnumValueConfig },
           inflection,
           EXPORTABLE,
         } = build;
@@ -181,15 +180,19 @@ const Plugin: GraphileConfig.Plugin = {
                           `Conditions on the grouped aggregates.`,
                           "arg"
                         ),
-                        applyPlan(
-                          _$parent,
-                          $pgSelect: PgSelectStep<any>,
-                          input
-                        ) {
-                          return input.apply($pgSelect, (queryBuilder) =>
-                            queryBuilder.havingBuilder()
-                          );
-                        },
+                        applyPlan: EXPORTABLE(
+                          () =>
+                            function applyPlan(
+                              _$parent,
+                              $pgSelect: PgSelectStep<any>,
+                              input
+                            ) {
+                              return input.apply($pgSelect, (queryBuilder) =>
+                                queryBuilder.havingBuilder()
+                              );
+                            },
+                          []
+                        ),
                       },
                     }
                   : null),
