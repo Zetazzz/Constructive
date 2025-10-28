@@ -4,7 +4,11 @@ import type {
   PgSelectStep,
 } from "@dataplan/pg";
 import type { ConnectionStep, GrafastFieldConfig } from "grafast";
-import type { GraphQLEnumType, GraphQLObjectType } from "graphql";
+import type {
+  GraphQLEnumType,
+  GraphQLInputType,
+  GraphQLObjectType,
+} from "graphql";
 
 const { version } = require("../package.json");
 
@@ -123,7 +127,7 @@ const Plugin: GraphileConfig.Plugin = {
         ) as GraphQLEnumType | undefined;
         const TableHavingInputType = build.getTypeByName(
           inflection.aggregateHavingInputType({ resource: table })
-        );
+        ) as GraphQLInputType;
         const tableTypeName = inflection.tableType(table.codec);
         if (!TableGroupByType || !isValidEnum(build, TableGroupByType)) {
           return fields;
@@ -146,28 +150,8 @@ const Plugin: GraphileConfig.Plugin = {
                   ),
                   applyPlan: EXPORTABLE(
                     () =>
-                      function (_$parent, $pgSelect: PgSelectStep<any>, input) {
+                      function (_$parent, $pgSelect: PgSelectStep, input) {
                         return input.apply($pgSelect);
-                        /*
-                        const $value = input.getRaw();
-                        const val = $value.eval();
-                        if (!Array.isArray(val)) {
-                          throw new Error("Invalid!");
-                        }
-                        for (const group of val) {
-                          const config = getEnumValueConfig(
-                            TableGroupByType,
-                            group
-                          );
-                          const plan = config?.extensions?.grafast?.applyPlan;
-                          if (typeof plan === "function") {
-                            plan($pgSelect);
-                          } else {
-                            // TODO: consider logging this lack of plan?
-                          }
-                        }
-                        return null;
-                          */
                       },
                     []
                   ),
@@ -184,7 +168,7 @@ const Plugin: GraphileConfig.Plugin = {
                           () =>
                             function applyPlan(
                               _$parent,
-                              $pgSelect: PgSelectStep<any>,
+                              $pgSelect: PgSelectStep,
                               input
                             ) {
                               return input.apply($pgSelect, (queryBuilder) =>
@@ -206,12 +190,7 @@ const Plugin: GraphileConfig.Plugin = {
                   },
                 []
               ),
-            } as GrafastFieldConfig<
-              any,
-              ConnectionStep<PgSelectSingleStep, PgCursorStep<any>, any>,
-              any,
-              any
-            >;
+            };
           }),
         };
       },

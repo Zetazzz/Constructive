@@ -1,5 +1,5 @@
 // @ts-check
-const { postgraphilePresetAmber } = require("postgraphile/presets/amber");
+const { PostGraphileAmberPreset } = require("postgraphile/presets/amber");
 const {
   PostGraphileConnectionFilterPreset,
 } = require("postgraphile-plugin-connection-filter");
@@ -9,7 +9,7 @@ const { makePgService } = require("@dataplan/pg/adaptors/pg");
 /** @type {GraphileConfig.Preset} */
 const preset = {
   extends: [
-    postgraphilePresetAmber,
+    PostGraphileAmberPreset,
     PostGraphileConnectionFilterPreset,
     PgAggregatesPreset,
   ],
