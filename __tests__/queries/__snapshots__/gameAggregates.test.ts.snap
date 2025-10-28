@@ -119,22 +119,15 @@ exports[`GameAggregates: result 1`] = `
 exports[`GameAggregates: sql 1`] = `
 [
   "select
-  (max(__match_stats__."points"))::text as "0",
-  (max(__match_stats__."goals"))::text as "1",
-  (max(__match_stats__."saves"))::text as "2",
-  (min(__match_stats__."points"))::text as "3"
-from "test"."match_stats" as __match_stats__;",
-  "/* UNSUPPORTED QUERY CALL! */",
-  "select
   __players__."name" as "0",
   array(
     select array[
       (count(*))::text,
       (coalesce(sum(__match_stats__."points"), '0'))::text,
-      (coalesce(sum(__match_stats__."goals"), '0'))::text,
-      (coalesce(sum(__match_stats__."saves"), '0'))::text,
       (avg(__match_stats__."points"))::text,
+      (coalesce(sum(__match_stats__."goals"), '0'))::text,
       (avg(__match_stats__."goals"))::text,
+      (coalesce(sum(__match_stats__."saves"), '0'))::text,
       (avg(__match_stats__."saves"))::text,
       (avg(__match_stats__."team_position"))::text
     ]::text[]
@@ -149,5 +142,12 @@ order by (
   from "test"."match_stats" __match_stats_2
   where (__match_stats_2."player_id" = __players__."id")
 ) asc, __players__."id" asc;",
+  "/* UNSUPPORTED QUERY CALL! */",
+  "select
+  (max(__match_stats__."points"))::text as "0",
+  (min(__match_stats__."points"))::text as "1",
+  (max(__match_stats__."goals"))::text as "2",
+  (max(__match_stats__."saves"))::text as "3"
+from "test"."match_stats" as __match_stats__;",
 ]
 `;

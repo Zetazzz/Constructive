@@ -99,7 +99,7 @@ order by (
   select avg(__match_stats_2."points")
   from "test"."match_stats" __match_stats_2
   where (__match_stats_2."player_id" = __players__."id")
-) desc, __players__."id" asc
+) desc, __players__."id" desc
 limit 5;",
 ]
 `;
