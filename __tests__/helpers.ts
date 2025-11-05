@@ -24,6 +24,8 @@ export async function getSchema() {
     });
     pool.on("error", () => {});
     pool.on("connect", (client) => {
+      // Ensure deterministic timestamp handling across environments.
+      client.query(`set time zone 'UTC'`);
       client.on("error", () => {});
       const oldQuery = client.query;
       client.query = function (...args: any) {
