@@ -1,9 +1,4 @@
-import type {
-  PgCursorStep,
-  PgSelectSingleStep,
-  PgSelectStep,
-} from "@dataplan/pg";
-import type { ConnectionStep, GrafastFieldConfig } from "grafast";
+import type { PgSelectStep } from "@dataplan/pg";
 import type {
   GraphQLEnumType,
   GraphQLInputType,
@@ -26,7 +21,7 @@ function isValidEnum(
     if (Object.keys(enumType.getValues()).length === 0) {
       return false;
     }
-  } catch (e) {
+  } catch {
     return false;
   }
   return true;

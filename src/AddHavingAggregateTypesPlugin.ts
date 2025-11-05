@@ -216,9 +216,13 @@ columns.`,
                         build.getInputTypeByName(tableHavingInputTypeName)
                       )
                     ),
-                    apply($where) {
-                      return $where;
-                    },
+                    apply: EXPORTABLE(
+                      () =>
+                        function apply($where) {
+                          return $where;
+                        },
+                      []
+                    ),
                     // No need to auto-apply, the having field calls `fieldArgs.apply(...)`
                   },
                   OR: {
@@ -330,9 +334,13 @@ columns.`,
                           : null),
                         filter: {
                           type: new GraphQLNonNull(HavingFilterType),
-                          apply($filter) {
-                            return $filter;
-                          },
+                          apply: EXPORTABLE(
+                            () =>
+                              function apply($filter) {
+                                return $filter;
+                              },
+                            []
+                          ),
                           // No need to auto-apply, parent calls `fieldArgs.apply($filter, "filter")` below
                         },
                       } as GrafastInputFieldConfigMap<any>;
@@ -698,9 +706,13 @@ columns.`,
                       { fieldName }, // e.g. 'average' or 'stddevPopulation'
                       {
                         type: SpecInput,
-                        apply($having) {
-                          return $having;
-                        },
+                        apply: EXPORTABLE(
+                          () =>
+                            function apply($having) {
+                              return $having;
+                            },
+                          []
+                        ),
                         // No need to auto-apply, `filter` field does `return new PgBooleanFilter($having, aggregateExpression)`
                       }
                     ),
