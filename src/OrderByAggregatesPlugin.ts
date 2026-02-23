@@ -1,4 +1,5 @@
 import type {
+  PgCodecAttribute,
   PgCodecRelation,
   PgCodecWithAttributes,
   PgResource,
@@ -7,6 +8,7 @@ import type {
 import type { GraphQLEnumValueConfigMap } from "graphql";
 import type { SQL } from "pg-sql2";
 
+import { EXPORTABLE } from "./EXPORTABLE.js";
 import type { AggregateSpec } from "./interfaces.js";
 
 const { version } = require("../package.json");
@@ -43,6 +45,98 @@ declare global {
     }
   }
 }
+
+const pgAggregatesApplyOrderByTotalCount = EXPORTABLE(
+  () =>
+    (
+      TYPES: GraphileBuild.Build["dataplanPg"]["TYPES"],
+      direction: "ASC" | "DESC",
+      relation: PgCodecRelation,
+      sql: GraphileBuild.Build["sql"],
+      table: PgResource,
+      $select: PgSelectQueryBuilder
+    ) => {
+      const foreignTableAlias = $select.alias;
+      const conditions: SQL[] = [];
+      const tableAlias = sql.identifier(Symbol(table.name));
+      (relation.localAttributes as string[]).forEach((localAttribute, i) => {
+        const remoteAttribute = relation.remoteAttributes[i] as string;
+        conditions.push(
+          sql.fragment`${tableAlias}.${sql.identifier(
+            remoteAttribute
+          )} = ${foreignTableAlias}.${sql.identifier(localAttribute)}`
+        );
+      });
+      if (typeof table.from === "function") {
+        throw new Error(`Function source unsupported`);
+      }
+      // TODO: refactor this to use joins instead of subqueries
+      const fragment = sql`(${sql.indent`select count(*)
+from ${table.from} ${tableAlias}
+where ${sql.parens(
+        sql.join(
+          conditions.map((c) => sql.parens(c)),
+          " AND "
+        )
+      )}`})`;
+      $select.orderBy({
+        fragment,
+        codec: TYPES.bigint,
+        direction,
+      });
+    },
+  [],
+  "pgAggregatesApplyOrderByTotalCount"
+);
+
+const pgAggregatesApplyOrderByAttribute = EXPORTABLE(
+  () =>
+    (
+      aggregateSpec: AggregateSpec,
+      attribute: PgCodecAttribute,
+      attributeName: string,
+      direction: "ASC" | "DESC",
+      relation: PgCodecRelation,
+      sql: GraphileBuild.Build["sql"],
+      table: PgResource,
+      $select: PgSelectQueryBuilder
+    ) => {
+      const foreignTableAlias = $select.alias;
+      const conditions: SQL[] = [];
+      const tableAlias = sql.identifier(Symbol(table.name));
+      (relation.localAttributes as string[]).forEach((localAttribute, i) => {
+        const remoteAttribute = relation.remoteAttributes[i] as string;
+        conditions.push(
+          sql.fragment`${tableAlias}.${sql.identifier(
+            remoteAttribute
+          )} = ${foreignTableAlias}.${sql.identifier(localAttribute)}`
+        );
+      });
+      if (typeof table.from === "function") {
+        throw new Error(`Function source unsupported`);
+      }
+      // TODO: refactor this to use joins instead of subqueries
+      const fragment = sql`(${sql.indent`
+select ${aggregateSpec.sqlAggregateWrap(
+        sql.fragment`${tableAlias}.${sql.identifier(attributeName)}`,
+        attribute.codec
+      )}
+from ${table.from} ${tableAlias}
+where ${sql.join(
+        conditions.map((c) => sql.parens(c)),
+        " AND "
+      )}`})`;
+      $select.orderBy({
+        fragment,
+        codec:
+          aggregateSpec.pgTypeCodecModifier?.(attribute.codec) ??
+          attribute.codec,
+        direction,
+      });
+    },
+  [],
+  "pgAggregatesApplyOrderByAttribute"
+);
 
 export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
   name: "PgAggregatesOrderByAggregatesPlugin",
@@ -152,44 +246,32 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
 
             const makeTotalCountApply = (direction: "ASC" | "DESC") => {
               return EXPORTABLE(
-                (TYPES, direction, relation, sql, table) =>
+                (
+                  TYPES,
+                  direction,
+                  pgAggregatesApplyOrderByTotalCount,
+                  relation,
+                  sql,
+                  table
+                ) =>
                   function apply($select: PgSelectQueryBuilder) {
-                    const foreignTableAlias = $select.alias;
-                    const conditions: SQL[] = [];
-                    const tableAlias = sql.identifier(Symbol(table.name));
-                    (relation.localAttributes as string[]).forEach(
-                      (localAttribute, i) => {
-                        const remoteAttribute = relation.remoteAttributes[
-                          i
-                        ] as string;
-                        conditions.push(
-                          sql.fragment`${tableAlias}.${sql.identifier(
-                            remoteAttribute
-                          )} = ${foreignTableAlias}.${sql.identifier(
-                            localAttribute
-                          )}`
-                        );
-                      }
-                    );
-                    if (typeof table.from === "function") {
-                      throw new Error(`Function source unsupported`);
-                    }
-                    // TODO: refactor this to use joins instead of subqueries
-                    const fragment = sql`(${sql.indent`select count(*)
-from ${table.from} ${tableAlias}
-where ${sql.parens(
-                      sql.join(
-                        conditions.map((c) => sql.parens(c)),
-                        " AND "
-                      )
-                    )}`})`;
-                    $select.orderBy({
-                      fragment,
-                      codec: TYPES.bigint,
+                    pgAggregatesApplyOrderByTotalCount(
+                      TYPES,
                       direction,
-                    });
+                      relation,
+                      sql,
+                      table,
+                      $select
+                    );
                   },
-                [TYPES, direction, relation, sql, table]
+                [
+                  TYPES,
+                  direction,
+                  pgAggregatesApplyOrderByTotalCount,
+                  relation,
+                  sql,
+                  table,
+                ]
               );
             };
 
@@ -262,58 +344,29 @@ where ${sql.parens(
                       attribute,
                       attributeName,
                       direction,
+                      pgAggregatesApplyOrderByAttribute,
                       relation,
                       sql,
                       table
                     ) =>
                       function apply($select: PgSelectQueryBuilder) {
-                        const foreignTableAlias = $select.alias;
-                        const conditions: SQL[] = [];
-                        const tableAlias = sql.identifier(Symbol(table.name));
-                        (relation.localAttributes as string[]).forEach(
-                          (localAttribute, i) => {
-                            const remoteAttribute = relation.remoteAttributes[
-                              i
-                            ] as string;
-                            conditions.push(
-                              sql.fragment`${tableAlias}.${sql.identifier(
-                                remoteAttribute
-                              )} = ${foreignTableAlias}.${sql.identifier(
-                                localAttribute
-                              )}`
-                            );
-                          }
-                        );
-                        if (typeof table.from === "function") {
-                          throw new Error(`Function source unsupported`);
-                        }
-                        // TODO: refactor this to use joins instead of subqueries
-                        const fragment = sql`(${sql.indent`
-select ${aggregateSpec.sqlAggregateWrap(
-                          sql.fragment`${tableAlias}.${sql.identifier(
-                            attributeName
-                          )}`,
-                          attribute.codec
-                        )}
-from ${table.from} ${tableAlias}
-where ${sql.join(
-                          conditions.map((c) => sql.parens(c)),
-                          " AND "
-                        )}`})`;
-                        $select.orderBy({
-                          fragment,
-                          codec:
-                            aggregateSpec.pgTypeCodecModifier?.(
-                              attribute.codec
-                            ) ?? attribute.codec,
+                        pgAggregatesApplyOrderByAttribute(
+                          aggregateSpec,
+                          attribute,
+                          attributeName,
                           direction,
-                        });
+                          relation,
+                          sql,
+                          table,
+                          $select
+                        );
                       },
                     [
                       aggregateSpec,
                       attribute,
                       attributeName,
                       direction,
+                      pgAggregatesApplyOrderByAttribute,
                       relation,
                       sql,
                       table,
