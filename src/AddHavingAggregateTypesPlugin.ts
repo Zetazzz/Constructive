@@ -9,6 +9,7 @@ import type {
   PgResource,
   PgResourceParameter,
   PgSelectArgumentDigest,
+  sql,
 } from "@dataplan/pg";
 import type {
   GrafastInputFieldConfigMap,
@@ -19,12 +20,13 @@ import type {
   GraphQLInputType,
   GraphQLNamedType,
 } from "graphql";
-import type { SQL } from "pg-sql2";
 
 import { EXPORTABLE } from "./EXPORTABLE.js";
 import type { AggregateSpec } from "./interfaces.js";
 import { CORE_HAVING_FILTER_SPECS } from "./interfaces.js";
 import { getComputedAttributeResources } from "./utils.js";
+
+type SQL = ReturnType<typeof sql>;
 
 const { version } = require("../package.json");
 
@@ -414,7 +416,8 @@ columns.`,
                       const { argDetails } =
                         build.pgGetArgDetailsFromParameters(
                           computedAttributeResource,
-                          computedAttributeResource.parameters!.slice(1)
+                          computedAttributeResource.parameters,
+                          1
                         );
                       return argDetails.reduce(
                         (memo, { inputType, graphqlArgName }) => {
@@ -463,7 +466,7 @@ columns.`,
                         computedAttributeResource.parameters as PgResourceParameter[]
                       )
                         .slice(1)
-                        .some((p) => p.required);
+                        .some((p) => !p.optional);
                       return {
                         ...(ArgsType
                           ? {
@@ -653,10 +656,14 @@ columns.`,
                         const { makeArgsRuntime } =
                           build.pgGetArgDetailsFromParameters(
                             computedAttributeResource,
-                            parameters!.slice(1)
+                            parameters,
+                            1
                           );
-                        const parameterAnalysis = generatePgParameterAnalysis(
-                          parameters!
+                        const parameterAnalysis = EXPORTABLE(
+                          (generatePgParameterAnalysis, parameters) =>
+                            generatePgParameterAnalysis(parameters!),
+                          [generatePgParameterAnalysis, parameters],
+                          `${computedAttributeResource.name}ParameterAnalysis`
                         );
                         const from =
                           typeof rawFrom === "function"
