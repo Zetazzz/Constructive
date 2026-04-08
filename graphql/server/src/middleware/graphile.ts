@@ -162,6 +162,14 @@ const creatingTenants = new Map<string, Promise<TenantInstance>>();
  */
 export { getMultiTenancyCacheStats };
 
+/**
+ * Evict a single tenant from the local tenantInstances map.
+ * Called by the flush handler when a schema update invalidates a tenant.
+ */
+export function flushTenantInstance(key: string): void {
+  tenantInstances.delete(key);
+}
+
 // =============================================================================
 // Preset builders
 // =============================================================================
@@ -255,6 +263,9 @@ const buildMultiTenancyPreset = (
         schemas
       })
     ],
+    gather: {
+      pgIdentifiers: 'dynamic' as 'qualified',
+    },
     grafserv: {
       graphqlPath: '/graphql',
       graphiqlPath: '/graphiql',

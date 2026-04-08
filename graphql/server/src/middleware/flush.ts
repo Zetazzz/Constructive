@@ -3,8 +3,10 @@ import { Logger } from '@pgpmjs/logger';
 import { svcCache } from '@pgpmjs/server-utils';
 import { NextFunction, Request, Response } from 'express';
 import { graphileCache } from 'graphile-cache';
+import { onTenantEvicted } from 'graphile-multi-tenancy-cache';
 import { getPgPool } from 'pg-cache';
 import './types'; // for Request type
+import { useMultiTenancyCache, flushTenantInstance } from './graphile';
 
 const log = new Logger('flush');
 
@@ -15,8 +17,13 @@ export const flush = async (
 ): Promise<void> => {
   if (req.url === '/flush') {
     // TODO: check bearer for a flush / special key
-    graphileCache.delete((req as any).svc_key);
-    svcCache.delete((req as any).svc_key);
+    const key = (req as any).svc_key;
+    graphileCache.delete(key);
+    svcCache.delete(key);
+    if (useMultiTenancyCache && key) {
+      onTenantEvicted(key);
+      flushTenantInstance(key);
+    }
     res.status(200).send('OK');
     return;
   }
@@ -39,6 +46,10 @@ export const flushService = async (
       if (api.test(k) || schemata.test(k) || meta.test(k)) {
         graphileCache.delete(k);
         svcCache.delete(k);
+        if (useMultiTenancyCache) {
+          onTenantEvicted(k);
+          flushTenantInstance(k);
+        }
       }
     });
   }
@@ -62,6 +73,10 @@ export const flushService = async (
     if (key) {
       graphileCache.delete(key);
       svcCache.delete(key);
+      if (useMultiTenancyCache) {
+        onTenantEvicted(key);
+        flushTenantInstance(key);
+      }
     }
   }
 };

@@ -146,6 +146,15 @@ export interface MultiTenancyCacheStats {
 
 const creatingTemplates = new Map<string, Promise<RegistryTemplate>>();
 
+/**
+ * Tracks dedicated (non-shared) PostGraphile instances so they can be
+ * properly released during shutdown.
+ */
+const dedicatedInstances = new Map<string, {
+  pgl: ReturnType<typeof postgraphile>;
+  httpServer: import('node:http').Server;
+}>();
+
 // =============================================================================
 // Core Multi-Tenancy Cache Functions
 // =============================================================================
@@ -325,6 +334,9 @@ async function createDedicatedInstance(
   await serv.addTo(handler, httpServer);
   await serv.ready();
 
+  // Track for proper cleanup during shutdown
+  dedicatedInstances.set(config.cacheKey, { pgl, httpServer });
+
   return {
     handler,
     isShared: false,
@@ -361,11 +373,24 @@ export function getMultiTenancyCacheStats(): MultiTenancyCacheStats {
 }
 
 /**
- * Shut down all templates and release resources.
+ * Shut down all templates and dedicated instances, releasing resources.
  */
 export async function shutdownMultiTenancyCache(): Promise<void> {
   log.info('Shutting down multi-tenancy cache...');
   creatingTemplates.clear();
+
+  // Release dedicated (non-shared) instances
+  for (const [key, { pgl, httpServer }] of dedicatedInstances) {
+    try {
+      await pgl.release();
+      httpServer.close();
+      log.debug(`Released dedicated instance: ${key}`);
+    } catch (err) {
+      log.warn(`Error releasing dedicated instance ${key}:`, err);
+    }
+  }
+  dedicatedInstances.clear();
+
   await clearAllTemplates();
   log.info('Multi-tenancy cache shut down');
 }
