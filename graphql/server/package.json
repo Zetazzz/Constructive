@@ -62,6 +62,7 @@
     "graphile-build": "5.0.0",
     "graphile-build-pg": "5.0.0",
     "graphile-cache": "workspace:^",
+    "graphile-multi-tenancy-cache": "workspace:^",
     "graphile-config": "1.0.0",
     "graphile-settings": "workspace:^",
     "graphile-utils": "5.0.0",

@@ -1229,6 +1229,9 @@ importers:
       graphile-config:
         specifier: 1.0.0
         version: 1.0.0
+      graphile-multi-tenancy-cache:
+        specifier: workspace:^
+        version: link:../../graphile/graphile-multi-tenancy-cache/dist
       graphile-settings:
         specifier: workspace:^
         version: link:../../graphile/graphile-settings/dist

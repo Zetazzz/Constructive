@@ -15,6 +15,12 @@ declare global {
       databaseId?: string;
       requestId?: string;
       token?: ConstructiveAPIToken;
+      /**
+       * Per-request SQL text transform for multi-tenancy schema remapping.
+       * When set, replaces `__pgmt_<schema>__` placeholders in compiled SQL
+       * with the real tenant schema names at execution time.
+       */
+      sqlTextTransform?: ((text: string) => string) | null;
     }
   }
 }

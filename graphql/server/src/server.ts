@@ -1,24 +1,25 @@
 import { getEnvOptions } from '@constructive-io/graphql-env';
 import type { ConstructiveOptions } from '@constructive-io/graphql-types';
+import { middleware as parseDomains } from '@constructive-io/url-domains';
 import { Logger } from '@pgpmjs/logger';
 import { healthz, poweredBy, svcCache, trustProxy } from '@pgpmjs/server-utils';
 import { PgpmOptions } from '@pgpmjs/types';
-import { middleware as parseDomains } from '@constructive-io/url-domains';
 import express, { Express, RequestHandler } from 'express';
-import type { Server as HttpServer } from 'http';
+import { closeAllCaches,graphileCache } from 'graphile-cache';
 import graphqlUpload from 'graphql-upload';
+import type { Server as HttpServer } from 'http';
 import { Pool, PoolClient } from 'pg';
-import { graphileCache, closeAllCaches } from 'graphile-cache';
 import { getPgPool } from 'pg-cache';
 import requestIp from 'request-ip';
 
-import type { DebugSamplerHandle } from './diagnostics/debug-sampler';
 import { closeDebugDatabasePools } from './diagnostics/debug-db-snapshot';
+import type { DebugSamplerHandle } from './diagnostics/debug-sampler';
+import { startDebugSampler } from './diagnostics/debug-sampler';
 import {
   isDevelopmentObservabilityMode,
   isGraphqlObservabilityEnabled,
   isGraphqlObservabilityRequested,
-  isLoopbackHost,
+  isLoopbackHost
 } from './diagnostics/observability';
 import { createApiMiddleware } from './middleware/api';
 import { createAuthenticateMiddleware } from './middleware/auth';
@@ -26,6 +27,7 @@ import { cors } from './middleware/cors';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { favicon } from './middleware/favicon';
 import { flush, flushService } from './middleware/flush';
+import { shutdownMultiTenancy,useMultiTenancyCache } from './middleware/graphile';
 import { graphile } from './middleware/graphile';
 import { multipartBridge } from './middleware/multipart-bridge';
 import { createDebugDatabaseMiddleware } from './middleware/observability/debug-db';
@@ -33,7 +35,6 @@ import { debugMemory } from './middleware/observability/debug-memory';
 import { localObservabilityOnly } from './middleware/observability/guard';
 import { createRequestLogger } from './middleware/observability/request-logger';
 import { createUploadAuthenticateMiddleware, uploadRoute } from './middleware/upload';
-import { startDebugSampler } from './diagnostics/debug-sampler';
 
 const log = new Logger('server');
 
@@ -101,7 +102,7 @@ class Server {
       exposedSchemas: apiOpts.exposedSchemas?.join(',') || 'none',
       anonRole: apiOpts.anonRole,
       roleName: apiOpts.roleName,
-      observabilityEnabled,
+      observabilityEnabled
     });
 
     if (observabilityRequested && !observabilityEnabled) {
@@ -116,7 +117,7 @@ class Server {
       log.warn(
         `GRAPHQL_OBSERVABILITY_ENABLED was requested but observability remains disabled${
           reasons.length > 0 ? `: ${reasons.join('; ')}` : ''
-        }`,
+        }`
       );
     }
 
@@ -136,7 +137,7 @@ class Server {
     if (fallbackOrigin && process.env.NODE_ENV === 'production') {
       if (fallbackOrigin === '*') {
         log.warn(
-          'CORS wildcard ("*") is enabled in production; this effectively disables CORS and is not recommended. Prefer per-API CORS via meta schema.',
+          'CORS wildcard ("*") is enabled in production; this effectively disables CORS and is not recommended. Prefer per-API CORS via meta schema.'
         );
       } else {
         log.warn(`CORS override origin set to ${fallbackOrigin} in production. Prefer per-API CORS via meta schema.`);
@@ -147,7 +148,7 @@ class Server {
     app.use(cors(fallbackOrigin));
     app.use('/graphql', graphqlUpload.graphqlUploadExpress({
       maxFileSize: 10 * 1024 * 1024, // 10 MB
-      maxFiles: 10,
+      maxFiles: 10
     }));
 
     // Rewrite Content-Type after graphql-upload so grafserv accepts the request
@@ -172,7 +173,7 @@ class Server {
   listen(): HttpServer {
     const { server } = this.opts;
     const httpServer = this.app.listen(server?.port, server?.host, () =>
-      log.info(`listening at http://${server?.host}:${server?.port}`),
+      log.info(`listening at http://${server?.host}:${server?.port}`)
     );
 
     httpServer.on('error', (err: NodeJS.ErrnoException) => {
@@ -290,6 +291,9 @@ class Server {
   static async closeCaches(opts: { closePools?: boolean } = {}): Promise<void> {
     const { closePools = false } = opts;
     svcCache.clear();
+    if (useMultiTenancyCache) {
+      await shutdownMultiTenancy();
+    }
     // Use closeAllCaches to properly await async disposal of PostGraphile instances
     // before closing pg pools - this ensures all connections are released
     if (closePools) {
