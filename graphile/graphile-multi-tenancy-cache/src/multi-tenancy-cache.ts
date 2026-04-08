@@ -337,7 +337,7 @@ async function createDedicatedInstance(
 
 /**
  * Notify the multi-tenancy cache that a tenant has been evicted.
- * Should be called from the graphile-cache eviction handler.
+ * Should be called when a tenant's cache entry is evicted.
  */
 export function onTenantEvicted(cacheKey: string): void {
   deregisterTenant(cacheKey);

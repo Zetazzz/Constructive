@@ -1,24 +1,60 @@
 # graphile-multi-tenancy-cache
 
-Template-based multi-tenancy plugin for PostGraphile v5. Allows hundreds of database schemas with identical structures to share the same `PgRegistry` and `GraphQLSchema` objects in memory, drastically reducing RAM usage and startup time.
+Template-based multi-tenancy cache for PostGraphile v5. Allows hundreds of database schemas with identical structures to share the same `PgRegistry` and `GraphQLSchema` objects in memory, reducing RAM usage from O(N) to O(K) where K is the number of unique schema structures.
 
 ## How It Works
 
 1. **Fingerprinting**: Each tenant's schema structure is hashed (SHA-256), ignoring the namespace name. `tenant_a.users` and `tenant_b.users` produce the same fingerprint.
 
-2. **Template Sharing**: A global `Map<Fingerprint, RegistryTemplate>` stores built PostGraphile instances. When a new tenant matches an existing fingerprint, the cached instance is reused.
+2. **Template Sharing**: A global `Map<Fingerprint, RegistryTemplate>` stores built PostGraphile instances. When a new tenant matches an existing fingerprint, the cached instance is reused — zero additional memory, zero build time.
 
-3. **Dynamic SQL Identifiers** (Crystal-Level): The preset uses `pgIdentifiers: "dynamic"` which wraps schema names in `__pgmt_<schemaName>__` placeholders during the build phase. At execution time, `PgExecutorContext.sqlTextTransform` replaces these placeholders with the real tenant schema names.
+3. **Dynamic SQL Identifiers**: Uses `pgIdentifiers: "dynamic"` (from [crystal](https://github.com/Zetazzz/crystal/pull/5)) to wrap schema names in `__pgmt_<schemaName>__` placeholders during the build phase. At execution time, `PgExecutorContext.sqlTextTransform` replaces these placeholders with the real tenant schema names per-request.
 
-This approach correctly handles **multi-schema tenants** where different schemas contain tables with the same name (e.g., `t_1_app.users` and `t_1_perf.users`), because the fully qualified identifiers are preserved and remapped independently per-request.
+4. **Single-Flight Pattern**: Concurrent requests for the same fingerprint are coalesced — only one PostGraphile build occurs, and all waiting requests share the result.
 
-## Crystal Dependencies
+This approach correctly handles **multi-schema tenants** where different schemas contain tables with the same name (e.g., `t_1_app.users` and `t_1_perf.users`), because the fully qualified identifiers are preserved and remapped independently.
 
-This package requires the following crystal-level changes (see [crystal PR](https://github.com/Zetazzz/crystal/pull/5)):
+## Server Integration
 
-- **`PgExecutorContext.sqlTextTransform`** — Optional callback on `@dataplan/pg`'s executor context that transforms SQL text before execution.
-- **`pgIdentifiers: "dynamic"`** — New mode in `PgBasicsPlugin` that wraps schema names in `__pgmt__` placeholders.
-- **`buildSchemaRemapTransform()`** — Utility in `graphile-build-pg` for creating the transform function.
+The cache integrates into `graphql/server` via a dual-mode toggle:
+
+```bash
+# Enable multi-tenancy cache (default: uses legacy graphile-cache)
+USE_MULTI_TENANCY_CACHE=true
+```
+
+When enabled, the server middleware:
+- Introspects and fingerprints each tenant's schema on first request
+- Shares PostGraphile instances across structurally identical tenants
+- Injects `sqlTextTransform` per-request for schema remapping
+- Falls back to a dedicated instance if fingerprinting fails
+
+## API
+
+```typescript
+import {
+  getOrCreateTenantInstance,
+  getMultiTenancyCacheStats,
+  shutdownMultiTenancyCache,
+} from 'graphile-multi-tenancy-cache';
+
+const instance = await getOrCreateTenantInstance(
+  {
+    cacheKey: 'tenant-abc',
+    pool: pgPool,
+    schemas: ['t_abc_app', 't_abc_perf'],
+    dbname: 'mydb',
+    anonRole: 'anonymous',
+    roleName: 'authenticated',
+  },
+  buildPreset,
+);
+
+// instance.handler       — Express app (shared across identical tenants)
+// instance.isShared      — true if the template was reused
+// instance.sqlTextTransform — inject into PgExecutorContext per-request
+// instance.pgSettings    — pgSettings with search_path for this tenant
+```
 
 ## Key Modules
 
@@ -30,57 +66,14 @@ This package requires the following crystal-level changes (see [crystal PR](http
 | `dynamic-schema.ts` | SQL text transformation utilities for schema remapping |
 | `introspection.ts` | Fetch and parse database introspection data |
 
-## Usage
+## Performance
 
-```typescript
-import { getOrCreateTenantInstance } from 'graphile-multi-tenancy-cache';
+Tested end-to-end through `graphql/server` middleware with `apiIsPublic=false`, k=20 tenant databases:
 
-const instance = await getOrCreateTenantInstance(
-  {
-    cacheKey: 'tenant-abc',
-    pool: pgPool,
-    schemas: ['t_abc_app', 't_abc_perf'],
-    dbname: 'mydb',
-    anonRole: 'anonymous',
-    roleName: 'authenticated',
-  },
-  buildPreset, // must include gather: { pgIdentifiers: 'dynamic' }
-);
-
-// instance.handler — Express app (shared with other tenants of same structure)
-// instance.isShared — true if the template was reused
-// instance.sqlTextTransform — function to inject into PgExecutorContext
-// instance.pgSettings — pgSettings to inject per-request
-```
-
-### Preset Builder
-
-Your preset builder **must** include `pgIdentifiers: "dynamic"`:
-
-```typescript
-function buildPreset(pool, schemas, anonRole, roleName) {
-  return {
-    extends: [PostGraphileAmberPreset],
-    pgServices: [makePgService({ pool, schemas })],
-    gather: {
-      pgIdentifiers: 'dynamic', // REQUIRED for multi-tenancy
-    },
-  };
-}
-```
-
-## Demo
-
-```bash
-cd graphile/graphile-multi-tenancy-cache
-PGDATABASE=constructive pnpm demo
-```
-
-The demo creates two multi-schema tenants (`t_1_app`/`t_1_perf` and `t_2_app`/`t_2_perf`) with overlapping table names, then verifies that the SQL text transformation correctly rewrites `"__pgmt_t_1_app__"` → `"t_2_app"` for tenant 2.
-
-## Benchmark
-
-```bash
-cd graphile/graphile-multi-tenancy-cache
-PGDATABASE=constructive BENCHMARK_TENANTS=10 ts-node src/benchmark.ts
-```
+| Metric | Legacy (graphile-cache) | Multi-Tenancy Cache | Improvement |
+|--------|------------------------|---------------------|-------------|
+| Warmup heap growth | +759.5 MB | -0.5 MB | 99.9% less |
+| Graphile builds | 589 (LRU churn) | 0 (1 shared template) | 589 → 0 |
+| RPS | 18.6 | 1,984.3 | 107x faster |
+| p99 latency | 2,393 ms | 19 ms | 126x faster |
+| Final heap | 673 MB | 76 MB | 89% less |

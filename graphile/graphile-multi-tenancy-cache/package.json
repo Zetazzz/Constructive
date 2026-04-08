@@ -26,21 +26,16 @@
     "build:dev": "makage build --dev",
     "lint": "eslint . --fix",
     "test": "jest --passWithNoTests",
-    "test:watch": "jest --watch",
-    "demo": "ts-node src/demo.ts"
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@pgpmjs/logger": "workspace:^",
     "express": "^5.2.1",
     "grafserv": "1.0.0",
-    "graphile-cache": "workspace:^",
     "graphile-config": "1.0.0",
-    "lru-cache": "^11.2.7",
     "pg": "^8.11.3",
-    "pg-cache": "workspace:^",
     "pg-env": "workspace:^",
     "pg-introspection": "1.0.0",
-    "pg-sql2": "5.0.0",
     "postgraphile": "5.0.0"
   },
   "devDependencies": {

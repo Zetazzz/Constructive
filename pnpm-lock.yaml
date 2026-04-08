@@ -290,30 +290,18 @@ importers:
       grafserv:
         specifier: 1.0.0
         version: 1.0.0(@types/node@25.5.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(grafast@1.0.0(graphql@16.13.0))(graphile-config@1.0.0)(graphql@16.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))(ws@8.19.0)
-      graphile-cache:
-        specifier: workspace:^
-        version: link:../graphile-cache/dist
       graphile-config:
         specifier: 1.0.0
         version: 1.0.0
-      lru-cache:
-        specifier: ^11.2.7
-        version: 11.2.7
       pg:
         specifier: ^8.11.3
         version: 8.20.0
-      pg-cache:
-        specifier: workspace:^
-        version: link:../../postgres/pg-cache/dist
       pg-env:
         specifier: workspace:^
         version: link:../../postgres/pg-env/dist
       pg-introspection:
         specifier: 1.0.0
         version: 1.0.0
-      pg-sql2:
-        specifier: 5.0.0
-        version: 5.0.0
       postgraphile:
         specifier: 5.0.0
         version: 5.0.0(f35d86129e8192df0ebe9574df8f7655)
