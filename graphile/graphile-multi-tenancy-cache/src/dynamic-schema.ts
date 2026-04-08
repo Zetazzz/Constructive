@@ -2,30 +2,41 @@
  * Dynamic Schema Resolution
  *
  * The "Placeholder" Pattern: allows a shared PgRegistry to execute against
- * different physical schemas by overriding the SQL identifier generation.
+ * different physical schemas by leveraging crystal-level hooks:
  *
- * Instead of returning a static `sql.identifier(schemaName, tableName)`,
- * the identifier helper returns a dynamic SQL fragment that resolves the
- * physical schema name at execution time from the GraphQL context.
+ * 1. `pgIdentifiers: "dynamic"` in PgBasicsPlugin wraps schema names in
+ *    `__pgmt_<schemaName>__` placeholders during the gather/build phase.
  *
- * This is the key mechanism that makes template-based multi-tenancy work:
- * - Build phase: One PgRegistry is built using a "template" schema
- * - Execution phase: The SQL identifier is rewritten to point to the actual
- *   tenant's physical schema, read from `context.pgSettings['tenantSchema']`
- *   or similar.
+ * 2. `PgExecutorContext.sqlTextTransform` replaces those placeholders with
+ *    real tenant schema names at execution time, per-request.
+ *
+ * This approach handles the multi-schema case correctly — even when
+ * different schemas contain tables with the same name (e.g., both
+ * `t_1_app.users` and `t_1_perf.users`), the fully qualified identifiers
+ * are preserved and remapped independently.
  */
 
 import { Logger } from '@pgpmjs/logger';
-import type { SQL } from 'pg-sql2';
-import sql from 'pg-sql2';
 
 const log = new Logger('multi-tenancy-cache:dynamic-schema');
 
 /**
- * Context key used to pass the tenant's physical schema name at runtime.
+ * The prefix used by PgBasicsPlugin's "dynamic" mode to wrap schema names.
+ * Must match the crystal-level PGMT_PREFIX constant.
+ */
+export const PGMT_PREFIX = '__pgmt_';
+
+/**
+ * The suffix used by PgBasicsPlugin's "dynamic" mode to wrap schema names.
+ * Must match the crystal-level PGMT_SUFFIX constant.
+ */
+export const PGMT_SUFFIX = '__';
+
+/**
+ * Context key used to pass the tenant's schema mapping at runtime.
  * This should be set in the Grafast context callback from the request.
  */
-export const TENANT_SCHEMA_CONTEXT_KEY = 'tenantSchema';
+export const TENANT_SCHEMA_CONTEXT_KEY = 'tenantSchemaMap';
 
 /**
  * Schema mapping: maps template schema names to tenant schema names.
@@ -39,63 +50,56 @@ export interface SchemaMapping {
 }
 
 /**
- * Create a dynamic SQL identifier that resolves the schema name at runtime.
+ * Build a `sqlTextTransform` function that replaces dynamic schema
+ * placeholders in compiled SQL with real tenant schema names.
  *
- * This replaces the static `sql.identifier(schema, table)` with a fragment
- * that uses `current_setting()` to read the tenant schema from the session.
+ * When `pgIdentifiers: "dynamic"` is used, the compiled SQL contains
+ * identifiers like `"__pgmt_app_public__"."users"`. This transform
+ * replaces `"__pgmt_app_public__"` with `"tenant_42_public"`.
  *
- * The PostgreSQL session variable is set via `SET LOCAL "tenantSchema" = 'xxx'`
- * in the pgSettings of the Grafast context.
- *
- * @param templateSchema - The template schema name used during build
- * @param tableName - The table/view/function name
- * @param schemaMappings - Optional explicit mappings for multi-schema tenants
- * @returns SQL fragment that resolves dynamically
+ * @param schemaMap - A mapping from template schema names to real
+ *   tenant schema names. E.g. `{ app_public: 'tenant_42_public' }`.
+ * @returns A function suitable for `PgExecutorContext.sqlTextTransform`.
  */
-export function dynamicIdentifier(
-  templateSchema: string,
-  tableName: string,
-  schemaMappings?: SchemaMapping[],
-): SQL {
-  // If explicit mappings are provided, use the mapped schema
-  // Otherwise, use the single tenant schema from session settings
-  if (schemaMappings && schemaMappings.length > 0) {
-    const mapping = schemaMappings.find((m) => m.templateSchema === templateSchema);
-    if (mapping) {
-      // Use the mapped tenant schema
-      return sql.fragment`${sql.identifier(mapping.tenantSchema)}.${sql.identifier(tableName)}`;
-    }
+export function buildSchemaRemapTransform(
+  schemaMap: Record<string, string>,
+): (text: string) => string {
+  const entries = Object.entries(schemaMap);
+  if (entries.length === 0) {
+    return (text: string) => text;
   }
 
-  // Default: use current_setting to resolve at runtime
-  // This reads the 'tenantSchema' session variable set via pgSettings
-  return sql.fragment`(current_setting(${sql.literal(`app.${TENANT_SCHEMA_CONTEXT_KEY}`)})::text || '.' || ${sql.literal(tableName)})::regclass`;
-}
+  // Pre-compute the search/replace pairs for efficiency.
+  // In compiled SQL, the placeholder appears as a quoted identifier:
+  //   "__pgmt_original_schema__"
+  // We replace it with the quoted real schema name:
+  //   "real_schema"
+  const replacements: Array<[search: string, replace: string]> = entries.map(
+    ([templateSchema, realSchema]) => [
+      `"${PGMT_PREFIX}${templateSchema}${PGMT_SUFFIX}"`,
+      `"${realSchema}"`,
+    ],
+  );
 
-/**
- * Create a static identifier with a specific schema override.
- * Used when the tenant schema is known at handler-creation time.
- *
- * This is the simpler approach: instead of runtime resolution via
- * current_setting(), we just rewrite the identifiers when creating
- * the per-tenant handler.
- *
- * @param schemaName - The tenant's physical schema name
- * @param tableName - The table/view/function name
- * @returns SQL fragment with the tenant's schema
- */
-export function staticSchemaIdentifier(
-  schemaName: string,
-  tableName: string,
-): SQL {
-  return sql.fragment`${sql.identifier(schemaName)}.${sql.identifier(tableName)}`;
+  return (text: string): string => {
+    let result = text;
+    for (let i = 0, l = replacements.length; i < l; i++) {
+      const [search, replace] = replacements[i];
+      // Use split+join for global replacement (avoids regex escaping issues)
+      result = result.split(search).join(replace);
+    }
+    return result;
+  };
 }
 
 /**
  * Build pgSettings that inject the tenant schema into the PostgreSQL session.
  * These settings are merged into the Grafast context's pgSettings.
  *
- * @param tenantSchemas - The tenant's schema names (maps from template schemas)
+ * Also sets `search_path` to include all tenant schemas for functions
+ * or queries that may use unqualified names internally.
+ *
+ * @param tenantSchemas - The tenant's schema names
  * @returns pgSettings object with tenant schema session variables
  */
 export function buildTenantPgSettings(
@@ -103,13 +107,10 @@ export function buildTenantPgSettings(
 ): Record<string, string> {
   const settings: Record<string, string> = {};
 
-  // Set the primary tenant schema
-  if (tenantSchemas.length > 0) {
-    settings[`app.${TENANT_SCHEMA_CONTEXT_KEY}`] = tenantSchemas[0];
-  }
-
   // Set the search_path to include all tenant schemas
-  settings['search_path'] = tenantSchemas.map((s) => `"${s}"`).join(', ');
+  if (tenantSchemas.length > 0) {
+    settings['search_path'] = tenantSchemas.map((s) => `"${s}"`).join(', ');
+  }
 
   return settings;
 }
@@ -140,4 +141,24 @@ export function remapSchemas(
     }
     return schema;
   });
+}
+
+/**
+ * Build a schema-name mapping from template schemas to tenant schemas.
+ *
+ * @param templateSchemas - The schema names used when building the template
+ * @param tenantSchemas - The tenant's actual schema names (same order)
+ * @returns Record mapping template schema name -> tenant schema name
+ */
+export function buildSchemaMap(
+  templateSchemas: string[],
+  tenantSchemas: string[],
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (let i = 0; i < templateSchemas.length; i++) {
+    if (i < tenantSchemas.length) {
+      map[templateSchemas[i]] = tenantSchemas[i];
+    }
+  }
+  return map;
 }

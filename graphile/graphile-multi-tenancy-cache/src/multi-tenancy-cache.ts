@@ -15,6 +15,14 @@
  *    - Injects the tenant's schema names into pgSettings at request time
  *    - Uses the shared PgRegistry/GraphQLSchema (zero additional memory)
  *
+ * Crystal-Level Integration:
+ * - Uses `pgIdentifiers: "dynamic"` in the preset so that schema names in
+ *   compiled SQL are wrapped as `"__pgmt_<schemaName>__"` placeholders.
+ * - Provides `PgExecutorContext.sqlTextTransform` per-request to replace
+ *   those placeholders with the real tenant schema names.
+ * - This correctly handles multi-schema tenants even when tables share
+ *   names across schemas (e.g., `t_1_app.users` and `t_1_perf.users`).
+ *
  * This approach reduces memory from O(N * schema_size) to O(K * schema_size)
  * where K is the number of *unique* schema structures (typically 1-3) and N
  * is the number of tenants (potentially hundreds).
@@ -41,7 +49,12 @@ import {
   clearAllTemplates,
 } from './registry-template-map';
 import type { RegistryTemplate } from './registry-template-map';
-import { buildTenantPgSettings, remapSchemas } from './dynamic-schema';
+import {
+  buildTenantPgSettings,
+  buildSchemaRemapTransform,
+  buildSchemaMap,
+  remapSchemas,
+} from './dynamic-schema';
 
 const log = new Logger('multi-tenancy-cache');
 
@@ -87,6 +100,20 @@ export interface TenantInstance {
 
   /** The template schemas this tenant maps from (if shared) */
   templateSchemas: string[];
+
+  /**
+   * The sqlTextTransform for this tenant. When the template was built
+   * with `pgIdentifiers: "dynamic"`, SQL contains `"__pgmt_schema__"`
+   * placeholders. This transform replaces them with the real tenant schemas.
+   * Should be injected into `PgExecutorContext.sqlTextTransform` per-request.
+   */
+  sqlTextTransform: ((text: string) => string) | null;
+
+  /**
+   * pgSettings to inject into each request for this tenant.
+   * Includes `search_path` set to the tenant's schemas.
+   */
+  pgSettings: Record<string, string>;
 }
 
 export interface MultiTenancyCacheStats {
@@ -130,11 +157,17 @@ const creatingTemplates = new Map<string, Promise<RegistryTemplate>>();
  * 1. Introspects the tenant's schemas
  * 2. Fingerprints the structure
  * 3. Reuses an existing template if the fingerprint matches
- * 4. Creates a new template if no match
+ * 4. Creates a new template if no match (using `pgIdentifiers: "dynamic"`)
+ *
+ * When a template is reused, a `sqlTextTransform` is provided that
+ * remaps the SQL placeholders from the template's schemas to the
+ * tenant's actual schemas.
  *
  * @param config - Tenant configuration
- * @param presetBuilder - Function to build the GraphileConfig preset
- * @returns Tenant instance with handler and metadata
+ * @param presetBuilder - Function to build the GraphileConfig preset.
+ *   IMPORTANT: The preset MUST include `gather: { pgIdentifiers: "dynamic" }`
+ *   so that schema names are wrapped in __pgmt__ placeholders.
+ * @returns Tenant instance with handler, transform, and metadata
  */
 export async function getOrCreateTenantInstance(
   config: TenantConfig,
@@ -169,11 +202,18 @@ export async function getOrCreateTenantInstance(
 
     registerTenant(cacheKey, fingerprint);
 
+    // Build the transform to remap template schemas -> tenant schemas
+    const schemaMap = buildSchemaMap(existingTemplate.templateSchemas, schemas);
+    const transform = buildSchemaRemapTransform(schemaMap);
+    const pgSettings = buildTenantPgSettings(schemas);
+
     return {
       handler: existingTemplate.handler,
       isShared: true,
       fingerprint,
       templateSchemas: existingTemplate.templateSchemas,
+      sqlTextTransform: transform,
+      pgSettings,
     };
   }
 
@@ -183,15 +223,22 @@ export async function getOrCreateTenantInstance(
     log.debug(`Coalescing template creation for fingerprint ${fingerprint.substring(0, 16)}...`);
     const template = await inFlight;
     registerTenant(cacheKey, fingerprint);
+
+    const schemaMap = buildSchemaMap(template.templateSchemas, schemas);
+    const transform = buildSchemaRemapTransform(schemaMap);
+    const pgSettings = buildTenantPgSettings(schemas);
+
     return {
       handler: template.handler,
       isShared: true,
       fingerprint,
       templateSchemas: template.templateSchemas,
+      sqlTextTransform: transform,
+      pgSettings,
     };
   }
 
-  // Step 4: Create new template
+  // Step 4: Create new template (with pgIdentifiers: "dynamic")
   log.info(`Creating NEW template for tenant ${cacheKey} (fingerprint: ${fingerprint.substring(0, 16)}...)`);
 
   const createPromise = createTemplate(config, presetBuilder, fingerprint);
@@ -201,11 +248,19 @@ export async function getOrCreateTenantInstance(
     const template = await createPromise;
     registerTenant(cacheKey, fingerprint);
 
+    // The first tenant uses its own schemas — build an identity transform
+    // (template schemas == tenant schemas, so placeholders map to same names)
+    const schemaMap = buildSchemaMap(template.templateSchemas, schemas);
+    const transform = buildSchemaRemapTransform(schemaMap);
+    const pgSettings = buildTenantPgSettings(schemas);
+
     return {
       handler: template.handler,
       isShared: false, // First tenant for this template
       fingerprint,
       templateSchemas: template.templateSchemas,
+      sqlTextTransform: transform,
+      pgSettings,
     };
   } finally {
     creatingTemplates.delete(fingerprint);
@@ -214,6 +269,8 @@ export async function getOrCreateTenantInstance(
 
 /**
  * Create a new template from a tenant's configuration.
+ * Uses `pgIdentifiers: "dynamic"` so SQL identifiers are wrapped in
+ * __pgmt__ placeholders for runtime schema remapping.
  */
 async function createTemplate(
   config: TenantConfig,
@@ -273,6 +330,8 @@ async function createDedicatedInstance(
     isShared: false,
     fingerprint: 'dedicated-' + config.cacheKey,
     templateSchemas: [...schemas],
+    sqlTextTransform: null,
+    pgSettings: buildTenantPgSettings(schemas),
   };
 }
 

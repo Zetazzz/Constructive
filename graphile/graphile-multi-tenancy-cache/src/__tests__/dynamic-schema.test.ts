@@ -1,36 +1,122 @@
 import {
+  PGMT_PREFIX,
+  PGMT_SUFFIX,
   TENANT_SCHEMA_CONTEXT_KEY,
+  buildSchemaRemapTransform,
   buildTenantPgSettings,
+  buildSchemaMap,
   remapSchemas,
 } from '../dynamic-schema';
 
 describe('dynamic-schema', () => {
-  describe('TENANT_SCHEMA_CONTEXT_KEY', () => {
-    it('should be defined', () => {
-      expect(TENANT_SCHEMA_CONTEXT_KEY).toBe('tenantSchema');
+  describe('constants', () => {
+    it('should define PGMT_PREFIX', () => {
+      expect(PGMT_PREFIX).toBe('__pgmt_');
+    });
+
+    it('should define PGMT_SUFFIX', () => {
+      expect(PGMT_SUFFIX).toBe('__');
+    });
+
+    it('should define TENANT_SCHEMA_CONTEXT_KEY', () => {
+      expect(TENANT_SCHEMA_CONTEXT_KEY).toBe('tenantSchemaMap');
+    });
+  });
+
+  describe('buildSchemaRemapTransform', () => {
+    it('should return identity function for empty map', () => {
+      const transform = buildSchemaRemapTransform({});
+      const sql = 'SELECT * FROM "app_public"."users"';
+      expect(transform(sql)).toBe(sql);
+    });
+
+    it('should replace single schema placeholder', () => {
+      const transform = buildSchemaRemapTransform({
+        app_public: 'tenant_42_public',
+      });
+      const sql = `SELECT * FROM "${PGMT_PREFIX}app_public${PGMT_SUFFIX}"."users"`;
+      const result = transform(sql);
+      expect(result).toBe('SELECT * FROM "tenant_42_public"."users"');
+    });
+
+    it('should replace multiple schema placeholders', () => {
+      const transform = buildSchemaRemapTransform({
+        t_1_app: 't_2_app',
+        t_1_perf: 't_2_perf',
+      });
+      const sql = `SELECT * FROM "${PGMT_PREFIX}t_1_app${PGMT_SUFFIX}"."users" u JOIN "${PGMT_PREFIX}t_1_perf${PGMT_SUFFIX}"."metrics" m ON u.id = m.user_id`;
+      const result = transform(sql);
+      expect(result).toBe('SELECT * FROM "t_2_app"."users" u JOIN "t_2_perf"."metrics" m ON u.id = m.user_id');
+    });
+
+    it('should replace all occurrences of the same placeholder', () => {
+      const transform = buildSchemaRemapTransform({
+        app_public: 'tenant_1_public',
+      });
+      const sql = `SELECT * FROM "${PGMT_PREFIX}app_public${PGMT_SUFFIX}"."users" WHERE id IN (SELECT user_id FROM "${PGMT_PREFIX}app_public${PGMT_SUFFIX}"."posts")`;
+      const result = transform(sql);
+      expect(result).toContain('"tenant_1_public"."users"');
+      expect(result).toContain('"tenant_1_public"."posts"');
+      expect(result).not.toContain(PGMT_PREFIX);
+    });
+
+    it('should not modify text that does not contain placeholders', () => {
+      const transform = buildSchemaRemapTransform({
+        app_public: 'tenant_1_public',
+      });
+      const sql = 'SELECT 1 + 1';
+      expect(transform(sql)).toBe(sql);
+    });
+
+    it('should handle identity mapping (template schema == tenant schema)', () => {
+      const transform = buildSchemaRemapTransform({
+        t_1_app: 't_1_app',
+      });
+      const sql = `SELECT * FROM "${PGMT_PREFIX}t_1_app${PGMT_SUFFIX}"."users"`;
+      const result = transform(sql);
+      expect(result).toBe('SELECT * FROM "t_1_app"."users"');
     });
   });
 
   describe('buildTenantPgSettings', () => {
-    it('should set the primary tenant schema', () => {
-      const settings = buildTenantPgSettings(['my_schema']);
-      expect(settings[`app.${TENANT_SCHEMA_CONTEXT_KEY}`]).toBe('my_schema');
-    });
-
     it('should set search_path with all schemas', () => {
       const settings = buildTenantPgSettings(['schema_a', 'schema_b']);
       expect(settings['search_path']).toBe('"schema_a", "schema_b"');
     });
 
-    it('should handle empty schemas', () => {
-      const settings = buildTenantPgSettings([]);
-      expect(settings[`app.${TENANT_SCHEMA_CONTEXT_KEY}`]).toBeUndefined();
-      expect(settings['search_path']).toBe('');
+    it('should handle single schema', () => {
+      const settings = buildTenantPgSettings(['my_schema']);
+      expect(settings['search_path']).toBe('"my_schema"');
     });
 
-    it('should use the first schema as the primary', () => {
-      const settings = buildTenantPgSettings(['primary', 'secondary', 'tertiary']);
-      expect(settings[`app.${TENANT_SCHEMA_CONTEXT_KEY}`]).toBe('primary');
+    it('should handle empty schemas', () => {
+      const settings = buildTenantPgSettings([]);
+      expect(settings['search_path']).toBeUndefined();
+    });
+  });
+
+  describe('buildSchemaMap', () => {
+    it('should create a mapping from template to tenant schemas', () => {
+      const map = buildSchemaMap(['t_1_app', 't_1_perf'], ['t_2_app', 't_2_perf']);
+      expect(map).toEqual({
+        t_1_app: 't_2_app',
+        t_1_perf: 't_2_perf',
+      });
+    });
+
+    it('should handle single schema', () => {
+      const map = buildSchemaMap(['app_public'], ['tenant_42_public']);
+      expect(map).toEqual({ app_public: 'tenant_42_public' });
+    });
+
+    it('should handle empty arrays', () => {
+      const map = buildSchemaMap([], []);
+      expect(map).toEqual({});
+    });
+
+    it('should handle mismatched lengths (template longer)', () => {
+      const map = buildSchemaMap(['a', 'b', 'c'], ['x', 'y']);
+      expect(map).toEqual({ a: 'x', b: 'y' });
     });
   });
 
