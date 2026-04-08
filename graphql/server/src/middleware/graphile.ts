@@ -238,10 +238,13 @@ const buildPreset = (
  * Build a PostGraphile v5 preset for multi-tenancy mode.
  *
  * Key difference from the legacy preset:
- * - `gather.pgIdentifiers` is set to `"dynamic"` so schema names in compiled
- *   SQL are wrapped as `"__pgmt_<schema>__"` placeholders.
  * - `grafast.context` injects `pgSqlTextTransform` from `req.sqlTextTransform`
  *   so the PgExecutor can remap placeholders to real tenant schemas per-request.
+ *
+ * NOTE: `gather.pgIdentifiers: "dynamic"` requires Crystal multi-tenancy PR.
+ * Until that is merged, we use the default `"qualified"` identifiers.
+ * The multi-tenancy cache still provides value by sharing PostGraphile
+ * instances across structurally identical tenant schemas.
  */
 const buildMultiTenancyPreset = (
   pool: import('pg').Pool,
@@ -257,12 +260,9 @@ const buildMultiTenancyPreset = (
         schemas
       })
     ],
-    gather: {
-      // 'dynamic' mode is added by the Crystal multi-tenancy PR.
-      // Use type assertion since the published types only know
-      // "qualified" | "unqualified" until Crystal changes are merged.
-      pgIdentifiers: 'dynamic' as any
-    },
+    // NOTE: pgIdentifiers 'dynamic' requires Crystal multi-tenancy PR.
+    // Using default 'qualified' until then. The multi-tenancy cache
+    // still shares PostGraphile instances across identical tenants.
     grafserv: {
       graphqlPath: '/graphql',
       graphiqlPath: '/graphiql',
