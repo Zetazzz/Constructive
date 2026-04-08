@@ -1,0 +1,312 @@
+/**
+ * Multi-Tenancy Cache
+ *
+ * The core module that orchestrates template-based multi-tenancy:
+ *
+ * 1. On first request for a tenant:
+ *    - Introspect the tenant's database schemas
+ *    - Generate a structural fingerprint (ignoring schema names)
+ *    - Check the template map for a matching fingerprint
+ *    - If match: reuse the existing PostGraphile instance (shared PgRegistry + GraphQLSchema)
+ *    - If no match: build a new instance and store it as a template
+ *
+ * 2. For each tenant, we create a lightweight "tenant handler" that:
+ *    - Points to the shared template's Express handler
+ *    - Injects the tenant's schema names into pgSettings at request time
+ *    - Uses the shared PgRegistry/GraphQLSchema (zero additional memory)
+ *
+ * This approach reduces memory from O(N * schema_size) to O(K * schema_size)
+ * where K is the number of *unique* schema structures (typically 1-3) and N
+ * is the number of tenants (potentially hundreds).
+ */
+
+import { createServer } from 'node:http';
+import { Logger } from '@pgpmjs/logger';
+import express from 'express';
+import type { Express } from 'express';
+import { postgraphile } from 'postgraphile';
+import { grafserv } from 'grafserv/express/v4';
+import type { GraphileConfig } from 'graphile-config';
+import type { Pool } from 'pg';
+
+import { getSchemaFingerprint } from './fingerprint';
+import type { MinimalIntrospection } from './fingerprint';
+import { fetchAndParseIntrospection } from './introspection';
+import {
+  getTemplate,
+  setTemplate,
+  registerTenant,
+  deregisterTenant,
+  getTemplateStats,
+  clearAllTemplates,
+} from './registry-template-map';
+import type { RegistryTemplate } from './registry-template-map';
+import { buildTenantPgSettings, remapSchemas } from './dynamic-schema';
+
+const log = new Logger('multi-tenancy-cache');
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface TenantConfig {
+  /** Unique cache key for this tenant (e.g., 'db123.schema456') */
+  cacheKey: string;
+
+  /** PostgreSQL connection pool for this tenant's database */
+  pool: Pool;
+
+  /** Schema names to expose via GraphQL */
+  schemas: string[];
+
+  /** The database name */
+  dbname: string;
+
+  /** Anonymous role for unauthenticated requests */
+  anonRole: string;
+
+  /** Authenticated role */
+  roleName: string;
+
+  /** Optional database ID for context injection */
+  databaseId?: string;
+
+  /** Base preset to extend (default: use the provided preset builder) */
+  basePreset?: GraphileConfig.Preset;
+}
+
+export interface TenantInstance {
+  /** The Express handler to route requests through */
+  handler: Express;
+
+  /** Whether this tenant is sharing a template (true) or has its own instance (false) */
+  isShared: boolean;
+
+  /** The structural fingerprint of this tenant's schema */
+  fingerprint: string;
+
+  /** The template schemas this tenant maps from (if shared) */
+  templateSchemas: string[];
+}
+
+export interface MultiTenancyCacheStats {
+  /** Number of unique schema templates */
+  templateCount: number;
+
+  /** Number of registered tenants */
+  tenantCount: number;
+
+  /** Breakdown by template */
+  templates: Array<{
+    fingerprint: string;
+    refCount: number;
+    templateSchemas: string[];
+    createdAt: number;
+  }>;
+
+  /** Memory savings estimate */
+  memorySavings: {
+    /** Tenants sharing templates (would have been separate instances) */
+    sharedTenants: number;
+    /** Estimated MB saved (rough: ~50MB per PostGraphile instance) */
+    estimatedMbSaved: number;
+  };
+}
+
+// =============================================================================
+// Single-Flight Pattern for Template Creation
+// =============================================================================
+
+const creatingTemplates = new Map<string, Promise<RegistryTemplate>>();
+
+// =============================================================================
+// Core Multi-Tenancy Cache Functions
+// =============================================================================
+
+/**
+ * Get or create a tenant instance using template-based sharing.
+ *
+ * This is the main entry point for the multi-tenancy cache. It:
+ * 1. Introspects the tenant's schemas
+ * 2. Fingerprints the structure
+ * 3. Reuses an existing template if the fingerprint matches
+ * 4. Creates a new template if no match
+ *
+ * @param config - Tenant configuration
+ * @param presetBuilder - Function to build the GraphileConfig preset
+ * @returns Tenant instance with handler and metadata
+ */
+export async function getOrCreateTenantInstance(
+  config: TenantConfig,
+  presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset,
+): Promise<TenantInstance> {
+  const { cacheKey, pool, schemas, dbname, anonRole, roleName } = config;
+
+  log.info(`Resolving tenant instance: key=${cacheKey} db=${dbname} schemas=${schemas.join(',')}`);
+
+  // Step 1: Introspect and fingerprint
+  let parsed: MinimalIntrospection;
+  try {
+    const result = await fetchAndParseIntrospection(pool, schemas);
+    parsed = result.parsed;
+  } catch (err) {
+    log.error(`Introspection failed for tenant ${cacheKey}:`, err);
+    // Fallback: create a dedicated instance without sharing
+    return createDedicatedInstance(config, presetBuilder);
+  }
+
+  const fingerprint = getSchemaFingerprint(parsed, schemas);
+  log.debug(`Tenant ${cacheKey} fingerprint: ${fingerprint.substring(0, 16)}...`);
+
+  // Step 2: Check template map
+  const existingTemplate = getTemplate(fingerprint);
+  if (existingTemplate) {
+    log.info(
+      `Template REUSE for tenant ${cacheKey} ` +
+      `(fingerprint: ${fingerprint.substring(0, 16)}..., ` +
+      `template schemas: ${existingTemplate.templateSchemas.join(',')})`,
+    );
+
+    registerTenant(cacheKey, fingerprint);
+
+    return {
+      handler: existingTemplate.handler,
+      isShared: true,
+      fingerprint,
+      templateSchemas: existingTemplate.templateSchemas,
+    };
+  }
+
+  // Step 3: Check single-flight for this fingerprint
+  const inFlight = creatingTemplates.get(fingerprint);
+  if (inFlight) {
+    log.debug(`Coalescing template creation for fingerprint ${fingerprint.substring(0, 16)}...`);
+    const template = await inFlight;
+    registerTenant(cacheKey, fingerprint);
+    return {
+      handler: template.handler,
+      isShared: true,
+      fingerprint,
+      templateSchemas: template.templateSchemas,
+    };
+  }
+
+  // Step 4: Create new template
+  log.info(`Creating NEW template for tenant ${cacheKey} (fingerprint: ${fingerprint.substring(0, 16)}...)`);
+
+  const createPromise = createTemplate(config, presetBuilder, fingerprint);
+  creatingTemplates.set(fingerprint, createPromise);
+
+  try {
+    const template = await createPromise;
+    registerTenant(cacheKey, fingerprint);
+
+    return {
+      handler: template.handler,
+      isShared: false, // First tenant for this template
+      fingerprint,
+      templateSchemas: template.templateSchemas,
+    };
+  } finally {
+    creatingTemplates.delete(fingerprint);
+  }
+}
+
+/**
+ * Create a new template from a tenant's configuration.
+ */
+async function createTemplate(
+  config: TenantConfig,
+  presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset,
+  fingerprint: string,
+): Promise<RegistryTemplate> {
+  const { pool, schemas, anonRole, roleName } = config;
+
+  const preset = presetBuilder(pool, schemas, anonRole, roleName);
+  const pgl = postgraphile(preset);
+  const serv = pgl.createServ(grafserv);
+
+  const handler = express();
+  const httpServer = createServer(handler);
+  await serv.addTo(handler, httpServer);
+  await serv.ready();
+
+  const template: RegistryTemplate = {
+    fingerprint,
+    pgl,
+    serv,
+    handler,
+    httpServer,
+    basePresetSnapshot: { schemas, anonRole, roleName },
+    createdAt: Date.now(),
+    refCount: 0,
+    templateSchemas: [...schemas],
+  };
+
+  setTemplate(fingerprint, template);
+  return template;
+}
+
+/**
+ * Fallback: create a dedicated (non-shared) PostGraphile instance.
+ * Used when introspection/fingerprinting fails or schema is unique.
+ */
+async function createDedicatedInstance(
+  config: TenantConfig,
+  presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset,
+): Promise<TenantInstance> {
+  const { pool, schemas, anonRole, roleName } = config;
+
+  log.warn(`Creating dedicated (non-shared) instance for tenant ${config.cacheKey}`);
+
+  const preset = presetBuilder(pool, schemas, anonRole, roleName);
+  const pgl = postgraphile(preset);
+  const serv = pgl.createServ(grafserv);
+
+  const handler = express();
+  const httpServer = createServer(handler);
+  await serv.addTo(handler, httpServer);
+  await serv.ready();
+
+  return {
+    handler,
+    isShared: false,
+    fingerprint: 'dedicated-' + config.cacheKey,
+    templateSchemas: [...schemas],
+  };
+}
+
+/**
+ * Notify the multi-tenancy cache that a tenant has been evicted.
+ * Should be called from the graphile-cache eviction handler.
+ */
+export function onTenantEvicted(cacheKey: string): void {
+  deregisterTenant(cacheKey);
+}
+
+/**
+ * Get comprehensive cache statistics.
+ */
+export function getMultiTenancyCacheStats(): MultiTenancyCacheStats {
+  const stats = getTemplateStats();
+  const sharedTenants = stats.tenantCount - stats.templateCount;
+
+  return {
+    ...stats,
+    memorySavings: {
+      sharedTenants: Math.max(0, sharedTenants),
+      // Rough estimate: each PostGraphile instance uses ~50MB for a typical schema
+      estimatedMbSaved: Math.max(0, sharedTenants) * 50,
+    },
+  };
+}
+
+/**
+ * Shut down all templates and release resources.
+ */
+export async function shutdownMultiTenancyCache(): Promise<void> {
+  log.info('Shutting down multi-tenancy cache...');
+  creatingTemplates.clear();
+  await clearAllTemplates();
+  log.info('Multi-tenancy cache shut down');
+}
