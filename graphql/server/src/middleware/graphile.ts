@@ -258,7 +258,10 @@ const buildMultiTenancyPreset = (
       })
     ],
     gather: {
-      pgIdentifiers: 'dynamic'
+      // 'dynamic' mode is added by the Crystal multi-tenancy PR.
+      // Use type assertion since the published types only know
+      // "qualified" | "unqualified" until Crystal changes are merged.
+      pgIdentifiers: 'dynamic' as any
     },
     grafserv: {
       graphqlPath: '/graphql',
