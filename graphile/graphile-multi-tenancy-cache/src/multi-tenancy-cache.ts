@@ -29,32 +29,31 @@
  */
 
 import { createServer } from 'node:http';
+
 import { Logger } from '@pgpmjs/logger';
-import express from 'express';
 import type { Express } from 'express';
-import { postgraphile } from 'postgraphile';
+import express from 'express';
 import { grafserv } from 'grafserv/express/v4';
 import type { GraphileConfig } from 'graphile-config';
 import type { Pool } from 'pg';
+import { postgraphile } from 'postgraphile';
 
-import { getSchemaFingerprint } from './fingerprint';
-import type { MinimalIntrospection } from './fingerprint';
-import { fetchAndParseIntrospection } from './introspection';
 import {
-  getTemplate,
-  setTemplate,
-  registerTenant,
-  deregisterTenant,
-  getTemplateStats,
-  clearAllTemplates,
-} from './registry-template-map';
+  buildSchemaMap,
+  buildSchemaRemapTransform,
+  buildTenantPgSettings
+} from './dynamic-schema';
+import type { IntrospectionCacheStats } from './introspection-cache';
+import { clearIntrospectionCache, getIntrospectionCacheStats,getOrCreateIntrospection } from './introspection-cache';
 import type { RegistryTemplate } from './registry-template-map';
 import {
-  buildTenantPgSettings,
-  buildSchemaRemapTransform,
-  buildSchemaMap,
-  remapSchemas,
-} from './dynamic-schema';
+  clearAllTemplates,
+  deregisterTenant,
+  getTemplate,
+  getTemplateStats,
+  registerTenant,
+  setTemplate
+} from './registry-template-map';
 
 const log = new Logger('multi-tenancy-cache');
 
@@ -141,6 +140,9 @@ export interface MultiTenancyCacheStats {
     /** Estimated MB saved (rough: ~50MB per PostGraphile instance) */
     estimatedMbSaved: number;
   };
+
+  /** Introspection cache statistics */
+  introspectionCache: IntrospectionCacheStats;
 }
 
 // =============================================================================
@@ -162,7 +164,7 @@ function buildTenantResult(
   isShared: boolean,
   fingerprint: string,
   templateSchemas: string[],
-  tenantSchemas: string[],
+  tenantSchemas: string[]
 ): TenantInstance {
   const schemaMap = buildSchemaMap(templateSchemas, tenantSchemas);
   const transform = buildSchemaRemapTransform(schemaMap);
@@ -174,7 +176,7 @@ function buildTenantResult(
     fingerprint,
     templateSchemas,
     sqlTextTransform: transform,
-    pgSettings,
+    pgSettings
   };
 }
 
@@ -218,24 +220,23 @@ const dedicatedInstances = new Map<string, {
  */
 export async function getOrCreateTenantInstance(
   config: TenantConfig,
-  presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset,
+  presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset
 ): Promise<TenantInstance> {
   const { cacheKey, pool, schemas, dbname, anonRole, roleName } = config;
 
   log.info(`Resolving tenant instance: key=${cacheKey} db=${dbname} schemas=${schemas.join(',')}`);
 
-  // Step 1: Introspect and fingerprint
-  let parsed: MinimalIntrospection;
+  // Step 1: Introspect and fingerprint (with in-memory cache)
+  let fingerprint: string;
   try {
-    const result = await fetchAndParseIntrospection(pool, schemas);
-    parsed = result.parsed;
+    const cached = await getOrCreateIntrospection(pool, schemas, dbname);
+    fingerprint = cached.fingerprint;
   } catch (err) {
     log.error(`Introspection failed for tenant ${cacheKey}:`, err);
     // Fallback: create a dedicated instance without sharing
     return createDedicatedInstance(config, presetBuilder);
   }
 
-  const fingerprint = getSchemaFingerprint(parsed, schemas);
   log.debug(`Tenant ${cacheKey} fingerprint: ${fingerprint.substring(0, 16)}...`);
 
   // Step 2: Check template map
@@ -244,7 +245,7 @@ export async function getOrCreateTenantInstance(
     log.info(
       `Template REUSE for tenant ${cacheKey} ` +
       `(fingerprint: ${fingerprint.substring(0, 16)}..., ` +
-      `template schemas: ${existingTemplate.templateSchemas.join(',')})`,
+      `template schemas: ${existingTemplate.templateSchemas.join(',')})`
     );
 
     registerTenant(cacheKey, fingerprint);
@@ -254,7 +255,7 @@ export async function getOrCreateTenantInstance(
       true,
       fingerprint,
       existingTemplate.templateSchemas,
-      schemas,
+      schemas
     );
   }
 
@@ -270,7 +271,7 @@ export async function getOrCreateTenantInstance(
       true,
       fingerprint,
       template.templateSchemas,
-      schemas,
+      schemas
     );
   }
 
@@ -291,7 +292,7 @@ export async function getOrCreateTenantInstance(
       false,
       fingerprint,
       template.templateSchemas,
-      schemas,
+      schemas
     );
   } finally {
     creatingTemplates.delete(fingerprint);
@@ -306,7 +307,7 @@ export async function getOrCreateTenantInstance(
 async function createTemplate(
   config: TenantConfig,
   presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset,
-  fingerprint: string,
+  fingerprint: string
 ): Promise<RegistryTemplate> {
   const { pool, schemas, anonRole, roleName } = config;
 
@@ -328,7 +329,7 @@ async function createTemplate(
     basePresetSnapshot: { schemas, anonRole, roleName },
     createdAt: Date.now(),
     refCount: 0,
-    templateSchemas: [...schemas],
+    templateSchemas: [...schemas]
   };
 
   setTemplate(fingerprint, template);
@@ -341,7 +342,7 @@ async function createTemplate(
  */
 async function createDedicatedInstance(
   config: TenantConfig,
-  presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset,
+  presetBuilder: (pool: Pool, schemas: string[], anonRole: string, roleName: string) => GraphileConfig.Preset
 ): Promise<TenantInstance> {
   const { pool, schemas, anonRole, roleName } = config;
 
@@ -365,7 +366,7 @@ async function createDedicatedInstance(
     fingerprint: 'dedicated-' + config.cacheKey,
     templateSchemas: [...schemas],
     sqlTextTransform: identityTransform,
-    pgSettings: buildTenantPgSettings(schemas),
+    pgSettings: buildTenantPgSettings(schemas)
   };
 }
 
@@ -389,8 +390,9 @@ export function getMultiTenancyCacheStats(): MultiTenancyCacheStats {
     memorySavings: {
       sharedTenants: Math.max(0, sharedTenants),
       // Rough estimate: each PostGraphile instance uses ~50MB for a typical schema
-      estimatedMbSaved: Math.max(0, sharedTenants) * 50,
+      estimatedMbSaved: Math.max(0, sharedTenants) * 50
     },
+    introspectionCache: getIntrospectionCacheStats()
   };
 }
 
@@ -400,6 +402,7 @@ export function getMultiTenancyCacheStats(): MultiTenancyCacheStats {
 export async function shutdownMultiTenancyCache(): Promise<void> {
   log.info('Shutting down multi-tenancy cache...');
   creatingTemplates.clear();
+  clearIntrospectionCache();
 
   // Release dedicated (non-shared) instances
   for (const [key, { pgl, httpServer }] of dedicatedInstances) {

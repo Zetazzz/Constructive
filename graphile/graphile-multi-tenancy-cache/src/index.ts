@@ -6,39 +6,49 @@
 
 // Core multi-tenancy cache — the primary consumer-facing API
 export {
-  getOrCreateTenantInstance,
-  onTenantEvicted,
   getMultiTenancyCacheStats,
+  getOrCreateTenantInstance,
+  MultiTenancyCacheStats,
+  onTenantEvicted,
   shutdownMultiTenancyCache,
   TenantConfig,
-  TenantInstance,
-  MultiTenancyCacheStats,
+  TenantInstance
 } from './multi-tenancy-cache';
 
 // Schema fingerprinting — needed by consumers who want to pre-compute or cache fingerprints
 export {
-  getSchemaFingerprint,
   fingerprintsMatch,
-  MinimalIntrospection,
+  getSchemaFingerprint,
+  MinimalIntrospection
 } from './fingerprint';
 
 // Introspection utilities — needed by consumers who want to cache raw introspection
 export {
-  fetchIntrospection,
-  parseIntrospection,
   fetchAndParseIntrospection,
+  fetchIntrospection,
+  parseIntrospection
 } from './introspection';
+
+// Introspection cache — in-memory cache to avoid redundant pg_catalog queries
+export {
+  CachedIntrospection,
+  clearIntrospectionCache,
+  getIntrospectionCacheStats,
+  getOrCreateIntrospection,
+  IntrospectionCacheStats,
+  invalidateIntrospection
+} from './introspection-cache';
 
 // Dynamic schema resolution — public helpers only
 export {
-  wrapSchemaPlaceholder,
-  isSchemaPlaceholder,
-  extractTemplateSchemaNames,
+  buildSchemaMap,
   buildSchemaRemapTransform,
   buildTenantPgSettings,
-  buildSchemaMap,
+  extractTemplateSchemaNames,
+  isSchemaPlaceholder,
   remapSchemas,
   SchemaMapping,
+  wrapSchemaPlaceholder
 } from './dynamic-schema';
 
 // NOTE: The following are intentionally NOT exported:

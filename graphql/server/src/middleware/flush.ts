@@ -1,12 +1,14 @@
+import './types'; // for Request type
+
 import { ConstructiveOptions } from '@constructive-io/graphql-types';
 import { Logger } from '@pgpmjs/logger';
 import { svcCache } from '@pgpmjs/server-utils';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 import { graphileCache } from 'graphile-cache';
-import { onTenantEvicted } from 'graphile-multi-tenancy-cache';
+import { invalidateIntrospection,onTenantEvicted } from 'graphile-multi-tenancy-cache';
 import { getPgPool } from 'pg-cache';
-import './types'; // for Request type
-import { isMultiTenancyCacheEnabled, flushTenantInstance } from './graphile';
+
+import { flushTenantInstance,isMultiTenancyCacheEnabled } from './graphile';
 
 const log = new Logger('flush');
 
@@ -88,6 +90,24 @@ export const flushService = async (
         flushCacheEntry(k, multiTenancy);
       }
     });
+  }
+
+  // Invalidate introspection cache for this database when multi-tenancy is enabled.
+  // Look up the actual database name (dbname) from the apis table using databaseId,
+  // since the introspection cache is keyed by dbname, not databaseId.
+  if (multiTenancy) {
+    try {
+      const dbResult = await pgPool.query(
+        `SELECT DISTINCT dbname FROM services_public.apis WHERE database_id = $1 LIMIT 1`,
+        [databaseId]
+      );
+      if (dbResult.rows.length > 0 && dbResult.rows[0].dbname) {
+        invalidateIntrospection(dbResult.rows[0].dbname);
+        log.info(`Introspection cache invalidated for db=${dbResult.rows[0].dbname} (databaseId=${databaseId})`);
+      }
+    } catch (err) {
+      log.warn(`Failed to invalidate introspection cache for databaseId=${databaseId}:`, err);
+    }
   }
 
   const svc = await pgPool.query(
