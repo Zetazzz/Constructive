@@ -42,6 +42,8 @@ export interface ApiOptions {
   isPublic?: boolean;
   /** Schemas containing metadata tables */
   metaSchemas?: string[];
+  /** Enable template-based multi-tenancy cache for PostGraphile instance sharing */
+  useMultiTenancyCache?: boolean;
 }
 
 /**
@@ -72,6 +74,7 @@ export const apiDefaults: ApiOptions = {
   roleName: 'administrator',
   defaultDatabaseId: 'hard-coded',
   isPublic: true,
+  useMultiTenancyCache: false,
   metaSchemas: [
     'services_public',
     'metaschema_public',

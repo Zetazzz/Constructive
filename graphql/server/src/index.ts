@@ -6,4 +6,4 @@ export { createAuthenticateMiddleware } from './middleware/auth';
 export { createUploadAuthenticateMiddleware } from './middleware/upload';
 export { cors } from './middleware/cors';
 export { graphile } from './middleware/graphile';
-export { flush, flushService } from './middleware/flush';
+export { flush, createFlushMiddleware, flushService } from './middleware/flush';

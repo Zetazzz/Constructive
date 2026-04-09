@@ -100,14 +100,15 @@ const maskError = (error: GraphQLError): GraphQLError | GraphQLFormattedError =>
 // =============================================================================
 
 /**
- * When true, the server uses graphile-multi-tenancy-cache for template-based
- * PostGraphile instance sharing.  Tenants with identical schema structures
- * share a single PostGraphile instance + GraphQLSchema, reducing memory from
- * O(N) to O(K) where K is the number of unique schema structures.
+ * Check whether the multi-tenancy cache is enabled for the given options.
  *
- * Set `USE_MULTI_TENANCY_CACHE=true` to enable.
+ * Reads from `opts.api.useMultiTenancyCache` which is populated by the unified
+ * env system (`@constructive-io/graphql-env`) from the `USE_MULTI_TENANCY_CACHE`
+ * env var, config files, or runtime overrides.
  */
-export const useMultiTenancyCache = process.env.USE_MULTI_TENANCY_CACHE === 'true';
+export function isMultiTenancyCacheEnabled(opts: ConstructiveOptions): boolean {
+  return opts.api?.useMultiTenancyCache === true;
+}
 
 // =============================================================================
 // Single-Flight Pattern: In-Flight Tracking (legacy mode)
@@ -333,12 +334,12 @@ const buildMultiTenancyPreset = (
 export const graphile = (opts: ConstructiveOptions): RequestHandler => {
   const observabilityEnabled = isGraphqlObservabilityEnabled(opts.server?.host);
 
-  if (useMultiTenancyCache) {
-    log.info('[graphile] Multi-tenancy cache ENABLED (USE_MULTI_TENANCY_CACHE=true)');
+  if (isMultiTenancyCacheEnabled(opts)) {
+    log.info('[graphile] Multi-tenancy cache ENABLED (api.useMultiTenancyCache=true)');
     return multiTenancyHandler(opts);
   }
 
-  log.info('[graphile] Using legacy graphile-cache (USE_MULTI_TENANCY_CACHE not set)');
+  log.info('[graphile] Using legacy graphile-cache (api.useMultiTenancyCache not set)');
   return legacyHandler(opts, observabilityEnabled);
 };
 

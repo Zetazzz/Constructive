@@ -26,8 +26,8 @@ import { createAuthenticateMiddleware } from './middleware/auth';
 import { cors } from './middleware/cors';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { favicon } from './middleware/favicon';
-import { flush, flushService } from './middleware/flush';
-import { shutdownMultiTenancy,useMultiTenancyCache } from './middleware/graphile';
+import { createFlushMiddleware, flushService } from './middleware/flush';
+import { shutdownMultiTenancy, isMultiTenancyCacheEnabled } from './middleware/graphile';
 import { graphile } from './middleware/graphile';
 import { multipartBridge } from './middleware/multipart-bridge';
 import { createDebugDatabaseMiddleware } from './middleware/observability/debug-db';
@@ -102,6 +102,7 @@ class Server {
       exposedSchemas: apiOpts.exposedSchemas?.join(',') || 'none',
       anonRole: apiOpts.anonRole,
       roleName: apiOpts.roleName,
+      useMultiTenancyCache: apiOpts.useMultiTenancyCache ?? false,
       observabilityEnabled
     });
 
@@ -160,7 +161,7 @@ class Server {
     app.post('/upload', uploadAuthenticate, ...uploadRoute);
     app.use(authenticate);
     app.use(graphile(effectiveOpts));
-    app.use(flush);
+    app.use(createFlushMiddleware(effectiveOpts));
 
     // Error handling - MUST be LAST
     app.use(notFoundHandler); // Catches unmatched routes (404)
@@ -268,7 +269,7 @@ class Server {
     const { closeCaches = false } = opts;
     if (this.closed) {
       if (closeCaches) {
-        await Server.closeCaches({ closePools: true });
+        await Server.closeCaches({ closePools: true, useMultiTenancyCache: isMultiTenancyCacheEnabled(this.opts) });
       }
       return;
     }
@@ -284,12 +285,12 @@ class Server {
     }
     await closeDebugDatabasePools();
     if (closeCaches) {
-      await Server.closeCaches({ closePools: true });
+      await Server.closeCaches({ closePools: true, useMultiTenancyCache: isMultiTenancyCacheEnabled(this.opts) });
     }
   }
 
-  static async closeCaches(opts: { closePools?: boolean } = {}): Promise<void> {
-    const { closePools = false } = opts;
+  static async closeCaches(opts: { closePools?: boolean; useMultiTenancyCache?: boolean } = {}): Promise<void> {
+    const { closePools = false, useMultiTenancyCache = false } = opts;
     svcCache.clear();
     if (useMultiTenancyCache) {
       await shutdownMultiTenancy();
