@@ -249,6 +249,15 @@ const buildPreset = (
  * Key difference from the legacy preset:
  * - `grafast.context` injects `pgSqlTextTransform` from `req.sqlTextTransform`
  *   so the PgExecutor can remap placeholders to real tenant schemas per-request.
+ *
+ * ## Connection Pool Safety (search_path)
+ *
+ * The `pgSettings` returned by `grafast.context` (including `search_path` from
+ * `buildTenantPgSettings`) are applied by Grafast/PgExecutor using `SET LOCAL`
+ * inside the per-request transaction.  When the transaction commits or rolls
+ * back, PostgreSQL automatically reverts to the connection's default settings.
+ * This means the pooled connection is never contaminated with tenant-specific
+ * state — Tenant B cannot accidentally inherit Tenant A's search_path.
  */
 const buildMultiTenancyPreset = (
   pool: import('pg').Pool,

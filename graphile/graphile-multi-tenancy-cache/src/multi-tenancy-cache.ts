@@ -131,6 +131,7 @@ export interface MultiTenancyCacheStats {
     refCount: number;
     templateSchemas: string[];
     createdAt: number;
+    idleSince: number | null;
   }>;
 
   /** Memory savings estimate */
@@ -329,6 +330,7 @@ async function createTemplate(
     basePresetSnapshot: { schemas, anonRole, roleName },
     createdAt: Date.now(),
     refCount: 0,
+    idleSince: Date.now(), // Starts idle — registerTenant() will clear this
     templateSchemas: [...schemas]
   };
 

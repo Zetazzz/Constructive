@@ -51,6 +51,9 @@ export {
   wrapSchemaPlaceholder
 } from './dynamic-schema';
 
+// Template eviction — allows consumers to trigger a manual sweep or monitor idle templates
+export { sweepIdleTemplates } from './registry-template-map';
+
 // NOTE: The following are intentionally NOT exported:
 // - getTemplate, setTemplate, registerTenant, deregisterTenant (internal state management)
 // - getTemplateStats, getTenantFingerprint (internal — use getMultiTenancyCacheStats instead)

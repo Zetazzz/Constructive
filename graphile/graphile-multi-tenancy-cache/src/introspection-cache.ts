@@ -10,6 +10,17 @@
  * The cache also stores the computed fingerprint, since it's deterministically
  * derived from the parsed introspection and would be wasted work to recompute.
  *
+ * ## Single-Flight Exception Safety
+ *
+ * The `inflight` map coalesces concurrent requests for the same cache key.
+ * The cleanup (`inflight.delete(key)`) is inside the IIFE's `finally` block,
+ * guaranteeing removal regardless of success or failure.  On rejection:
+ *
+ * 1. The failed entry is NOT cached (only successful results are stored).
+ * 2. The `inflight` entry is removed, unblocking future retry attempts.
+ * 3. All waiters (original + coalesced) receive the same rejection.
+ * 4. The next request for that key will trigger a fresh fetch.
+ *
  * Invalidation:
  * - invalidateIntrospection(dbname) — clears all entries for a database
  *   (called on schema change via LISTEN/NOTIFY flush)
@@ -67,6 +78,8 @@ const cache = new Map<string, CachedIntrospection>();
 
 /**
  * Single-flight guard to prevent concurrent fetches for the same key.
+ * Entries are guaranteed to be removed in the IIFE's `finally` block,
+ * even if the fetch rejects.
  */
 const inflight = new Map<string, Promise<CachedIntrospection>>();
 
@@ -92,6 +105,13 @@ function makeIntrospectionCacheKey(dbname: string, schemas: string[]): string {
  * This is the main entry point — it replaces direct calls to
  * `fetchAndParseIntrospection()` + `getSchemaFingerprint()`.
  *
+ * ## Error handling
+ *
+ * If the fetch fails (DB timeout, connection error, etc.):
+ * - The error is propagated to ALL waiters (original + coalesced).
+ * - The `inflight` entry is removed so the **next** request retries.
+ * - Nothing is written to the cache (only successful results are cached).
+ *
  * @param pool - PostgreSQL connection pool
  * @param schemas - Schema names to introspect
  * @param dbname - Database name (used as part of the cache key)
@@ -111,7 +131,9 @@ export async function getOrCreateIntrospection(
     return cached;
   }
 
-  // Single-flight: if another call is already fetching this key, wait for it
+  // Single-flight: if another call is already fetching this key, wait for it.
+  // If that fetch fails, the rejection propagates here and the caller can
+  // decide to retry — the inflight entry will already be cleaned up.
   const existing = inflight.get(key);
   if (existing) {
     log.debug(`Introspection cache coalescing: ${key}`);
@@ -121,34 +143,48 @@ export async function getOrCreateIntrospection(
   // Cache miss — fetch, fingerprint, and cache
   log.info(`Introspection cache MISS: ${key} — fetching from database`);
 
+  // The cleanup of `inflight` is inside the IIFE's `finally` block,
+  // guaranteeing removal regardless of whether the promise resolves or rejects.
+  // This prevents a failed fetch from permanently blocking future attempts.
   const fetchPromise = (async (): Promise<CachedIntrospection> => {
-    const { raw, parsed } = await fetchAndParseIntrospection(pool, schemas);
-    const fingerprint = getSchemaFingerprint(parsed, schemas);
+    try {
+      const { raw, parsed } = await fetchAndParseIntrospection(pool, schemas);
+      const fingerprint = getSchemaFingerprint(parsed, schemas);
 
-    const entry: CachedIntrospection = {
-      raw,
-      parsed,
-      fingerprint,
-      cachedAt: Date.now()
-    };
+      const entry: CachedIntrospection = {
+        raw,
+        parsed,
+        fingerprint,
+        cachedAt: Date.now()
+      };
 
-    cache.set(key, entry);
-    log.info(
-      `Introspection cached: ${key} ` +
-      `(fingerprint: ${fingerprint.substring(0, 16)}..., ` +
-      `raw size: ${raw.length} bytes, cache size: ${cache.size})`
-    );
+      // Only cache successful results — never cache failures
+      cache.set(key, entry);
+      log.info(
+        `Introspection cached: ${key} ` +
+        `(fingerprint: ${fingerprint.substring(0, 16)}..., ` +
+        `raw size: ${raw.length} bytes, cache size: ${cache.size})`
+      );
 
-    return entry;
+      return entry;
+    } catch (err) {
+      // Log and re-throw — do NOT cache the failure.
+      // The inflight entry is cleaned up in `finally`, so the next
+      // request for this key will trigger a fresh fetch attempt.
+      log.error(`Introspection fetch failed for ${key}:`, err);
+      throw err;
+    } finally {
+      // GUARANTEE: inflight entry is always removed, even on rejection.
+      // This is the critical safety measure — without it, a single DB
+      // timeout could permanently block all future introspection attempts
+      // for this database+schemas combination.
+      inflight.delete(key);
+    }
   })();
 
   inflight.set(key, fetchPromise);
 
-  try {
-    return await fetchPromise;
-  } finally {
-    inflight.delete(key);
-  }
+  return fetchPromise;
 }
 
 /**

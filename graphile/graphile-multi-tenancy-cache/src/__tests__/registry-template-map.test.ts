@@ -6,6 +6,7 @@ import {
   getTemplateStats,
   getTenantFingerprint,
   clearAllTemplates,
+  sweepIdleTemplates,
 } from '../registry-template-map';
 import type { RegistryTemplate } from '../registry-template-map';
 
@@ -20,6 +21,7 @@ function makeTemplate(fingerprint: string, schemas: string[] = ['test_schema']):
     basePresetSnapshot: { schemas, anonRole: 'anonymous', roleName: 'authenticated' },
     createdAt: Date.now(),
     refCount: 0,
+    idleSince: Date.now(),
     templateSchemas: schemas,
   };
 }
@@ -61,6 +63,15 @@ describe('Registry Template Map', () => {
       expect(template.refCount).toBe(2);
     });
 
+    it('should clear idleSince when registering', () => {
+      const template = makeTemplate('fp1');
+      expect(template.idleSince).not.toBeNull();
+      setTemplate('fp1', template);
+
+      registerTenant('tenant-a', 'fp1');
+      expect(template.idleSince).toBeNull();
+    });
+
     it('should not double-count the same tenant', () => {
       const template = makeTemplate('fp1');
       setTemplate('fp1', template);
@@ -80,6 +91,19 @@ describe('Registry Template Map', () => {
 
       deregisterTenant('tenant-a');
       expect(template.refCount).toBe(1);
+    });
+
+    it('should set idleSince when refCount drops to 0', () => {
+      const template = makeTemplate('fp1');
+      setTemplate('fp1', template);
+
+      registerTenant('tenant-a', 'fp1');
+      expect(template.idleSince).toBeNull();
+
+      deregisterTenant('tenant-a');
+      expect(template.refCount).toBe(0);
+      expect(template.idleSince).not.toBeNull();
+      expect(typeof template.idleSince).toBe('number');
     });
 
     it('should handle deregistering unknown tenants gracefully', () => {
@@ -133,7 +157,7 @@ describe('Registry Template Map', () => {
       expect(stats.templates).toHaveLength(0);
     });
 
-    it('should return accurate stats', () => {
+    it('should return accurate stats including idleSince', () => {
       const t1 = makeTemplate('fp1', ['schema_a']);
       const t2 = makeTemplate('fp2', ['schema_b']);
       setTemplate('fp1', t1);
@@ -147,6 +171,58 @@ describe('Registry Template Map', () => {
       expect(stats.templateCount).toBe(2);
       expect(stats.tenantCount).toBe(3);
       expect(stats.templates).toHaveLength(2);
+
+      // Both templates are active (refCount > 0), so idleSince should be null
+      for (const t of stats.templates) {
+        expect(t.idleSince).toBeNull();
+      }
+    });
+  });
+
+  describe('sweepIdleTemplates', () => {
+    it('should not evict templates with active tenants', async () => {
+      const template = makeTemplate('fp1');
+      setTemplate('fp1', template);
+      registerTenant('tenant-a', 'fp1');
+
+      const evicted = await sweepIdleTemplates();
+      expect(evicted).toBe(0);
+      expect(getTemplate('fp1')).toBe(template);
+    });
+
+    it('should not evict recently-idle templates (within TTL)', async () => {
+      const template = makeTemplate('fp1');
+      template.idleSince = Date.now(); // Just became idle
+      setTemplate('fp1', template);
+
+      const evicted = await sweepIdleTemplates();
+      expect(evicted).toBe(0);
+      expect(getTemplate('fp1')).toBe(template);
+    });
+
+    it('should evict idle templates past the TTL', async () => {
+      const template = makeTemplate('fp1');
+      template.idleSince = Date.now() - (31 * 60 * 1000); // 31 minutes ago
+      setTemplate('fp1', template);
+
+      const evicted = await sweepIdleTemplates();
+      expect(evicted).toBe(1);
+      expect(getTemplate('fp1')).toBeNull();
+      expect(template.pgl.release).toHaveBeenCalled();
+    });
+
+    it('should clean up tenant entries when evicting a template', async () => {
+      const template = makeTemplate('fp1');
+      setTemplate('fp1', template);
+      registerTenant('tenant-a', 'fp1');
+      deregisterTenant('tenant-a');
+
+      // Force idle past TTL
+      template.idleSince = Date.now() - (31 * 60 * 1000);
+
+      const evicted = await sweepIdleTemplates();
+      expect(evicted).toBe(1);
+      expect(getTenantFingerprint('tenant-a')).toBeNull();
     });
   });
 

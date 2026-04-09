@@ -5,6 +5,19 @@
  * 1. Fetching raw introspection JSON from a database
  * 2. Extracting introspection results for external caching (Redis, file, etc.)
  * 3. Initializing PostGraphile with pre-fetched introspection data
+ *
+ * ## Connection Pool Safety
+ *
+ * `fetchIntrospection()` uses `SET LOCAL` inside a transaction so that the
+ * `search_path` change is confined to the transaction and never leaks to other
+ * borrowers of the same pooled connection.  This prevents "Tenant B sees
+ * Tenant A's schema" contamination.
+ *
+ * The PostGraphile/Grafast execution path is safe by a different mechanism:
+ * `pgSettings` (including `search_path`) are applied via `SET LOCAL` inside
+ * the per-request transaction managed by `PgExecutor`.  The connection is
+ * returned to the pool after `COMMIT`/`ROLLBACK`, so session state is
+ * automatically scoped.
  */
 
 import { Logger } from '@pgpmjs/logger';
@@ -24,6 +37,11 @@ const log = new Logger('multi-tenancy-cache:introspection');
  * 2. Parsed later with parseIntrospectionResults()
  * 3. Used for fingerprinting
  *
+ * **Connection safety:** The `search_path` is set with `SET LOCAL` inside
+ * a transaction, so it never contaminates the underlying pooled connection.
+ * When the transaction commits, PostgreSQL automatically reverts to the
+ * connection's default `search_path`.
+ *
  * @param pool - PostgreSQL connection pool
  * @param schemas - Schema names to introspect
  * @returns Raw introspection text (JSON string)
@@ -38,13 +56,22 @@ export async function fetchIntrospection(
 
   const client = await pool.connect();
   try {
-    // Set the search_path to target schemas for introspection.
-    // Use escapeSqlIdentifier from pg-sql2 to safely quote schema names
-    // (handles special characters like double quotes in schema names).
+    // Wrap in a transaction so SET LOCAL scopes the search_path to this
+    // transaction only.  Without the transaction, a plain SET would persist
+    // on the physical connection and leak to the next borrower — causing
+    // cross-tenant contamination.
+    await client.query('BEGIN');
+
+    // Use SET LOCAL (not SET) to confine the search_path to this transaction.
+    // escapeSqlIdentifier from pg-sql2 safely quotes schema names that
+    // contain special characters (e.g., double quotes).
     const safePath = schemas.map((s) => escapeSqlIdentifier(s)).join(', ');
-    await client.query(`SET search_path TO ${safePath}, public`);
+    await client.query(`SET LOCAL search_path TO ${safePath}, public`);
 
     const result = await client.query<{ introspection: string }>(introspectionQuery);
+
+    await client.query('COMMIT');
+
     const row = result.rows[0];
     if (!row) {
       throw new Error('Introspection query returned no rows');
@@ -55,6 +82,14 @@ export async function fetchIntrospection(
 
     log.debug(`Introspection fetched: ${introspectionText.length} bytes`);
     return introspectionText;
+  } catch (err) {
+    // Rollback on any error so the connection is returned clean
+    try {
+      await client.query('ROLLBACK');
+    } catch (_rollbackErr) {
+      // Ignore rollback errors — the connection may already be broken
+    }
+    throw err;
   } finally {
     client.release();
   }
