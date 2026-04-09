@@ -29,7 +29,7 @@ import {
   getOrCreateTenantInstance,
   shutdownMultiTenancyCache,
   getMultiTenancyCacheStats,
-} from './multi-tenancy-cache';
+} from '../src/multi-tenancy-cache';
 
 const log = new Logger('comparison-benchmark');
 
