@@ -36,6 +36,7 @@
     "pg": "^8.11.3",
     "pg-env": "workspace:^",
     "pg-introspection": "1.0.0",
+    "pg-sql2": "5.0.0",
     "postgraphile": "5.0.0"
   },
   "devDependencies": {

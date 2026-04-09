@@ -1,25 +1,19 @@
 import {
-  PGMT_PREFIX,
-  PGMT_SUFFIX,
-  TENANT_SCHEMA_CONTEXT_KEY,
   buildSchemaRemapTransform,
+  wrapSchemaPlaceholder,
   buildTenantPgSettings,
   buildSchemaMap,
   remapSchemas,
 } from '../dynamic-schema';
 
 describe('dynamic-schema', () => {
-  describe('constants', () => {
-    it('should define PGMT_PREFIX', () => {
-      expect(PGMT_PREFIX).toBe('__pgmt_');
+  describe('wrapSchemaPlaceholder', () => {
+    it('should wrap a schema name in placeholder markers', () => {
+      expect(wrapSchemaPlaceholder('app_public')).toBe('__pgmt_app_public__');
     });
 
-    it('should define PGMT_SUFFIX', () => {
-      expect(PGMT_SUFFIX).toBe('__');
-    });
-
-    it('should define TENANT_SCHEMA_CONTEXT_KEY', () => {
-      expect(TENANT_SCHEMA_CONTEXT_KEY).toBe('tenantSchemaMap');
+    it('should handle empty string', () => {
+      expect(wrapSchemaPlaceholder('')).toBe('__pgmt___');
     });
   });
 
@@ -34,7 +28,8 @@ describe('dynamic-schema', () => {
       const transform = buildSchemaRemapTransform({
         app_public: 'tenant_42_public',
       });
-      const sql = `SELECT * FROM "${PGMT_PREFIX}app_public${PGMT_SUFFIX}"."users"`;
+      const placeholder = wrapSchemaPlaceholder('app_public');
+      const sql = `SELECT * FROM "${placeholder}"."users"`;
       const result = transform(sql);
       expect(result).toBe('SELECT * FROM "tenant_42_public"."users"');
     });
@@ -44,7 +39,9 @@ describe('dynamic-schema', () => {
         t_1_app: 't_2_app',
         t_1_perf: 't_2_perf',
       });
-      const sql = `SELECT * FROM "${PGMT_PREFIX}t_1_app${PGMT_SUFFIX}"."users" u JOIN "${PGMT_PREFIX}t_1_perf${PGMT_SUFFIX}"."metrics" m ON u.id = m.user_id`;
+      const p1 = wrapSchemaPlaceholder('t_1_app');
+      const p2 = wrapSchemaPlaceholder('t_1_perf');
+      const sql = `SELECT * FROM "${p1}"."users" u JOIN "${p2}"."metrics" m ON u.id = m.user_id`;
       const result = transform(sql);
       expect(result).toBe('SELECT * FROM "t_2_app"."users" u JOIN "t_2_perf"."metrics" m ON u.id = m.user_id');
     });
@@ -53,11 +50,12 @@ describe('dynamic-schema', () => {
       const transform = buildSchemaRemapTransform({
         app_public: 'tenant_1_public',
       });
-      const sql = `SELECT * FROM "${PGMT_PREFIX}app_public${PGMT_SUFFIX}"."users" WHERE id IN (SELECT user_id FROM "${PGMT_PREFIX}app_public${PGMT_SUFFIX}"."posts")`;
+      const placeholder = wrapSchemaPlaceholder('app_public');
+      const sql = `SELECT * FROM "${placeholder}"."users" WHERE id IN (SELECT user_id FROM "${placeholder}"."posts")`;
       const result = transform(sql);
       expect(result).toContain('"tenant_1_public"."users"');
       expect(result).toContain('"tenant_1_public"."posts"');
-      expect(result).not.toContain(PGMT_PREFIX);
+      expect(result).not.toContain('__pgmt_');
     });
 
     it('should not modify text that does not contain placeholders', () => {
@@ -72,9 +70,21 @@ describe('dynamic-schema', () => {
       const transform = buildSchemaRemapTransform({
         t_1_app: 't_1_app',
       });
-      const sql = `SELECT * FROM "${PGMT_PREFIX}t_1_app${PGMT_SUFFIX}"."users"`;
+      const placeholder = wrapSchemaPlaceholder('t_1_app');
+      const sql = `SELECT * FROM "${placeholder}"."users"`;
       const result = transform(sql);
       expect(result).toBe('SELECT * FROM "t_1_app"."users"');
+    });
+
+    it('should safely handle schema names with double quotes', () => {
+      const transform = buildSchemaRemapTransform({
+        app_public: 'my"schema',
+      });
+      const placeholder = wrapSchemaPlaceholder('app_public');
+      const sql = `SELECT * FROM "${placeholder}"."users"`;
+      const result = transform(sql);
+      // pg-sql2's escapeSqlIdentifier doubles internal quotes
+      expect(result).toBe('SELECT * FROM "my""schema"."users"');
     });
   });
 
@@ -92,6 +102,11 @@ describe('dynamic-schema', () => {
     it('should handle empty schemas', () => {
       const settings = buildTenantPgSettings([]);
       expect(settings['search_path']).toBeUndefined();
+    });
+
+    it('should escape schema names with double quotes', () => {
+      const settings = buildTenantPgSettings(['my"schema']);
+      expect(settings['search_path']).toBe('"my""schema"');
     });
   });
 

@@ -38,11 +38,11 @@ export {
 
 // Dynamic schema resolution
 export {
-  PGMT_PREFIX,
-  PGMT_SUFFIX,
-  TENANT_SCHEMA_CONTEXT_KEY,
-  SchemaMapping,
+  wrapSchemaPlaceholder,
+  isSchemaPlaceholder,
+  extractTemplateSchemaNames,
   buildSchemaRemapTransform,
+  SchemaMapping,
   buildTenantPgSettings,
   buildSchemaMap,
   remapSchemas,

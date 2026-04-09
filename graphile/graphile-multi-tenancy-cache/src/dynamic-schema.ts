@@ -5,7 +5,7 @@
  * different physical schemas by leveraging crystal-level hooks:
  *
  * 1. `pgIdentifiers: "dynamic"` in PgBasicsPlugin wraps schema names in
- *    `__pgmt_<schemaName>__` placeholders during the gather/build phase.
+ *    opaque placeholders during the gather/build phase.
  *
  * 2. `PgExecutorContext.sqlTextTransform` replaces those placeholders with
  *    real tenant schema names at execution time, per-request.
@@ -14,48 +14,85 @@
  * different schemas contain tables with the same name (e.g., both
  * `t_1_app.users` and `t_1_perf.users`), the fully qualified identifiers
  * are preserved and remapped independently.
+ *
+ * NOTE: The placeholder format and `buildSchemaRemapTransform` are
+ * mirrored in Crystal's `graphile-build-pg/multiTenancy`.  Once the
+ * Crystal PR is published, these helpers should be replaced with
+ * re-exports from `graphile-build-pg`.
  */
 
 import { Logger } from '@pgpmjs/logger';
+import { escapeSqlIdentifier } from 'pg-sql2';
 
 const log = new Logger('multi-tenancy-cache:dynamic-schema');
 
-/**
- * The prefix used by PgBasicsPlugin's "dynamic" mode to wrap schema names.
- * Must match the crystal-level PGMT_PREFIX constant.
- */
-export const PGMT_PREFIX = '__pgmt_';
+// ---------------------------------------------------------------------------
+// Placeholder encoding — private constants, public helper functions
+// ---------------------------------------------------------------------------
+
+/** @internal Prefix for dynamic schema placeholders. */
+const PGMT_PREFIX = '__pgmt_';
+
+/** @internal Suffix for dynamic schema placeholders. */
+const PGMT_SUFFIX = '__';
 
 /**
- * The suffix used by PgBasicsPlugin's "dynamic" mode to wrap schema names.
- * Must match the crystal-level PGMT_SUFFIX constant.
+ * Wrap a schema name in the placeholder markers used by
+ * `pgIdentifiers: "dynamic"`.  The result is a raw string
+ * (e.g. `__pgmt_app_public__`) suitable for passing to
+ * `sql.identifier()`.
+ *
+ * Mirrors `wrapSchemaPlaceholder` from Crystal's `graphile-build-pg`.
  */
-export const PGMT_SUFFIX = '__';
+export function wrapSchemaPlaceholder(schemaName: string): string {
+  return `${PGMT_PREFIX}${schemaName}${PGMT_SUFFIX}`;
+}
 
 /**
- * Context key used to pass the tenant's schema mapping at runtime.
- * This should be set in the Grafast context callback from the request.
+ * Returns `true` if `name` looks like a dynamic schema placeholder.
+ *
+ * Mirrors `isSchemaPlaceholder` from Crystal's `graphile-build-pg`.
  */
-export const TENANT_SCHEMA_CONTEXT_KEY = 'tenantSchemaMap';
+export function isSchemaPlaceholder(name: string): boolean {
+  return name.startsWith(PGMT_PREFIX) && name.endsWith(PGMT_SUFFIX);
+}
 
 /**
- * Schema mapping: maps template schema names to tenant schema names.
- * Used when a tenant has multiple schemas that need to be remapped.
+ * Extracts the original schema names from a list of placeholder schema
+ * names.
+ *
+ * Mirrors `extractTemplateSchemaNames` from Crystal's `graphile-build-pg`.
  */
-export interface SchemaMapping {
-  /** Template schema name (e.g., 'tenant_template_public') */
-  templateSchema: string;
-  /** Tenant's actual schema name (e.g., 'tenant_abc_public') */
-  tenantSchema: string;
+export function extractTemplateSchemaNames(
+  placeholderSchemas: string[],
+): string[] {
+  return placeholderSchemas.map((s) => {
+    if (isSchemaPlaceholder(s)) {
+      return s.slice(PGMT_PREFIX.length, -PGMT_SUFFIX.length);
+    }
+    return s;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// SQL text transform
+// ---------------------------------------------------------------------------
+
+/** Escape special regex metacharacters in a literal string. */
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
  * Build a `sqlTextTransform` function that replaces dynamic schema
- * placeholders in compiled SQL with real tenant schema names.
+ * placeholders with real tenant schema names.
  *
- * When `pgIdentifiers: "dynamic"` is used, the compiled SQL contains
- * identifiers like `"__pgmt_app_public__"."users"`. This transform
- * replaces `"__pgmt_app_public__"` with `"tenant_42_public"`.
+ * The function performs a **single-pass** regex replacement over the
+ * compiled SQL text, using `escapeSqlIdentifier` from pg-sql2 so that
+ * schema names containing special characters (double quotes, etc.) are
+ * handled safely.
+ *
+ * Mirrors `buildSchemaRemapTransform` from Crystal's `graphile-build-pg`.
  *
  * @param schemaMap - A mapping from template schema names to real
  *   tenant schema names. E.g. `{ app_public: 'tenant_42_public' }`.
@@ -69,27 +106,43 @@ export function buildSchemaRemapTransform(
     return (text: string) => text;
   }
 
-  // Pre-compute the search/replace pairs for efficiency.
-  // In compiled SQL, the placeholder appears as a quoted identifier:
-  //   "__pgmt_original_schema__"
-  // We replace it with the quoted real schema name:
-  //   "real_schema"
-  const replacements: Array<[search: string, replace: string]> = entries.map(
-    ([templateSchema, realSchema]) => [
-      `"${PGMT_PREFIX}${templateSchema}${PGMT_SUFFIX}"`,
-      `"${realSchema}"`,
-    ],
-  );
+  // Pre-compute a lookup map: escaped placeholder → escaped real name.
+  // Both sides use pg-sql2's escapeSqlIdentifier so the search string
+  // matches exactly what sql.identifier() produces at compile time, and
+  // the replacement is a properly escaped SQL identifier.
+  const lookupMap = new Map<string, string>();
+  const regexParts: string[] = [];
+
+  for (const [templateSchema, realSchema] of entries) {
+    const placeholder = escapeSqlIdentifier(
+      wrapSchemaPlaceholder(templateSchema),
+    );
+    const replacement = escapeSqlIdentifier(realSchema);
+    lookupMap.set(placeholder, replacement);
+    regexParts.push(escapeRegExp(placeholder));
+  }
+
+  // Single compiled regex that matches any placeholder in one pass.
+  const regex = new RegExp(regexParts.join('|'), 'g');
 
   return (text: string): string => {
-    let result = text;
-    for (let i = 0, l = replacements.length; i < l; i++) {
-      const [search, replace] = replacements[i];
-      // Use split+join for global replacement (avoids regex escaping issues)
-      result = result.split(search).join(replace);
-    }
-    return result;
+    return text.replace(regex, (match) => lookupMap.get(match)!);
   };
+}
+
+// ---------------------------------------------------------------------------
+// Constructive-specific helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Schema mapping: maps template schema names to tenant schema names.
+ * Used when a tenant has multiple schemas that need to be remapped.
+ */
+export interface SchemaMapping {
+  /** Template schema name (e.g., 'tenant_template_public') */
+  templateSchema: string;
+  /** Tenant's actual schema name (e.g., 'tenant_abc_public') */
+  tenantSchema: string;
 }
 
 /**
@@ -107,9 +160,13 @@ export function buildTenantPgSettings(
 ): Record<string, string> {
   const settings: Record<string, string> = {};
 
-  // Set the search_path to include all tenant schemas
+  // Set the search_path to include all tenant schemas.
+  // Use pg-sql2's escapeSqlIdentifier to properly handle schema names
+  // that contain special characters (e.g., double quotes).
   if (tenantSchemas.length > 0) {
-    settings['search_path'] = tenantSchemas.map((s) => `"${s}"`).join(', ');
+    settings['search_path'] = tenantSchemas
+      .map((s) => escapeSqlIdentifier(s))
+      .join(', ');
   }
 
   return settings;
@@ -118,12 +175,6 @@ export function buildTenantPgSettings(
 /**
  * Rewrite schema names in an array of schema strings.
  * Maps template schema names to tenant schema names using a prefix replacement.
- *
- * Example:
- *   templateSchemas: ['template_public', 'template_private']
- *   templatePrefix: 'template'
- *   tenantPrefix: 'tenant_abc'
- *   Result: ['tenant_abc_public', 'tenant_abc_private']
  *
  * @param templateSchemas - The template's schema names
  * @param templatePrefix - The prefix in template schema names
