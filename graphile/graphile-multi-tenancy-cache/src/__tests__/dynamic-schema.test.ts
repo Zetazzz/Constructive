@@ -129,9 +129,18 @@ describe('dynamic-schema', () => {
       expect(map).toEqual({});
     });
 
-    it('should handle mismatched lengths (template longer)', () => {
+    it('should handle mismatched lengths (template longer) and log warning', () => {
+      // When template has more schemas than tenant, extra schemas are unmapped.
+      // A warning is logged but no error is thrown.
       const map = buildSchemaMap(['a', 'b', 'c'], ['x', 'y']);
       expect(map).toEqual({ a: 'x', b: 'y' });
+      // 'c' is intentionally not in the map — queries using it will keep the placeholder
+    });
+
+    it('should handle mismatched lengths (tenant longer)', () => {
+      const map = buildSchemaMap(['a'], ['x', 'y']);
+      expect(map).toEqual({ a: 'x' });
+      // 'y' has no corresponding template schema — it's ignored
     });
   });
 

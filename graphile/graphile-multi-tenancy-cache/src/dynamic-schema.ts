@@ -197,6 +197,10 @@ export function remapSchemas(
 /**
  * Build a schema-name mapping from template schemas to tenant schemas.
  *
+ * Both arrays must have the same length — a mismatch indicates a bug in
+ * the caller (e.g., schemas were reordered or some were omitted).  A
+ * warning is logged and extra template schemas are left unmapped.
+ *
  * @param templateSchemas - The schema names used when building the template
  * @param tenantSchemas - The tenant's actual schema names (same order)
  * @returns Record mapping template schema name -> tenant schema name
@@ -205,6 +209,14 @@ export function buildSchemaMap(
   templateSchemas: string[],
   tenantSchemas: string[],
 ): Record<string, string> {
+  if (templateSchemas.length !== tenantSchemas.length) {
+    log.warn(
+      `Schema count mismatch: template has ${templateSchemas.length} schemas ` +
+      `[${templateSchemas.join(', ')}] but tenant has ${tenantSchemas.length} ` +
+      `[${tenantSchemas.join(', ')}]. Unmapped schemas will retain placeholder names.`,
+    );
+  }
+
   const map: Record<string, string> = {};
   for (let i = 0; i < templateSchemas.length; i++) {
     if (i < tenantSchemas.length) {

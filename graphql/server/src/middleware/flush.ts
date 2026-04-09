@@ -10,6 +10,19 @@ import { useMultiTenancyCache, flushTenantInstance } from './graphile';
 
 const log = new Logger('flush');
 
+/**
+ * Evict a single cache key from all cache layers (graphile-cache,
+ * svcCache, and multi-tenancy cache if enabled).
+ */
+function flushCacheEntry(key: string): void {
+  graphileCache.delete(key);
+  svcCache.delete(key);
+  if (useMultiTenancyCache) {
+    onTenantEvicted(key);
+    flushTenantInstance(key);
+  }
+}
+
 export const flush = async (
   req: Request,
   res: Response,
@@ -18,11 +31,8 @@ export const flush = async (
   if (req.url === '/flush') {
     // TODO: check bearer for a flush / special key
     const key = (req as any).svc_key;
-    graphileCache.delete(key);
-    svcCache.delete(key);
-    if (useMultiTenancyCache && key) {
-      onTenantEvicted(key);
-      flushTenantInstance(key);
+    if (key) {
+      flushCacheEntry(key);
     }
     res.status(200).send('OK');
     return;
@@ -44,12 +54,7 @@ export const flushService = async (
   if (!opts.api.isPublic) {
     graphileCache.forEach((_, k: string) => {
       if (api.test(k) || schemata.test(k) || meta.test(k)) {
-        graphileCache.delete(k);
-        svcCache.delete(k);
-        if (useMultiTenancyCache) {
-          onTenantEvicted(k);
-          flushTenantInstance(k);
-        }
+        flushCacheEntry(k);
       }
     });
   }
@@ -71,12 +76,7 @@ export const flushService = async (
       key = `${row.subdomain}.${row.domain}`;
     }
     if (key) {
-      graphileCache.delete(key);
-      svcCache.delete(key);
-      if (useMultiTenancyCache) {
-        onTenantEvicted(key);
-        flushTenantInstance(key);
-      }
+      flushCacheEntry(key);
     }
   }
 };

@@ -285,7 +285,7 @@ const buildMultiTenancyPreset = (
         // Inject the per-request SQL text transform for schema remapping.
         // This is read by PgIntrospectionPlugin's contextCallback and
         // forwarded to PgExecutorContext.sqlTextTransform.
-        const pgSqlTextTransform = req?.sqlTextTransform || undefined;
+        const pgSqlTextTransform = req?.sqlTextTransform;
 
         if (req) {
           if (req.databaseId) {

@@ -145,6 +145,13 @@ export function getSchemaFingerprint(
     classNameMap.set(c._id, c.relname);
   }
 
+  // Build type OID -> name map for attribute and proc lookups.
+  // Pre-computing this avoids O(A×T) linear scans inside loops.
+  const typeLookup = new Map<string, string>();
+  for (const t of introspection.types) {
+    typeLookup.set(t._id, t.typname);
+  }
+
   // Build class OID set for filtering
   const classOids = new Set(classes.map((c) => c._id));
 
@@ -161,8 +168,8 @@ export function getSchemaFingerprint(
       .sort((a, b) => a.attnum - b.attnum);
 
     for (const attr of attrs) {
-      // Resolve type name instead of using OID
-      const typeName = introspection.types.find((t) => t._id === attr.atttypid)?.typname || attr.atttypid;
+      // Resolve type name via pre-built lookup map (O(1) instead of O(T) scan)
+      const typeName = typeLookup.get(attr.atttypid) || attr.atttypid;
       parts.push(`ATTR:${cls.relname}.${attr.attname}:${typeName}:${attr.attnotnull}`);
     }
 
@@ -184,9 +191,9 @@ export function getSchemaFingerprint(
 
     for (const proc of procs) {
       const argTypes = (proc.proargtypes || [])
-        .map((tid) => introspection.types.find((t) => t._id === tid)?.typname || tid)
+        .map((tid) => typeLookup.get(tid) || tid)
         .join(',');
-      const retType = introspection.types.find((t) => t._id === proc.prorettype)?.typname || proc.prorettype;
+      const retType = typeLookup.get(proc.prorettype) || proc.prorettype;
       parts.push(`PROC:${proc.proname}(${argTypes}):${retType}`);
     }
   }

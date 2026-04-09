@@ -17,7 +17,7 @@ function makeTemplate(fingerprint: string, schemas: string[] = ['test_schema']):
     serv: {} as any,
     handler: {} as any,
     httpServer: { listening: false, close: jest.fn((cb: () => void) => cb()) } as any,
-    basePresetSnapshot: {},
+    basePresetSnapshot: { schemas, anonRole: 'anonymous', roleName: 'authenticated' },
     createdAt: Date.now(),
     refCount: 0,
     templateSchemas: schemas,

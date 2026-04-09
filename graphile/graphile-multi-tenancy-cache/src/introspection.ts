@@ -10,6 +10,7 @@
 import { Logger } from '@pgpmjs/logger';
 import type { Pool } from 'pg';
 import { makeIntrospectionQuery, parseIntrospectionResults } from 'pg-introspection';
+import { escapeSqlIdentifier } from 'pg-sql2';
 import type { MinimalIntrospection } from './fingerprint';
 
 const log = new Logger('multi-tenancy-cache:introspection');
@@ -37,8 +38,11 @@ export async function fetchIntrospection(
 
   const client = await pool.connect();
   try {
-    // Set the search_path to target schemas for introspection
-    await client.query(`SET search_path TO ${schemas.map((s) => `"${s}"`).join(', ')}, public`);
+    // Set the search_path to target schemas for introspection.
+    // Use escapeSqlIdentifier from pg-sql2 to safely quote schema names
+    // (handles special characters like double quotes in schema names).
+    const safePath = schemas.map((s) => escapeSqlIdentifier(s)).join(', ');
+    await client.query(`SET search_path TO ${safePath}, public`);
 
     const result = await client.query<{ introspection: string }>(introspectionQuery);
     const row = result.rows[0];

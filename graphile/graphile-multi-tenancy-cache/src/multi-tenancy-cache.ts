@@ -106,8 +106,11 @@ export interface TenantInstance {
    * with `pgIdentifiers: "dynamic"`, SQL contains `"__pgmt_schema__"`
    * placeholders. This transform replaces them with the real tenant schemas.
    * Should be injected into `PgExecutorContext.sqlTextTransform` per-request.
+   *
+   * Always a function (never null) — for the identity case (template schemas
+   * == tenant schemas) this is a no-op that returns the input unchanged.
    */
-  sqlTextTransform: ((text: string) => string) | null;
+  sqlTextTransform: (text: string) => string;
 
   /**
    * pgSettings to inject into each request for this tenant.
@@ -137,6 +140,41 @@ export interface MultiTenancyCacheStats {
     sharedTenants: number;
     /** Estimated MB saved (rough: ~50MB per PostGraphile instance) */
     estimatedMbSaved: number;
+  };
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/** No-op transform used when no schema remapping is needed (dedicated instances). */
+const identityTransform = (text: string): string => text;
+
+/**
+ * Build a TenantInstance from a shared (or first-use) template.
+ *
+ * Centralizes the repeated pattern of:
+ *   buildSchemaMap → buildSchemaRemapTransform → buildTenantPgSettings
+ * into a single call site.
+ */
+function buildTenantResult(
+  handler: Express,
+  isShared: boolean,
+  fingerprint: string,
+  templateSchemas: string[],
+  tenantSchemas: string[],
+): TenantInstance {
+  const schemaMap = buildSchemaMap(templateSchemas, tenantSchemas);
+  const transform = buildSchemaRemapTransform(schemaMap);
+  const pgSettings = buildTenantPgSettings(tenantSchemas);
+
+  return {
+    handler,
+    isShared,
+    fingerprint,
+    templateSchemas,
+    sqlTextTransform: transform,
+    pgSettings,
   };
 }
 
@@ -211,19 +249,13 @@ export async function getOrCreateTenantInstance(
 
     registerTenant(cacheKey, fingerprint);
 
-    // Build the transform to remap template schemas -> tenant schemas
-    const schemaMap = buildSchemaMap(existingTemplate.templateSchemas, schemas);
-    const transform = buildSchemaRemapTransform(schemaMap);
-    const pgSettings = buildTenantPgSettings(schemas);
-
-    return {
-      handler: existingTemplate.handler,
-      isShared: true,
+    return buildTenantResult(
+      existingTemplate.handler,
+      true,
       fingerprint,
-      templateSchemas: existingTemplate.templateSchemas,
-      sqlTextTransform: transform,
-      pgSettings,
-    };
+      existingTemplate.templateSchemas,
+      schemas,
+    );
   }
 
   // Step 3: Check single-flight for this fingerprint
@@ -233,18 +265,13 @@ export async function getOrCreateTenantInstance(
     const template = await inFlight;
     registerTenant(cacheKey, fingerprint);
 
-    const schemaMap = buildSchemaMap(template.templateSchemas, schemas);
-    const transform = buildSchemaRemapTransform(schemaMap);
-    const pgSettings = buildTenantPgSettings(schemas);
-
-    return {
-      handler: template.handler,
-      isShared: true,
+    return buildTenantResult(
+      template.handler,
+      true,
       fingerprint,
-      templateSchemas: template.templateSchemas,
-      sqlTextTransform: transform,
-      pgSettings,
-    };
+      template.templateSchemas,
+      schemas,
+    );
   }
 
   // Step 4: Create new template (with pgIdentifiers: "dynamic")
@@ -257,20 +284,15 @@ export async function getOrCreateTenantInstance(
     const template = await createPromise;
     registerTenant(cacheKey, fingerprint);
 
-    // The first tenant uses its own schemas — build an identity transform
+    // First tenant for this template — identity transform
     // (template schemas == tenant schemas, so placeholders map to same names)
-    const schemaMap = buildSchemaMap(template.templateSchemas, schemas);
-    const transform = buildSchemaRemapTransform(schemaMap);
-    const pgSettings = buildTenantPgSettings(schemas);
-
-    return {
-      handler: template.handler,
-      isShared: false, // First tenant for this template
+    return buildTenantResult(
+      template.handler,
+      false,
       fingerprint,
-      templateSchemas: template.templateSchemas,
-      sqlTextTransform: transform,
-      pgSettings,
-    };
+      template.templateSchemas,
+      schemas,
+    );
   } finally {
     creatingTemplates.delete(fingerprint);
   }
@@ -342,7 +364,7 @@ async function createDedicatedInstance(
     isShared: false,
     fingerprint: 'dedicated-' + config.cacheKey,
     templateSchemas: [...schemas],
-    sqlTextTransform: null,
+    sqlTextTransform: identityTransform,
     pgSettings: buildTenantPgSettings(schemas),
   };
 }

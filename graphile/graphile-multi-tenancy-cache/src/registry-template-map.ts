@@ -42,10 +42,14 @@ export interface RegistryTemplate {
   httpServer: import('http').Server;
 
   /**
-   * The original preset used to build this template (sans pgServices).
-   * Used for reference/debugging.
+   * Snapshot of the preset parameters used to build this template.
+   * Kept for debugging and diagnostics.
    */
-  basePresetSnapshot: Record<string, unknown>;
+  basePresetSnapshot: {
+    schemas: string[];
+    anonRole: string;
+    roleName: string;
+  };
 
   /** Timestamp when this template was first created */
   createdAt: number;
