@@ -30,12 +30,22 @@ import {
   shutdownMultiTenancyCache,
   getMultiTenancyCacheStats,
 } from '../src/multi-tenancy-cache';
+import { getIntrospectionCacheStats } from '../src/introspection-cache';
 
 const log = new Logger('comparison-benchmark');
 
 const TENANT_COUNT = parseInt(process.env.BENCHMARK_TENANTS || '5', 10);
 const PRESSURE_DURATION_MS = parseInt(process.env.BENCHMARK_PRESSURE_MS || '10000', 10);
 const CONCURRENCY = parseInt(process.env.BENCHMARK_CONCURRENCY || '4', 10);
+
+/**
+ * Simulated API endpoints per tenant database.
+ * In real production (apiIsPublic=false), each tenant DB is accessed via
+ * multiple API endpoints (e.g., api, admin, auth). Each produces a different
+ * svcKey/cacheKey but queries the SAME database+schemas combination.
+ * The introspection cache deduplicates across these endpoints.
+ */
+const API_ENDPOINTS = ['api', 'admin', 'auth'];
 
 interface Metric {
   approach: string;
@@ -226,7 +236,7 @@ async function runDedicated(pool: Pool, schemas: string[], pgConfig: { database?
 async function runMultiTenancyCache(pool: Pool, schemas: string[], pgConfig: { database?: string }): Promise<void> {
   const label = 'multi-tenancy';
   log.info('\n' + '='.repeat(80));
-  log.info(`Approach B: Multi-Tenancy Cache (${schemas.length} tenants, template sharing)`);
+  log.info(`Approach B: Multi-Tenancy Cache (${schemas.length} tenants × ${API_ENDPOINTS.length} endpoints, template sharing)`);
   log.info('='.repeat(80));
 
   // Force GC before measurement
@@ -240,27 +250,43 @@ async function runMultiTenancyCache(pool: Pool, schemas: string[], pgConfig: { d
   const buildTimes: number[] = [];
   const sharedFlags: boolean[] = [];
 
+  // Simulate real apiIsPublic=false scenario:
+  // Each tenant DB is accessed via multiple API endpoints (api, admin, auth).
+  // Each endpoint produces a different cacheKey but uses the same (dbname, schemas).
+  // The introspection cache should HIT on endpoints 2 and 3 for each tenant.
   for (let i = 0; i < schemas.length; i++) {
     const schema = schemas[i];
-    const start = Date.now();
+    for (const endpoint of API_ENDPOINTS) {
+      const start = Date.now();
 
-    const instance = await getOrCreateTenantInstance(
-      {
-        cacheKey: `cmp-${schema}`,
-        pool,
-        schemas: [schema],
-        dbname: pgConfig.database || 'constructive',
-        anonRole: 'administrator',
-        roleName: 'administrator',
-      },
-      buildPreset,
-    );
+      const instance = await getOrCreateTenantInstance(
+        {
+          // Different cacheKey per endpoint (like svcKey in the real server)
+          cacheKey: `${endpoint}-cmp-${schema}`,
+          pool,
+          // Same schemas + dbname → introspection cache should HIT after first endpoint
+          schemas: [schema],
+          dbname: pgConfig.database || 'constructive',
+          anonRole: 'administrator',
+          roleName: 'administrator',
+        },
+        buildPreset,
+      );
 
-    const elapsed = Date.now() - start;
-    buildTimes.push(elapsed);
-    sharedFlags.push(instance.isShared);
-    log.info(`  Tenant ${i}: ${elapsed}ms (shared=${instance.isShared})`);
+      const elapsed = Date.now() - start;
+      buildTimes.push(elapsed);
+      sharedFlags.push(instance.isShared);
+      log.info(`  Tenant ${i} [${endpoint}]: ${elapsed}ms (shared=${instance.isShared})`);
+    }
   }
+
+  // Log introspection cache stats (should show N entries with 2N HITs)
+  const introStats = getIntrospectionCacheStats();
+  log.info(`\n  Introspection cache: ${introStats.size} entries (${schemas.length} tenants × ${API_ENDPOINTS.length} endpoints = ${schemas.length * API_ENDPOINTS.length} total requests)`);
+  log.info(`  Expected: ${schemas.length} MISSes (1 per unique db+schemas), ${schemas.length * (API_ENDPOINTS.length - 1)} HITs (${API_ENDPOINTS.length - 1} per tenant)`);
+  record(label, 'introspection', 'cache_entries', introStats.size, 'count');
+  record(label, 'introspection', 'expected_misses', schemas.length, 'count');
+  record(label, 'introspection', 'expected_hits', schemas.length * (API_ENDPOINTS.length - 1), 'count');
 
   // Force GC before measuring final memory
   if (global.gc) global.gc();
@@ -416,9 +442,12 @@ function printComparison(): void {
   const buildTimeSaved = get('dedicated', 'build', 'total_build_ms') - get('multi-tenancy', 'build', 'total_build_ms');
   const templates = get('multi-tenancy', 'build', 'templates');
   const sharedInstances = get('multi-tenancy', 'build', 'shared_instances');
+  const cacheEntries = get('multi-tenancy', 'introspection', 'cache_entries');
+  const expectedHits = get('multi-tenancy', 'introspection', 'expected_hits');
 
-  log.info(`Tenants: ${TENANT_COUNT}`);
+  log.info(`Tenants: ${TENANT_COUNT} × ${API_ENDPOINTS.length} endpoints = ${TENANT_COUNT * API_ENDPOINTS.length} total cache keys`);
   log.info(`Templates created: ${templates} (shared by ${sharedInstances} tenants)`);
+  log.info(`Introspection cache: ${cacheEntries} entries, ${expectedHits} HITs saved (${API_ENDPOINTS.length - 1} per tenant)`);
   log.info(`Heap memory saved: ${heapSaved.toFixed(1)} MB`);
   log.info(`Build time saved: ${buildTimeSaved.toFixed(0)} ms`);
 

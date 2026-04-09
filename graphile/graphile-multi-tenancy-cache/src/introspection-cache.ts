@@ -107,7 +107,7 @@ export async function getOrCreateIntrospection(
   // Check cache
   const cached = cache.get(key);
   if (cached) {
-    log.debug(`Introspection cache HIT: ${key} (fingerprint: ${cached.fingerprint.substring(0, 16)}...)`);
+    log.info(`Introspection cache HIT: ${key} (fingerprint: ${cached.fingerprint.substring(0, 16)}...)`);
     return cached;
   }
 
