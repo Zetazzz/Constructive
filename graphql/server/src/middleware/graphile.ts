@@ -264,7 +264,10 @@ const buildMultiTenancyPreset = (
       })
     ],
     gather: {
-      pgIdentifiers: 'dynamic' as 'qualified',
+      // TODO: Change to 'dynamic' once Crystal PR (pgIdentifiers: "dynamic") is merged upstream.
+      // 'dynamic' wraps schema names in __pgmt__ placeholders for runtime remapping.
+      // Until then, 'qualified' works for same-database tenants via search_path.
+      pgIdentifiers: 'qualified',
     },
     grafserv: {
       graphqlPath: '/graphql',
