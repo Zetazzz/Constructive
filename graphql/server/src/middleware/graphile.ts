@@ -605,5 +605,3 @@ export async function shutdownMultiTenancy(): Promise<void> {
   creatingTenants.clear();
   await shutdownMultiTenancyCache();
 }
-he();
-}
