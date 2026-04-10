@@ -275,7 +275,7 @@ const buildMultiTenancyPreset = (
     ],
     gather: {
       // TODO: Change to 'dynamic' once Crystal PR (pgIdentifiers: "dynamic") is merged upstream.
-      // 'dynamic' wraps schema names in __pgmt__ placeholders for runtime remapping.
+      // 'dynamic' wraps schema names in opaque placeholders for runtime remapping.
       // Until then, 'qualified' works for same-database tenants via search_path.
       pgIdentifiers: 'qualified',
     },
@@ -505,7 +505,7 @@ function multiTenancyHandler(opts: ConstructiveOptions): RequestHandler {
           `shared=${existing.isShared} fingerprint=${existing.fingerprint.substring(0, 12)}...`
         );
         // Inject the per-request sqlTextTransform so the PgExecutor can
-        // remap __pgmt__ placeholders to the real tenant schemas.
+        // remap dynamic schema placeholders to the real tenant schemas.
         req.sqlTextTransform = existing.sqlTextTransform;
         return existing.handler(req, res, next);
       }
@@ -604,4 +604,6 @@ export async function shutdownMultiTenancy(): Promise<void> {
   tenantInstances.clear();
   creatingTenants.clear();
   await shutdownMultiTenancyCache();
+}
+he();
 }

@@ -1,5 +1,6 @@
 import {
   buildSchemaRemapTransform,
+  isSchemaPlaceholder,
   wrapSchemaPlaceholder,
   buildTenantPgSettings,
   buildSchemaMap,
@@ -9,11 +10,15 @@ import {
 describe('dynamic-schema', () => {
   describe('wrapSchemaPlaceholder', () => {
     it('should wrap a schema name in placeholder markers', () => {
-      expect(wrapSchemaPlaceholder('app_public')).toBe('__pgmt_app_public__');
+      const result = wrapSchemaPlaceholder('app_public');
+      expect(isSchemaPlaceholder(result)).toBe(true);
+      // Round-trip: wrapping then checking is the contract — the literal
+      // prefix/suffix format is an internal detail of the Crystal shim.
     });
 
     it('should handle empty string', () => {
-      expect(wrapSchemaPlaceholder('')).toBe('__pgmt___');
+      const result = wrapSchemaPlaceholder('');
+      expect(isSchemaPlaceholder(result)).toBe(true);
     });
   });
 
@@ -55,7 +60,9 @@ describe('dynamic-schema', () => {
       const result = transform(sql);
       expect(result).toContain('"tenant_1_public"."users"');
       expect(result).toContain('"tenant_1_public"."posts"');
-      expect(result).not.toContain('__pgmt_');
+      // After remapping, no placeholders should remain in the output.
+      expect(isSchemaPlaceholder(result)).toBe(false);
+      expect(result).not.toContain(wrapSchemaPlaceholder('app_public'));
     });
 
     it('should not modify text that does not contain placeholders', () => {

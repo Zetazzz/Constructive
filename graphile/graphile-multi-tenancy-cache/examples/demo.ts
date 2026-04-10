@@ -5,11 +5,11 @@
  * dynamic SQL identifiers:
  *
  * 1. Initialize Instance A (Schemas: t_1_app, t_1_perf) -> Performs full build
- *    with `pgIdentifiers: "dynamic"` so SQL contains __pgmt__ placeholders.
+ *    with `pgIdentifiers: "dynamic"` so SQL contains opaque schema placeholders.
  * 2. Initialize Instance B (Schemas: t_2_app, t_2_perf, identical structure)
  *    -> Skips build, reuses A's registry + gets a sqlTextTransform.
- * 3. Verify the sqlTextTransform correctly rewrites __pgmt_t_1_app__ -> t_2_app
- *    and __pgmt_t_1_perf__ -> t_2_perf.
+ * 3. Verify the sqlTextTransform correctly rewrites placeholders to t_2_app
+ *    and t_2_perf.
  *
  * This demonstrates the multi-schema-per-tenant case where both schemas have
  * tables with the same name (e.g., both t_1_app.users and t_1_perf.users).
@@ -35,7 +35,7 @@ import {
 } from './multi-tenancy-cache';
 import { getSchemaFingerprint } from './fingerprint';
 import { fetchAndParseIntrospection } from './introspection';
-import { PGMT_PREFIX, PGMT_SUFFIX, buildSchemaRemapTransform, buildSchemaMap } from './dynamic-schema';
+import { buildSchemaRemapTransform, buildSchemaMap, wrapSchemaPlaceholder } from './dynamic-schema';
 
 const log = new Logger('demo');
 
@@ -140,7 +140,7 @@ function buildDemoPreset(
       }),
     ],
     gather: {
-      // CRITICAL: "dynamic" mode wraps schema names in __pgmt__ placeholders
+      // CRITICAL: "dynamic" mode wraps schema names in opaque placeholders
       // so they can be remapped per-tenant at execution time.
       // Note: requires crystal PR (Zetazzz/crystal#5) for the "dynamic" type
       pgIdentifiers: 'dynamic' as 'qualified',
@@ -249,7 +249,9 @@ async function main(): Promise<void> {
     log.info('\n--- Step 5: Verify Dynamic SQL Identifier Transformation ---');
 
     // Simulate SQL that PostGraphile would generate with dynamic mode
-    const templateSql = `SELECT * FROM "${PGMT_PREFIX}t_1_app${PGMT_SUFFIX}"."users" u JOIN "${PGMT_PREFIX}t_1_perf${PGMT_SUFFIX}"."users" p ON u.id = p.id`;
+    const p1 = wrapSchemaPlaceholder('t_1_app');
+    const p2 = wrapSchemaPlaceholder('t_1_perf');
+    const templateSql = `SELECT * FROM "${p1}"."users" u JOIN "${p2}"."users" p ON u.id = p.id`;
     log.info(`Template SQL (with placeholders):`);
     log.info(`  ${templateSql}`);
 

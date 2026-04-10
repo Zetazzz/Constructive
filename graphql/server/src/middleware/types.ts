@@ -17,8 +17,9 @@ declare global {
       token?: ConstructiveAPIToken;
       /**
        * Per-request SQL text transform for multi-tenancy schema remapping.
-       * When set, replaces `__pgmt_<schema>__` placeholders in compiled SQL
+       * When set, replaces dynamic schema placeholders in compiled SQL
        * with the real tenant schema names at execution time.
+       * @see wrapSchemaPlaceholder from the Crystal-mimic shim
        */
       sqlTextTransform?: (text: string) => string;
     }

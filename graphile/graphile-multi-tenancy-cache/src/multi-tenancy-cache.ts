@@ -17,7 +17,7 @@
  *
  * Crystal-Level Integration:
  * - Uses `pgIdentifiers: "dynamic"` in the preset so that schema names in
- *   compiled SQL are wrapped as `"__pgmt_<schemaName>__"` placeholders.
+ *   compiled SQL are wrapped as opaque placeholders (via `wrapSchemaPlaceholder`).
  * - Provides `PgExecutorContext.sqlTextTransform` per-request to replace
  *   those placeholders with the real tenant schema names.
  * - This correctly handles multi-schema tenants even when tables share
@@ -102,7 +102,7 @@ export interface TenantInstance {
 
   /**
    * The sqlTextTransform for this tenant. When the template was built
-   * with `pgIdentifiers: "dynamic"`, SQL contains `"__pgmt_schema__"`
+   * with `pgIdentifiers: "dynamic"`, SQL contains opaque schema
    * placeholders. This transform replaces them with the real tenant schemas.
    * Should be injected into `PgExecutorContext.sqlTextTransform` per-request.
    *
@@ -216,7 +216,7 @@ const dedicatedInstances = new Map<string, {
  * @param config - Tenant configuration
  * @param presetBuilder - Function to build the GraphileConfig preset.
  *   IMPORTANT: The preset MUST include `gather: { pgIdentifiers: "dynamic" }`
- *   so that schema names are wrapped in __pgmt__ placeholders.
+ *   so that schema names are wrapped in dynamic schema placeholders.
  * @returns Tenant instance with handler, transform, and metadata
  */
 export async function getOrCreateTenantInstance(
@@ -312,7 +312,7 @@ export async function getOrCreateTenantInstance(
 /**
  * Create a new template from a tenant's configuration.
  * Uses `pgIdentifiers: "dynamic"` so SQL identifiers are wrapped in
- * __pgmt__ placeholders for runtime schema remapping.
+ * opaque placeholders for runtime schema remapping.
  */
 async function createTemplate(
   config: TenantConfig,

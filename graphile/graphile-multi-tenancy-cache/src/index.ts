@@ -40,10 +40,14 @@ export {
 } from './introspection-cache';
 
 // Dynamic schema resolution — public helpers only
+// The placeholder-encoding utilities (wrapSchemaPlaceholder, isSchemaPlaceholder,
+// extractOriginalName, buildSchemaRemapTransform) originate from the Crystal-mimic
+// shim at ./compat/crystal/multiTenancy and are re-exported through dynamic-schema.
 export {
   buildSchemaMap,
   buildSchemaRemapTransform,
   buildTenantPgSettings,
+  extractOriginalName,
   extractTemplateSchemaNames,
   isSchemaPlaceholder,
   remapSchemas,
