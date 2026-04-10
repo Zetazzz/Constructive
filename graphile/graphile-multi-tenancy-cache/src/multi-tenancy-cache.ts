@@ -264,16 +264,22 @@ export async function getOrCreateTenantInstance(
   const inFlight = creatingTemplates.get(fingerprint);
   if (inFlight) {
     log.debug(`Coalescing template creation for fingerprint ${fingerprint.substring(0, 16)}...`);
-    const template = await inFlight;
-    registerTenant(cacheKey, fingerprint);
+    try {
+      const template = await inFlight;
+      registerTenant(cacheKey, fingerprint);
 
-    return buildTenantResult(
-      template.handler,
-      true,
-      fingerprint,
-      template.templateSchemas,
-      schemas
-    );
+      return buildTenantResult(
+        template.handler,
+        true,
+        fingerprint,
+        template.templateSchemas,
+        schemas
+      );
+    } catch (err) {
+      log.warn(`Coalesced template creation failed for tenant ${cacheKey} ` +
+        `(fingerprint: ${fingerprint.substring(0, 16)}...):`, err);
+      throw err;
+    }
   }
 
   // Step 4: Create new template (with pgIdentifiers: "dynamic")
@@ -295,6 +301,9 @@ export async function getOrCreateTenantInstance(
       template.templateSchemas,
       schemas
     );
+  } catch (err) {
+    log.error(`Template creation failed for fingerprint ${fingerprint.substring(0, 16)}...:`, err);
+    throw err;
   } finally {
     creatingTemplates.delete(fingerprint);
   }
@@ -312,30 +321,44 @@ async function createTemplate(
 ): Promise<RegistryTemplate> {
   const { pool, schemas, anonRole, roleName } = config;
 
-  const preset = presetBuilder(pool, schemas, anonRole, roleName);
-  const pgl = postgraphile(preset);
-  const serv = pgl.createServ(grafserv);
+  let pgl: ReturnType<typeof postgraphile> | undefined;
+  let httpServer: import('node:http').Server | undefined;
 
-  const handler = express();
-  const httpServer = createServer(handler);
-  await serv.addTo(handler, httpServer);
-  await serv.ready();
+  try {
+    const preset = presetBuilder(pool, schemas, anonRole, roleName);
+    pgl = postgraphile(preset);
+    const serv = pgl.createServ(grafserv);
 
-  const template: RegistryTemplate = {
-    fingerprint,
-    pgl,
-    serv,
-    handler,
-    httpServer,
-    basePresetSnapshot: { schemas, anonRole, roleName },
-    createdAt: Date.now(),
-    refCount: 0,
-    idleSince: Date.now(), // Starts idle — registerTenant() will clear this
-    templateSchemas: [...schemas]
-  };
+    const handler = express();
+    httpServer = createServer(handler);
+    await serv.addTo(handler, httpServer);
+    await serv.ready();
 
-  setTemplate(fingerprint, template);
-  return template;
+    const template: RegistryTemplate = {
+      fingerprint,
+      pgl,
+      serv,
+      handler,
+      httpServer,
+      basePresetSnapshot: { schemas, anonRole, roleName },
+      createdAt: Date.now(),
+      refCount: 0,
+      idleSince: Date.now(), // Starts idle — registerTenant() will clear this
+      templateSchemas: [...schemas]
+    };
+
+    setTemplate(fingerprint, template);
+    return template;
+  } catch (err) {
+    // Clean up partially created resources to prevent leaks
+    if (httpServer) {
+      try { httpServer.close(); } catch (_) { /* best-effort */ }
+    }
+    if (pgl) {
+      try { await pgl.release(); } catch (_) { /* best-effort */ }
+    }
+    throw err;
+  }
 }
 
 /**
