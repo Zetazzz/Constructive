@@ -148,7 +148,8 @@ function buildPreset(
 ): GraphileConfig.Preset {
   return {
     extends: [PostGraphileAmberPreset],
-    pgServices: [makePgService({ pool, schemas })],
+    // Cast needed when linking local Crystal packages (different @types/pg version)
+    pgServices: [makePgService({ pool: pool as any, schemas })],
     grafserv: { graphqlPath: '/graphql' },
     grafast: { explain: false },
   };
@@ -184,7 +185,8 @@ async function runDedicated(pool: Pool, schemas: string[], pgConfig: { database?
     const serv = pgl.createServ(grafserv);
     const app = express();
     const httpServer = createServer(app);
-    await serv.addTo(app, httpServer);
+    // Cast needed when linking local Crystal packages (different @types/express version)
+    await serv.addTo(app as any, httpServer);
     await serv.ready();
 
     handlers.push(app);

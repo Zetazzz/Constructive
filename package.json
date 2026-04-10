@@ -51,7 +51,21 @@
     "overrides": {
       "@dataplan/json": "1.0.0",
       "graphql": "16.13.0",
-      "@smithy/node-http-handler": "<4.5.0"
+      "@smithy/node-http-handler": "<4.5.0",
+      "@dataplan/pg": "link:/home/ubuntu/repos/crystal/grafast/dataplan-pg",
+      "grafast": "link:/home/ubuntu/repos/crystal/grafast/grafast",
+      "grafserv": "link:/home/ubuntu/repos/crystal/grafast/grafserv",
+      "graphile-build": "link:/home/ubuntu/repos/crystal/graphile-build/graphile-build",
+      "graphile-build-pg": "link:/home/ubuntu/repos/crystal/graphile-build/graphile-build-pg",
+      "graphile-utils": "link:/home/ubuntu/repos/crystal/graphile-build/graphile-utils",
+      "postgraphile": "link:/home/ubuntu/repos/crystal/postgraphile/postgraphile",
+      "graphile-config": "link:/home/ubuntu/repos/crystal/utils/graphile-config",
+      "pg-sql2": "link:/home/ubuntu/repos/crystal/utils/pg-sql2",
+      "pg-introspection": "link:/home/ubuntu/repos/crystal/utils/pg-introspection",
+      "graphile-export": "link:/home/ubuntu/repos/crystal/utils/graphile-export",
+      "graphile": "link:/home/ubuntu/repos/crystal/utils/graphile",
+      "tamedevil": "link:/home/ubuntu/repos/crystal/utils/tamedevil",
+      "@graphile/lru": "link:/home/ubuntu/repos/crystal/utils/lru"
     },
     "publicHoistPattern": [
       "@jest/test-sequencer"

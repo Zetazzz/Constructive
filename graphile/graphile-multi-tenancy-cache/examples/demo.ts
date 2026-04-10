@@ -135,7 +135,8 @@ function buildDemoPreset(
     extends: [PostGraphileAmberPreset],
     pgServices: [
       makePgService({
-        pool,
+        // Cast needed when linking local Crystal packages (different @types/pg version)
+        pool: pool as any,
         schemas,
       }),
     ],
