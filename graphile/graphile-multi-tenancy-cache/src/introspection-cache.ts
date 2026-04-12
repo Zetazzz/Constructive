@@ -10,6 +10,14 @@
  * The cache also stores the computed fingerprint, since it's deterministically
  * derived from the parsed introspection and would be wasted work to recompute.
  *
+ * ## Eviction Policy
+ *
+ * Entries are evicted when they have not been accessed for longer than
+ * `IDLE_TTL_MS` (default: 30 minutes).  Additionally, when the total number
+ * of entries exceeds `MAX_ENTRIES`, the least-recently-accessed entries are
+ * evicted first (LRU-style).  A periodic sweep runs every `SWEEP_INTERVAL_MS`
+ * to clean up expired entries automatically.
+ *
  * ## Single-Flight Exception Safety
  *
  * The `inflight` map coalesces concurrent requests for the same cache key.
@@ -38,6 +46,19 @@ import { fetchAndParseIntrospection } from './introspection';
 const log = new Logger('multi-tenancy-cache:introspection-cache');
 
 // =============================================================================
+// Eviction Configuration
+// =============================================================================
+
+/** Time in milliseconds a cache entry is kept without being accessed. Default: 30 minutes. */
+const IDLE_TTL_MS = 30 * 60 * 1000;
+
+/** Maximum number of entries allowed in the cache. Least-recently-accessed entries are evicted first. */
+const MAX_ENTRIES = 100;
+
+/** Interval for the automatic idle-entry sweep. Default: 5 minutes. */
+const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -53,6 +74,9 @@ export interface CachedIntrospection {
 
   /** Timestamp when this entry was cached */
   cachedAt: number;
+
+  /** Timestamp when this entry was last accessed (for LRU eviction) */
+  lastAccessedAt: number;
 }
 
 export interface IntrospectionCacheStats {
@@ -63,6 +87,7 @@ export interface IntrospectionCacheStats {
   entries: Array<{
     key: string;
     cachedAt: number;
+    lastAccessedAt: number;
     fingerprint: string;
   }>;
 }
@@ -82,6 +107,12 @@ const cache = new Map<string, CachedIntrospection>();
  * even if the fetch rejects.
  */
 const inflight = new Map<string, Promise<CachedIntrospection>>();
+
+/**
+ * Handle for the periodic sweep timer.
+ * Cleared on shutdown to allow clean process exit.
+ */
+let sweepTimer: ReturnType<typeof setInterval> | null = null;
 
 // =============================================================================
 // Key Construction
@@ -127,6 +158,7 @@ export async function getOrCreateIntrospection(
   // Check cache
   const cached = cache.get(key);
   if (cached) {
+    cached.lastAccessedAt = Date.now();
     log.info(`Introspection cache HIT: ${key} (fingerprint: ${cached.fingerprint.substring(0, 16)}...)`);
     return cached;
   }
@@ -151,15 +183,26 @@ export async function getOrCreateIntrospection(
       const { raw, parsed } = await fetchAndParseIntrospection(pool, schemas);
       const fingerprint = getSchemaFingerprint(parsed, schemas);
 
+      const now = Date.now();
       const entry: CachedIntrospection = {
         raw,
         parsed,
         fingerprint,
-        cachedAt: Date.now()
+        cachedAt: now,
+        lastAccessedAt: now
       };
 
       // Only cache successful results — never cache failures
       cache.set(key, entry);
+      ensureSweepTimer();
+
+      // Trigger async eviction if we're over the cap
+      if (cache.size > MAX_ENTRIES) {
+        sweepIntrospectionCache().catch((err) => {
+          log.error('Post-cache-set sweep error:', err);
+        });
+      }
+
       log.info(
         `Introspection cached: ${key} ` +
         `(fingerprint: ${fingerprint.substring(0, 16)}..., ` +
@@ -222,11 +265,92 @@ export function invalidateIntrospection(dbname: string, schemas?: string[]): voi
   }
 }
 
+// =============================================================================
+// Sweep / Eviction
+// =============================================================================
+
+/**
+ * Sweep the introspection cache and evict entries that have not been accessed
+ * within the idle TTL.
+ *
+ * Also enforces the MAX_ENTRIES cap by evicting the least-recently-accessed
+ * entries first when the cache is over capacity.
+ *
+ * This function is safe to call at any time (including concurrently).
+ */
+export async function sweepIntrospectionCache(): Promise<number> {
+  const now = Date.now();
+  const toEvict: string[] = [];
+
+  // Phase 1: Collect TTL-expired entries
+  for (const [key, entry] of cache) {
+    const idleDuration = now - entry.lastAccessedAt;
+    if (idleDuration >= IDLE_TTL_MS) {
+      toEvict.push(key);
+    }
+  }
+
+  // Phase 2: Enforce MAX_ENTRIES cap — evict least-recently-accessed first
+  if (cache.size - toEvict.length > MAX_ENTRIES) {
+    const alreadyEvicting = new Set(toEvict);
+
+    // Gather remaining entries sorted by lastAccessedAt (oldest first = LRU)
+    const candidates: Array<{ key: string; lastAccessedAt: number }> = [];
+    for (const [key, entry] of cache) {
+      if (!alreadyEvicting.has(key)) {
+        candidates.push({ key, lastAccessedAt: entry.lastAccessedAt });
+      }
+    }
+    candidates.sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
+
+    const excess = cache.size - toEvict.length - MAX_ENTRIES;
+    for (let i = 0; i < Math.min(excess, candidates.length); i++) {
+      toEvict.push(candidates[i].key);
+    }
+  }
+
+  if (toEvict.length === 0) return 0;
+
+  log.info(`Evicting ${toEvict.length} introspection cache entries (cache size: ${cache.size})`);
+
+  for (const key of toEvict) {
+    cache.delete(key);
+  }
+
+  log.info(`Eviction complete. Remaining entries: ${cache.size}`);
+  return toEvict.length;
+}
+
+/**
+ * Start the periodic sweep timer. Called lazily on the first cache insertion.
+ * Uses `unref()` so the timer does not prevent Node from exiting.
+ */
+function ensureSweepTimer(): void {
+  if (sweepTimer) return;
+  sweepTimer = setInterval(() => {
+    sweepIntrospectionCache().catch((err) => {
+      log.error('Sweep timer error:', err);
+    });
+  }, SWEEP_INTERVAL_MS);
+  // unref so the timer doesn't prevent process exit
+  if (typeof sweepTimer === 'object' && 'unref' in sweepTimer) {
+    sweepTimer.unref();
+  }
+}
+
 /**
  * Clear the entire introspection cache.
  * Called during shutdown.
+ *
+ * Also stops the periodic sweep timer.
  */
 export function clearIntrospectionCache(): void {
+  // Stop the sweep timer
+  if (sweepTimer) {
+    clearInterval(sweepTimer);
+    sweepTimer = null;
+  }
+
   const size = cache.size;
   cache.clear();
   inflight.clear();
@@ -242,6 +366,7 @@ export function getIntrospectionCacheStats(): IntrospectionCacheStats {
   const entries = [...cache.entries()].map(([key, entry]) => ({
     key,
     cachedAt: entry.cachedAt,
+    lastAccessedAt: entry.lastAccessedAt,
     fingerprint: entry.fingerprint
   }));
 

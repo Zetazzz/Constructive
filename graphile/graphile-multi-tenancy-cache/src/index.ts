@@ -30,13 +30,15 @@ export {
 } from './introspection';
 
 // Introspection cache — in-memory cache to avoid redundant pg_catalog queries
+// Supports LRU eviction (idle TTL + max entries cap), same pattern as template eviction.
 export {
   CachedIntrospection,
   clearIntrospectionCache,
   getIntrospectionCacheStats,
   getOrCreateIntrospection,
   IntrospectionCacheStats,
-  invalidateIntrospection
+  invalidateIntrospection,
+  sweepIntrospectionCache
 } from './introspection-cache';
 
 // Dynamic schema resolution — public helpers only
@@ -57,6 +59,7 @@ export {
 
 // Template eviction — allows consumers to trigger a manual sweep or monitor idle templates
 export { sweepIdleTemplates } from './registry-template-map';
+// NOTE: sweepIntrospectionCache is exported above from './introspection-cache'
 
 // NOTE: The following are intentionally NOT exported:
 // - getTemplate, setTemplate, registerTenant, deregisterTenant (internal state management)
