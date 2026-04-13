@@ -30,10 +30,21 @@ const log = new Logger('multi-tenancy-cache:registry-map');
 const IDLE_TTL_MS = 30 * 60 * 1000;
 
 /** Maximum number of templates allowed in the map. Oldest idle templates are evicted first. */
-const MAX_TEMPLATES = 50;
+let maxTemplates = 50;
 
 /** Interval for the automatic idle-template sweep. Default: 5 minutes. */
 const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Override the max-templates cap for testing.  Pass `undefined` to restore the
+ * production default (50).  This is intentionally **not** re-exported from
+ * the package index — only test files should import it directly.
+ *
+ * @internal — test-only hook
+ */
+export function _testSetMaxTemplates(n: number | undefined): void {
+  maxTemplates = n ?? 50;
+}
 
 /**
  * A template entry caches the expensive-to-build objects that can be
@@ -168,8 +179,8 @@ export async function sweepIdleTemplates(): Promise<number> {
     }
   }
 
-  // Phase 2: Enforce MAX_TEMPLATES cap — evict oldest idle templates first
-  if (templateMap.size - toEvict.length > MAX_TEMPLATES) {
+  // Phase 2: Enforce max-templates cap — evict oldest idle templates first
+  if (templateMap.size - toEvict.length > maxTemplates) {
     const alreadyEvicting = new Set(toEvict.map((e) => e.fingerprint));
 
     // Gather remaining idle templates sorted by idleSince (oldest first)
@@ -181,7 +192,7 @@ export async function sweepIdleTemplates(): Promise<number> {
     }
     idleCandidates.sort((a, b) => a.idleSince - b.idleSince);
 
-    const excess = templateMap.size - toEvict.length - MAX_TEMPLATES;
+    const excess = templateMap.size - toEvict.length - maxTemplates;
     for (let i = 0; i < Math.min(excess, idleCandidates.length); i++) {
       toEvict.push(idleCandidates[i]);
     }
@@ -255,7 +266,7 @@ export function setTemplate(fingerprint: string, template: RegistryTemplate): vo
   ensureSweepTimer();
 
   // Trigger async eviction if we're over the cap
-  if (templateMap.size > MAX_TEMPLATES) {
+  if (templateMap.size > maxTemplates) {
     sweepIdleTemplates().catch((err) => {
       log.error('Post-setTemplate sweep error:', err);
     });

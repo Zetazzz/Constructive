@@ -4,6 +4,7 @@ import {
   getOrCreateIntrospection,
   invalidateIntrospection,
   sweepIntrospectionCache,
+  _testSetMaxEntries,
 } from '../introspection-cache';
 
 // Mock dependencies
@@ -172,11 +173,7 @@ describe('Introspection Cache', () => {
       expect(getIntrospectionCacheStats().size).toBe(1);
     });
 
-    it('should evict oldest entries when over MAX_ENTRIES cap', async () => {
-      // We can't easily create 100+ entries in a unit test, but we can verify
-      // the LRU logic by checking that older entries are evicted first
-      // when we have a mix of old and new entries.
-
+    it('should evict oldest entries via TTL (not capacity)', async () => {
       // Create 3 entries with different lastAccessedAt
       const entries: any[] = [];
       for (let i = 0; i < 3; i++) {
@@ -192,7 +189,7 @@ describe('Introspection Cache', () => {
 
       expect(getIntrospectionCacheStats().size).toBe(3);
 
-      // Mark only the first entry as expired
+      // Mark only the first entry as expired past TTL
       entries[0].lastAccessedAt = Date.now() - (31 * 60 * 1000);
 
       const evicted = await sweepIntrospectionCache();
@@ -205,6 +202,128 @@ describe('Introspection Cache', () => {
       expect(keys).not.toContain('db-lru:schema_0');
       expect(keys).toContain('db-lru:schema_1');
       expect(keys).toContain('db-lru:schema_2');
+    });
+
+    it('should return 0 when cache is empty', async () => {
+      const evicted = await sweepIntrospectionCache();
+      expect(evicted).toBe(0);
+    });
+  });
+
+  describe('sweepIntrospectionCache (capacity-based / LRU eviction)', () => {
+    afterEach(() => {
+      _testSetMaxEntries(undefined); // restore default
+    });
+
+    it('should evict LRU entries when cache exceeds max-entries cap', async () => {
+      // Populate cache with default cap (100), then lower the cap
+      const now = Date.now();
+      const entries: any[] = [];
+      for (let i = 0; i < 8; i++) {
+        mockFetch.mockResolvedValueOnce({
+          raw: `{"i":${i}}`,
+          parsed: { tables: [], types: [], functions: [] } as any,
+        });
+        mockFingerprint.mockReturnValueOnce(`fp-cap-${i}`);
+
+        const entry = await getOrCreateIntrospection(mockPool, [`s${i}`], 'db-cap');
+        entries.push(entry);
+      }
+
+      expect(getIntrospectionCacheStats().size).toBe(8);
+
+      // Now lower the cap to 5 — cache has 8, which is over the new cap
+      _testSetMaxEntries(5);
+
+      // Assign deterministic lastAccessedAt — oldest first
+      // entries[0] = oldest (least recently accessed)
+      // entries[7] = newest (most recently accessed)
+      for (let i = 0; i < 8; i++) {
+        entries[i].lastAccessedAt = now + i * 1000;
+      }
+
+      // Sweep — should evict the 3 oldest (8 - 5 = 3 excess)
+      const evicted = await sweepIntrospectionCache();
+      expect(evicted).toBe(3);
+      expect(getIntrospectionCacheStats().size).toBe(5);
+
+      // Verify LRU order: entries 0, 1, 2 evicted; 3-7 remain
+      const remaining = getIntrospectionCacheStats().entries.map((e) => e.key);
+      expect(remaining).not.toContain('db-cap:s0');
+      expect(remaining).not.toContain('db-cap:s1');
+      expect(remaining).not.toContain('db-cap:s2');
+      expect(remaining).toContain('db-cap:s3');
+      expect(remaining).toContain('db-cap:s4');
+      expect(remaining).toContain('db-cap:s5');
+      expect(remaining).toContain('db-cap:s6');
+      expect(remaining).toContain('db-cap:s7');
+    });
+
+    it('should evict by TTL first, then by capacity (LRU) for the remainder', async () => {
+      // Populate cache with default cap, then lower it
+      const now = Date.now();
+      const entries: any[] = [];
+      for (let i = 0; i < 6; i++) {
+        mockFetch.mockResolvedValueOnce({
+          raw: `{"i":${i}}`,
+          parsed: { tables: [], types: [], functions: [] } as any,
+        });
+        mockFingerprint.mockReturnValueOnce(`fp-mix-${i}`);
+
+        const entry = await getOrCreateIntrospection(mockPool, [`m${i}`], 'db-mix');
+        entries.push(entry);
+      }
+
+      expect(getIntrospectionCacheStats().size).toBe(6);
+
+      // Now lower the cap to 3
+      _testSetMaxEntries(3);
+
+      // entries[0]: TTL-expired (31 min ago)
+      entries[0].lastAccessedAt = now - (31 * 60 * 1000);
+      // entries[1]: oldest non-expired
+      entries[1].lastAccessedAt = now + 1000;
+      // entries[2]: second oldest non-expired
+      entries[2].lastAccessedAt = now + 2000;
+      // entries[3]: third oldest non-expired
+      entries[3].lastAccessedAt = now + 3000;
+      // entries[4]: fourth
+      entries[4].lastAccessedAt = now + 4000;
+      // entries[5]: newest
+      entries[5].lastAccessedAt = now + 5000;
+
+      // Phase 1 removes entries[0] (TTL). Remaining = 5, still > 3.
+      // Phase 2 removes 2 oldest by LRU = entries[1], entries[2].
+      const evicted = await sweepIntrospectionCache();
+      expect(evicted).toBe(3); // 1 TTL + 2 LRU
+      expect(getIntrospectionCacheStats().size).toBe(3);
+
+      const remaining = getIntrospectionCacheStats().entries.map((e) => e.key);
+      expect(remaining).not.toContain('db-mix:m0'); // TTL evicted
+      expect(remaining).not.toContain('db-mix:m1'); // LRU evicted
+      expect(remaining).not.toContain('db-mix:m2'); // LRU evicted
+      expect(remaining).toContain('db-mix:m3');
+      expect(remaining).toContain('db-mix:m4');
+      expect(remaining).toContain('db-mix:m5');
+    });
+
+    it('should not evict when at exactly the cap (not over)', async () => {
+      for (let i = 0; i < 3; i++) {
+        mockFetch.mockResolvedValueOnce({
+          raw: `{"i":${i}}`,
+          parsed: { tables: [], types: [], functions: [] } as any,
+        });
+        mockFingerprint.mockReturnValueOnce(`fp-exact-${i}`);
+        await getOrCreateIntrospection(mockPool, [`e${i}`], 'db-exact');
+      }
+
+      // Lower cap to exactly match cache size
+      _testSetMaxEntries(3);
+
+      expect(getIntrospectionCacheStats().size).toBe(3);
+      const evicted = await sweepIntrospectionCache();
+      expect(evicted).toBe(0);
+      expect(getIntrospectionCacheStats().size).toBe(3);
     });
 
     it('should return 0 when cache is empty', async () => {

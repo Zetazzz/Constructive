@@ -53,10 +53,21 @@ const log = new Logger('multi-tenancy-cache:introspection-cache');
 const IDLE_TTL_MS = 30 * 60 * 1000;
 
 /** Maximum number of entries allowed in the cache. Least-recently-accessed entries are evicted first. */
-const MAX_ENTRIES = 100;
+let maxEntries = 100;
 
 /** Interval for the automatic idle-entry sweep. Default: 5 minutes. */
 const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Override the max-entries cap for testing.  Pass `undefined` to restore the
+ * production default (100).  This is intentionally **not** re-exported from
+ * the package index — only test files should import it directly.
+ *
+ * @internal — test-only hook
+ */
+export function _testSetMaxEntries(n: number | undefined): void {
+  maxEntries = n ?? 100;
+}
 
 // =============================================================================
 // Types
@@ -197,7 +208,7 @@ export async function getOrCreateIntrospection(
       ensureSweepTimer();
 
       // Trigger async eviction if we're over the cap
-      if (cache.size > MAX_ENTRIES) {
+      if (cache.size > maxEntries) {
         sweepIntrospectionCache().catch((err) => {
           log.error('Post-cache-set sweep error:', err);
         });
@@ -290,8 +301,8 @@ export async function sweepIntrospectionCache(): Promise<number> {
     }
   }
 
-  // Phase 2: Enforce MAX_ENTRIES cap — evict least-recently-accessed first
-  if (cache.size - toEvict.length > MAX_ENTRIES) {
+  // Phase 2: Enforce max-entries cap — evict least-recently-accessed first
+  if (cache.size - toEvict.length > maxEntries) {
     const alreadyEvicting = new Set(toEvict);
 
     // Gather remaining entries sorted by lastAccessedAt (oldest first = LRU)
@@ -303,7 +314,7 @@ export async function sweepIntrospectionCache(): Promise<number> {
     }
     candidates.sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
 
-    const excess = cache.size - toEvict.length - MAX_ENTRIES;
+    const excess = cache.size - toEvict.length - maxEntries;
     for (let i = 0; i < Math.min(excess, candidates.length); i++) {
       toEvict.push(candidates[i].key);
     }
