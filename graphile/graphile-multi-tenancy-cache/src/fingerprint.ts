@@ -91,8 +91,8 @@ function normalizeConstraint(
 ): string {
   // Use the referenced table name (not OID) for FK normalization
   const refTableName = c.confrelid ? (classNameMap.get(c.confrelid) || 'unknown') : '';
-  const keyStr = c.conkey ? c.conkey.sort((a, b) => a - b).join(',') : '';
-  const fkeyStr = c.confkey ? c.confkey.sort((a, b) => a - b).join(',') : '';
+  const keyStr = c.conkey ? [...c.conkey].sort((a, b) => a - b).join(',') : '';
+  const fkeyStr = c.confkey ? [...c.confkey].sort((a, b) => a - b).join(',') : '';
   // Strip constraint name prefix if it starts with schema name
   const normalizedName = c.conname;
   return `${normalizedName}:${c.contype}:${keyStr}:${refTableName}:${fkeyStr}`;
