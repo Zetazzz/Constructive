@@ -60,7 +60,7 @@ The transform is read **lazily** at call time (not at middleware time) because `
 
 | Layer | Key | Value | Eviction |
 |---|---|---|---|
-| **Tenant Instance** | `svc_key` | `TenantInstance` (handler + transform) | Flush via LISTEN/NOTIFY |
+| **Tenant Instance** | `svc_key` | `TenantInstance` (handler + transform) | Package-owned: `flushTenantInstance()`, flush via LISTEN/NOTIFY |
 | **Introspection** | `dbname:schema1,schema2` | Parsed introspection + fingerprint | LRU (max 100) + TTL (30min idle) |
 | **Template** | SHA-256 fingerprint | PostGraphile instance (pgl + handler + httpServer) | LRU (max 50) + TTL (30min idle) + refCount protection |
 
@@ -82,13 +82,13 @@ graphile/graphile-multi-tenancy-cache/
     │
     │   # Core modules
     ├── pg-client-wrapper-plugin.ts  ← Grafast middleware (SQL interception via Proxy)
-    ├── multi-tenancy-cache.ts       ← orchestrator (getOrCreateTenantInstance, shutdown)
+    ├── multi-tenancy-cache.ts       ← orchestrator (full lifecycle: tenant instances, templates, shutdown)
     ├── registry-template-map.ts     ← template registry (LRU/TTL eviction, refCount)
     ├── introspection-cache.ts       ← introspection cache (LRU/TTL eviction)
-    ├── fingerprint.ts               ← SHA-256 structural fingerprint (schema-name-agnostic)
     │
     │   # Utilities
     ├── utils/
+    │   ├── fingerprint.ts           ← SHA-256 structural fingerprint (schema-name-agnostic)
     │   ├── sql-transform.ts         ← buildSchemaRemapTransform (single-pass regex replacement)
     │   ├── schema-map.ts            ← buildSchemaMap, buildTenantPgSettings, remapSchemas
     │   └── introspection-query.ts   ← fetchIntrospection, parseIntrospection (raw pg_catalog access)
@@ -108,9 +108,8 @@ graphile/graphile-multi-tenancy-cache/
 
 ```
 graphql/server/src/middleware/
-├── graphile.ts                      ← add multiTenancyHandler + buildMultiTenancyPreset
-├── types.ts                         ← add sqlTextTransform to Express.Request
-└── flush.ts                         ← add multi-tenancy cache invalidation
+├── graphile.ts                      ← add multiTenancyHandler (calls package APIs, no preset builder)
+└── flush.ts                         ← add multi-tenancy cache invalidation (calls package's flushTenantInstance)
 
 graphql/server/src/
 ├── server.ts                        ← wire shutdownMultiTenancyCache, createFlushMiddleware
@@ -175,23 +174,39 @@ graphql/server/perf/
 
 ### 2. `multi-tenancy-cache.ts`
 
-**Purpose:** Top-level orchestrator — the main consumer-facing API.
+**Purpose:** Top-level orchestrator — owns the full tenant lifecycle including the `tenantInstances` Map.
 
 **Exports:**
-- `getOrCreateTenantInstance(config, presetBuilder)` → `Promise<TenantInstance>`
-- `onTenantEvicted(cacheKey)` — notify cache of tenant removal
+- `getOrCreateTenantInstance(config, basePresetBuilder)` → `Promise<TenantInstance>` — resolves tenant, stores in internal `tenantInstances` map. The `basePresetBuilder` is automatically wrapped with `PgMultiTenancyWrapperPlugin` + `pgSqlTextTransform` context injection — the consumer does not need to know about the plugin.
+- `getTenantInstance(cacheKey)` → `TenantInstance | undefined` — fast-path lookup from internal map
+- `flushTenantInstance(cacheKey)` — evict from `tenantInstances` map + deregister from template refCount
 - `getMultiTenancyCacheStats()` → `MultiTenancyCacheStats`
-- `shutdownMultiTenancyCache()` — release all resources
+- `shutdownMultiTenancyCache()` — release all resources (templates, dedicated instances, introspection cache, tenantInstances)
+- `createMultiTenancyPresetBuilder(baseBuilder)` → wraps a base preset builder with multi-tenancy plumbing (adds plugin + Grafast context callback that reads transform from internal `tenantInstances` map by `svc_key`)
 - Types: `TenantConfig`, `TenantInstance`, `MultiTenancyCacheStats`
 
-**Flow (getOrCreateTenantInstance):**
-1. `getOrCreateIntrospection(pool, schemas, dbname)` → fingerprint
-2. `getTemplate(fingerprint)` → hit? → reuse, `registerTenant()`
-3. Miss → check single-flight (`creatingTemplates` map)
-4. Miss → `createTemplate()` (builds PostGraphile instance, `setTemplate()`)
-5. Return `TenantInstance` with `buildSchemaRemapTransform()` as `sqlTextTransform`
+**Internal state:**
+- `tenantInstances: Map<string, TenantInstance>` — fast-path cache of resolved tenant instances
+- `creatingTenants: Map<string, Promise<TenantInstance>>` — single-flight for tenant creation
+- `creatingTemplates: Map<string, Promise<RegistryTemplate>>` — single-flight for template creation
+- `dedicatedInstances: Map<string, {...}>` — fallback non-shared instances
 
-**Fallback:** If introspection fails, creates a dedicated (non-shared) instance.
+**Flow (getOrCreateTenantInstance):**
+1. Check `tenantInstances` map (fast path) → return if hit
+2. Check `creatingTenants` map (single-flight coalesce) → wait if in-flight
+3. `getOrCreateIntrospection(pool, schemas, dbname)` → fingerprint
+4. `getTemplate(fingerprint)` → hit? → reuse, `registerTenant()`
+5. Miss → check `creatingTemplates` (single-flight for template)
+6. Miss → `createTemplate()` (builds PostGraphile instance, `setTemplate()`)
+7. Build `TenantInstance` with `buildSchemaRemapTransform()` as `sqlTextTransform`
+8. Store in `tenantInstances` map → return
+
+**Preset wrapping (createMultiTenancyPresetBuilder):**
+The package wraps any base preset builder to add:
+1. `plugins: [PgMultiTenancyWrapperPlugin]`
+2. `grafast.context` callback that reads `svc_key` from `requestContext.expressv4.req.svc_key`, looks up the tenant's `sqlTextTransform` from the internal `tenantInstances` map, and injects it as `pgSqlTextTransform` on the Grafast context — **no `req.sqlTextTransform` field needed on Express.Request**
+
+**Fallback:** If introspection fails, creates a dedicated (non-shared) instance (resilience over visibility).
 
 **Dependencies:** `introspection-cache`, `registry-template-map`, `utils/sql-transform`, `utils/schema-map`, `postgraphile`, `grafserv`, `express`
 
@@ -236,7 +251,7 @@ graphql/server/perf/
 
 **Single-flight:** `inflight` Map coalesces concurrent requests. `finally` block guarantees cleanup. Failed entries are NOT cached.
 
-### 5. `fingerprint.ts`
+### 5. `utils/fingerprint.ts`
 
 **Purpose:** Schema-name-agnostic structural fingerprinting.
 
@@ -287,38 +302,32 @@ graphql/server/perf/
 
 ## Server integration
 
+The server is a thin consumer of the package APIs. It does **not** manage tenant
+state, preset builders, or Express.Request extensions — those responsibilities
+belong to the package.
+
 ### `graphile.ts` changes
 
 **New function: `multiTenancyHandler(opts)`**
 - Selected when `opts.api.useMultiTenancyCache === true`
-- Three-phase request handling: cache check → single-flight coalesce → create/reuse
-- Injects `req.sqlTextTransform` before routing to template handler
-
-**New function: `buildMultiTenancyPreset(pool, schemas, anonRole, roleName)`**
-- Same as `buildPreset()` but adds:
-  - `plugins: [PgMultiTenancyWrapperPlugin]`
-  - `pgSqlTextTransform` injection in `grafast.context`
+- Calls `getTenantInstance(key)` for fast-path cache hit
+- On miss, calls `getOrCreateTenantInstance(config, basePresetBuilder)` — the package wraps the base preset internally
+- Routes the request to `tenant.handler(req, res, next)` — the package's Grafast context callback handles `pgSqlTextTransform` injection internally (no `req.sqlTextTransform` needed)
 
 **New exports:**
 - `isMultiTenancyCacheEnabled(opts)` — boolean check
-- `flushTenantInstance(key)` — evict from local `tenantInstances` map
-- `shutdownMultiTenancy()` — graceful shutdown (called from `server.ts`)
+- `shutdownMultiTenancy()` — calls package's `shutdownMultiTenancyCache()`
+
+**No changes to `types.ts`** — `Express.Request` is NOT extended with `sqlTextTransform`. The transform is injected directly into the Grafast context by the package's preset builder using the existing `req.svc_key`.
 
 ### `flush.ts` changes
 
 **New function: `createFlushMiddleware(opts)`**
 - Replaces `flush` (deprecated but kept for backwards compat)
-- Adds multi-tenancy cache invalidation: `onTenantEvicted()`, `flushTenantInstance()`, `invalidateIntrospection()`
+- Calls package's `flushTenantInstance(key)` + `invalidateIntrospection(dbname)`
 
 **`flushService()` changes:**
-- When multi-tenancy enabled: looks up `dbname` from `databaseId`, calls `invalidateIntrospection(dbname)`
-
-### `types.ts` changes
-
-Add to `Express.Request`:
-```ts
-sqlTextTransform?: (text: string) => string;
-```
+- When multi-tenancy enabled: looks up `dbname` from `databaseId`, calls `invalidateIntrospection(dbname)` + `flushTenantInstance(key)` for each matching domain
 
 ### `env.ts` + `graphile.ts` (types) changes
 
@@ -411,7 +420,7 @@ No Crystal fork. No `link:` overrides. Works with published Crystal/PostGraphile
 ## Implementation order
 
 1. **Package scaffolding** — `package.json`, tsconfig, jest config
-2. **Utilities** — `utils/sql-transform.ts`, `utils/schema-map.ts`, `utils/introspection-query.ts`, `fingerprint.ts`
+2. **Utilities** — `utils/fingerprint.ts`, `utils/sql-transform.ts`, `utils/schema-map.ts`, `utils/introspection-query.ts`
 3. **Cache layers** — `introspection-cache.ts`, `registry-template-map.ts`
 4. **Plugin** — `pg-client-wrapper-plugin.ts`
 5. **Orchestrator** — `multi-tenancy-cache.ts`
