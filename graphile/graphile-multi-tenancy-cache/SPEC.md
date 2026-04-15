@@ -85,16 +85,13 @@ graphile/graphile-multi-tenancy-cache/
     ├── multi-tenancy-cache.ts       ← orchestrator (getOrCreateTenantInstance, shutdown)
     ├── registry-template-map.ts     ← template registry (LRU/TTL eviction, refCount)
     ├── introspection-cache.ts       ← introspection cache (LRU/TTL eviction)
+    ├── fingerprint.ts               ← SHA-256 structural fingerprint (schema-name-agnostic)
     │
     │   # Utilities
-    ├── introspection.ts             ← fetch + parse pg_catalog introspection
-    ├── fingerprint.ts               ← SHA-256 structural fingerprint (schema-name-agnostic)
-    ├── dynamic-schema.ts            ← schema mapping helpers (buildSchemaMap, buildTenantPgSettings)
-    │
-    │   # SQL transform
-    ├── compat/
-    │   └── crystal/
-    │       └── multiTenancy.ts      ← buildSchemaRemapTransform (single-pass regex replacement)
+    ├── utils/
+    │   ├── sql-transform.ts         ← buildSchemaRemapTransform (single-pass regex replacement)
+    │   ├── schema-map.ts            ← buildSchemaMap, buildTenantPgSettings, remapSchemas
+    │   └── introspection-query.ts   ← fetchIntrospection, parseIntrospection (raw pg_catalog access)
     │
     │   # Tests
     └── __tests__/
@@ -102,7 +99,8 @@ graphile/graphile-multi-tenancy-cache/
         ├── registry-template-map.test.ts
         ├── introspection-cache.test.ts
         ├── fingerprint.test.ts
-        ├── dynamic-schema.test.ts
+        ├── sql-transform.test.ts
+        ├── schema-map.test.ts
         └── single-flight.test.ts
 ```
 
@@ -123,6 +121,31 @@ graphql/env/src/
 
 graphql/types/src/
 └── graphile.ts                      ← add useMultiTenancyCache to ApiOptions
+```
+
+### Benchmark scripts: `graphql/server/perf/`
+
+E2E benchmark scripts live at the server level (not in the package) since they
+start the actual GraphQL server, manage databases, and do HTTP load testing.
+
+```
+graphql/server/perf/
+├── README.md                        ← usage docs
+├── common.mjs                       ← shared utilities (fetch, timing, pool helpers)
+├── run-k-sweep.mjs                  ← orchestrator: run both modes, compare results
+├── run-test-spec.mjs                ← single-mode runner (dedicated or multi-tenant)
+├── phase1-preflight.mjs             ← pre-flight checks (DB connectivity, server health)
+├── phase1-tech-validate-dbpm.mjs    ← validate DBPM tenant databases exist
+├── phase2-load.mjs                  ← HTTP load generator (configurable workers, duration)
+├── seed-real-multitenant.mjs        ← seed k tenant databases for benchmarking
+├── build-token-pool.mjs             ← generate auth tokens for load testing
+├── build-keyspace-profiles.mjs      ← build tenant keyspace profiles
+├── build-business-op-profiles.mjs   ← build business operation profiles
+├── prepare-public-test-access.mjs   ← prepare public API test access
+├── public-test-access-lib.mjs       ← shared lib for public test access
+├── reset-business-test-data.mjs     ← reset test data between runs
+├── run-comparison.sh                ← shell wrapper: run both modes + compare
+└── results/                         ← raw JSON benchmark results (gitignored)
 ```
 
 ---
@@ -170,7 +193,7 @@ graphql/types/src/
 
 **Fallback:** If introspection fails, creates a dedicated (non-shared) instance.
 
-**Dependencies:** `introspection-cache`, `registry-template-map`, `dynamic-schema`, `postgraphile`, `grafserv`, `express`
+**Dependencies:** `introspection-cache`, `registry-template-map`, `utils/sql-transform`, `utils/schema-map`, `postgraphile`, `grafserv`, `express`
 
 ### 3. `registry-template-map.ts`
 
@@ -213,18 +236,7 @@ graphql/types/src/
 
 **Single-flight:** `inflight` Map coalesces concurrent requests. `finally` block guarantees cleanup. Failed entries are NOT cached.
 
-### 5. `introspection.ts`
-
-**Purpose:** Low-level introspection fetch + parse.
-
-**Exports:**
-- `fetchIntrospection(pool, schemas)` → raw JSON string
-- `parseIntrospection(text)` → `MinimalIntrospection`
-- `fetchAndParseIntrospection(pool, schemas)` → `{ raw, parsed }`
-
-**Connection safety:** Uses `BEGIN` + `SET LOCAL search_path` + `COMMIT` so the search_path never leaks to pooled connections.
-
-### 6. `fingerprint.ts`
+### 5. `fingerprint.ts`
 
 **Purpose:** Schema-name-agnostic structural fingerprinting.
 
@@ -237,33 +249,39 @@ graphql/types/src/
 
 **What's excluded:** Schema/namespace names, OIDs, instance-specific identifiers. This ensures `t_1_services_public.apis` and `t_2_services_public.apis` produce the same fingerprint.
 
-### 7. `dynamic-schema.ts`
+### 6. `utils/sql-transform.ts`
 
-**Purpose:** Schema mapping utilities for the direct-replacement pattern.
+**Purpose:** SQL text transform — the single-pass regex replacement logic.
+
+**Exports:**
+- `buildSchemaRemapTransform(schemaMap)` → `(text: string) => string`
+
+**How it works:**
+1. Pre-computes escaped identifier forms using `pg-sql2.escapeSqlIdentifier()`
+2. Builds a single regex: `/"t_1_services_public"|"t_1_services_private"/g`
+3. Returns a function that does one `text.replace(regex, lookupFn)` per query
+4. Empty schema map → identity function (no-op)
+
+### 7. `utils/schema-map.ts`
+
+**Purpose:** Schema mapping and pgSettings helpers.
 
 **Exports:**
 - `buildSchemaMap(templateSchemas, tenantSchemas)` → `Record<string, string>`
 - `buildTenantPgSettings(tenantSchemas)` → `Record<string, string>` (includes `search_path`)
 - `remapSchemas(templateSchemas, templatePrefix, tenantPrefix)` → `string[]`
-- Re-exports from `compat/crystal/multiTenancy`: `buildSchemaRemapTransform`, `wrapSchemaPlaceholder`, `isSchemaPlaceholder`, `extractOriginalName`, `extractTemplateSchemaNames`
 - Type: `SchemaMapping`
 
-### 8. `compat/crystal/multiTenancy.ts`
+### 8. `utils/introspection-query.ts`
 
-**Purpose:** SQL text transform — the actual regex replacement logic.
+**Purpose:** Low-level introspection fetch + parse.
 
 **Exports:**
-- `buildSchemaRemapTransform(schemaMap)` → `(text: string) => string`
-- `wrapSchemaPlaceholder(schemaName)` → placeholder string (legacy, retained for future Crystal `pgIdentifiers: "dynamic"`)
-- `isSchemaPlaceholder(name)` → boolean
-- `extractOriginalName(placeholder)` → string
-- `extractTemplateSchemaNames(placeholderSchemas)` → `string[]`
+- `fetchIntrospection(pool, schemas)` → raw JSON string
+- `parseIntrospection(text)` → `MinimalIntrospection`
+- `fetchAndParseIntrospection(pool, schemas)` → `{ raw, parsed }`
 
-**How `buildSchemaRemapTransform` works:**
-1. Pre-computes escaped identifier forms using `pg-sql2.escapeSqlIdentifier()`
-2. Builds a single regex: `/"t_1_services_public"|"t_1_services_private"/g`
-3. Returns a function that does one `text.replace(regex, lookupFn)` per query
-4. Empty schema map → identity function (no-op)
+**Connection safety:** Uses `BEGIN` + `SET LOCAL search_path` + `COMMIT` so the search_path never leaks to pooled connections.
 
 ---
 
@@ -361,7 +379,8 @@ No Crystal fork. No `link:` overrides. Works with published Crystal/PostGraphile
 | `registry-template-map.test.ts` | register/deregister refCount, TTL eviction, LRU cap eviction, active-template protection, sweep timer, exact-cap boundary |
 | `introspection-cache.test.ts` | Cache hit/miss, single-flight coalescing, failure retry, TTL eviction, LRU cap eviction, invalidation |
 | `fingerprint.test.ts` | Same-structure-different-schema → same fingerprint, different-structure → different fingerprint, constraint normalization |
-| `dynamic-schema.test.ts` | Schema mapping, identity transform, multi-schema remap |
+| `sql-transform.test.ts` | Single-pass regex replacement, identity transform, multi-schema remap |
+| `schema-map.test.ts` | Schema mapping, pgSettings generation, prefix remapping |
 | `single-flight.test.ts` | Concurrent creation coalescing, failure propagation |
 
 ### E2E validation
@@ -392,11 +411,12 @@ No Crystal fork. No `link:` overrides. Works with published Crystal/PostGraphile
 ## Implementation order
 
 1. **Package scaffolding** — `package.json`, tsconfig, jest config
-2. **Utilities** — `fingerprint.ts`, `introspection.ts`, `compat/crystal/multiTenancy.ts`, `dynamic-schema.ts`
+2. **Utilities** — `utils/sql-transform.ts`, `utils/schema-map.ts`, `utils/introspection-query.ts`, `fingerprint.ts`
 3. **Cache layers** — `introspection-cache.ts`, `registry-template-map.ts`
 4. **Plugin** — `pg-client-wrapper-plugin.ts`
 5. **Orchestrator** — `multi-tenancy-cache.ts`
 6. **Public API** — `index.ts`
 7. **Server integration** — `graphile.ts`, `flush.ts`, `types.ts`, `env.ts`, `graphile.ts` (types), `server.ts`, `index.ts`
 8. **Tests** — unit tests for all modules
-9. **Validation** — e2e test run
+9. **Benchmark scripts** — `graphql/server/perf/` (e2e load testing framework)
+10. **Validation** — e2e test run
