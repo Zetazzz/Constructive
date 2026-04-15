@@ -15,6 +15,11 @@ export {
   TenantInstance
 } from './multi-tenancy-cache';
 
+// PgMultiTenancyWrapperPlugin — Grafast middleware plugin that intercepts
+// client.query() to apply per-request SQL schema remapping.
+// No Crystal source modifications required.
+export { PgMultiTenancyWrapperPlugin } from './pg-client-wrapper-plugin';
+
 // Schema fingerprinting — needed by consumers who want to pre-compute or cache fingerprints
 export {
   fingerprintsMatch,

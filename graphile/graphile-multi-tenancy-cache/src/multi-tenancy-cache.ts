@@ -15,13 +15,13 @@
  *    - Injects the tenant's schema names into pgSettings at request time
  *    - Uses the shared PgRegistry/GraphQLSchema (zero additional memory)
  *
- * Crystal-Level Integration:
- * - Uses `pgIdentifiers: "dynamic"` in the preset so that schema names in
- *   compiled SQL are wrapped as opaque placeholders (via `wrapSchemaPlaceholder`).
- * - Provides `PgExecutorContext.sqlTextTransform` per-request to replace
- *   those placeholders with the real tenant schema names.
- * - This correctly handles multi-schema tenants even when tables share
- *   names across schemas (e.g., `t_1_app.users` and `t_1_perf.users`).
+ * SQL Remapping (Wrapper Approach — no Crystal changes required):
+ * - `PgMultiTenancyWrapperPlugin` wraps `client.query()` per-request
+ *   via Grafast `prepareArgs` middleware.
+ * - `buildSchemaRemapTransform` produces a single-pass regex that replaces
+ *   the template's schema identifiers with the real tenant's schema names.
+ * - This works with the published Crystal/PostGraphile packages —
+ *   no fork or upstream PR required.
  *
  * This approach reduces memory from O(N * schema_size) to O(K * schema_size)
  * where K is the number of *unique* schema structures (typically 1-3) and N
@@ -101,10 +101,10 @@ export interface TenantInstance {
   templateSchemas: string[];
 
   /**
-   * The sqlTextTransform for this tenant. When the template was built
-   * with `pgIdentifiers: "dynamic"`, SQL contains opaque schema
-   * placeholders. This transform replaces them with the real tenant schemas.
-   * Should be injected into `PgExecutorContext.sqlTextTransform` per-request.
+   * The sqlTextTransform for this tenant. Replaces the template's
+   * schema identifiers with the real tenant's schema names in SQL.
+   * Injected per-request by `PgMultiTenancyWrapperPlugin` via
+   * `client.query()` interception.
    *
    * Always a function (never null) — for the identity case (template schemas
    * == tenant schemas) this is a no-op that returns the input unchanged.
@@ -207,16 +207,17 @@ const dedicatedInstances = new Map<string, {
  * 1. Introspects the tenant's schemas
  * 2. Fingerprints the structure
  * 3. Reuses an existing template if the fingerprint matches
- * 4. Creates a new template if no match (using `pgIdentifiers: "dynamic"`)
+ * 4. Creates a new template if no match
  *
  * When a template is reused, a `sqlTextTransform` is provided that
- * remaps the SQL placeholders from the template's schemas to the
- * tenant's actual schemas.
+ * remaps the template's schema identifiers to the tenant's actual
+ * schema names.  This transform is applied per-request by
+ * `PgMultiTenancyWrapperPlugin` at the `client.query()` level.
  *
  * @param config - Tenant configuration
  * @param presetBuilder - Function to build the GraphileConfig preset.
- *   IMPORTANT: The preset MUST include `gather: { pgIdentifiers: "dynamic" }`
- *   so that schema names are wrapped in dynamic schema placeholders.
+ *   IMPORTANT: The preset MUST include `PgMultiTenancyWrapperPlugin`
+ *   in its plugins so that per-request SQL remapping is applied.
  * @returns Tenant instance with handler, transform, and metadata
  */
 export async function getOrCreateTenantInstance(
@@ -311,8 +312,9 @@ export async function getOrCreateTenantInstance(
 
 /**
  * Create a new template from a tenant's configuration.
- * Uses `pgIdentifiers: "dynamic"` so SQL identifiers are wrapped in
- * opaque placeholders for runtime schema remapping.
+ * The template is built with the tenant's real schema names — no
+ * placeholder mode required.  Schema remapping is handled at runtime
+ * by `PgMultiTenancyWrapperPlugin`.
  */
 async function createTemplate(
   config: TenantConfig,
@@ -331,7 +333,7 @@ async function createTemplate(
 
     const handler = express();
     httpServer = createServer(handler);
-    await serv.addTo(handler, httpServer);
+    await serv.addTo(handler as any, httpServer);
     await serv.ready();
 
     const template: RegistryTemplate = {
@@ -379,7 +381,7 @@ async function createDedicatedInstance(
 
   const handler = express();
   const httpServer = createServer(handler);
-  await serv.addTo(handler, httpServer);
+  await serv.addTo(handler as any, httpServer);
   await serv.ready();
 
   // Track for proper cleanup during shutdown

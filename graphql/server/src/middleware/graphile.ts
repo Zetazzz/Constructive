@@ -12,6 +12,7 @@ import type { GraphileConfig } from 'graphile-config';
 import {
   getMultiTenancyCacheStats,
   getOrCreateTenantInstance,
+  PgMultiTenancyWrapperPlugin,
   shutdownMultiTenancyCache,
   type TenantInstance
 } from 'graphile-multi-tenancy-cache';
@@ -188,7 +189,7 @@ const buildPreset = (
     extends: [ConstructivePreset],
     pgServices: [
       makePgService({
-        pool,
+        pool: pool as any,
         schemas
       })
     ],
@@ -246,9 +247,11 @@ const buildPreset = (
 /**
  * Build a PostGraphile v5 preset for multi-tenancy mode.
  *
- * Key difference from the legacy preset:
+ * Key differences from the legacy preset:
+ * - Includes `PgMultiTenancyWrapperPlugin` which wraps `client.query()`
+ *   per-request to replace template schema names with tenant schema names.
  * - `grafast.context` injects `pgSqlTextTransform` from `req.sqlTextTransform`
- *   so the PgExecutor can remap placeholders to real tenant schemas per-request.
+ *   so the wrapper plugin can read the transform at execution time.
  *
  * ## Connection Pool Safety (search_path)
  *
@@ -267,18 +270,13 @@ const buildMultiTenancyPreset = (
 ): GraphileConfig.Preset => {
   return {
     extends: [ConstructivePreset],
+    plugins: [PgMultiTenancyWrapperPlugin],
     pgServices: [
       makePgService({
-        pool,
+        pool: pool as any,
         schemas
       })
     ],
-    gather: {
-      // TODO: Change to 'dynamic' once Crystal PR (pgIdentifiers: "dynamic") is merged upstream.
-      // 'dynamic' wraps schema names in opaque placeholders for runtime remapping.
-      // Until then, 'qualified' works for same-database tenants via search_path.
-      pgIdentifiers: 'qualified',
-    },
     grafserv: {
       graphqlPath: '/graphql',
       graphiqlPath: '/graphiql',

@@ -1,24 +1,22 @@
 /**
  * Dynamic Schema Resolution
  *
- * The "Placeholder" Pattern: allows a shared PgRegistry to execute against
- * different physical schemas by leveraging crystal-level hooks:
+ * The "Direct Replacement" Pattern: allows a shared PostGraphile template
+ * instance to execute against different physical tenant schemas by
+ * transforming SQL at the `client.query()` level.
  *
- * 1. `pgIdentifiers: "dynamic"` in PgBasicsPlugin wraps schema names in
- *    opaque placeholders during the gather/build phase.
+ * 1. PostGraphile compiles SQL with the template tenant's real schema names
+ *    (e.g., `"t_1_services_public"."apis"`).
  *
- * 2. `PgExecutorContext.sqlTextTransform` replaces those placeholders with
- *    real tenant schema names at execution time, per-request.
+ * 2. `PgMultiTenancyWrapperPlugin` wraps `client.query()` per-request
+ *    and applies `buildSchemaRemapTransform` to replace template schema
+ *    names with the real tenant's schema names.
  *
- * This approach handles the multi-schema case correctly — even when
- * different schemas contain tables with the same name (e.g., both
- * `t_1_app.users` and `t_1_perf.users`), the fully qualified identifiers
- * are preserved and remapped independently.
+ * This approach handles multi-schema tenants correctly — each schema in
+ * the template is independently remapped (e.g., `t_1_app` → `t_2_app`,
+ * `t_1_perf` → `t_2_perf`).
  *
- * NOTE: The placeholder format and core transform logic live in the
- * Crystal-mimic shim at `./compat/crystal/multiTenancy`.  Once the
- * Crystal PR is published, that shim will be replaced with a direct
- * re-export from `graphile-build-pg`.
+ * No Crystal source modifications are required.
  */
 
 import { Logger } from '@pgpmjs/logger';

@@ -1,20 +1,28 @@
-// TODO: Once @dataplan/pg (crystal) PR #5 is merged and published,
-// delete this file and import directly from
-// `graphile-build-pg/multiTenancy` (or `@dataplan/pg/multiTenancy`).
-//
-// This shim mirrors the structure and contract of
-// `graphile-build-pg/src/multiTenancy.ts` in the crystal repo so that
-// Constructive can depend on a single, well-defined interface today and
-// swap to the official package with a one-line import change later.
-
 /**
  * Multi-tenancy utilities for dynamic schema resolution.
  *
- * When `pgIdentifiers` is set to `"dynamic"`, schema names in SQL
- * identifiers are wrapped in opaque placeholders during the gather/build
- * phase.  At execution time a per-request `sqlTextTransform` function
- * (set on `PgExecutorContext`) replaces these placeholders with the
- * real tenant schema names.
+ * ## Wrapper Approach (no Crystal changes required)
+ *
+ * Schema names in compiled SQL are real qualified identifiers (e.g.,
+ * `"t_1_services_public"."apis"`).  The `buildSchemaRemapTransform`
+ * function builds a single-pass regex that replaces template schema
+ * names with the real tenant schema names.
+ *
+ * The transform is injected per-request by `PgMultiTenancyWrapperPlugin`,
+ * which wraps `client.query()` to apply the replacement before SQL
+ * reaches PostgreSQL.
+ *
+ * This is safe for Constructive's naming conventions because tenant
+ * schema names (e.g., `t_<id>_services_public`) never collide with
+ * table/column names (e.g., `apis`, `apps`, `domains`).  The regex
+ * matches the exact pg-sql2 escaped identifier form.
+ *
+ * ## Legacy placeholder utilities
+ *
+ * The `wrapSchemaPlaceholder`, `isSchemaPlaceholder`, and
+ * `extractOriginalName` functions are retained for backwards
+ * compatibility and potential future use with Crystal's
+ * `pgIdentifiers: "dynamic"` mode.
  *
  * @module compat/crystal/multiTenancy
  */
@@ -81,17 +89,27 @@ function escapeRegExp(str: string): string {
 }
 
 /**
- * Build a `sqlTextTransform` function that replaces dynamic schema
- * placeholders with real tenant schema names.
+ * Build a `sqlTextTransform` function that replaces template schema
+ * names with real tenant schema names in compiled SQL.
  *
  * The function performs a **single-pass** regex replacement over the
- * compiled SQL text, using `escapeSqlIdentifier` from pg-sql2 so that
- * schema names containing special characters (double quotes, etc.) are
- * handled safely.
+ * SQL text, using `escapeSqlIdentifier` from pg-sql2 so that the
+ * search pattern matches exactly what `sql.identifier()` produces
+ * and the replacement is a properly escaped SQL identifier.
+ *
+ * ## Direct replacement (wrapper approach)
+ *
+ * This replaces real schema identifiers directly (e.g.,
+ * `"t_1_services_public"` → `"t_2_services_public"`) without needing
+ * Crystal's `pgIdentifiers: "dynamic"` placeholder mode.
+ *
+ * This is safe when template schema names do not collide with
+ * table/column names — which holds for Constructive's `t_<id>_<purpose>`
+ * naming convention.
  *
  * @param schemaMap - A mapping from template schema names to real
- *   tenant schema names. E.g. `{ app_public: 'tenant_42_public' }`.
- * @returns A function suitable for `PgExecutorContext.sqlTextTransform`.
+ *   tenant schema names. E.g. `{ t_1_public: 't_2_public' }`.
+ * @returns A function suitable for use with `PgMultiTenancyWrapperPlugin`.
  */
 export function buildSchemaRemapTransform(
   schemaMap: Record<string, string>,
@@ -101,7 +119,7 @@ export function buildSchemaRemapTransform(
     return (text: string) => text;
   }
 
-  // Pre-compute a lookup map: escaped placeholder → escaped real name.
+  // Pre-compute a lookup map: escaped template name → escaped real name.
   // Both sides use pg-sql2's escapeSqlIdentifier so the search string
   // matches exactly what sql.identifier() produces at compile time, and
   // the replacement is a properly escaped SQL identifier.
@@ -109,15 +127,13 @@ export function buildSchemaRemapTransform(
   const regexParts: string[] = [];
 
   for (const [templateSchema, realSchema] of entries) {
-    const placeholder = escapeSqlIdentifier(
-      wrapSchemaPlaceholder(templateSchema),
-    );
+    const searchPattern = escapeSqlIdentifier(templateSchema);
     const replacement = escapeSqlIdentifier(realSchema);
-    lookupMap.set(placeholder, replacement);
-    regexParts.push(escapeRegExp(placeholder));
+    lookupMap.set(searchPattern, replacement);
+    regexParts.push(escapeRegExp(searchPattern));
   }
 
-  // Single compiled regex that matches any placeholder in one pass.
+  // Single compiled regex that matches any template schema name in one pass.
   const regex = new RegExp(regexParts.join('|'), 'g');
 
   return (text: string): string => {
