@@ -14,7 +14,7 @@ A **template-based multi-tenancy cache** that shares a single PostGraphile insta
 
 ### Key invariant
 
-Constructive tenant schemas use the naming convention `t_<id>_<purpose>` (e.g., `t_1_services_public`, `t_2_services_public`). These names **never collide** with table/column names (`apis`, `apps`, `domains`), making direct SQL identifier replacement safe without Crystal's placeholder system.
+Constructive tenant schemas use the naming convention `t_<id>_<purpose>` (e.g., `t_1_services_public`, `t_2_services_public`). These names **never collide** with table/column names (`apis`, `apps`, `domains`). This invariant is necessary but not sufficient for safety, so SQL remap uses AST-based rewrite with strict failure policy (see SQL Remap Safety Contract below), not best-effort raw text replacement.
 
 ---
 
@@ -61,7 +61,7 @@ The transform is read **lazily** at call time (not at middleware time) because `
 | Layer | Key | Value | Eviction |
 |---|---|---|---|
 | **Tenant Instance** | `svc_key` | `TenantInstance` (handler + transform) | Package-owned: `flushTenantInstance()`, flush via LISTEN/NOTIFY |
-| **Introspection** | `dbname:schema1,schema2` | Parsed introspection + fingerprint | LRU (max 100) + TTL (30min idle) |
+| **Introspection** | `connHash:schema1,schema2` | Parsed introspection + fingerprint | LRU (max 100) + TTL (30min idle) |
 | **Template** | SHA-256 fingerprint | PostGraphile instance (pgl + handler + httpServer) | LRU (max 50) + TTL (30min idle) + refCount protection |
 
 ---
@@ -89,7 +89,7 @@ graphile/graphile-multi-tenancy-cache/
     │   # Utilities
     ├── utils/
     │   ├── fingerprint.ts           ← SHA-256 structural fingerprint (schema-name-agnostic)
-    │   ├── sql-transform.ts         ← buildSchemaRemapTransform (single-pass regex replacement)
+    │   ├── sql-transform.ts         ← SQL remap orchestrator (AST rewrite + hot-path cache)
     │   ├── schema-map.ts            ← buildSchemaMap, buildTenantPgSettings, remapSchemas
     │   └── introspection-query.ts   ← fetchIntrospection, parseIntrospection (raw pg_catalog access)
     │
@@ -177,36 +177,37 @@ graphql/server/perf/
 **Purpose:** Top-level orchestrator — owns the full tenant lifecycle including the `tenantInstances` Map.
 
 **Exports:**
-- `getOrCreateTenantInstance(config, basePresetBuilder)` → `Promise<TenantInstance>` — resolves tenant, stores in internal `tenantInstances` map. The `basePresetBuilder` is automatically wrapped with `PgMultiTenancyWrapperPlugin` + `pgSqlTextTransform` context injection — the consumer does not need to know about the plugin.
+- `configureMultiTenancyCache({ basePresetBuilder })` — one-time package bootstrap; stores wrapped preset builder internally.
+- `getOrCreateTenantInstance(config)` → `Promise<TenantInstance>` — resolves tenant, stores in internal `tenantInstances` map. Uses the package-owned wrapped preset builder configured at bootstrap.
 - `getTenantInstance(cacheKey)` → `TenantInstance | undefined` — fast-path lookup from internal map
 - `flushTenantInstance(cacheKey)` — evict from `tenantInstances` map + deregister from template refCount
 - `getMultiTenancyCacheStats()` → `MultiTenancyCacheStats`
 - `shutdownMultiTenancyCache()` — release all resources (templates, dedicated instances, introspection cache, tenantInstances)
-- `createMultiTenancyPresetBuilder(baseBuilder)` → wraps a base preset builder with multi-tenancy plumbing (adds plugin + Grafast context callback that reads transform from internal `tenantInstances` map by `svc_key`)
 - Types: `TenantConfig`, `TenantInstance`, `MultiTenancyCacheStats`
 
 **Internal state:**
 - `tenantInstances: Map<string, TenantInstance>` — fast-path cache of resolved tenant instances
 - `creatingTenants: Map<string, Promise<TenantInstance>>` — single-flight for tenant creation
 - `creatingTemplates: Map<string, Promise<RegistryTemplate>>` — single-flight for template creation
-- `dedicatedInstances: Map<string, {...}>` — fallback non-shared instances
+- `dedicatedInstances: Map<string, {...}>` — fallback non-shared instances, tracked with lifecycle metadata (createdAt, lastUsedAt, source=introspection-failure)
 
 **Flow (getOrCreateTenantInstance):**
 1. Check `tenantInstances` map (fast path) → return if hit
 2. Check `creatingTenants` map (single-flight coalesce) → wait if in-flight
-3. `getOrCreateIntrospection(pool, schemas, dbname)` → fingerprint
+3. `getOrCreateIntrospection(pool, schemas, connectionKey)` → fingerprint
 4. `getTemplate(fingerprint)` → hit? → reuse, `registerTenant()`
 5. Miss → check `creatingTemplates` (single-flight for template)
 6. Miss → `createTemplate()` (builds PostGraphile instance, `setTemplate()`)
 7. Build `TenantInstance` with `buildSchemaRemapTransform()` as `sqlTextTransform`
 8. Store in `tenantInstances` map → return
 
-**Preset wrapping (createMultiTenancyPresetBuilder):**
-The package wraps any base preset builder to add:
+**Preset wrapping (package-owned):**
+`configureMultiTenancyCache()` wraps the base preset builder once to add:
 1. `plugins: [PgMultiTenancyWrapperPlugin]`
 2. `grafast.context` callback that reads `svc_key` from `requestContext.expressv4.req.svc_key`, looks up the tenant's `sqlTextTransform` from the internal `tenantInstances` map, and injects it as `pgSqlTextTransform` on the Grafast context — **no `req.sqlTextTransform` field needed on Express.Request**
 
 **Fallback:** If introspection fails, creates a dedicated (non-shared) instance (resilience over visibility).
+Fallback instances MUST be lifecycle-bound: cleaned by `flushTenantInstance()`, swept by idle TTL/LRU, and always released by `shutdownMultiTenancyCache()` so they cannot linger after cache flush/eviction.
 
 **Dependencies:** `introspection-cache`, `registry-template-map`, `utils/sql-transform`, `utils/schema-map`, `postgraphile`, `grafserv`, `express`
 
@@ -237,15 +238,18 @@ The package wraps any base preset builder to add:
 **Purpose:** In-memory cache for parsed introspection results + fingerprints.
 
 **Exports:**
-- `getOrCreateIntrospection(pool, schemas, dbname)` → `Promise<CachedIntrospection>`
-- `invalidateIntrospection(dbname, schemas?)` — targeted invalidation
+- `getOrCreateIntrospection(pool, schemas, connectionKey)` → `Promise<CachedIntrospection>`
+- `invalidateIntrospection(connectionKey, schemas?)` — targeted invalidation
 - `clearIntrospectionCache()` — full clear + stop sweep timer
 - `sweepIntrospectionCache()` — evict expired + over-cap entries
 - `getIntrospectionCacheStats()` → `IntrospectionCacheStats`
 - `_testSetMaxEntries(n)` — test-only hook
 - Types: `CachedIntrospection`, `IntrospectionCacheStats`
 
-**Key:** `dbname:schema1,schema2` (schemas sorted alphabetically)
+**Key:** `connHash:schema1,schema2` (schemas sorted alphabetically)
+`connHash` is derived from normalized connection identity:
+- `host`, `port`, `database`, `user` (and connection mode such as `sslmode`/socket when relevant)
+- Canonicalized + hashed to avoid leaking credentials while preventing cross-environment collisions.
 
 **Eviction policy:** Same pattern as template cache — TTL (30min idle) + LRU cap (100 entries) + periodic sweep (5min).
 
@@ -266,16 +270,44 @@ The package wraps any base preset builder to add:
 
 ### 6. `utils/sql-transform.ts`
 
-**Purpose:** SQL text transform — the single-pass regex replacement logic.
+**Purpose:** SQL remap engine with AST-safe rewrite and cache-backed fast path.
 
 **Exports:**
 - `buildSchemaRemapTransform(schemaMap)` → `(text: string) => string`
 
 **How it works:**
-1. Pre-computes escaped identifier forms using `pg-sql2.escapeSqlIdentifier()`
-2. Builds a single regex: `/"t_1_services_public"|"t_1_services_private"/g`
-3. Returns a function that does one `text.replace(regex, lookupFn)` per query
-4. Empty schema map → identity function (no-op)
+1. Computes a cache key from `(fingerprint, sqlTextHash, schemaMapHash)`
+2. On cache hit: returns pre-rewritten SQL immediately (hot path)
+3. On cache miss: `parse -> rewrite semantic schema nodes -> deparse`
+4. Stores rewritten SQL in LRU/TTL cache for subsequent hits
+5. Empty schema map → identity function (no-op)
+
+### SQL Remap Safety Contract (v3)
+
+The SQL remap layer MUST follow these rules:
+
+1. **Semantic rewrite only**
+- Rewrite schema names via PostgreSQL AST node fields (e.g. relation namespace/schema), not global text substitution.
+- Do not rewrite literals, comments, dollar-quoted blocks, aliases, or unqualified identifiers.
+
+2. **Fail-closed by default**
+- If parse/rewrite/deparse fails, do not silently pass-through the original SQL.
+- Default behavior is request failure with structured error and telemetry.
+- Optional rollout mode may fallback to dedicated handler, but must be explicitly enabled and metered.
+
+3. **Cache-backed performance model**
+- Hot path is cache lookup only.
+- AST parse/rewrite/deparse occurs only on cache miss.
+- Cache policy: bounded LRU + TTL.
+
+4. **Observability requirements**
+- Emit counters/histograms for hit/miss, rewrite latency, rewrite failures, and fallback usage (if enabled).
+- Include tenant key and SQL hash in sampled debug logs.
+
+5. **Validation requirements**
+- Tests must prove that schema-qualified identifiers are remapped correctly.
+- Tests must prove literals/comments/dollar-quoted content are unchanged.
+- Transaction path (`withTransaction`) must apply identical remap behavior.
 
 ### 7. `utils/schema-map.ts`
 
@@ -303,15 +335,16 @@ The package wraps any base preset builder to add:
 ## Server integration
 
 The server is a thin consumer of the package APIs. It does **not** manage tenant
-state, preset builders, or Express.Request extensions — those responsibilities
+state, preset wrapping logic, or Express.Request extensions — those responsibilities
 belong to the package.
 
 ### `graphile.ts` changes
 
 **New function: `multiTenancyHandler(opts)`**
 - Selected when `opts.api.useMultiTenancyCache === true`
+- Calls `configureMultiTenancyCache({ basePresetBuilder })` once at startup (package owns wrapping)
 - Calls `getTenantInstance(key)` for fast-path cache hit
-- On miss, calls `getOrCreateTenantInstance(config, basePresetBuilder)` — the package wraps the base preset internally
+- On miss, calls `getOrCreateTenantInstance(config)` — no preset builder passed from server
 - Routes the request to `tenant.handler(req, res, next)` — the package's Grafast context callback handles `pgSqlTextTransform` injection internally (no `req.sqlTextTransform` needed)
 
 **New exports:**
@@ -324,10 +357,11 @@ belong to the package.
 
 **New function: `createFlushMiddleware(opts)`**
 - Replaces `flush` (deprecated but kept for backwards compat)
-- Calls package's `flushTenantInstance(key)` + `invalidateIntrospection(dbname)`
+- Calls package's `flushTenantInstance(key)` + `invalidateIntrospection(connectionKey)`
 
 **`flushService()` changes:**
-- When multi-tenancy enabled: looks up `dbname` from `databaseId`, calls `invalidateIntrospection(dbname)` + `flushTenantInstance(key)` for each matching domain
+- When multi-tenancy enabled: resolves canonical `connectionKey` from `databaseId`, calls `invalidateIntrospection(connectionKey)` + `flushTenantInstance(key)` for each matching domain
+- Flush path must also release any tenant-bound fallback dedicated instances immediately.
 
 ### `env.ts` + `graphile.ts` (types) changes
 
@@ -388,7 +422,7 @@ No Crystal fork. No `link:` overrides. Works with published Crystal/PostGraphile
 | `registry-template-map.test.ts` | register/deregister refCount, TTL eviction, LRU cap eviction, active-template protection, sweep timer, exact-cap boundary |
 | `introspection-cache.test.ts` | Cache hit/miss, single-flight coalescing, failure retry, TTL eviction, LRU cap eviction, invalidation |
 | `fingerprint.test.ts` | Same-structure-different-schema → same fingerprint, different-structure → different fingerprint, constraint normalization |
-| `sql-transform.test.ts` | Single-pass regex replacement, identity transform, multi-schema remap |
+| `sql-transform.test.ts` | AST schema-node rewrite, cache hit/miss path, identity transform, multi-schema remap, literal/comment non-rewrite |
 | `schema-map.test.ts` | Schema mapping, pgSettings generation, prefix remapping |
 | `single-flight.test.ts` | Concurrent creation coalescing, failure propagation |
 
@@ -398,10 +432,12 @@ No Crystal fork. No `link:` overrides. Works with published Crystal/PostGraphile
 - Send requests for k tenants with identical schemas
 - Assert: 0 errors, template count = 1, all tenants sharing
 - Compare QPS/latency/memory vs dedicated mode
+- Run a **fresh 3-minute benchmark** on the v3 no-Crystal path; do not reuse v2 data
+- Store raw benchmark JSON + environment metadata under `graphql/server/perf/results/`
 
 ---
 
-## Expected performance (from v2 benchmarks, k=20)
+## Historical v2 baseline (reference only, k=20)
 
 | Metric | Dedicated (Old) | Multi-tenant (New) | Improvement |
 |---|---|---|---|
@@ -413,7 +449,19 @@ No Crystal fork. No `link:` overrides. Works with published Crystal/PostGraphile
 | PostGraphile builds | 20 | 0 | eliminated |
 | Cold start (2nd+) | 412ms | 7ms | 98.3% faster |
 
-*Old mode given `GRAPHILE_CACHE_MAX=120` (best-case, zero eviction). New mode still wins.*
+This table is historical context from v2 only; it is **not** acceptance evidence for v3.
+
+## v3 performance acceptance (required, no-Crystal path)
+
+Acceptance MUST be based on fresh v3 benchmark runs using published Crystal/PostGraphile packages (no Crystal fork, no `link:` overrides):
+
+1. Benchmark duration: minimum **3 minutes** continuous load per mode (dedicated vs v3 multi-tenancy cache).
+2. Correctness gate: 0 request errors and expected tenant routing behavior.
+3. Performance gate: v3 multi-tenancy cache must show measurable improvement vs dedicated mode in at least one primary metric (QPS or p99 latency), without material regressions in stability.
+4. Resource gate: memory growth (heap/RSS) in v3 multi-tenancy cache must be no worse than dedicated mode under the same run conditions.
+5. Provenance gate: attach raw result files and run metadata (commit SHA, env flags, tenant count, concurrency, duration) in `graphql/server/perf/results/`.
+
+*Old mode given `GRAPHILE_CACHE_MAX=120` (best-case, zero eviction).*
 
 ---
 
@@ -425,7 +473,7 @@ No Crystal fork. No `link:` overrides. Works with published Crystal/PostGraphile
 4. **Plugin** — `pg-client-wrapper-plugin.ts`
 5. **Orchestrator** — `multi-tenancy-cache.ts`
 6. **Public API** — `index.ts`
-7. **Server integration** — `graphile.ts`, `flush.ts`, `types.ts`, `env.ts`, `graphile.ts` (types), `server.ts`, `index.ts`
+7. **Server integration** — `graphile.ts`, `flush.ts`, `env.ts`, `graphile.ts` (types), `server.ts`, `index.ts`
 8. **Tests** — unit tests for all modules
 9. **Benchmark scripts** — `graphql/server/perf/` (e2e load testing framework)
 10. **Validation** — e2e test run
