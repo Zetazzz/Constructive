@@ -276,7 +276,7 @@ Fallback instances MUST be lifecycle-bound: cleaned by `flushTenantInstance()`, 
 - `buildSchemaRemapTransform(schemaMap)` → `(text: string) => string`
 
 **How it works:**
-1. Computes a cache key from `(fingerprint, sqlTextHash, schemaMapHash)`
+1. Computes a cache key from `(sqlTextHash, schemaMapHash)`
 2. On cache hit: returns pre-rewritten SQL immediately (hot path)
 3. On cache miss: `parse -> rewrite semantic schema nodes -> deparse`
 4. Stores rewritten SQL in LRU/TTL cache for subsequent hits
@@ -396,7 +396,8 @@ When `useMultiTenancyCache` is `false` (default), the server uses the existing `
     "pg": "^8.11.3",
     "pg-env": "workspace:^",
     "pg-introspection": "1.0.0",
-    "pg-sql2": "5.0.0",
+    "pgsql-deparser": "^17.18.2",
+    "pgsql-parser": "^17.9.14",
     "postgraphile": "5.0.0"
   },
   "devDependencies": {
@@ -473,7 +474,7 @@ Acceptance MUST be based on fresh v3 benchmark runs using published Crystal/Post
 4. **Plugin** — `pg-client-wrapper-plugin.ts`
 5. **Orchestrator** — `multi-tenancy-cache.ts`
 6. **Public API** — `index.ts`
-7. **Server integration** — `graphile.ts`, `flush.ts`, `env.ts`, `graphile.ts` (types), `server.ts`, `index.ts`
+7. **Server integration** — `middleware/graphile.ts`, `flush.ts`, `env.ts`, `types/graphile.ts`, `server.ts`, `index.ts`
 8. **Tests** — unit tests for all modules
 9. **Benchmark scripts** — `graphql/server/perf/` (e2e load testing framework)
 10. **Validation** — e2e test run
