@@ -14,7 +14,7 @@ import { grafserv } from 'grafserv/express/v4';
 import type { Pool } from 'pg';
 import type { GraphileConfig } from 'graphile-config';
 
-import { PgMultiTenancyWrapperPlugin } from './pg-client-wrapper-plugin';
+import { PgMultiTenancyWrapperPlugin } from './plugins/pg-client-wrapper-plugin';
 import {
   getOrCreateIntrospection,
   invalidateIntrospection,

@@ -16,7 +16,7 @@ export type {
 } from './multi-tenancy-cache';
 
 // --- Plugin ---
-export { PgMultiTenancyWrapperPlugin } from './pg-client-wrapper-plugin';
+export { PgMultiTenancyWrapperPlugin } from './plugins/pg-client-wrapper-plugin';
 
 // --- Introspection cache ---
 export {
