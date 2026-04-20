@@ -637,12 +637,58 @@ const main = async () => {
     await pool.end();
   }
 
+  // --- Shape variant success/failure accounting ---
+  let variantTablesExpected = 0;
+  let variantTablesSucceeded = 0;
+  let variantTablesFailed = 0;
+  let tenantsWithVariantFailures = 0;
+
+  for (const account of accounts) {
+    const sv = account.shapeVariant;
+    // Only count tenants that were supposed to get extra tables (group > 0)
+    const expectedForTenant = sv.tables.length;
+    if (expectedForTenant === 0 && sv.index === 0) {
+      // Group 0 = no extras expected — not a failure
+      continue;
+    }
+    const failedForTenant = sv.tables.filter((t) => t.error).length;
+    variantTablesExpected += expectedForTenant;
+    variantTablesSucceeded += expectedForTenant - failedForTenant;
+    variantTablesFailed += failedForTenant;
+    if (failedForTenant > 0) {
+      tenantsWithVariantFailures += 1;
+    }
+  }
+
+  const variantsRequested = effectiveVariantCount > 0;
+  const variantsPassed = !variantsRequested || variantTablesFailed === 0;
+
   const summary = {
     requestedTenants: tenantCount,
     successTenants: accounts.length,
     failedTenants: failures.length,
-    passed: accounts.length >= 2 && failures.length === 0,
+    passed: accounts.length >= 2 && failures.length === 0 && variantsPassed,
+    ...(variantsRequested
+      ? {
+          shapeVariants: {
+            requested: true,
+            variantGroupCount: effectiveVariantCount,
+            variantTablesExpected,
+            variantTablesSucceeded,
+            variantTablesFailed,
+            tenantsWithVariantFailures,
+            passed: variantsPassed,
+          },
+        }
+      : {}),
   };
+
+  if (variantsRequested && !variantsPassed) {
+    console.error(
+      `\n⚠ Shape variant provisioning incomplete: ${variantTablesFailed}/${variantTablesExpected} expected variant tables failed across ${tenantsWithVariantFailures} tenant(s).\n` +
+        `  The run is marked as FAILED because --shape-variants ${shapeVariantCount} was requested but structural divergence was not fully achieved.\n`,
+    );
+  }
 
   const report = {
     createdAt: new Date().toISOString(),
