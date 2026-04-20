@@ -171,8 +171,24 @@ export function computeBuildKey(
 
 /**
  * Register a svc_key → buildKey mapping and update the databaseId index.
+ *
+ * If the svc_key was previously mapped to a different buildKey, the old
+ * mapping is cleaned up first.  If no other svc_keys still reference the
+ * old buildKey, it is evicted (handler disposed, indexes purged).
  */
 function registerMapping(svcKey: string, buildKey: string, databaseId?: string): void {
+  const oldBuildKey = svcKeyToBuildKey.get(svcKey);
+
+  if (oldBuildKey && oldBuildKey !== buildKey) {
+    // Rebinding — detach this svc_key from the old buildKey first
+    svcKeyToBuildKey.delete(svcKey);
+
+    // If old buildKey has no remaining svc_key references, evict it
+    if (getSvcKeysForBuildKey(oldBuildKey).length === 0) {
+      evictBuildKey(oldBuildKey);
+    }
+  }
+
   svcKeyToBuildKey.set(svcKey, buildKey);
   if (databaseId) {
     let keys = databaseIdToBuildKeys.get(databaseId);
@@ -256,11 +272,14 @@ export function getBuildKeyForSvcKey(svcKey: string): string | undefined {
  *
  * Flow:
  * 1. Compute buildKey from config's build inputs
- * 2. Register svc_key → buildKey mapping
- * 3. Check handlerCache (fast path) → return if hit
- * 4. Check creatingHandlers (single-flight coalesce) → wait if in-flight
- * 5. Create a new independent PostGraphile instance keyed by buildKey
- * 6. Store in handlerCache → return
+ * 2. Check handlerCache (fast path) → register mapping, return
+ * 3. Check creatingHandlers (single-flight coalesce) → await, register on success
+ * 4. Create a new independent PostGraphile instance keyed by buildKey
+ * 5. On success: register mapping, store in handlerCache, return
+ *
+ * Registration is deferred until AFTER handler creation succeeds.  This
+ * ensures that if the shared in-flight promise rejects, NO participating
+ * svc_key leaves orphaned mappings — creator or follower alike.
  */
 export async function getOrCreateTenantInstance(
   config: TenantConfig,
@@ -273,42 +292,31 @@ export async function getOrCreateTenantInstance(
 
   const buildKey = computeBuildKey(pool, schemas, anonRole, roleName);
 
-  // Always register / update the mapping (cheap idempotent operation)
-  registerMapping(svcKey, buildKey, databaseId);
-
   // Step 1: Fast path — handler already cached
   const existing = handlerCache.get(buildKey);
   if (existing) {
     existing.lastUsedAt = Date.now();
+    registerMapping(svcKey, buildKey, databaseId);
     return existing;
   }
 
-  // Step 2: Single-flight coalesce — handler being created
+  // Step 2: Single-flight coalesce — handler being created by another request
   const pending = creatingHandlers.get(buildKey);
   if (pending) {
-    return pending;
+    // Await the shared promise; register only on success
+    const result = await pending;
+    registerMapping(svcKey, buildKey, databaseId);
+    return result;
   }
 
+  // Step 3: Creator path — build a new handler
   const promise = doCreateHandler(buildKey, pool, schemas, anonRole, roleName);
   creatingHandlers.set(buildKey, promise);
 
   try {
-    return await promise;
-  } catch (err) {
-    // Handler creation failed — clean up orphaned indexes for THIS svc_key
-    svcKeyToBuildKey.delete(svcKey);
-
-    // If no other svc_keys still reference this buildKey, clean databaseId index too
-    if (getSvcKeysForBuildKey(buildKey).length === 0 && databaseId) {
-      const keys = databaseIdToBuildKeys.get(databaseId);
-      if (keys) {
-        keys.delete(buildKey);
-        if (keys.size === 0) databaseIdToBuildKeys.delete(databaseId);
-      }
-    }
-
-    log.warn(`Handler creation failed for svc_key=${svcKey} buildKey=${buildKey}, cleaned orphaned indexes`);
-    throw err;
+    const result = await promise;
+    registerMapping(svcKey, buildKey, databaseId);
+    return result;
   } finally {
     creatingHandlers.delete(buildKey);
   }

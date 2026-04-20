@@ -654,3 +654,232 @@ describe('connectionString-based pool identity', () => {
     expect(key).toMatch(/^[0-9a-f]{16}$/);
   });
 });
+
+// --- Finding 1: Coalesced creation failure leaves no orphaned mappings ---
+
+describe('coalesced creation failure — no orphaned mappings (Finding 1)', () => {
+  it('should clean up both svc_keys when 2 coalesced requests fail', async () => {
+    const failingBuilder = jest.fn(() => { throw new Error('coalesced fail'); });
+    configureMultiTenancyCache({ basePresetBuilder: failingBuilder as any });
+
+    const pool = makeMockPool();
+    const base = { pool, schemas: ['public'] as string[], anonRole: 'anon', roleName: 'auth', databaseId: 'db-001' };
+
+    // Start two concurrent requests (same buildKey) — both will fail
+    const p1 = getOrCreateTenantInstance({ ...base, svcKey: 'coal-a' });
+    const p2 = getOrCreateTenantInstance({ ...base, svcKey: 'coal-b' });
+
+    const results = await Promise.allSettled([p1, p2]);
+    expect(results[0].status).toBe('rejected');
+    expect(results[1].status).toBe('rejected');
+
+    // No orphaned mappings for either svc_key
+    expect(getBuildKeyForSvcKey('coal-a')).toBeUndefined();
+    expect(getBuildKeyForSvcKey('coal-b')).toBeUndefined();
+
+    const stats = getMultiTenancyCacheStats();
+    expect(stats.handlerCacheSize).toBe(0);
+    expect(stats.svcKeyMappings).toBe(0);
+    expect(stats.databaseIdMappings).toBe(0);
+    expect(stats.inflightCreations).toBe(0);
+  });
+
+  it('should clean up all svc_keys when 3+ coalesced requests fail', async () => {
+    const failingBuilder = jest.fn(() => { throw new Error('coalesced fail 3+'); });
+    configureMultiTenancyCache({ basePresetBuilder: failingBuilder as any });
+
+    const pool = makeMockPool();
+    const base = { pool, schemas: ['public'] as string[], anonRole: 'anon', roleName: 'auth', databaseId: 'db-002' };
+
+    // Start 4 concurrent requests with the same buildKey
+    const promises = [
+      getOrCreateTenantInstance({ ...base, svcKey: 'coal-1' }),
+      getOrCreateTenantInstance({ ...base, svcKey: 'coal-2' }),
+      getOrCreateTenantInstance({ ...base, svcKey: 'coal-3' }),
+      getOrCreateTenantInstance({ ...base, svcKey: 'coal-4' }),
+    ];
+
+    const results = await Promise.allSettled(promises);
+    expect(results.every(r => r.status === 'rejected')).toBe(true);
+
+    // No orphaned mappings for any svc_key
+    for (const key of ['coal-1', 'coal-2', 'coal-3', 'coal-4']) {
+      expect(getBuildKeyForSvcKey(key)).toBeUndefined();
+    }
+
+    const stats = getMultiTenancyCacheStats();
+    expect(stats.handlerCacheSize).toBe(0);
+    expect(stats.svcKeyMappings).toBe(0);
+    expect(stats.databaseIdMappings).toBe(0);
+    expect(stats.inflightCreations).toBe(0);
+  });
+
+  it('should preserve all svc_key mappings when coalesced creation succeeds', async () => {
+    // Uses the default (working) preset builder from beforeEach
+    const pool = makeMockPool();
+    const base = { pool, schemas: ['public'] as string[], anonRole: 'anon', roleName: 'auth', databaseId: 'db-003' };
+
+    // Start 3 concurrent requests (same buildKey)
+    const p1 = getOrCreateTenantInstance({ ...base, svcKey: 'ok-1' });
+    const p2 = getOrCreateTenantInstance({ ...base, svcKey: 'ok-2' });
+    const p3 = getOrCreateTenantInstance({ ...base, svcKey: 'ok-3' });
+
+    const [r1, r2, r3] = await Promise.all([p1, p2, p3]);
+
+    // All got the same handler instance
+    expect(r1).toBe(r2);
+    expect(r2).toBe(r3);
+    expect(r1.buildKey).toBe(r2.buildKey);
+
+    // All 3 svc_key mappings exist
+    expect(getBuildKeyForSvcKey('ok-1')).toBe(r1.buildKey);
+    expect(getBuildKeyForSvcKey('ok-2')).toBe(r1.buildKey);
+    expect(getBuildKeyForSvcKey('ok-3')).toBe(r1.buildKey);
+
+    const stats = getMultiTenancyCacheStats();
+    expect(stats.handlerCacheSize).toBe(1);
+    expect(stats.svcKeyMappings).toBe(3);
+    expect(stats.inflightCreations).toBe(0);
+  });
+});
+
+// --- Finding 2: svc_key rebinding cleans up old handler ---
+
+describe('svc_key rebinding — old handler cleanup (Finding 2)', () => {
+  it('should evict old buildKey when rebound svc_key was its only reference', async () => {
+    const pool = makeMockPool();
+
+    // Create handler with schema_a
+    const tA = await getOrCreateTenantInstance({
+      svcKey: 'rebind-key',
+      pool,
+      schemas: ['schema_a'],
+      anonRole: 'anon',
+      roleName: 'auth',
+      databaseId: 'db-r1',
+    });
+    const buildKeyA = tA.buildKey;
+
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(1);
+
+    // Rebind the same svc_key to a different buildKey (different schemas)
+    const tB = await getOrCreateTenantInstance({
+      svcKey: 'rebind-key',
+      pool,
+      schemas: ['schema_b'],
+      anonRole: 'anon',
+      roleName: 'auth',
+      databaseId: 'db-r1',
+    });
+    const buildKeyB = tB.buildKey;
+    expect(buildKeyA).not.toBe(buildKeyB);
+
+    // Old buildKey A should be evicted (no remaining svc_key references)
+    expect(getBuildKeyForSvcKey('rebind-key')).toBe(buildKeyB);
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(1); // only B remains
+    expect(getTenantInstance('rebind-key')).toBe(tB);
+  });
+
+  it('should NOT evict old buildKey if another svc_key still references it', async () => {
+    const pool = makeMockPool();
+
+    // Two svc_keys share the same buildKey (identical build inputs)
+    await getOrCreateTenantInstance({
+      svcKey: 'shared-1',
+      pool,
+      schemas: ['schema_a'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+    const tShared = await getOrCreateTenantInstance({
+      svcKey: 'shared-2',
+      pool,
+      schemas: ['schema_a'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+    const sharedBuildKey = tShared.buildKey;
+
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(1);
+    expect(getMultiTenancyCacheStats().svcKeyMappings).toBe(2);
+
+    // Rebind shared-1 to a different buildKey (different schemas)
+    const tNew = await getOrCreateTenantInstance({
+      svcKey: 'shared-1',
+      pool,
+      schemas: ['schema_b'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    // Old buildKey should still exist — shared-2 still references it
+    expect(getBuildKeyForSvcKey('shared-1')).toBe(tNew.buildKey);
+    expect(getBuildKeyForSvcKey('shared-2')).toBe(sharedBuildKey);
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(2); // old + new
+    expect(getTenantInstance('shared-2')).toBe(tShared);
+  });
+
+  it('should keep databaseIdToBuildKeys consistent after rebinding', async () => {
+    const pool = makeMockPool();
+
+    // Create with databaseId
+    await getOrCreateTenantInstance({
+      svcKey: 'db-key',
+      pool,
+      schemas: ['schema_a'],
+      anonRole: 'anon',
+      roleName: 'auth',
+      databaseId: 'db-x',
+    });
+
+    expect(getMultiTenancyCacheStats().databaseIdMappings).toBe(1);
+
+    // Rebind to different schemas (different buildKey), same databaseId
+    await getOrCreateTenantInstance({
+      svcKey: 'db-key',
+      pool,
+      schemas: ['schema_b'],
+      anonRole: 'anon',
+      roleName: 'auth',
+      databaseId: 'db-x',
+    });
+
+    // Old buildKey evicted (no remaining refs), new buildKey under same databaseId
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(1);
+    expect(getMultiTenancyCacheStats().databaseIdMappings).toBe(1);
+
+    // Flushing by databaseId should still work
+    flushByDatabaseId('db-x');
+    expect(getTenantInstance('db-key')).toBeUndefined();
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(0);
+    expect(getMultiTenancyCacheStats().databaseIdMappings).toBe(0);
+  });
+
+  it('should allow flush to work correctly after rebinding', async () => {
+    const pool = makeMockPool();
+
+    // Create handler A
+    await getOrCreateTenantInstance({
+      svcKey: 'flush-key',
+      pool,
+      schemas: ['schema_a'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    // Rebind to handler B
+    await getOrCreateTenantInstance({
+      svcKey: 'flush-key',
+      pool,
+      schemas: ['schema_b'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    // Flush via the rebound svc_key — should flush the NEW handler
+    flushTenantInstance('flush-key');
+    expect(getTenantInstance('flush-key')).toBeUndefined();
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(0);
+    expect(getMultiTenancyCacheStats().svcKeyMappings).toBe(0);
+  });
+});
