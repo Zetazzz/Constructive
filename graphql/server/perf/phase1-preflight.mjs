@@ -78,6 +78,10 @@ const dbpmTenantCount = Number.parseInt(
 );
 const dbpmUserPassword = getArgValue(args, '--dbpm-user-password', 'Constructive!23456');
 const dbpmUserPrefix = getArgValue(args, '--dbpm-user-prefix', `dbpm-preflight-${Date.now()}`);
+const dbpmShapeVariants = Number.parseInt(
+  getArgValue(args, '--dbpm-shape-variants', '0'),
+  10,
+);
 const keyspaceOutputPath = path.resolve(
   getArgValue(args, '--keyspace-output', path.join(runDir, 'data', 'tokens.keyspace.json')),
 );
@@ -275,6 +279,8 @@ const runDbpmTechValidationScript = async () => {
         dbpmUserPassword,
         '--user-prefix',
         dbpmUserPrefix,
+        '--shape-variants',
+        String(dbpmShapeVariants),
       ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );

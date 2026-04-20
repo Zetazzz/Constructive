@@ -29,6 +29,10 @@ const provisionDomain = getArgValue(args, '--provision-domain', 'localhost');
 const modulesArg = getArgValue(args, '--provision-modules', 'all');
 const targetSchemaName = getArgValue(args, '--target-schema-name', 'app_public');
 const tablePrefix = getArgValue(args, '--table-prefix', 'items_dbpm');
+const shapeVariantCount = Number.parseInt(
+  getArgValue(args, '--shape-variants', '0'),
+  10,
+);
 
 const provisionTimeoutMs = Number.parseInt(
   getArgValue(args, '--provision-timeout-ms', '180000'),
@@ -58,6 +62,53 @@ const modules = modulesArg
 if (modules.length === 0) {
   throw new Error(`Invalid --provision-modules: ${modulesArg}`);
 }
+
+// ---------------------------------------------------------------------------
+// Shape variant definitions (Option A — extra provisioned tables only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Each entry describes extra tables to provision for tenants assigned to
+ * that variant group.  Group 0 always means "main table only" (no extras).
+ *
+ * The provisioning mutation is the same `createSecureTableProvision` used
+ * for the main business table — this guarantees RLS, grants, policies,
+ * and PostGraphile type generation are all exercised.
+ */
+const VARIANT_DEFS = [
+  // Group 0: base case — no extra tables
+  { tables: [] },
+  // Group 1: extra table with 2 columns (tags)
+  {
+    tables: [
+      {
+        suffix: 'tags',
+        fields: [
+          { name: 'label', type: 'text' },
+          { name: 'priority', type: 'integer' },
+        ],
+      },
+    ],
+  },
+  // Group 2: extra table with 3 columns (metrics)
+  {
+    tables: [
+      {
+        suffix: 'metrics',
+        fields: [
+          { name: 'value', type: 'numeric' },
+          { name: 'recorded_at', type: 'timestamptz' },
+          { name: 'active', type: 'boolean' },
+        ],
+      },
+    ],
+  },
+];
+
+const effectiveVariantCount = Math.min(
+  Math.max(shapeVariantCount, 0),
+  VARIANT_DEFS.length,
+);
 
 const pgConfig = {
   host: getArgValue(args, '--pg-host', process.env.PGHOST || 'localhost'),
@@ -329,6 +380,41 @@ const createBusinessTable = async ({ token, databaseId, schemaId, tableName }) =
   return record;
 };
 
+/**
+ * Provision a variant table via the same mutation used for the main
+ * business table.  Failures are non-fatal — logged and recorded but
+ * do not abort the tenant.
+ */
+const createVariantTable = async ({ token, databaseId, schemaId, tableName, fields }) => {
+  const response = await gql({
+    query: createSecureTableProvisionMutation,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    variables: {
+      input: {
+        secureTableProvision: {
+          databaseId,
+          schemaId,
+          tableName,
+          nodeType: 'DataId',
+          fields,
+        },
+      },
+    },
+  });
+
+  const record = response.json?.data?.createSecureTableProvision?.secureTableProvision;
+  if (!response.ok || !record?.id) {
+    return {
+      ok: false,
+      error: `createSecureTableProvision(variant) failed table=${tableName}; status=${response.status}; error=${firstError(response)}`,
+    };
+  }
+
+  return { ok: true, record };
+};
+
 const quoteIdent = (value) => `"${String(value).replace(/"/g, '""')}"`;
 
 const validateSqlOps = async ({ pool, physicalSchema, tableName, tenantIndex }) => {
@@ -441,6 +527,43 @@ const main = async () => {
           tableName,
         });
 
+        // --- Option A: shape variant tables ---
+        const variantResults = [];
+        const variantIndex = effectiveVariantCount > 0
+          ? (i - 1) % effectiveVariantCount
+          : 0;
+        const variantDef = effectiveVariantCount > 0
+          ? VARIANT_DEFS[variantIndex]
+          : VARIANT_DEFS[0];
+
+        for (const vtDef of variantDef.tables) {
+          const vtName = `${tablePrefix}_variant_${vtDef.suffix}_${suffix.replace(/-/g, '_')}`;
+          console.log(`  [tenant ${i}] provisioning variant table: ${vtName} (group ${variantIndex}, fields=${vtDef.fields.length})`);
+          const vtResult = await createVariantTable({
+            token: auth.accessToken,
+            databaseId: provisionFinal.database_id,
+            schemaId: schema.id,
+            tableName: vtName,
+            fields: vtDef.fields,
+          });
+          if (vtResult.ok) {
+            variantResults.push({
+              tableName: vtResult.record.tableName || vtName,
+              tableId: vtResult.record.tableId,
+              fields: vtDef.fields,
+              suffix: vtDef.suffix,
+            });
+          } else {
+            console.warn(`  [tenant ${i}] variant table failed: ${vtResult.error}`);
+            variantResults.push({
+              tableName: vtName,
+              fields: vtDef.fields,
+              suffix: vtDef.suffix,
+              error: vtResult.error,
+            });
+          }
+        }
+
         const databaseSchemas = await listDatabaseSchemas({
           pool,
           databaseId: provisionFinal.database_id,
@@ -458,6 +581,10 @@ const main = async () => {
           email,
           authMode: auth.mode,
           authUserId: auth.userId,
+          shapeVariant: {
+            index: variantIndex,
+            tables: variantResults,
+          },
           created: {
             databaseProvisionModule: {
               id: provision.id,
@@ -530,6 +657,7 @@ const main = async () => {
       tablePrefix,
       provisionTimeoutMs,
       provisionPollMs,
+      shapeVariantCount: effectiveVariantCount,
     },
     summary,
     accounts,
@@ -547,6 +675,8 @@ const main = async () => {
     tableId: account.created.secureTableProvision.tableId,
     tableName: account.created.secureTableProvision.tableName,
     seedRowId: account.sqlValidation.insertRow?.id ?? null,
+    variantIndex: account.shapeVariant.index,
+    variantTables: account.shapeVariant.tables,
   }));
 
   const credentials = accounts.map((account) => ({

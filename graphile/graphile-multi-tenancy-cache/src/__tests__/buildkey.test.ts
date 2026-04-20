@@ -883,3 +883,216 @@ describe('svc_key rebinding — old handler cleanup (Finding 2)', () => {
     expect(getMultiTenancyCacheStats().svcKeyMappings).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// svc_key race condition tests
+// ---------------------------------------------------------------------------
+
+describe('getOrCreateTenantInstance — svc_key race condition (epoch guard)', () => {
+  /**
+   * Access the module-level postgraphile mock so we can override it
+   * per-test with gate-controlled behaviour.
+   */
+  const pgMock = () =>
+    (jest.requireMock('postgraphile') as { postgraphile: jest.Mock }).postgraphile;
+
+  /**
+   * Install a gated postgraphile mock.  Each call to `postgraphile()`
+   * creates a new gate; `serv.ready()` blocks until the gate is resolved.
+   * Returns the ordered array of gates so the test can resolve them in
+   * any desired order.
+   */
+  function installGatedMock(): Array<{ resolve: () => void }> {
+    const gates: Array<{ resolve: () => void }> = [];
+    pgMock().mockImplementation(() => {
+      let resolve!: () => void;
+      const promise = new Promise<void>((r) => {
+        resolve = r;
+      });
+      gates.push({ resolve });
+      return {
+        createServ: jest.fn(() => ({
+          addTo: jest.fn(async () => {}),
+          ready: jest.fn(async () => {
+            await promise;
+          }),
+        })),
+        release: jest.fn(async () => {}),
+      };
+    });
+    return gates;
+  }
+
+  afterEach(() => {
+    // Restore the default (instant-resolving) mock so other tests are unaffected
+    pgMock().mockImplementation(() => ({
+      createServ: jest.fn(() => ({
+        addTo: jest.fn(async () => {}),
+        ready: jest.fn(async () => {}),
+      })),
+      release: jest.fn(async () => {}),
+    }));
+  });
+
+  it('newer request finishes first — final mapping stays on newer buildKey', async () => {
+    const gates = installGatedMock();
+    const pool = makeMockPool();
+
+    // Start OLDER request (buildKey A — schemas=['schema_old'])
+    const pOld = getOrCreateTenantInstance({
+      svcKey: 'race-svc',
+      pool,
+      schemas: ['schema_old'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    // Start NEWER request (buildKey B — schemas=['schema_new'])
+    const pNew = getOrCreateTenantInstance({
+      svcKey: 'race-svc',
+      pool,
+      schemas: ['schema_new'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    // Two separate handler creations (different buildKeys → no coalescing)
+    expect(gates.length).toBe(2);
+
+    // Resolve NEWER first
+    gates[1].resolve();
+    const resultNew = await pNew;
+    expect(getBuildKeyForSvcKey('race-svc')).toBe(resultNew.buildKey);
+
+    // Resolve OLDER (stale completion)
+    gates[0].resolve();
+    await pOld;
+
+    // Flush microtask queue for deferred orphan cleanup
+    await new Promise<void>((r) => queueMicrotask(r));
+
+    // Final mapping MUST remain on the newer buildKey
+    expect(getBuildKeyForSvcKey('race-svc')).toBe(resultNew.buildKey);
+  });
+
+  it('older request finishes first — final mapping ends on newer buildKey', async () => {
+    const gates = installGatedMock();
+    const pool = makeMockPool();
+
+    const pOld = getOrCreateTenantInstance({
+      svcKey: 'race-svc-2',
+      pool,
+      schemas: ['schema_old'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    const pNew = getOrCreateTenantInstance({
+      svcKey: 'race-svc-2',
+      pool,
+      schemas: ['schema_new'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    expect(gates.length).toBe(2);
+
+    // Resolve OLDER first — this is stale since newer epoch already exists
+    gates[0].resolve();
+    await pOld;
+
+    // Flush microtask queue
+    await new Promise<void>((r) => queueMicrotask(r));
+
+    // Resolve NEWER
+    gates[1].resolve();
+    const resultNew = await pNew;
+
+    await new Promise<void>((r) => queueMicrotask(r));
+
+    // Final mapping MUST be on the newer buildKey
+    expect(getBuildKeyForSvcKey('race-svc-2')).toBe(resultNew.buildKey);
+  });
+
+  it('no orphaned handler/index state remains after race', async () => {
+    const gates = installGatedMock();
+    const pool = makeMockPool();
+
+    const pOld = getOrCreateTenantInstance({
+      svcKey: 'race-svc-3',
+      pool,
+      schemas: ['schema_old'],
+      anonRole: 'anon',
+      roleName: 'auth',
+      databaseId: 'db-race',
+    });
+
+    const pNew = getOrCreateTenantInstance({
+      svcKey: 'race-svc-3',
+      pool,
+      schemas: ['schema_new'],
+      anonRole: 'anon',
+      roleName: 'auth',
+      databaseId: 'db-race',
+    });
+
+    expect(gates.length).toBe(2);
+
+    // Resolve newer first, then older (worst-case for orphans)
+    gates[1].resolve();
+    await pNew;
+    gates[0].resolve();
+    await pOld;
+
+    // Flush microtask queue for deferred orphan cleanup
+    await new Promise<void>((r) => queueMicrotask(r));
+
+    const stats = getMultiTenancyCacheStats();
+
+    // Only 1 handler should remain (the newer one)
+    expect(stats.handlerCacheSize).toBe(1);
+    // Only 1 svc_key mapping
+    expect(stats.svcKeyMappings).toBe(1);
+    // No in-flight creations
+    expect(stats.inflightCreations).toBe(0);
+    // The surviving handler is reachable via the svc_key
+    expect(getTenantInstance('race-svc-3')).toBeDefined();
+    expect(getBuildKeyForSvcKey('race-svc-3')).toBeDefined();
+  });
+
+  it('same-buildKey coalescing still works with epoch tracking', async () => {
+    // Epoch mechanism must NOT break single-flight behavior when two
+    // different svc_keys compute the same buildKey.
+    const pool = makeMockPool();
+
+    const p1 = getOrCreateTenantInstance({
+      svcKey: 'coalesce-A',
+      pool,
+      schemas: ['shared_schema'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    const p2 = getOrCreateTenantInstance({
+      svcKey: 'coalesce-B',
+      pool,
+      schemas: ['shared_schema'],
+      anonRole: 'anon',
+      roleName: 'auth',
+    });
+
+    const [r1, r2] = await Promise.all([p1, p2]);
+
+    // Same handler (coalesced on identical buildKey)
+    expect(r1.buildKey).toBe(r2.buildKey);
+    expect(r1).toBe(r2);
+
+    // Both svc_keys mapped
+    expect(getBuildKeyForSvcKey('coalesce-A')).toBe(r1.buildKey);
+    expect(getBuildKeyForSvcKey('coalesce-B')).toBe(r2.buildKey);
+
+    // Single handler in cache
+    expect(getMultiTenancyCacheStats().handlerCacheSize).toBe(1);
+    expect(getMultiTenancyCacheStats().svcKeyMappings).toBe(2);
+  });
+});

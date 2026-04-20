@@ -68,6 +68,18 @@ const databaseIdToBuildKeys = new Map<string, Set<string>>();
 /** buildKey → Promise<TenantInstance> (single-flight coalescing) */
 const creatingHandlers = new Map<string, Promise<TenantInstance>>();
 
+/**
+ * Per-svc_key monotonic epoch.
+ *
+ * Each call to getOrCreateTenantInstance increments the epoch for its
+ * svc_key.  After handler creation completes, the caller only registers
+ * a mapping if its captured epoch still matches the current value.
+ *
+ * This prevents a stale (older, slower) build from overwriting a
+ * newer binding that completed earlier.
+ */
+const svcKeyEpoch = new Map<string, number>();
+
 /** The preset builder, set once by configureMultiTenancyCache(). */
 let presetBuilder: ((
   pool: Pool,
@@ -292,11 +304,18 @@ export async function getOrCreateTenantInstance(
 
   const buildKey = computeBuildKey(pool, schemas, anonRole, roleName);
 
+  // Capture a monotonically increasing epoch for this svc_key.
+  // Only the request holding the latest epoch is allowed to register.
+  const epoch = (svcKeyEpoch.get(svcKey) ?? 0) + 1;
+  svcKeyEpoch.set(svcKey, epoch);
+
   // Step 1: Fast path — handler already cached
   const existing = handlerCache.get(buildKey);
   if (existing) {
     existing.lastUsedAt = Date.now();
-    registerMapping(svcKey, buildKey, databaseId);
+    if (svcKeyEpoch.get(svcKey) === epoch) {
+      registerMapping(svcKey, buildKey, databaseId);
+    }
     return existing;
   }
 
@@ -305,7 +324,9 @@ export async function getOrCreateTenantInstance(
   if (pending) {
     // Await the shared promise; register only on success
     const result = await pending;
-    registerMapping(svcKey, buildKey, databaseId);
+    if (svcKeyEpoch.get(svcKey) === epoch) {
+      registerMapping(svcKey, buildKey, databaseId);
+    }
     return result;
   }
 
@@ -315,7 +336,18 @@ export async function getOrCreateTenantInstance(
 
   try {
     const result = await promise;
-    registerMapping(svcKey, buildKey, databaseId);
+    if (svcKeyEpoch.get(svcKey) === epoch) {
+      registerMapping(svcKey, buildKey, databaseId);
+    } else {
+      // Stale completion — a newer request for this svc_key superseded us.
+      // Defer the orphan check so coalesced followers from OTHER svc_keys
+      // have a chance to register before we decide the buildKey is orphaned.
+      queueMicrotask(() => {
+        if (getSvcKeysForBuildKey(buildKey).length === 0) {
+          evictBuildKey(buildKey);
+        }
+      });
+    }
     return result;
   } finally {
     creatingHandlers.delete(buildKey);
@@ -437,6 +469,7 @@ export async function shutdownMultiTenancyCache(): Promise<void> {
   svcKeyToBuildKey.clear();
   databaseIdToBuildKeys.clear();
   creatingHandlers.clear();
+  svcKeyEpoch.clear();
   presetBuilder = null;
 
   log.info('Multi-tenancy cache shutdown complete');
