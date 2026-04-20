@@ -19,14 +19,28 @@ import { createHash } from 'node:crypto';
 
 import { computeBuildKey } from '../multi-tenancy-cache';
 
-function makeMockPool(overrides: Record<string, unknown> = {}): import('pg').Pool {
-  const defaults = {
-    host: 'localhost',
-    port: 5432,
-    database: 'testdb',
-    user: 'postgres',
-  };
-  return { options: { ...defaults, ...overrides } } as unknown as import('pg').Pool;
+/**
+ * Create a mock Pool that matches the REAL pg-cache shape:
+ * `new pg.Pool({ connectionString })`.
+ *
+ * pg-cache's getPgPool() creates pools with connectionString only —
+ * individual fields (host, port, database, user) are NOT on pool.options.
+ * This mock must match that shape to test the real code path.
+ */
+function makeMockPool(overrides: {
+  host?: string;
+  port?: number;
+  database?: string;
+  user?: string;
+  password?: string;
+} = {}): import('pg').Pool {
+  const host = overrides.host ?? 'localhost';
+  const port = overrides.port ?? 5432;
+  const database = overrides.database ?? 'testdb';
+  const user = overrides.user ?? 'postgres';
+  const password = overrides.password ?? 'pass';
+  const connectionString = `postgres://${user}:${password}@${host}:${port}/${database}`;
+  return { options: { connectionString } } as unknown as import('pg').Pool;
 }
 
 describe('computeBuildKey', () => {
@@ -509,5 +523,134 @@ describe('re-creation after flush', () => {
     expect(t2).not.toBe(t1);
     expect(t2.buildKey).toBe(t1.buildKey);
     expect(getTenantInstance('key-a')).toBeDefined();
+  });
+});
+
+describe('handler creation failure — orphaned index cleanup', () => {
+  it('should clean up svc_key index when handler creation fails', async () => {
+    // Make the preset builder throw to simulate handler creation failure
+    const failingBuilder = jest.fn(() => {
+      throw new Error('simulated build failure');
+    });
+    configureMultiTenancyCache({ basePresetBuilder: failingBuilder as any });
+
+    const pool = makeMockPool();
+
+    await expect(
+      getOrCreateTenantInstance({
+        svcKey: 'failing-key',
+        pool,
+        schemas: ['public'],
+        anonRole: 'anon',
+        roleName: 'auth',
+        databaseId: 'db-fail',
+      }),
+    ).rejects.toThrow('simulated build failure');
+
+    // svc_key index should NOT have orphaned entries
+    expect(getBuildKeyForSvcKey('failing-key')).toBeUndefined();
+
+    // Stats should show clean state
+    const stats = getMultiTenancyCacheStats();
+    expect(stats.handlerCacheSize).toBe(0);
+    expect(stats.svcKeyMappings).toBe(0);
+    expect(stats.databaseIdMappings).toBe(0);
+  });
+
+  it('should not affect other svc_keys when one fails', async () => {
+    const pool = makeMockPool();
+
+    // First, create a successful handler
+    const t1 = await getOrCreateTenantInstance({
+      svcKey: 'good-key',
+      pool,
+      schemas: ['schema_a'],
+      anonRole: 'anon',
+      roleName: 'auth',
+      databaseId: 'db-001',
+    });
+
+    expect(getTenantInstance('good-key')).toBeDefined();
+
+    // Now make the next creation fail (different buildKey — different schemas)
+    const failingBuilder = jest.fn(() => {
+      throw new Error('simulated build failure');
+    });
+    configureMultiTenancyCache({ basePresetBuilder: failingBuilder as any });
+
+    await expect(
+      getOrCreateTenantInstance({
+        svcKey: 'bad-key',
+        pool,
+        schemas: ['schema_b'],
+        anonRole: 'anon',
+        roleName: 'auth',
+        databaseId: 'db-001',
+      }),
+    ).rejects.toThrow('simulated build failure');
+
+    // good-key should still work
+    expect(getTenantInstance('good-key')).toBeDefined();
+    expect(getTenantInstance('good-key')!.buildKey).toBe(t1.buildKey);
+
+    // bad-key should be cleaned up
+    expect(getBuildKeyForSvcKey('bad-key')).toBeUndefined();
+
+    const stats = getMultiTenancyCacheStats();
+    expect(stats.handlerCacheSize).toBe(1);
+    expect(stats.svcKeyMappings).toBe(1);
+  });
+});
+
+describe('connectionString-based pool identity', () => {
+  it('should produce different buildKeys for pools with different connectionStrings', () => {
+    // This is the REAL production scenario — pools created via pg-cache's getPgPool
+    // have { options: { connectionString } }, not { options: { host, database, user } }
+    const poolA = { options: { connectionString: 'postgres://user:pass@host-a:5432/db_a' } } as unknown as import('pg').Pool;
+    const poolB = { options: { connectionString: 'postgres://user:pass@host-b:5432/db_b' } } as unknown as import('pg').Pool;
+
+    const keyA = computeBuildKey(poolA, ['public'], 'anon', 'auth');
+    const keyB = computeBuildKey(poolB, ['public'], 'anon', 'auth');
+
+    expect(keyA).not.toBe(keyB);
+  });
+
+  it('should produce the same buildKey for identical connectionStrings', () => {
+    const pool1 = { options: { connectionString: 'postgres://user:pass@host:5432/mydb' } } as unknown as import('pg').Pool;
+    const pool2 = { options: { connectionString: 'postgres://user:pass@host:5432/mydb' } } as unknown as import('pg').Pool;
+
+    const key1 = computeBuildKey(pool1, ['public'], 'anon', 'auth');
+    const key2 = computeBuildKey(pool2, ['public'], 'anon', 'auth');
+
+    expect(key1).toBe(key2);
+  });
+
+  it('should differ when only database name differs in connectionString', () => {
+    const pool1 = { options: { connectionString: 'postgres://user:pass@host:5432/db_alpha' } } as unknown as import('pg').Pool;
+    const pool2 = { options: { connectionString: 'postgres://user:pass@host:5432/db_beta' } } as unknown as import('pg').Pool;
+
+    const key1 = computeBuildKey(pool1, ['public'], 'anon', 'auth');
+    const key2 = computeBuildKey(pool2, ['public'], 'anon', 'auth');
+
+    expect(key1).not.toBe(key2);
+  });
+
+  it('should not include password in identity (password changes should not change buildKey)', () => {
+    // Both pools connect to the same host/db/user, only password differs
+    const pool1 = { options: { connectionString: 'postgres://user:pass1@host:5432/mydb' } } as unknown as import('pg').Pool;
+    const pool2 = { options: { connectionString: 'postgres://user:pass2@host:5432/mydb' } } as unknown as import('pg').Pool;
+
+    const key1 = computeBuildKey(pool1, ['public'], 'anon', 'auth');
+    const key2 = computeBuildKey(pool2, ['public'], 'anon', 'auth');
+
+    // buildKeys should be identical — password doesn't affect handler construction
+    expect(key1).toBe(key2);
+  });
+
+  it('should handle pools with individual fields (fallback path)', () => {
+    // Some consumers might create pools with explicit fields instead of connectionString
+    const pool = { options: { host: 'myhost', port: 5432, database: 'mydb', user: 'myuser' } } as unknown as import('pg').Pool;
+    const key = computeBuildKey(pool, ['public'], 'anon', 'auth');
+    expect(key).toMatch(/^[0-9a-f]{16}$/);
   });
 });

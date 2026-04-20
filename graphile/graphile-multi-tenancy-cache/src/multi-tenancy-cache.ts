@@ -100,12 +100,41 @@ export function configureMultiTenancyCache(config: MultiTenancyCacheConfig): voi
 
 /**
  * Derive the pool connection identity from a pg.Pool instance.
- * Uses host, port, database, and user — the fields that determine
- * which database server and role the pool connects as.
+ *
+ * Real pg.Pool instances created via `new Pool({ connectionString })` store
+ * only `{ connectionString }` in `pool.options` — the individual fields
+ * (host, port, database, user) are NOT parsed onto the options object.
+ *
+ * This function handles both shapes:
+ *   1. connectionString-based (production — via pg-cache's getPgPool)
+ *   2. individual fields (fallback for pools created with explicit fields)
  */
 function getPoolIdentity(pool: Pool): string {
   const opts = (pool as unknown as { options: Record<string, unknown> }).options || {};
-  return `${opts.host || 'localhost'}:${opts.port || 5432}/${opts.database || ''}@${opts.user || ''}`;
+
+  // Primary path: parse connectionString (matches real pg-cache pool shape)
+  if (typeof opts.connectionString === 'string') {
+    try {
+      const url = new URL(opts.connectionString);
+      const host = url.hostname || 'localhost';
+      const port = url.port || '5432';
+      const database = url.pathname.slice(1) || '';
+      const user = decodeURIComponent(url.username || '');
+      return `${host}:${port}/${database}@${user}`;
+    } catch {
+      // If URL parsing fails, use the raw connectionString (will be hashed anyway)
+      return opts.connectionString;
+    }
+  }
+
+  // Fallback: individual fields (for pools created with explicit host/database/user)
+  if (opts.host || opts.database || opts.user) {
+    return `${opts.host || 'localhost'}:${opts.port || 5432}/${opts.database || ''}@${opts.user || ''}`;
+  }
+
+  // Last resort: no identity available — log a warning
+  log.warn('Pool has no connectionString or individual connection fields — buildKey may not be unique');
+  return 'unknown-pool';
 }
 
 /**
@@ -167,12 +196,16 @@ function getSvcKeysForBuildKey(buildKey: string): string[] {
 }
 
 /**
- * Remove a buildKey from all indexes and dispose the handler.
+ * Remove a buildKey from all indexes and dispose the handler (if present).
+ *
+ * Also cleans orphaned indexes — if handler creation failed, the handler
+ * won't be in handlerCache but the svc_key and databaseId indexes may
+ * still reference the buildKey. This function cleans those too.
  */
 function evictBuildKey(buildKey: string): void {
   const handler = handlerCache.get(buildKey);
-  if (!handler) return;
 
+  // Always clean indexes, even if handler isn't cached (handles orphaned indexes)
   handlerCache.delete(buildKey);
 
   // Remove all svc_key → buildKey mappings pointing to this buildKey
@@ -186,11 +219,13 @@ function evictBuildKey(buildKey: string): void {
     if (keys.size === 0) databaseIdToBuildKeys.delete(dbId);
   }
 
-  disposeTenant(handler).catch((err) => {
-    log.error(`Failed to dispose handler buildKey=${buildKey}:`, err);
-  });
+  if (handler) {
+    disposeTenant(handler).catch((err) => {
+      log.error(`Failed to dispose handler buildKey=${buildKey}:`, err);
+    });
+  }
 
-  log.debug(`Evicted handler buildKey=${buildKey}`);
+  log.debug(`Evicted buildKey=${buildKey} (handler=${handler ? 'disposed' : 'none/orphaned'})`);
 }
 
 // --- Core API ---
@@ -259,6 +294,21 @@ export async function getOrCreateTenantInstance(
 
   try {
     return await promise;
+  } catch (err) {
+    // Handler creation failed — clean up orphaned indexes for THIS svc_key
+    svcKeyToBuildKey.delete(svcKey);
+
+    // If no other svc_keys still reference this buildKey, clean databaseId index too
+    if (getSvcKeysForBuildKey(buildKey).length === 0 && databaseId) {
+      const keys = databaseIdToBuildKeys.get(databaseId);
+      if (keys) {
+        keys.delete(buildKey);
+        if (keys.size === 0) databaseIdToBuildKeys.delete(databaseId);
+      }
+    }
+
+    log.warn(`Handler creation failed for svc_key=${svcKey} buildKey=${buildKey}, cleaned orphaned indexes`);
+    throw err;
   } finally {
     creatingHandlers.delete(buildKey);
   }
