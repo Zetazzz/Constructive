@@ -15,10 +15,7 @@ export type {
   MultiTenancyCacheConfig,
 } from './multi-tenancy-cache';
 
-// --- Plugin ---
-export { PgMultiTenancyWrapperPlugin } from './plugins/pg-client-wrapper-plugin';
-
-// --- Introspection cache ---
+// --- Introspection cache (kept as module/test base — not required for v4 runtime) ---
 export {
   getOrCreateIntrospection,
   invalidateIntrospection,
@@ -32,26 +29,7 @@ export type {
   IntrospectionCacheStats,
 } from './introspection-cache';
 
-// --- Template registry ---
-export {
-  getTemplate,
-  setTemplate,
-  registerTenant,
-  deregisterTenant,
-  sweepIdleTemplates,
-  clearAllTemplates,
-  getTemplateStats,
-} from './registry-template-map';
-
-export type {
-  RegistryTemplate,
-  TemplateStats,
-} from './registry-template-map';
-
-// --- Utilities ---
-export { buildSchemaRemapTransform, SqlRemapError } from './utils/sql-transform';
-export { buildSchemaMap, buildTenantPgSettings, remapSchemas } from './utils/schema-map';
-export type { SchemaMapping } from './utils/schema-map';
-export { getSchemaFingerprint, fingerprintsMatch } from './utils/fingerprint';
+// --- Utilities (kept as module base — not required for v4 runtime) ---
+export { getSchemaFingerprint } from './utils/fingerprint';
 export type { MinimalIntrospection } from './utils/fingerprint';
 export { fetchIntrospection, parseIntrospection, fetchAndParseIntrospection } from './utils/introspection-query';

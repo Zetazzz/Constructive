@@ -14,7 +14,6 @@ import {
   getTenantInstance,
   getOrCreateTenantInstance,
   shutdownMultiTenancyCache,
-  getMultiTenancyCacheStats,
 } from 'graphile-multi-tenancy-cache';
 import './types'; // for Request type
 import { isGraphqlObservabilityEnabled } from '../diagnostics/observability';

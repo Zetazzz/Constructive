@@ -5,11 +5,8 @@ import { NextFunction, Request, Response } from 'express';
 import { graphileCache } from 'graphile-cache';
 import {
   flushTenantInstance,
-  invalidateIntrospection,
-  getConnectionKey,
 } from 'graphile-multi-tenancy-cache';
 import { getPgPool } from 'pg-cache';
-import { getPgEnvOptions } from 'pg-env';
 import './types'; // for Request type
 import { isMultiTenancyCacheEnabled } from './graphile';
 
@@ -78,20 +75,7 @@ export const flushService = async (
     });
   }
 
-  // Multi-tenancy cache: invalidate introspection by connection key
-  if (multiTenancyEnabled) {
-    try {
-      const pgConfig = getPgEnvOptions({
-        ...opts.pg,
-        database: databaseId,
-      });
-      const pool = getPgPool(pgConfig);
-      const connectionKey = getConnectionKey(pool);
-      invalidateIntrospection(connectionKey);
-    } catch (err) {
-      log.warn(`Failed to invalidate introspection for databaseId=${databaseId}`, err);
-    }
-  }
+  // v4: no introspection invalidation (template sharing removed)
 
   const svc = await pgPool.query(
     `SELECT *
@@ -113,7 +97,7 @@ export const flushService = async (
       graphileCache.delete(key);
       svcCache.delete(key);
 
-      // Multi-tenancy cache: flush tenant instance + release dedicated fallback
+      // Multi-tenancy cache: flush tenant instance
       if (multiTenancyEnabled) {
         flushTenantInstance(key);
       }
