@@ -326,7 +326,7 @@ export const graphile = (opts: ConstructiveOptions): RequestHandler => {
  * Check if multi-tenancy cache is enabled for these options.
  */
 export function isMultiTenancyCacheEnabled(opts: ConstructiveOptions): boolean {
-  return (opts.api as any)?.useMultiTenancyCache === true;
+  return opts.api?.useMultiTenancyCache === true;
 }
 
 /**
