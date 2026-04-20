@@ -5,6 +5,7 @@ import { NextFunction, Request, Response } from 'express';
 import { graphileCache } from 'graphile-cache';
 import {
   flushTenantInstance,
+  flushByDatabaseId,
 } from 'graphile-multi-tenancy-cache';
 import { getPgPool } from 'pg-cache';
 import './types'; // for Request type
@@ -75,7 +76,10 @@ export const flushService = async (
     });
   }
 
-  // v4: no introspection invalidation (template sharing removed)
+  // v4-buildkey: flush all handlers associated with this databaseId via index
+  if (multiTenancyEnabled) {
+    flushByDatabaseId(databaseId);
+  }
 
   const svc = await pgPool.query(
     `SELECT *

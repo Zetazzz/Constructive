@@ -4,8 +4,11 @@ export {
   getOrCreateTenantInstance,
   getTenantInstance,
   flushTenantInstance,
+  flushByDatabaseId,
   getMultiTenancyCacheStats,
   shutdownMultiTenancyCache,
+  computeBuildKey,
+  getBuildKeyForSvcKey,
 } from './multi-tenancy-cache';
 
 export type {

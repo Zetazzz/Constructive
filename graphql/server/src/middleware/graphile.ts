@@ -14,6 +14,7 @@ import {
   getTenantInstance,
   getOrCreateTenantInstance,
   shutdownMultiTenancyCache,
+  flushByDatabaseId,
 } from 'graphile-multi-tenancy-cache';
 import './types'; // for Request type
 import { isGraphqlObservabilityEnabled } from '../diagnostics/observability';
@@ -386,7 +387,7 @@ export const multiTenancyHandler = (opts: ConstructiveOptions): RequestHandler =
       const pool = getPgPool(pgConfig);
 
       const tenant = await getOrCreateTenantInstance({
-        cacheKey: key,
+        svcKey: key,
         pool,
         schemas: schema || [],
         anonRole,
