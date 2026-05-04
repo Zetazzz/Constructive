@@ -17,13 +17,3 @@ export const REQUEST_UPLOAD_URL_MUTATION = `
     }
   }
 `;
-
-export const CONFIRM_UPLOAD_MUTATION = `
-  mutation ConfirmUpload($input: ConfirmUploadInput!) {
-    confirmUpload(input: $input) {
-      fileId
-      status
-      success
-    }
-  }
-`;

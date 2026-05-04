@@ -1,6 +1,6 @@
 import { uploadFile } from '../src/upload';
 import { UploadError } from '../src/types';
-import { REQUEST_UPLOAD_URL_MUTATION, CONFIRM_UPLOAD_MUTATION } from '../src/queries';
+import { REQUEST_UPLOAD_URL_MUTATION } from '../src/queries';
 import type { GraphQLExecutor, FileInput } from '../src/types';
 
 /**
@@ -44,7 +44,7 @@ afterAll(() => {
 
 describe('uploadFile', () => {
   describe('fresh upload (not deduplicated)', () => {
-    it('should hash, request URL, PUT to S3, and confirm', async () => {
+    it('should hash, request URL, and PUT to S3', async () => {
       const file = createMockFile('hello world');
       const executeCalls: Array<{ query: string; variables: Record<string, unknown> }> = [];
 
@@ -59,17 +59,7 @@ describe('uploadFile', () => {
               key: HELLO_WORLD_HASH,
               deduplicated: false,
               expiresAt: new Date(Date.now() + 900_000).toISOString(),
-              status: 'pending',
-            },
-          };
-        }
-
-        if (query === CONFIRM_UPLOAD_MUTATION) {
-          return {
-            confirmUpload: {
-              fileId: 'file-uuid-123',
-              status: 'ready',
-              success: true,
+              status: 'requested',
             },
           };
         }
@@ -94,7 +84,7 @@ describe('uploadFile', () => {
       expect(result.fileId).toBe('file-uuid-123');
       expect(result.key).toBe(HELLO_WORLD_HASH);
       expect(result.deduplicated).toBe(false);
-      expect(result.status).toBe('ready');
+      expect(result.status).toBe('requested');
 
       // Verify requestUploadUrl was called with correct input
       expect(executeCalls[0].query).toBe(REQUEST_UPLOAD_URL_MUTATION);
@@ -114,9 +104,8 @@ describe('uploadFile', () => {
         }),
       );
 
-      // Verify confirmUpload was called
-      expect(executeCalls[1].query).toBe(CONFIRM_UPLOAD_MUTATION);
-      expect(executeCalls[1].variables).toEqual({ input: { fileId: 'file-uuid-123' } });
+      // Only requestUploadUrl should have been called (no confirm step)
+      expect(executeCalls).toHaveLength(1);
     });
   });
 
@@ -156,7 +145,7 @@ describe('uploadFile', () => {
       expect(result.deduplicated).toBe(true);
       expect(result.status).toBe('ready');
 
-      // Only requestUploadUrl should have been called (no confirm, no PUT)
+      // Only requestUploadUrl should have been called (no PUT)
       expect(executeCalls).toHaveLength(1);
       expect(executeCalls[0].query).toBe(REQUEST_UPLOAD_URL_MUTATION);
       expect(global.fetch).not.toHaveBeenCalled();
@@ -201,7 +190,7 @@ describe('uploadFile', () => {
               key: 'hash',
               deduplicated: false,
               expiresAt: new Date().toISOString(),
-              status: 'pending',
+              status: 'requested',
             },
           };
         }
@@ -217,41 +206,6 @@ describe('uploadFile', () => {
       await expect(
         uploadFile({ file, bucketKey: 'test', execute }),
       ).rejects.toMatchObject({ code: 'PUT_UPLOAD_FAILED' });
-    });
-
-    it('should throw CONFIRM_UPLOAD_FAILED when confirm mutation fails', async () => {
-      const file = createMockFile('test');
-      let callCount = 0;
-
-      const execute: GraphQLExecutor = async (query) => {
-        callCount++;
-        if (query === REQUEST_UPLOAD_URL_MUTATION) {
-          return {
-            requestUploadUrl: {
-              uploadUrl: 'https://s3.example.com/put',
-              fileId: 'file-1',
-              key: 'hash',
-              deduplicated: false,
-              expiresAt: new Date().toISOString(),
-              status: 'pending',
-            },
-          };
-        }
-        if (query === CONFIRM_UPLOAD_MUTATION) {
-          throw new Error('Database error');
-        }
-        throw new Error('Unexpected');
-      };
-
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '',
-      });
-
-      await expect(
-        uploadFile({ file, bucketKey: 'test', execute }),
-      ).rejects.toMatchObject({ code: 'CONFIRM_UPLOAD_FAILED' });
     });
   });
 
@@ -283,12 +237,9 @@ describe('uploadFile', () => {
               key: 'hash',
               deduplicated: false,
               expiresAt: new Date().toISOString(),
-              status: 'pending',
+              status: 'requested',
             },
           };
-        }
-        if (query === CONFIRM_UPLOAD_MUTATION) {
-          return { confirmUpload: { fileId: 'file-1', status: 'ready', success: true } };
         }
         throw new Error('Unexpected');
       };

@@ -2,19 +2,18 @@
  * Core upload orchestrator.
  *
  * Coordinates the full presigned URL upload flow:
- *   hashFile → requestUploadUrl → PUT to S3 → confirmUpload
+ *   hashFile → requestUploadUrl → PUT to S3
  *
  * Each step is a pure function — this module just wires them together.
  */
 
 import { hashFile } from './hash';
-import { REQUEST_UPLOAD_URL_MUTATION, CONFIRM_UPLOAD_MUTATION } from './queries';
+import { REQUEST_UPLOAD_URL_MUTATION } from './queries';
 import { UploadError } from './types';
 import type {
   UploadFileOptions,
   UploadResult,
   RequestUploadUrlPayload,
-  ConfirmUploadPayload,
 } from './types';
 
 /**
@@ -23,7 +22,6 @@ import type {
  * 1. Computes SHA-256 hash of the file content
  * 2. Calls `requestUploadUrl` mutation to get a presigned PUT URL
  * 3. If not deduplicated, PUTs the file bytes directly to S3
- * 4. Calls `confirmUpload` mutation to verify and transition status
  *
  * @param options - Upload options (file, bucket, executor, etc.)
  * @returns Upload result with fileId, key, and status
@@ -98,16 +96,11 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
     signal,
   );
 
-  checkAborted(signal);
-
-  // --- Step 4: Confirm ---
-  const confirmPayload = await confirmUpload(execute, requestPayload.fileId);
-
   return {
-    fileId: confirmPayload.fileId,
+    fileId: requestPayload.fileId,
     key: requestPayload.key,
     deduplicated: false,
-    status: confirmPayload.status,
+    status: requestPayload.status,
   };
 }
 
@@ -256,33 +249,6 @@ function putWithXHR(
       (err) => reject(new UploadError('PUT_UPLOAD_FAILED', 'Failed to read file', err)),
     );
   });
-}
-
-/**
- * Call the confirmUpload GraphQL mutation.
- */
-async function confirmUpload(
-  execute: UploadFileOptions['execute'],
-  fileId: string,
-): Promise<ConfirmUploadPayload> {
-  try {
-    const data = await execute(CONFIRM_UPLOAD_MUTATION, { input: { fileId } });
-    const payload = data.confirmUpload as ConfirmUploadPayload | undefined;
-    if (!payload) {
-      throw new UploadError('CONFIRM_UPLOAD_FAILED', 'No data returned from confirmUpload');
-    }
-    if (!payload.success) {
-      throw new UploadError('CONFIRM_UPLOAD_FAILED', `confirmUpload returned success=false`);
-    }
-    return payload;
-  } catch (err) {
-    if (err instanceof UploadError) throw err;
-    throw new UploadError(
-      'CONFIRM_UPLOAD_FAILED',
-      `confirmUpload mutation failed: ${err instanceof Error ? err.message : String(err)}`,
-      err,
-    );
-  }
 }
 
 /**

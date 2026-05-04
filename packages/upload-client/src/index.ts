@@ -6,7 +6,7 @@
  * Provides atomic functions for the presigned URL upload pipeline:
  * - `hashFile` — SHA-256 hash via Web Crypto API
  * - `hashFileChunked` — chunked SHA-256 for large files
- * - `uploadFile` — full upload orchestrator (hash → request → PUT → confirm)
+ * - `uploadFile` — full upload orchestrator (hash → request → PUT)
  *
  * Framework-agnostic, works in any browser or Node.js 18+ environment.
  *
@@ -33,7 +33,7 @@ export { hashFile, hashFileChunked } from './hash';
 export { uploadFile } from './upload';
 
 // GraphQL query strings (for custom integrations)
-export { REQUEST_UPLOAD_URL_MUTATION, CONFIRM_UPLOAD_MUTATION } from './queries';
+export { REQUEST_UPLOAD_URL_MUTATION } from './queries';
 
 // Types
 export type {
@@ -43,8 +43,6 @@ export type {
   UploadResult,
   RequestUploadUrlInput,
   RequestUploadUrlPayload,
-  ConfirmUploadInput,
-  ConfirmUploadPayload,
   UploadErrorCode,
 } from './types';
 
