@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.4.0...@constructive-io/upload-client@0.5.0) (2026-05-04)
+
+### Features
+
+- remove confirmUpload from upload-client, simplify to 3-step flow ([9a9ffb1](https://github.com/constructive-io/constructive/commit/9a9ffb1bbab0060af8faf02fc5940830885c558c)), closes [constructive-db#996](https://github.com/constructive-db/issues/996)
+
 # [0.4.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.3.0...@constructive-io/upload-client@0.4.0) (2026-04-29)
 
 ### Features
