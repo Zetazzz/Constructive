@@ -32,22 +32,8 @@ export interface RequestUploadUrlPayload {
   deduplicated: boolean;
   /** Presigned URL expiry time (ISO string, null if deduplicated) */
   expiresAt: string | null;
-  /** File status — 'pending' for fresh uploads, 'ready' or 'processed' for deduplicated files */
+  /** File status — 'requested' for fresh uploads, 'uploaded'/'processed' for deduplicated files */
   status: string;
-}
-
-export interface ConfirmUploadInput {
-  /** The file ID returned by requestUploadUrl */
-  fileId: string;
-}
-
-export interface ConfirmUploadPayload {
-  /** The confirmed file ID */
-  fileId: string;
-  /** New file status (e.g., "ready") */
-  status: string;
-  /** Whether confirmation succeeded */
-  success: boolean;
 }
 
 // --- Client options ---
@@ -96,7 +82,7 @@ export interface UploadResult {
   key: string;
   /** Whether this file was deduplicated (no bytes uploaded) */
   deduplicated: boolean;
-  /** File status after upload ("ready" for fresh uploads, existing status for dedup) */
+  /** File status after upload ("requested" for fresh uploads, existing status for dedup) */
   status: string;
 }
 
@@ -127,7 +113,6 @@ export type UploadErrorCode =
   | 'GRAPHQL_ERROR'
   | 'REQUEST_UPLOAD_URL_FAILED'
   | 'PUT_UPLOAD_FAILED'
-  | 'CONFIRM_UPLOAD_FAILED'
   | 'ABORTED';
 
 export class UploadError extends Error {

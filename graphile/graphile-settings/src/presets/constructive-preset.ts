@@ -40,7 +40,7 @@ import { getBucketProvisionerConnection } from '../bucket-provisioner-resolver';
  * - PostGIS support (geometry/geography types, GeoJSON scalar — auto-detects PostGIS extension)
  * - PostGIS connection filter operators (spatial filtering on geometry/geography columns)
  * - Upload plugin (file upload to S3/MinIO for image, upload, attachment domain columns)
- * - Presigned URL plugin (requestUploadUrl, confirmUpload mutations + downloadUrl computed field)
+ * - Presigned URL plugin (requestUploadUrl mutation + downloadUrl computed field)
  * - Bucket provisioner plugin (auto-provisions S3 buckets on @storageBuckets table mutations,
  *   CORS management, provisionBucket mutation for manual/retry)
  * - SQL expression validator (validates @sqlExpression columns in mutations)
