@@ -35,7 +35,7 @@ const hash = await hashFile(myFile);
 
 ### `uploadFile(options)`
 
-Orchestrates the full presigned URL upload flow: hash → requestUploadUrl → PUT → confirmUpload.
+Orchestrates the full presigned URL upload flow: hash → requestUploadUrl → PUT to S3.
 
 ### `hashFile(file)`
 
