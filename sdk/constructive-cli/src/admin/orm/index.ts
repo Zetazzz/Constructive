@@ -15,27 +15,30 @@ import { AppPermissionDefaultModel } from './models/appPermissionDefault';
 import { OrgPermissionDefaultModel } from './models/orgPermissionDefault';
 import { AppAdminGrantModel } from './models/appAdminGrant';
 import { AppOwnerGrantModel } from './models/appOwnerGrant';
-import { AppLimitDefaultModel } from './models/appLimitDefault';
-import { OrgLimitDefaultModel } from './models/orgLimitDefault';
-import { OrgAdminGrantModel } from './models/orgAdminGrant';
-import { OrgOwnerGrantModel } from './models/orgOwnerGrant';
-import { AppLimitModel } from './models/appLimit';
 import { AppAchievementModel } from './models/appAchievement';
 import { AppStepModel } from './models/appStep';
-import { AppClaimedInviteModel } from './models/appClaimedInvite';
-import { OrgChartEdgeGrantModel } from './models/orgChartEdgeGrant';
-import { OrgLimitModel } from './models/orgLimit';
+import { OrgAdminGrantModel } from './models/orgAdminGrant';
+import { OrgOwnerGrantModel } from './models/orgOwnerGrant';
 import { MembershipTypeModel } from './models/membershipType';
+import { AppLimitDefaultModel } from './models/appLimitDefault';
+import { OrgLimitDefaultModel } from './models/orgLimitDefault';
+import { OrgChartEdgeGrantModel } from './models/orgChartEdgeGrant';
+import { AppClaimedInviteModel } from './models/appClaimedInvite';
 import { AppGrantModel } from './models/appGrant';
 import { AppMembershipDefaultModel } from './models/appMembershipDefault';
 import { OrgMembershipDefaultModel } from './models/orgMembershipDefault';
 import { OrgClaimedInviteModel } from './models/orgClaimedInvite';
+import { AppLimitEventModel } from './models/appLimitEvent';
+import { OrgLimitEventModel } from './models/orgLimitEvent';
 import { OrgGrantModel } from './models/orgGrant';
 import { OrgChartEdgeModel } from './models/orgChartEdge';
+import { AppLimitModel } from './models/appLimit';
+import { OrgLimitAggregateModel } from './models/orgLimitAggregate';
 import { OrgMemberProfileModel } from './models/orgMemberProfile';
-import { OrgMembershipSettingModel } from './models/orgMembershipSetting';
+import { OrgLimitModel } from './models/orgLimit';
 import { AppLevelModel } from './models/appLevel';
 import { AppInviteModel } from './models/appInvite';
+import { OrgMembershipSettingModel } from './models/orgMembershipSetting';
 import { OrgInviteModel } from './models/orgInvite';
 import { AppMembershipModel } from './models/appMembership';
 import { OrgMembershipModel } from './models/orgMembership';
@@ -85,27 +88,30 @@ export function createClient(config: OrmClientConfig) {
     orgPermissionDefault: new OrgPermissionDefaultModel(client),
     appAdminGrant: new AppAdminGrantModel(client),
     appOwnerGrant: new AppOwnerGrantModel(client),
-    appLimitDefault: new AppLimitDefaultModel(client),
-    orgLimitDefault: new OrgLimitDefaultModel(client),
-    orgAdminGrant: new OrgAdminGrantModel(client),
-    orgOwnerGrant: new OrgOwnerGrantModel(client),
-    appLimit: new AppLimitModel(client),
     appAchievement: new AppAchievementModel(client),
     appStep: new AppStepModel(client),
-    appClaimedInvite: new AppClaimedInviteModel(client),
-    orgChartEdgeGrant: new OrgChartEdgeGrantModel(client),
-    orgLimit: new OrgLimitModel(client),
+    orgAdminGrant: new OrgAdminGrantModel(client),
+    orgOwnerGrant: new OrgOwnerGrantModel(client),
     membershipType: new MembershipTypeModel(client),
+    appLimitDefault: new AppLimitDefaultModel(client),
+    orgLimitDefault: new OrgLimitDefaultModel(client),
+    orgChartEdgeGrant: new OrgChartEdgeGrantModel(client),
+    appClaimedInvite: new AppClaimedInviteModel(client),
     appGrant: new AppGrantModel(client),
     appMembershipDefault: new AppMembershipDefaultModel(client),
     orgMembershipDefault: new OrgMembershipDefaultModel(client),
     orgClaimedInvite: new OrgClaimedInviteModel(client),
+    appLimitEvent: new AppLimitEventModel(client),
+    orgLimitEvent: new OrgLimitEventModel(client),
     orgGrant: new OrgGrantModel(client),
     orgChartEdge: new OrgChartEdgeModel(client),
+    appLimit: new AppLimitModel(client),
+    orgLimitAggregate: new OrgLimitAggregateModel(client),
     orgMemberProfile: new OrgMemberProfileModel(client),
-    orgMembershipSetting: new OrgMembershipSettingModel(client),
+    orgLimit: new OrgLimitModel(client),
     appLevel: new AppLevelModel(client),
     appInvite: new AppInviteModel(client),
+    orgMembershipSetting: new OrgMembershipSettingModel(client),
     orgInvite: new OrgInviteModel(client),
     appMembership: new AppMembershipModel(client),
     orgMembership: new OrgMembershipModel(client),

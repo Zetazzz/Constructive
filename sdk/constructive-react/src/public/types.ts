@@ -24,16 +24,6 @@ export interface GetAllRecord {
   path: string[] | null;
   data: unknown | null;
 }
-export interface Object {
-  hashUuid: string | null;
-  id: string | null;
-  databaseId: string | null;
-  kids: string[] | null;
-  ktree: string[] | null;
-  data: unknown | null;
-  frzn: boolean | null;
-  createdAt: string | null;
-}
 export interface AppPermission {
   id: string | null;
   name: string | null;
@@ -47,6 +37,16 @@ export interface OrgPermission {
   bitnum: number | null;
   bitstr: string | null;
   description: string | null;
+}
+export interface Object {
+  hashUuid: string | null;
+  id: string | null;
+  databaseId: string | null;
+  kids: string[] | null;
+  ktree: string[] | null;
+  data: unknown | null;
+  frzn: boolean | null;
+  createdAt: string | null;
 }
 export interface AppLevelRequirement {
   id: string | null;
@@ -664,6 +664,7 @@ export interface LimitsModule {
   limitDecrementTrigger: string | null;
   limitUpdateTrigger: string | null;
   limitCheckFunction: string | null;
+  aggregateTableId: string | null;
   prefix: string | null;
   membershipType: number | null;
   entityTableId: string | null;
@@ -753,6 +754,8 @@ export interface ProfilesModule {
   profileGrantsTableName: string | null;
   profileDefinitionGrantsTableId: string | null;
   profileDefinitionGrantsTableName: string | null;
+  profileTemplatesTableId: string | null;
+  profileTemplatesTableName: string | null;
   membershipType: number | null;
   entityTableId: string | null;
   actorTableId: string | null;
@@ -873,10 +876,8 @@ export interface StorageModule {
   privateSchemaId: string | null;
   bucketsTableId: string | null;
   filesTableId: string | null;
-  uploadRequestsTableId: string | null;
   bucketsTableName: string | null;
   filesTableName: string | null;
-  uploadRequestsTableName: string | null;
   membershipType: number | null;
   policies: unknown | null;
   skipDefaultPolicyTables: string[] | null;
@@ -885,6 +886,7 @@ export interface StorageModule {
   publicUrlPrefix: string | null;
   provider: string | null;
   allowedOrigins: string[] | null;
+  restrictReads: boolean | null;
   uploadUrlExpirySeconds: number | null;
   downloadUrlExpirySeconds: number | null;
   defaultMaxFileSize: string | null;
@@ -1101,16 +1103,32 @@ export interface AppLimit {
   id: string | null;
   name: string | null;
   actorId: string | null;
-  num: number | null;
-  max: number | null;
+  num: string | null;
+  max: string | null;
+  softMax: string | null;
+  windowStart: string | null;
+  windowDuration: string | null;
 }
 export interface OrgLimit {
   id: string | null;
   name: string | null;
   actorId: string | null;
-  num: number | null;
-  max: number | null;
+  num: string | null;
+  max: string | null;
+  softMax: string | null;
+  windowStart: string | null;
+  windowDuration: string | null;
   entityId: string | null;
+}
+export interface OrgLimitAggregate {
+  id: string | null;
+  name: string | null;
+  entityId: string | null;
+  num: string | null;
+  max: string | null;
+  softMax: string | null;
+  windowStart: string | null;
+  windowDuration: string | null;
 }
 export interface AppStep {
   id: string | null;
@@ -1194,6 +1212,7 @@ export interface AppInvite {
   inviteCount: number | null;
   multiple: boolean | null;
   data: unknown | null;
+  profileId: string | null;
   expiresAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -1217,6 +1236,7 @@ export interface OrgInvite {
   inviteCount: number | null;
   multiple: boolean | null;
   data: unknown | null;
+  profileId: string | null;
   expiresAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -1241,9 +1261,43 @@ export interface AuditLog {
   success: boolean | null;
   createdAt: string | null;
 }
-export interface AppPermissionDefault {
+export interface AgentThread {
+  title: string | null;
+  mode: string | null;
+  model: string | null;
+  systemPrompt: string | null;
   id: string | null;
-  permissions: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  ownerId: string | null;
+  entityId: string | null;
+  status: string | null;
+}
+export interface AgentMessage {
+  threadId: string | null;
+  entityId: string | null;
+  authorRole: string | null;
+  id: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  ownerId: string | null;
+  parts: unknown | null;
+}
+export interface AgentTask {
+  threadId: string | null;
+  entityId: string | null;
+  description: string | null;
+  source: string | null;
+  error: string | null;
+  id: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  ownerId: string | null;
+  status: string | null;
+}
+export interface RoleType {
+  id: number | null;
+  name: string | null;
 }
 export interface IdentityProvider {
   slug: string | null;
@@ -1266,24 +1320,22 @@ export interface Store {
   hash: string | null;
   createdAt: string | null;
 }
-export interface RoleType {
+export interface AppPermissionDefault {
+  id: string | null;
+  permissions: string | null;
+}
+export interface MembershipType {
   id: number | null;
   name: string | null;
+  description: string | null;
+  prefix: string | null;
+  parentMembershipType: number | null;
+  hasUsersTableEntry: boolean | null;
 }
 export interface MigrateFile {
   id: string | null;
   databaseId: string | null;
   upload: ConstructiveInternalTypeUpload | null;
-}
-export interface AppLimitDefault {
-  id: string | null;
-  name: string | null;
-  max: number | null;
-}
-export interface OrgLimitDefault {
-  id: string | null;
-  name: string | null;
-  max: number | null;
 }
 export interface DevicesModule {
   id: string | null;
@@ -1294,6 +1346,27 @@ export interface DevicesModule {
   userDevicesTable: string | null;
   deviceSettingsTable: string | null;
 }
+export interface NodeTypeRegistry {
+  name: string | null;
+  slug: string | null;
+  category: string | null;
+  displayName: string | null;
+  description: string | null;
+  parameterSchema: unknown | null;
+  tags: string[] | null;
+}
+export interface AppLimitDefault {
+  id: string | null;
+  name: string | null;
+  max: string | null;
+  softMax: string | null;
+}
+export interface OrgLimitDefault {
+  id: string | null;
+  name: string | null;
+  max: string | null;
+  softMax: string | null;
+}
 export interface UserConnectedAccount {
   id: string | null;
   ownerId: string | null;
@@ -1303,24 +1376,6 @@ export interface UserConnectedAccount {
   isVerified: boolean | null;
   createdAt: string | null;
   updatedAt: string | null;
-}
-export interface AppMembershipDefault {
-  id: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  createdBy: string | null;
-  updatedBy: string | null;
-  isApproved: boolean | null;
-  isVerified: boolean | null;
-}
-export interface OrgMembershipDefault {
-  id: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  createdBy: string | null;
-  updatedBy: string | null;
-  isApproved: boolean | null;
-  entityId: string | null;
 }
 export interface Commit {
   id: string | null;
@@ -1344,13 +1399,58 @@ export interface RateLimitsModule {
   ipRateLimitsTable: string | null;
   rateLimitsTable: string | null;
 }
-export interface MembershipType {
-  id: number | null;
+export interface AppMembershipDefault {
+  id: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  isApproved: boolean | null;
+  isVerified: boolean | null;
+}
+export interface OrgMembershipDefault {
+  id: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  isApproved: boolean | null;
+  entityId: string | null;
+}
+export interface AppLimitEvent {
   name: string | null;
-  description: string | null;
+  actorId: string | null;
+  entityId: string | null;
+  eventType: string | null;
+  delta: string | null;
+  numBefore: string | null;
+  numAfter: string | null;
+  maxAtEvent: string | null;
+  reason: string | null;
+}
+export interface OrgLimitEvent {
+  name: string | null;
+  actorId: string | null;
+  entityId: string | null;
+  eventType: string | null;
+  delta: string | null;
+  numBefore: string | null;
+  numAfter: string | null;
+  maxAtEvent: string | null;
+  reason: string | null;
+}
+export interface PlansModule {
+  id: string | null;
+  databaseId: string | null;
+  schemaId: string | null;
+  privateSchemaId: string | null;
+  plansTableId: string | null;
+  plansTableName: string | null;
+  planLimitsTableId: string | null;
+  planLimitsTableName: string | null;
+  applyPlanFunction: string | null;
+  applyPlanAggregateFunction: string | null;
   prefix: string | null;
-  parentMembershipType: number | null;
-  hasUsersTableEntry: boolean | null;
 }
 export interface RlsModule {
   id: string | null;
@@ -1380,32 +1480,21 @@ export interface SqlAction {
   actionId: string | null;
   actorId: string | null;
 }
-export interface OrgMembershipSetting {
+export interface BillingModule {
   id: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  createdBy: string | null;
-  updatedBy: string | null;
-  entityId: string | null;
-  deleteMemberCascadeChildren: boolean | null;
-  createChildCascadeOwners: boolean | null;
-  createChildCascadeAdmins: boolean | null;
-  createChildCascadeMembers: boolean | null;
-  allowExternalMembers: boolean | null;
-  populateMemberEmail: boolean | null;
-}
-export interface User {
-  id: string | null;
-  username: string | null;
-  displayName: string | null;
-  profilePicture: ConstructiveInternalTypeImage | null;
-  searchTsv: string | null;
-  type: number | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  searchTsvRank: number | null;
-  displayNameTrgmSimilarity: number | null;
-  searchScore: number | null;
+  databaseId: string | null;
+  schemaId: string | null;
+  privateSchemaId: string | null;
+  metersTableId: string | null;
+  metersTableName: string | null;
+  planSubscriptionsTableId: string | null;
+  planSubscriptionsTableName: string | null;
+  ledgerTableId: string | null;
+  ledgerTableName: string | null;
+  balancesTableId: string | null;
+  balancesTableName: string | null;
+  recordUsageFunction: string | null;
+  prefix: string | null;
 }
 export interface AstMigration {
   id: number | null;
@@ -1422,6 +1511,35 @@ export interface AstMigration {
   actionId: string | null;
   actorId: string | null;
 }
+export interface User {
+  id: string | null;
+  username: string | null;
+  displayName: string | null;
+  profilePicture: ConstructiveInternalTypeImage | null;
+  searchTsv: string | null;
+  type: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  searchTsvRank: number | null;
+  displayNameTrgmSimilarity: number | null;
+  searchScore: number | null;
+}
+export interface OrgMembershipSetting {
+  id: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  entityId: string | null;
+  deleteMemberCascadeChildren: boolean | null;
+  createChildCascadeOwners: boolean | null;
+  createChildCascadeAdmins: boolean | null;
+  createChildCascadeMembers: boolean | null;
+  allowExternalMembers: boolean | null;
+  inviteProfileAssignmentMode: string | null;
+  populateMemberEmail: boolean | null;
+  limitAllocationMode: string | null;
+}
 export interface AppMembership {
   id: string | null;
   createdAt: string | null;
@@ -1433,7 +1551,6 @@ export interface AppMembership {
   isDisabled: boolean | null;
   isVerified: boolean | null;
   isActive: boolean | null;
-  isExternal: boolean | null;
   isOwner: boolean | null;
   isAdmin: boolean | null;
   permissions: string | null;

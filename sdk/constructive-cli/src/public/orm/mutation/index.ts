@@ -48,14 +48,13 @@ import type {
   CreateUserDatabaseInput,
   ExtendTokenExpiresInput,
   CreateApiKeyInput,
+  SendVerificationEmailInput,
+  ForgotPasswordInput,
   SignUpInput,
   RequestCrossOriginTokenInput,
   SignInInput,
   ProvisionTableInput,
-  SendVerificationEmailInput,
-  ForgotPasswordInput,
   RequestUploadUrlInput,
-  ConfirmUploadInput,
   ProvisionBucketInput,
   SendAccountDeletionEmailPayload,
   SignOutPayload,
@@ -98,14 +97,13 @@ import type {
   CreateUserDatabasePayload,
   ExtendTokenExpiresPayload,
   CreateApiKeyPayload,
+  SendVerificationEmailPayload,
+  ForgotPasswordPayload,
   SignUpPayload,
   RequestCrossOriginTokenPayload,
   SignInPayload,
   ProvisionTablePayload,
-  SendVerificationEmailPayload,
-  ForgotPasswordPayload,
   RequestUploadUrlPayload,
-  ConfirmUploadPayload,
   ProvisionBucketPayload,
   SendAccountDeletionEmailPayloadSelect,
   SignOutPayloadSelect,
@@ -148,14 +146,13 @@ import type {
   CreateUserDatabasePayloadSelect,
   ExtendTokenExpiresPayloadSelect,
   CreateApiKeyPayloadSelect,
+  SendVerificationEmailPayloadSelect,
+  ForgotPasswordPayloadSelect,
   SignUpPayloadSelect,
   RequestCrossOriginTokenPayloadSelect,
   SignInPayloadSelect,
   ProvisionTablePayloadSelect,
-  SendVerificationEmailPayloadSelect,
-  ForgotPasswordPayloadSelect,
   RequestUploadUrlPayloadSelect,
-  ConfirmUploadPayloadSelect,
   ProvisionBucketPayloadSelect,
 } from '../input-types';
 import { connectionFieldsMap } from '../input-types';
@@ -329,6 +326,12 @@ export interface ExtendTokenExpiresVariables {
 export interface CreateApiKeyVariables {
   input: CreateApiKeyInput;
 }
+export interface SendVerificationEmailVariables {
+  input: SendVerificationEmailInput;
+}
+export interface ForgotPasswordVariables {
+  input: ForgotPasswordInput;
+}
 export interface SignUpVariables {
   input: SignUpInput;
 }
@@ -345,12 +348,6 @@ export interface SignInVariables {
 export interface ProvisionTableVariables {
   input: ProvisionTableInput;
 }
-export interface SendVerificationEmailVariables {
-  input: SendVerificationEmailInput;
-}
-export interface ForgotPasswordVariables {
-  input: ForgotPasswordInput;
-}
 /**
  * Variables for requestUploadUrl
  * Request a presigned URL for uploading a file directly to S3.
@@ -360,15 +357,6 @@ existing file ID and deduplicated=true with no uploadUrl.
  */
 export interface RequestUploadUrlVariables {
   input: RequestUploadUrlInput;
-}
-/**
- * Variables for confirmUpload
- * Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
- */
-export interface ConfirmUploadVariables {
-  input: ConfirmUploadInput;
 }
 /**
  * Variables for provisionBucket
@@ -1571,6 +1559,64 @@ export function createMutationOperations(client: OrmClient) {
           'CreateApiKeyPayload'
         ),
       }),
+    sendVerificationEmail: <S extends SendVerificationEmailPayloadSelect>(
+      args: SendVerificationEmailVariables,
+      options: {
+        select: S;
+      } & StrictSelect<S, SendVerificationEmailPayloadSelect>
+    ) =>
+      new QueryBuilder<{
+        sendVerificationEmail: InferSelectResult<SendVerificationEmailPayload, S> | null;
+      }>({
+        client,
+        operation: 'mutation',
+        operationName: 'SendVerificationEmail',
+        fieldName: 'sendVerificationEmail',
+        ...buildCustomDocument(
+          'mutation',
+          'SendVerificationEmail',
+          'sendVerificationEmail',
+          options.select,
+          args,
+          [
+            {
+              name: 'input',
+              type: 'SendVerificationEmailInput!',
+            },
+          ],
+          connectionFieldsMap,
+          'SendVerificationEmailPayload'
+        ),
+      }),
+    forgotPassword: <S extends ForgotPasswordPayloadSelect>(
+      args: ForgotPasswordVariables,
+      options: {
+        select: S;
+      } & StrictSelect<S, ForgotPasswordPayloadSelect>
+    ) =>
+      new QueryBuilder<{
+        forgotPassword: InferSelectResult<ForgotPasswordPayload, S> | null;
+      }>({
+        client,
+        operation: 'mutation',
+        operationName: 'ForgotPassword',
+        fieldName: 'forgotPassword',
+        ...buildCustomDocument(
+          'mutation',
+          'ForgotPassword',
+          'forgotPassword',
+          options.select,
+          args,
+          [
+            {
+              name: 'input',
+              type: 'ForgotPasswordInput!',
+            },
+          ],
+          connectionFieldsMap,
+          'ForgotPasswordPayload'
+        ),
+      }),
     signUp: <S extends SignUpPayloadSelect>(
       args: SignUpVariables,
       options: {
@@ -1687,64 +1733,6 @@ export function createMutationOperations(client: OrmClient) {
           'ProvisionTablePayload'
         ),
       }),
-    sendVerificationEmail: <S extends SendVerificationEmailPayloadSelect>(
-      args: SendVerificationEmailVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, SendVerificationEmailPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        sendVerificationEmail: InferSelectResult<SendVerificationEmailPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'SendVerificationEmail',
-        fieldName: 'sendVerificationEmail',
-        ...buildCustomDocument(
-          'mutation',
-          'SendVerificationEmail',
-          'sendVerificationEmail',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'SendVerificationEmailInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'SendVerificationEmailPayload'
-        ),
-      }),
-    forgotPassword: <S extends ForgotPasswordPayloadSelect>(
-      args: ForgotPasswordVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, ForgotPasswordPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        forgotPassword: InferSelectResult<ForgotPasswordPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'ForgotPassword',
-        fieldName: 'forgotPassword',
-        ...buildCustomDocument(
-          'mutation',
-          'ForgotPassword',
-          'forgotPassword',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'ForgotPasswordInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'ForgotPasswordPayload'
-        ),
-      }),
     requestUploadUrl: <S extends RequestUploadUrlPayloadSelect>(
       args: RequestUploadUrlVariables,
       options: {
@@ -1772,35 +1760,6 @@ export function createMutationOperations(client: OrmClient) {
           ],
           connectionFieldsMap,
           'RequestUploadUrlPayload'
-        ),
-      }),
-    confirmUpload: <S extends ConfirmUploadPayloadSelect>(
-      args: ConfirmUploadVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, ConfirmUploadPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        confirmUpload: InferSelectResult<ConfirmUploadPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'ConfirmUpload',
-        fieldName: 'confirmUpload',
-        ...buildCustomDocument(
-          'mutation',
-          'ConfirmUpload',
-          'confirmUpload',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'ConfirmUploadInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'ConfirmUploadPayload'
         ),
       }),
     provisionBucket: <S extends ProvisionBucketPayloadSelect>(

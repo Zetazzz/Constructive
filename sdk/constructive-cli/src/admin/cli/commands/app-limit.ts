@@ -21,6 +21,9 @@ const fieldSchema: FieldSchema = {
   actorId: 'uuid',
   num: 'int',
   max: 'int',
+  softMax: 'int',
+  windowStart: 'string',
+  windowDuration: 'string',
 };
 const usage =
   '\napp-limit <command>\n\nCommands:\n  list                  List appLimit records\n  find-first            Find first matching appLimit record\n  get                   Get a appLimit by ID\n  create                Create a new appLimit\n  update                Update an existing appLimit\n  delete                Delete a appLimit\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
@@ -78,6 +81,9 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       actorId: true,
       num: true,
       max: true,
+      softMax: true,
+      windowStart: true,
+      windowDuration: true,
     };
     const findManyArgs = parseFindManyArgs<
       FindManyArgs<AppLimitSelect, AppLimitFilter, AppLimitOrderBy> & {
@@ -103,6 +109,9 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       actorId: true,
       num: true,
       max: true,
+      softMax: true,
+      windowStart: true,
+      windowDuration: true,
     };
     const findFirstArgs = parseFindFirstArgs<
       FindFirstArgs<AppLimitSelect, AppLimitFilter> & {
@@ -140,6 +149,9 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           actorId: true,
           num: true,
           max: true,
+          softMax: true,
+          windowStart: true,
+          windowDuration: true,
         },
       })
       .execute();
@@ -182,6 +194,27 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         required: false,
         skipPrompt: true,
       },
+      {
+        type: 'text',
+        name: 'softMax',
+        message: 'softMax',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowStart',
+        message: 'windowStart',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowDuration',
+        message: 'windowDuration',
+        required: false,
+        skipPrompt: true,
+      },
     ]);
     const answers = coerceAnswers(rawAnswers, fieldSchema);
     const cleanedData = stripUndefined(answers, fieldSchema) as CreateAppLimitInput['appLimit'];
@@ -193,6 +226,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: cleanedData.actorId,
           num: cleanedData.num,
           max: cleanedData.max,
+          softMax: cleanedData.softMax,
+          windowStart: cleanedData.windowStart,
+          windowDuration: cleanedData.windowDuration,
         },
         select: {
           id: true,
@@ -200,6 +236,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: true,
           num: true,
           max: true,
+          softMax: true,
+          windowStart: true,
+          windowDuration: true,
         },
       })
       .execute();
@@ -248,6 +287,27 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         required: false,
         skipPrompt: true,
       },
+      {
+        type: 'text',
+        name: 'softMax',
+        message: 'softMax',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowStart',
+        message: 'windowStart',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowDuration',
+        message: 'windowDuration',
+        required: false,
+        skipPrompt: true,
+      },
     ]);
     const answers = coerceAnswers(rawAnswers, fieldSchema);
     const cleanedData = stripUndefined(answers, fieldSchema) as AppLimitPatch;
@@ -262,6 +322,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: cleanedData.actorId,
           num: cleanedData.num,
           max: cleanedData.max,
+          softMax: cleanedData.softMax,
+          windowStart: cleanedData.windowStart,
+          windowDuration: cleanedData.windowDuration,
         },
         select: {
           id: true,
@@ -269,6 +332,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: true,
           num: true,
           max: true,
+          softMax: true,
+          windowStart: true,
+          windowDuration: true,
         },
       })
       .execute();

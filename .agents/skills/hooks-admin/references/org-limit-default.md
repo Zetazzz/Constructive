@@ -7,8 +7,8 @@ Default maximum values for each named limit, applied when no per-actor override 
 ## Usage
 
 ```typescript
-useOrgLimitDefaultsQuery({ selection: { fields: { id: true, name: true, max: true } } })
-useOrgLimitDefaultQuery({ id: '<UUID>', selection: { fields: { id: true, name: true, max: true } } })
+useOrgLimitDefaultsQuery({ selection: { fields: { id: true, name: true, max: true, softMax: true } } })
+useOrgLimitDefaultQuery({ id: '<UUID>', selection: { fields: { id: true, name: true, max: true, softMax: true } } })
 useCreateOrgLimitDefaultMutation({ selection: { fields: { id: true } } })
 useUpdateOrgLimitDefaultMutation({ selection: { fields: { id: true } } })
 useDeleteOrgLimitDefaultMutation({})
@@ -20,7 +20,7 @@ useDeleteOrgLimitDefaultMutation({})
 
 ```typescript
 const { data, isLoading } = useOrgLimitDefaultsQuery({
-  selection: { fields: { id: true, name: true, max: true } },
+  selection: { fields: { id: true, name: true, max: true, softMax: true } },
 });
 ```
 
@@ -30,5 +30,5 @@ const { data, isLoading } = useOrgLimitDefaultsQuery({
 const { mutate } = useCreateOrgLimitDefaultMutation({
   selection: { fields: { id: true } },
 });
-mutate({ name: '<String>', max: '<Int>' });
+mutate({ name: '<String>', max: '<BigInt>', softMax: '<BigInt>' });
 ```

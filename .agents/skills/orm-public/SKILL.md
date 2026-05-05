@@ -1,13 +1,13 @@
 ---
 name: orm-public
-description: ORM client for the public API — provides typed CRUD operations for 120 tables and 72 custom operations
+description: ORM client for the public API — provides typed CRUD operations for 129 tables and 71 custom operations
 ---
 
 # orm-public
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-ORM client for the public API — provides typed CRUD operations for 120 tables and 72 custom operations
+ORM client for the public API — provides typed CRUD operations for 129 tables and 71 custom operations
 
 ## Usage
 
@@ -15,7 +15,7 @@ ORM client for the public API — provides typed CRUD operations for 120 tables 
 // Import the ORM client
 import { db } from './orm';
 
-// Available models: orgGetManagersRecord, orgGetSubordinatesRecord, getAllRecord, object, appPermission, orgPermission, appLevelRequirement, database, ...
+// Available models: orgGetManagersRecord, orgGetSubordinatesRecord, getAllRecord, appPermission, orgPermission, object, appLevelRequirement, database, ...
 db.<model>.findMany({ select: { id: true } }).execute()
 db.<model>.findOne({ id: '<UUID>', select: { id: true } }).execute()
 db.<model>.create({ data: { ... }, select: { id: true } }).execute()
@@ -40,9 +40,9 @@ See the `references/` directory for detailed per-entity API documentation:
 - [org-get-managers-record](references/org-get-managers-record.md)
 - [org-get-subordinates-record](references/org-get-subordinates-record.md)
 - [get-all-record](references/get-all-record.md)
-- [object](references/object.md)
 - [app-permission](references/app-permission.md)
 - [org-permission](references/org-permission.md)
+- [object](references/object.md)
 - [app-level-requirement](references/app-level-requirement.md)
 - [database](references/database.md)
 - [schema](references/schema.md)
@@ -123,6 +123,7 @@ See the `references/` directory for detailed per-entity API documentation:
 - [org-permission-default](references/org-permission-default.md)
 - [app-limit](references/app-limit.md)
 - [org-limit](references/org-limit.md)
+- [org-limit-aggregate](references/org-limit-aggregate.md)
 - [app-step](references/app-step.md)
 - [app-achievement](references/app-achievement.md)
 - [app-level](references/app-level.md)
@@ -135,26 +136,34 @@ See the `references/` directory for detailed per-entity API documentation:
 - [org-invite](references/org-invite.md)
 - [org-claimed-invite](references/org-claimed-invite.md)
 - [audit-log](references/audit-log.md)
-- [app-permission-default](references/app-permission-default.md)
+- [agent-thread](references/agent-thread.md)
+- [agent-message](references/agent-message.md)
+- [agent-task](references/agent-task.md)
+- [role-type](references/role-type.md)
 - [identity-provider](references/identity-provider.md)
 - [ref](references/ref.md)
 - [store](references/store.md)
-- [role-type](references/role-type.md)
+- [app-permission-default](references/app-permission-default.md)
+- [membership-type](references/membership-type.md)
 - [migrate-file](references/migrate-file.md)
+- [devices-module](references/devices-module.md)
+- [node-type-registry](references/node-type-registry.md)
 - [app-limit-default](references/app-limit-default.md)
 - [org-limit-default](references/org-limit-default.md)
-- [devices-module](references/devices-module.md)
 - [user-connected-account](references/user-connected-account.md)
-- [app-membership-default](references/app-membership-default.md)
-- [org-membership-default](references/org-membership-default.md)
 - [commit](references/commit.md)
 - [rate-limits-module](references/rate-limits-module.md)
-- [membership-type](references/membership-type.md)
+- [app-membership-default](references/app-membership-default.md)
+- [org-membership-default](references/org-membership-default.md)
+- [app-limit-event](references/app-limit-event.md)
+- [org-limit-event](references/org-limit-event.md)
+- [plans-module](references/plans-module.md)
 - [rls-module](references/rls-module.md)
 - [sql-action](references/sql-action.md)
-- [org-membership-setting](references/org-membership-setting.md)
-- [user](references/user.md)
+- [billing-module](references/billing-module.md)
 - [ast-migration](references/ast-migration.md)
+- [user](references/user.md)
+- [org-membership-setting](references/org-membership-setting.md)
 - [app-membership](references/app-membership.md)
 - [hierarchy-module](references/hierarchy-module.md)
 - [current-user-id](references/current-user-id.md)
@@ -172,11 +181,11 @@ See the `references/` directory for detailed per-entity API documentation:
 - [resolve-blueprint-table](references/resolve-blueprint-table.md)
 - [app-permissions-get-mask-by-names](references/app-permissions-get-mask-by-names.md)
 - [org-permissions-get-mask-by-names](references/org-permissions-get-mask-by-names.md)
+- [app-permissions-get-by-mask](references/app-permissions-get-by-mask.md)
+- [org-permissions-get-by-mask](references/org-permissions-get-by-mask.md)
 - [get-all-objects-from-root](references/get-all-objects-from-root.md)
 - [get-path-objects-from-root](references/get-path-objects-from-root.md)
 - [get-object-at-path](references/get-object-at-path.md)
-- [app-permissions-get-by-mask](references/app-permissions-get-by-mask.md)
-- [org-permissions-get-by-mask](references/org-permissions-get-by-mask.md)
 - [steps-required](references/steps-required.md)
 - [current-user](references/current-user.md)
 - [send-account-deletion-email](references/send-account-deletion-email.md)
@@ -220,12 +229,11 @@ See the `references/` directory for detailed per-entity API documentation:
 - [create-user-database](references/create-user-database.md)
 - [extend-token-expires](references/extend-token-expires.md)
 - [create-api-key](references/create-api-key.md)
+- [send-verification-email](references/send-verification-email.md)
+- [forgot-password](references/forgot-password.md)
 - [sign-up](references/sign-up.md)
 - [request-cross-origin-token](references/request-cross-origin-token.md)
 - [sign-in](references/sign-in.md)
 - [provision-table](references/provision-table.md)
-- [send-verification-email](references/send-verification-email.md)
-- [forgot-password](references/forgot-password.md)
 - [request-upload-url](references/request-upload-url.md)
-- [confirm-upload](references/confirm-upload.md)
 - [provision-bucket](references/provision-bucket.md)

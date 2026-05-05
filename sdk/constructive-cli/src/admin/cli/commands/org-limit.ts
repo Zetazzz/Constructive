@@ -21,6 +21,9 @@ const fieldSchema: FieldSchema = {
   actorId: 'uuid',
   num: 'int',
   max: 'int',
+  softMax: 'int',
+  windowStart: 'string',
+  windowDuration: 'string',
   entityId: 'uuid',
 };
 const usage =
@@ -79,6 +82,9 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       actorId: true,
       num: true,
       max: true,
+      softMax: true,
+      windowStart: true,
+      windowDuration: true,
       entityId: true,
     };
     const findManyArgs = parseFindManyArgs<
@@ -105,6 +111,9 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       actorId: true,
       num: true,
       max: true,
+      softMax: true,
+      windowStart: true,
+      windowDuration: true,
       entityId: true,
     };
     const findFirstArgs = parseFindFirstArgs<
@@ -143,6 +152,9 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           actorId: true,
           num: true,
           max: true,
+          softMax: true,
+          windowStart: true,
+          windowDuration: true,
           entityId: true,
         },
       })
@@ -188,6 +200,27 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'softMax',
+        message: 'softMax',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowStart',
+        message: 'windowStart',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowDuration',
+        message: 'windowDuration',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'entityId',
         message: 'entityId',
         required: true,
@@ -203,6 +236,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: cleanedData.actorId,
           num: cleanedData.num,
           max: cleanedData.max,
+          softMax: cleanedData.softMax,
+          windowStart: cleanedData.windowStart,
+          windowDuration: cleanedData.windowDuration,
           entityId: cleanedData.entityId,
         },
         select: {
@@ -211,6 +247,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: true,
           num: true,
           max: true,
+          softMax: true,
+          windowStart: true,
+          windowDuration: true,
           entityId: true,
         },
       })
@@ -262,6 +301,27 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'softMax',
+        message: 'softMax',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowStart',
+        message: 'windowStart',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'windowDuration',
+        message: 'windowDuration',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'entityId',
         message: 'entityId',
         required: false,
@@ -280,6 +340,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: cleanedData.actorId,
           num: cleanedData.num,
           max: cleanedData.max,
+          softMax: cleanedData.softMax,
+          windowStart: cleanedData.windowStart,
+          windowDuration: cleanedData.windowDuration,
           entityId: cleanedData.entityId,
         },
         select: {
@@ -288,6 +351,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           actorId: true,
           num: true,
           max: true,
+          softMax: true,
+          windowStart: true,
+          windowDuration: true,
           entityId: true,
         },
       })

@@ -9,7 +9,7 @@ Default maximum values for each named limit, applied when no per-actor override 
 ```typescript
 db.orgLimitDefault.findMany({ select: { id: true } }).execute()
 db.orgLimitDefault.findOne({ id: '<UUID>', select: { id: true } }).execute()
-db.orgLimitDefault.create({ data: { name: '<String>', max: '<Int>' }, select: { id: true } }).execute()
+db.orgLimitDefault.create({ data: { name: '<String>', max: '<BigInt>', softMax: '<BigInt>' }, select: { id: true } }).execute()
 db.orgLimitDefault.update({ where: { id: '<UUID>' }, data: { name: '<String>' }, select: { id: true } }).execute()
 db.orgLimitDefault.delete({ where: { id: '<UUID>' } }).execute()
 ```
@@ -28,7 +28,7 @@ const items = await db.orgLimitDefault.findMany({
 
 ```typescript
 const item = await db.orgLimitDefault.create({
-  data: { name: '<String>', max: '<Int>' },
+  data: { name: '<String>', max: '<BigInt>', softMax: '<BigInt>' },
   select: { id: true }
 }).execute();
 ```
