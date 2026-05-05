@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [6.13.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.12.4...@pgpmjs/core@6.13.0) (2026-05-05)
+
+### Features
+
+- add pgpm-ltree-helpers to system modules + PGPM_MODULE_MAP ([e4514b3](https://github.com/constructive-io/constructive/commit/e4514b325121c2b9b72acbeda47cfe47ea62b49e))
+
 ## [6.12.4](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.12.3...@pgpmjs/core@6.12.4) (2026-04-27)
 
 ### Bug Fixes

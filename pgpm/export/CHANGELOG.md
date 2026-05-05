@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.7.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.6.0...@pgpmjs/export@0.7.0) (2026-05-05)
+
+### Features
+
+- add pgpm-ltree-helpers to system modules + PGPM_MODULE_MAP ([e4514b3](https://github.com/constructive-io/constructive/commit/e4514b325121c2b9b72acbeda47cfe47ea62b49e))
+
 # [0.6.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.5.2...@pgpmjs/export@0.6.0) (2026-05-04)
 
 **Note:** Version bump only for package @pgpmjs/export
