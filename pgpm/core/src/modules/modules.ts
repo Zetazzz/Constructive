@@ -19,7 +19,8 @@ export const PGPM_MODULE_MAP: Record<string, string> = {
   'pgpm-stamps': '@pgpm/stamps',
   'pgpm-totp': '@pgpm/totp',
   'pgpm-types': '@pgpm/types',
-  'pgpm-utils': '@pgpm/utils'
+  'pgpm-utils': '@pgpm/utils',
+  'pgpm-ltree-helpers': '@pgpm/ltree-helpers'
 };
 
 /**
