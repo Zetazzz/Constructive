@@ -1,27 +1,30 @@
 /**
  * graphile-ltree — PostGraphile v5 ltree Plugin
  *
- * Auto-detects ltree columns, exposes slash-path folder fields,
- * and provides containment/glob filter operators for hierarchical data.
+ * Two presets:
+ *
+ * - `GraphileLtreePreset` — base ltree operators (isAncestorOf, isDescendantOf, matchesGlob)
+ * - `GraphileFolderPreset` — folder-oriented layer (within, ancestorOf, glob) + pathFolder fields
  *
  * @example
  * ```typescript
- * import { GraphileLtreePreset } from 'graphile-ltree';
+ * // For folder-style interface (recommended):
+ * import { GraphileFolderPreset } from 'graphile-ltree';
  *
- * const preset = {
- *   extends: [GraphileLtreePreset]
- * };
+ * // For raw ltree operators only:
+ * import { GraphileLtreePreset } from 'graphile-ltree';
  * ```
  */
 
-// Preset (recommended entry point)
-export { GraphileLtreePreset } from './preset';
+// Presets
+export { GraphileFolderPreset, GraphileLtreePreset } from './preset';
 
 // Individual plugins
 export type { LtreeExtensionInfo } from './plugins/detect-ltree';
 export { LtreeExtensionDetectionPlugin } from './plugins/detect-ltree';
 export { LtreeFolderFieldPlugin } from './plugins/folder-field';
-export { LTREE_SCALAR_NAME,LtreeCodecPlugin } from './plugins/ltree-codec';
+export { LTREE_SCALAR_NAME, LtreeCodecPlugin } from './plugins/ltree-codec';
 
-// Connection filter operator factory
+// Connection filter operator factories
 export { createLtreeOperatorFactory } from './plugins/connection-filter-operators';
+export { createFolderOperatorFactory } from './plugins/folder-filter-operators';
