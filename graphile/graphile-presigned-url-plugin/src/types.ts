@@ -11,6 +11,7 @@ export interface BucketConfig {
   owner_id: string | null;
   allowed_mime_types: string[] | null;
   max_file_size: number | null;
+  allow_custom_keys: boolean;
 }
 
 /**
@@ -62,6 +63,15 @@ export interface StorageModuleConfig {
   maxFilenameLength: number;
   /** Cache TTL in seconds for this config entry (default: 300 dev / 3600 prod) */
   cacheTtlSeconds: number;
+  /** Whether this storage module uses ltree path + path shares (determines if path column exists on files) */
+  hasPathShares: boolean;
+
+  // --- Bulk upload limits ---
+
+  /** Max files per requestBulkUploadUrls batch (default: 100) */
+  maxBulkFiles: number;
+  /** Max total size per bulk upload batch in bytes (default: 1GB) */
+  maxBulkTotalSize: number;
 }
 
 /**
@@ -85,6 +95,13 @@ export interface RequestUploadUrlInput {
   size: number;
   /** Original filename (optional, for display/Content-Disposition) */
   filename?: string;
+  /**
+   * Custom S3 key for the file (only allowed when bucket has allow_custom_keys=true).
+   * When omitted, key defaults to contentHash (content-addressed dedup).
+   * When provided, the file is stored at this key; dedup is bypassed.
+   * Max 1024 chars. Must not contain path traversal (.. or leading /).
+   */
+  key?: string;
 }
 
 /**
@@ -101,6 +118,8 @@ export interface RequestUploadUrlPayload {
   deduplicated: boolean;
   /** Presigned URL expiry time (null if deduplicated) */
   expiresAt: string | null;
+  /** ID of the previous version (set when re-uploading to an existing custom key) */
+  previousVersionId: string | null;
 }
 
 /**
