@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.8.0...graphile-presigned-url-plugin@0.9.0) (2026-05-05)
+
+### Features
+
+- add allow_custom_keys support, requestBulkUploadUrls mutation, auto-path derivation ([3f2554e](https://github.com/constructive-io/constructive/commit/3f2554edccb12aee16eb7952a5928d1e7afac1cd))
+
 # [0.8.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.7.0...graphile-presigned-url-plugin@0.8.0) (2026-05-03)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.15.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.2...graphql-server-test@2.15.3) (2026-05-05)
+
+### Bug Fixes
+
+- update snapshots and test seeds for allow_custom_keys + content_hash columns ([87385a9](https://github.com/constructive-io/constructive/commit/87385a9be4510e836157c5d8bc7e3b9a096fc192))
+
 ## [2.15.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.1...graphql-server-test@2.15.2) (2026-05-05)
 
 **Note:** Version bump only for package graphql-server-test
