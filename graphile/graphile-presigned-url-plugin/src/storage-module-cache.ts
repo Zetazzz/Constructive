@@ -11,6 +11,8 @@ const DEFAULT_DOWNLOAD_URL_EXPIRY_SECONDS = 3600; // 1 hour
 const DEFAULT_MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 const DEFAULT_MAX_FILENAME_LENGTH = 1024;
 const DEFAULT_CACHE_TTL_SECONDS = process.env.NODE_ENV === 'development' ? 300 : 3600;
+const DEFAULT_MAX_BULK_FILES = 100;
+const DEFAULT_MAX_BULK_TOTAL_SIZE = 1073741824; // 1GB
 
 const FIVE_MINUTES_MS = 1000 * 60 * 5;
 const ONE_HOUR_MS = 1000 * 60 * 60;
@@ -57,6 +59,9 @@ const APP_STORAGE_MODULE_QUERY = `
     sm.default_max_file_size,
     sm.max_filename_length,
     sm.cache_ttl_seconds,
+    sm.max_bulk_files,
+    sm.max_bulk_total_size,
+    sm.has_path_shares,
     NULL AS entity_schema,
     NULL AS entity_table
   FROM metaschema_modules_public.storage_module sm
@@ -93,6 +98,9 @@ const ALL_STORAGE_MODULES_QUERY = `
     sm.default_max_file_size,
     sm.max_filename_length,
     sm.cache_ttl_seconds,
+    sm.max_bulk_files,
+    sm.max_bulk_total_size,
+    sm.has_path_shares,
     es.schema_name AS entity_schema,
     et.name AS entity_table
   FROM metaschema_modules_public.storage_module sm
@@ -122,6 +130,9 @@ interface StorageModuleRow {
   default_max_file_size: number | null;
   max_filename_length: number | null;
   cache_ttl_seconds: number | null;
+  max_bulk_files: number | null;
+  max_bulk_total_size: number | null;
+  has_path_shares: boolean;
   entity_schema: string | null;
   entity_table: string | null;
 }
@@ -152,6 +163,9 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
     defaultMaxFileSize: row.default_max_file_size ?? DEFAULT_MAX_FILE_SIZE,
     maxFilenameLength: row.max_filename_length ?? DEFAULT_MAX_FILENAME_LENGTH,
     cacheTtlSeconds,
+    hasPathShares: row.has_path_shares ?? false,
+    maxBulkFiles: row.max_bulk_files ?? DEFAULT_MAX_BULK_FILES,
+    maxBulkTotalSize: row.max_bulk_total_size ?? DEFAULT_MAX_BULK_TOTAL_SIZE,
   };
 }
 
@@ -362,11 +376,11 @@ export async function getBucketConfig(
   const hasOwner = ownerId && storageConfig.membershipType !== null;
   const result = await pgClient.query({
     text: hasOwner
-      ? `SELECT id, key, type, is_public, owner_id, allowed_mime_types, max_file_size
+      ? `SELECT id, key, type, is_public, owner_id, allowed_mime_types, max_file_size, allow_custom_keys
          FROM ${storageConfig.bucketsQualifiedName}
          WHERE key = $1 AND owner_id = $2
          LIMIT 1`
-      : `SELECT id, key, type, is_public, ${storageConfig.membershipType !== null ? 'owner_id,' : ''} allowed_mime_types, max_file_size
+      : `SELECT id, key, type, is_public, ${storageConfig.membershipType !== null ? 'owner_id,' : ''} allowed_mime_types, max_file_size, allow_custom_keys
          FROM ${storageConfig.bucketsQualifiedName}
          WHERE key = $1
          LIMIT 1`,
@@ -385,6 +399,7 @@ export async function getBucketConfig(
     owner_id: string | null;
     allowed_mime_types: string[] | null;
     max_file_size: number | null;
+    allow_custom_keys: boolean;
   };
 
   const config: BucketConfig = {
@@ -395,6 +410,7 @@ export async function getBucketConfig(
     owner_id: row.owner_id ?? null,
     allowed_mime_types: row.allowed_mime_types,
     max_file_size: row.max_file_size,
+    allow_custom_keys: row.allow_custom_keys ?? false,
   };
 
   bucketCache.set(cacheKey, config);

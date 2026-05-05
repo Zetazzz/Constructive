@@ -29,7 +29,9 @@ const log = new Logger('graphile-presigned-url:plugin');
 const MAX_CONTENT_HASH_LENGTH = 128;
 const MAX_CONTENT_TYPE_LENGTH = 255;
 const MAX_BUCKET_KEY_LENGTH = 255;
+const MAX_CUSTOM_KEY_LENGTH = 1024;
 const SHA256_HEX_REGEX = /^[a-f0-9]{64}$/;
+const CUSTOM_KEY_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9_.\-\/]*$/;
 
 // --- Helpers ---
 
@@ -41,11 +43,46 @@ function isValidSha256(hash: string): boolean {
 }
 
 /**
- * Build the S3 key from content hash and content type extension.
+ * Build the S3 key from content hash.
  * Format: {contentHash} (flat namespace, content-addressed)
  */
 function buildS3Key(contentHash: string): string {
   return contentHash;
+}
+
+/**
+ * Validate a custom S3 key.
+ * Must be 1-1024 chars, no path traversal, no leading slash, no null bytes.
+ */
+function validateCustomKey(key: string): string | null {
+  if (key.length === 0 || key.length > MAX_CUSTOM_KEY_LENGTH) {
+    return 'INVALID_KEY_LENGTH: must be 1-1024 characters';
+  }
+  if (key.includes('..')) {
+    return 'INVALID_KEY: path traversal (..) not allowed';
+  }
+  if (key.startsWith('/')) {
+    return 'INVALID_KEY: leading slash not allowed';
+  }
+  if (key.includes('\0')) {
+    return 'INVALID_KEY: null bytes not allowed';
+  }
+  if (!CUSTOM_KEY_REGEX.test(key)) {
+    return 'INVALID_KEY: must start with alphanumeric and contain only alphanumeric, dots, hyphens, underscores, and slashes';
+  }
+  return null;
+}
+
+/**
+ * Derive an ltree path from a custom S3 key's directory portion.
+ * e.g., "reports/2024/Q1/revenue.pdf" → "reports.2024.Q1"
+ * Returns null if the key has no directory component.
+ */
+function derivePathFromKey(key: string): string | null {
+  const lastSlash = key.lastIndexOf('/');
+  if (lastSlash <= 0) return null;
+  const dir = key.substring(0, lastSlash);
+  return dir.replace(/\//g, '.');
 }
 
 /**
@@ -158,6 +195,14 @@ export function createPresignedUrlPlugin(
         size: Int!
         """Original filename (optional, for display and Content-Disposition)"""
         filename: String
+        """
+        Custom S3 key (e.g., "reports/2024/Q1.pdf").
+        Only allowed when the bucket has allow_custom_keys=true.
+        When omitted, key defaults to contentHash (content-addressed dedup).
+        When provided, the file is stored at this key.
+        Re-uploading to an existing key auto-creates a new version.
+        """
+        key: String
       }
 
       type RequestUploadUrlPayload {
@@ -171,6 +216,52 @@ export function createPresignedUrlPlugin(
         deduplicated: Boolean!
         """Presigned URL expiry time (null if deduplicated)"""
         expiresAt: Datetime
+        """ID of the previous version (set when re-uploading to an existing custom key)"""
+        previousVersionId: UUID
+      }
+
+      input BulkUploadFileInput {
+        """SHA-256 content hash computed by the client (hex-encoded, 64 chars)"""
+        contentHash: String!
+        """MIME type of the file (e.g., "image/png")"""
+        contentType: String!
+        """File size in bytes"""
+        size: Int!
+        """Original filename (optional, for display and Content-Disposition)"""
+        filename: String
+        """Custom S3 key (only when bucket has allow_custom_keys=true)"""
+        key: String
+      }
+
+      input RequestBulkUploadUrlsInput {
+        """Bucket key (e.g., "public", "private")"""
+        bucketKey: String!
+        """Owner entity ID for entity-scoped uploads"""
+        ownerId: UUID
+        """Array of files to upload"""
+        files: [BulkUploadFileInput!]!
+      }
+
+      type BulkUploadFilePayload {
+        """Presigned PUT URL (null if file was deduplicated)"""
+        uploadUrl: String
+        """The file ID"""
+        fileId: UUID!
+        """The S3 object key"""
+        key: String!
+        """Whether this file was deduplicated"""
+        deduplicated: Boolean!
+        """Presigned URL expiry time (null if deduplicated)"""
+        expiresAt: Datetime
+        """ID of the previous version (set when re-uploading to an existing custom key)"""
+        previousVersionId: UUID
+        """Index of this file in the input array (for client correlation)"""
+        index: Int!
+      }
+
+      type RequestBulkUploadUrlsPayload {
+        """Array of results, one per input file"""
+        files: [BulkUploadFilePayload!]!
       }
 
       extend type Mutation {
@@ -183,6 +274,15 @@ export function createPresignedUrlPlugin(
         requestUploadUrl(
           input: RequestUploadUrlInput!
         ): RequestUploadUrlPayload
+
+        """
+        Request presigned URLs for uploading multiple files in a single batch.
+        Subject to per-storage-module limits (max_bulk_files, max_bulk_total_size).
+        Each file is processed independently — some may dedup while others get fresh URLs.
+        """
+        requestBulkUploadUrls(
+          input: RequestBulkUploadUrlsInput!
+        ): RequestBulkUploadUrlsPayload
       }
     `,
     plans: {
@@ -198,31 +298,37 @@ export function createPresignedUrlPlugin(
           });
 
           return lambda($combined, async ({ input, withPgClient, pgSettings }: any) => {
-            // --- Input validation ---
-            const { bucketKey, ownerId, contentHash, contentType, size, filename } = input;
+            const result = await processUpload(options, input, withPgClient, pgSettings);
+            return result;
+          });
+        },
+        requestBulkUploadUrls(_$mutation: any, fieldArgs: any) {
+          const $input = fieldArgs.getRaw('input');
+          const $withPgClient = (grafastContext() as any).get('withPgClient');
+          const $pgSettings = (grafastContext() as any).get('pgSettings');
+          const $combined = object({
+            input: $input,
+            withPgClient: $withPgClient,
+            pgSettings: $pgSettings,
+          });
+
+          return lambda($combined, async ({ input, withPgClient, pgSettings }: any) => {
+            const { bucketKey, ownerId, files } = input;
 
             if (!bucketKey || typeof bucketKey !== 'string' || bucketKey.length > MAX_BUCKET_KEY_LENGTH) {
               throw new Error('INVALID_BUCKET_KEY');
             }
-            if (!contentHash || typeof contentHash !== 'string' || contentHash.length > MAX_CONTENT_HASH_LENGTH) {
-              throw new Error('INVALID_CONTENT_HASH');
-            }
-            if (!isValidSha256(contentHash)) {
-              throw new Error('INVALID_CONTENT_HASH_FORMAT: must be a 64-char lowercase hex SHA-256');
-            }
-            if (!contentType || typeof contentType !== 'string' || contentType.length > MAX_CONTENT_TYPE_LENGTH) {
-              throw new Error('INVALID_CONTENT_TYPE');
+            if (!Array.isArray(files) || files.length === 0) {
+              throw new Error('INVALID_FILES: must provide at least one file');
             }
 
             return withPgClient(pgSettings, async (pgClient: any) => {
               return pgClient.withTransaction(async (txClient: any) => {
-                // --- Resolve storage module config (all limits come from here) ---
                 const databaseId = await resolveDatabaseId(txClient);
                 if (!databaseId) {
                   throw new Error('DATABASE_NOT_FOUND');
                 }
 
-                // --- Resolve storage module (app-level or entity-scoped) ---
                 const storageConfig = ownerId
                   ? await getStorageModuleConfigForOwner(txClient, databaseId, ownerId)
                   : await getStorageModuleConfig(txClient, databaseId);
@@ -234,125 +340,40 @@ export function createPresignedUrlPlugin(
                   );
                 }
 
-                // --- Validate size against storage module default (bucket override checked below) ---
-                if (typeof size !== 'number' || size <= 0 || size > storageConfig.defaultMaxFileSize) {
-                  throw new Error(`INVALID_FILE_SIZE: must be between 1 and ${storageConfig.defaultMaxFileSize} bytes`);
+                // --- Validate bulk limits ---
+                if (files.length > storageConfig.maxBulkFiles) {
+                  throw new Error(`BULK_LIMIT_EXCEEDED: max ${storageConfig.maxBulkFiles} files per batch`);
                 }
-                if (filename !== undefined && filename !== null) {
-                  if (typeof filename !== 'string' || filename.length > storageConfig.maxFilenameLength) {
-                    throw new Error('INVALID_FILENAME');
-                  }
+                const totalSize = files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
+                if (totalSize > storageConfig.maxBulkTotalSize) {
+                  throw new Error(`BULK_SIZE_EXCEEDED: total size ${totalSize} exceeds max ${storageConfig.maxBulkTotalSize} bytes`);
                 }
 
-                // --- Look up the bucket (cached; first miss queries via RLS) ---
                 const bucket = await getBucketConfig(txClient, storageConfig, databaseId, bucketKey, ownerId);
                 if (!bucket) {
                   throw new Error('BUCKET_NOT_FOUND');
                 }
 
-                // --- Validate content type against bucket's allowed_mime_types ---
-                if (bucket.allowed_mime_types && bucket.allowed_mime_types.length > 0) {
-                  const allowed = bucket.allowed_mime_types as string[];
-                  const isAllowed = allowed.some((pattern: string) => {
-                    if (pattern === '*/*') return true;
-                    if (pattern.endsWith('/*')) {
-                      const prefix = pattern.slice(0, -1);
-                      return contentType.startsWith(prefix);
-                    }
-                    return contentType === pattern;
-                  });
-                  if (!isAllowed) {
-                    throw new Error(`CONTENT_TYPE_NOT_ALLOWED: ${contentType} not in bucket allowed types`);
-                  }
-                }
-
-                // --- Validate size against bucket's max_file_size ---
-                if (bucket.max_file_size && size > bucket.max_file_size) {
-                  throw new Error(`FILE_TOO_LARGE: exceeds bucket max of ${bucket.max_file_size} bytes`);
-                }
-
-                const s3Key = buildS3Key(contentHash);
-
-                // --- Dedup check: look for existing file with same key (content hash) in this bucket ---
-                const dedupResult = await txClient.query({
-                  text: `SELECT id
-                   FROM ${storageConfig.filesQualifiedName}
-                   WHERE key = $1
-                     AND bucket_id = $2
-                   LIMIT 1`,
-                  values: [s3Key, bucket.id],
-                });
-
-                if (dedupResult.rows.length > 0) {
-                  const existingFile = dedupResult.rows[0];
-                  log.info(`Dedup hit: file ${existingFile.id} for hash ${contentHash}`);
-
-                  return {
-                    uploadUrl: null as string | null,
-                    fileId: existingFile.id as string,
-                    key: s3Key,
-                    deduplicated: true,
-                    expiresAt: null as string | null,
-                  };
-                }
-
-                // --- Create file record ---
-                // For app-level storage (no owner_id column), omit owner_id from the INSERT.
-                const hasOwnerColumn = storageConfig.membershipType !== null;
-                const fileResult = await txClient.query({
-                  text: hasOwnerColumn
-                    ? `INSERT INTO ${storageConfig.filesQualifiedName}
-                       (bucket_id, key, mime_type, size, filename, owner_id, is_public)
-                       VALUES ($1, $2, $3, $4, $5, $6, $7)
-                       RETURNING id`
-                    : `INSERT INTO ${storageConfig.filesQualifiedName}
-                       (bucket_id, key, mime_type, size, filename, is_public)
-                       VALUES ($1, $2, $3, $4, $5, $6)
-                       RETURNING id`,
-                  values: hasOwnerColumn
-                    ? [
-                        bucket.id,
-                        s3Key,
-                        contentType,
-                        size,
-                        filename || null,
-                        bucket.owner_id,
-                        bucket.is_public,
-                      ]
-                    : [
-                        bucket.id,
-                        s3Key,
-                        contentType,
-                        size,
-                        filename || null,
-                        bucket.is_public,
-                      ],
-                });
-
-                const fileId = fileResult.rows[0].id;
-
-                // --- Ensure the S3 bucket exists (lazy provisioning) ---
+                // --- Ensure S3 bucket exists once for the batch ---
                 const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
                 await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
 
-                // --- Generate presigned PUT URL (per-database bucket) ---
-                const uploadUrl = await generatePresignedPutUrl(
-                  s3ForDb,
-                  s3Key,
-                  contentType,
-                  size,
-                  storageConfig.uploadUrlExpirySeconds,
-                );
+                // --- Process each file ---
+                const results = [];
+                for (let i = 0; i < files.length; i++) {
+                  const fileInput = files[i];
+                  const singleInput = {
+                    ...fileInput,
+                    bucketKey,
+                    ownerId,
+                  };
+                  const result = await processSingleFile(
+                    options, txClient, storageConfig, databaseId, bucket, s3ForDb, singleInput,
+                  );
+                  results.push({ ...result, index: i });
+                }
 
-                const expiresAt = new Date(Date.now() + storageConfig.uploadUrlExpirySeconds * 1000).toISOString();
-
-                return {
-                  uploadUrl,
-                  fileId,
-                  key: s3Key,
-                  deduplicated: false,
-                  expiresAt,
-                };
+                return { files: results };
               });
             });
           });
@@ -360,6 +381,258 @@ export function createPresignedUrlPlugin(
       },
     },
   }));
+}
+
+// --- Shared upload logic ---
+
+/**
+ * Process a single upload request (used by both requestUploadUrl and requestBulkUploadUrls).
+ */
+async function processUpload(
+  options: PresignedUrlPluginOptions,
+  input: any,
+  withPgClient: any,
+  pgSettings: any,
+) {
+  const { bucketKey, ownerId, contentHash, contentType, size, filename, key: customKey } = input;
+
+  if (!bucketKey || typeof bucketKey !== 'string' || bucketKey.length > MAX_BUCKET_KEY_LENGTH) {
+    throw new Error('INVALID_BUCKET_KEY');
+  }
+  if (!contentHash || typeof contentHash !== 'string' || contentHash.length > MAX_CONTENT_HASH_LENGTH) {
+    throw new Error('INVALID_CONTENT_HASH');
+  }
+  if (!isValidSha256(contentHash)) {
+    throw new Error('INVALID_CONTENT_HASH_FORMAT: must be a 64-char lowercase hex SHA-256');
+  }
+  if (!contentType || typeof contentType !== 'string' || contentType.length > MAX_CONTENT_TYPE_LENGTH) {
+    throw new Error('INVALID_CONTENT_TYPE');
+  }
+
+  return withPgClient(pgSettings, async (pgClient: any) => {
+    return pgClient.withTransaction(async (txClient: any) => {
+      const databaseId = await resolveDatabaseId(txClient);
+      if (!databaseId) {
+        throw new Error('DATABASE_NOT_FOUND');
+      }
+
+      const storageConfig = ownerId
+        ? await getStorageModuleConfigForOwner(txClient, databaseId, ownerId)
+        : await getStorageModuleConfig(txClient, databaseId);
+      if (!storageConfig) {
+        throw new Error(
+          ownerId
+            ? 'STORAGE_MODULE_NOT_FOUND_FOR_OWNER: no storage module found for the given ownerId'
+            : 'STORAGE_MODULE_NOT_PROVISIONED',
+        );
+      }
+
+      if (typeof size !== 'number' || size <= 0 || size > storageConfig.defaultMaxFileSize) {
+        throw new Error(`INVALID_FILE_SIZE: must be between 1 and ${storageConfig.defaultMaxFileSize} bytes`);
+      }
+      if (filename !== undefined && filename !== null) {
+        if (typeof filename !== 'string' || filename.length > storageConfig.maxFilenameLength) {
+          throw new Error('INVALID_FILENAME');
+        }
+      }
+
+      const bucket = await getBucketConfig(txClient, storageConfig, databaseId, bucketKey, ownerId);
+      if (!bucket) {
+        throw new Error('BUCKET_NOT_FOUND');
+      }
+
+      const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
+      await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
+
+      return processSingleFile(options, txClient, storageConfig, databaseId, bucket, s3ForDb, input);
+    });
+  });
+}
+
+/**
+ * Process a single file upload within an already-resolved context.
+ * Handles dedup, custom keys, versioning, and auto-path derivation.
+ */
+async function processSingleFile(
+  options: PresignedUrlPluginOptions,
+  txClient: any,
+  storageConfig: StorageModuleConfig,
+  databaseId: string,
+  bucket: BucketConfig,
+  s3ForDb: S3Config,
+  input: any,
+) {
+  const { contentHash, contentType, size, filename, key: customKey } = input;
+
+  // --- Validate inputs ---
+  if (!contentHash || !isValidSha256(contentHash)) {
+    throw new Error('INVALID_CONTENT_HASH_FORMAT: must be a 64-char lowercase hex SHA-256');
+  }
+  if (!contentType || typeof contentType !== 'string' || contentType.length > MAX_CONTENT_TYPE_LENGTH) {
+    throw new Error('INVALID_CONTENT_TYPE');
+  }
+  if (typeof size !== 'number' || size <= 0 || size > storageConfig.defaultMaxFileSize) {
+    throw new Error(`INVALID_FILE_SIZE: must be between 1 and ${storageConfig.defaultMaxFileSize} bytes`);
+  }
+  if (filename !== undefined && filename !== null) {
+    if (typeof filename !== 'string' || filename.length > storageConfig.maxFilenameLength) {
+      throw new Error('INVALID_FILENAME');
+    }
+  }
+
+  // --- Validate content type against bucket's allowed_mime_types ---
+  if (bucket.allowed_mime_types && bucket.allowed_mime_types.length > 0) {
+    const allowed = bucket.allowed_mime_types as string[];
+    const isAllowed = allowed.some((pattern: string) => {
+      if (pattern === '*/*') return true;
+      if (pattern.endsWith('/*')) {
+        const prefix = pattern.slice(0, -1);
+        return contentType.startsWith(prefix);
+      }
+      return contentType === pattern;
+    });
+    if (!isAllowed) {
+      throw new Error(`CONTENT_TYPE_NOT_ALLOWED: ${contentType} not in bucket allowed types`);
+    }
+  }
+
+  // --- Validate size against bucket's max_file_size ---
+  if (bucket.max_file_size && size > bucket.max_file_size) {
+    throw new Error(`FILE_TOO_LARGE: exceeds bucket max of ${bucket.max_file_size} bytes`);
+  }
+
+  // --- Determine S3 key ---
+  let s3Key: string;
+  let isCustomKey = false;
+  if (customKey) {
+    if (!bucket.allow_custom_keys) {
+      throw new Error('CUSTOM_KEY_NOT_ALLOWED: bucket does not allow custom keys');
+    }
+    const keyError = validateCustomKey(customKey);
+    if (keyError) {
+      throw new Error(keyError);
+    }
+    s3Key = customKey;
+    isCustomKey = true;
+  } else {
+    s3Key = buildS3Key(contentHash);
+  }
+
+  // --- Dedup / versioning check ---
+  let previousVersionId: string | null = null;
+
+  if (isCustomKey) {
+    // Custom key mode: check if a file with this key already exists in this bucket.
+    // If so, auto-version by linking via previous_version_id.
+    const existingResult = await txClient.query({
+      text: `SELECT id, content_hash
+       FROM ${storageConfig.filesQualifiedName}
+       WHERE key = $1
+         AND bucket_id = $2
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      values: [s3Key, bucket.id],
+    });
+
+    if (existingResult.rows.length > 0) {
+      const existing = existingResult.rows[0];
+      // Same content hash = true dedup (no new upload needed)
+      if (existing.content_hash === contentHash) {
+        log.info(`Dedup hit (custom key): file ${existing.id} for key ${s3Key}`);
+        return {
+          uploadUrl: null as string | null,
+          fileId: existing.id as string,
+          key: s3Key,
+          deduplicated: true,
+          expiresAt: null as string | null,
+          previousVersionId: null as string | null,
+        };
+      }
+      // Different content = new version
+      previousVersionId = existing.id;
+      log.info(`Versioning: new version of key ${s3Key}, previous=${previousVersionId}`);
+    }
+  } else {
+    // Hash-based mode: dedup by content_hash in this bucket
+    const dedupResult = await txClient.query({
+      text: `SELECT id
+       FROM ${storageConfig.filesQualifiedName}
+       WHERE content_hash = $1
+         AND bucket_id = $2
+       LIMIT 1`,
+      values: [contentHash, bucket.id],
+    });
+
+    if (dedupResult.rows.length > 0) {
+      const existingFile = dedupResult.rows[0];
+      log.info(`Dedup hit: file ${existingFile.id} for hash ${contentHash}`);
+
+      return {
+        uploadUrl: null as string | null,
+        fileId: existingFile.id as string,
+        key: s3Key,
+        deduplicated: true,
+        expiresAt: null as string | null,
+        previousVersionId: null as string | null,
+      };
+    }
+  }
+
+  // --- Auto-derive ltree path from custom key directory (only when has_path_shares) ---
+  const derivedPath = isCustomKey && storageConfig.hasPathShares ? derivePathFromKey(s3Key) : null;
+
+  // --- Create file record ---
+  const hasOwnerColumn = storageConfig.membershipType !== null;
+  const columns = ['bucket_id', 'key', 'content_hash', 'mime_type', 'size', 'filename', 'is_public'];
+  const values: any[] = [bucket.id, s3Key, contentHash, contentType, size, filename || null, bucket.is_public];
+  let paramIdx = values.length;
+
+  if (hasOwnerColumn) {
+    columns.push('owner_id');
+    values.push(bucket.owner_id);
+    paramIdx = values.length;
+  }
+  if (previousVersionId) {
+    columns.push('previous_version_id');
+    values.push(previousVersionId);
+    paramIdx = values.length;
+  }
+  if (derivedPath) {
+    columns.push('path');
+    values.push(derivedPath);
+    paramIdx = values.length;
+  }
+
+  const placeholders = values.map((_: any, i: number) => `$${i + 1}`).join(', ');
+  const fileResult = await txClient.query({
+    text: `INSERT INTO ${storageConfig.filesQualifiedName}
+           (${columns.join(', ')})
+           VALUES (${placeholders})
+           RETURNING id`,
+    values,
+  });
+
+  const fileId = fileResult.rows[0].id;
+
+  // --- Generate presigned PUT URL ---
+  const uploadUrl = await generatePresignedPutUrl(
+    s3ForDb,
+    s3Key,
+    contentType,
+    size,
+    storageConfig.uploadUrlExpirySeconds,
+  );
+
+  const expiresAt = new Date(Date.now() + storageConfig.uploadUrlExpirySeconds * 1000).toISOString();
+
+  return {
+    uploadUrl,
+    fileId,
+    key: s3Key,
+    deduplicated: false,
+    expiresAt,
+    previousVersionId,
+  };
 }
 
 export const PresignedUrlPlugin = createPresignedUrlPlugin;
