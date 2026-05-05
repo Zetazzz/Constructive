@@ -12,8 +12,8 @@ csdk app-limit-default list --where.<field>.<op> <value> --orderBy <values>
 csdk app-limit-default list --limit 10 --after <cursor>
 csdk app-limit-default find-first --where.<field>.<op> <value>
 csdk app-limit-default get --id <UUID>
-csdk app-limit-default create --name <String> [--max <Int>]
-csdk app-limit-default update --id <UUID> [--name <String>] [--max <Int>]
+csdk app-limit-default create --name <String> [--max <BigInt>] [--softMax <BigInt>]
+csdk app-limit-default update --id <UUID> [--name <String>] [--max <BigInt>] [--softMax <BigInt>]
 csdk app-limit-default delete --id <UUID>
 ```
 
@@ -58,7 +58,7 @@ csdk app-limit-default list --where.id.equalTo <value> --orderBy ID_ASC
 ### Create a appLimitDefault
 
 ```bash
-csdk app-limit-default create --name <String> [--max <Int>]
+csdk app-limit-default create --name <String> [--max <BigInt>] [--softMax <BigInt>]
 ```
 
 ### Get a appLimitDefault by id

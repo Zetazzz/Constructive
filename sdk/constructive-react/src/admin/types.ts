@@ -68,15 +68,21 @@ export interface AppOwnerGrant {
   createdAt: string | null;
   updatedAt: string | null;
 }
-export interface AppLimitDefault {
+export interface AppAchievement {
   id: string | null;
+  actorId: string | null;
   name: string | null;
-  max: number | null;
+  count: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
-export interface OrgLimitDefault {
+export interface AppStep {
   id: string | null;
+  actorId: string | null;
   name: string | null;
-  max: number | null;
+  count: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 export interface OrgAdminGrant {
   id: string | null;
@@ -96,36 +102,25 @@ export interface OrgOwnerGrant {
   createdAt: string | null;
   updatedAt: string | null;
 }
-export interface AppLimit {
+export interface MembershipType {
+  id: number | null;
+  name: string | null;
+  description: string | null;
+  prefix: string | null;
+  parentMembershipType: number | null;
+  hasUsersTableEntry: boolean | null;
+}
+export interface AppLimitDefault {
   id: string | null;
   name: string | null;
-  actorId: string | null;
-  num: number | null;
-  max: number | null;
+  max: string | null;
+  softMax: string | null;
 }
-export interface AppAchievement {
+export interface OrgLimitDefault {
   id: string | null;
-  actorId: string | null;
   name: string | null;
-  count: number | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
-export interface AppStep {
-  id: string | null;
-  actorId: string | null;
-  name: string | null;
-  count: number | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
-export interface AppClaimedInvite {
-  id: string | null;
-  data: unknown | null;
-  senderId: string | null;
-  receiverId: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
+  max: string | null;
+  softMax: string | null;
 }
 export interface OrgChartEdgeGrant {
   id: string | null;
@@ -138,21 +133,13 @@ export interface OrgChartEdgeGrant {
   positionLevel: number | null;
   createdAt: string | null;
 }
-export interface OrgLimit {
+export interface AppClaimedInvite {
   id: string | null;
-  name: string | null;
-  actorId: string | null;
-  num: number | null;
-  max: number | null;
-  entityId: string | null;
-}
-export interface MembershipType {
-  id: number | null;
-  name: string | null;
-  description: string | null;
-  prefix: string | null;
-  parentMembershipType: number | null;
-  hasUsersTableEntry: boolean | null;
+  data: unknown | null;
+  senderId: string | null;
+  receiverId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 export interface AppGrant {
   id: string | null;
@@ -190,6 +177,28 @@ export interface OrgClaimedInvite {
   updatedAt: string | null;
   entityId: string | null;
 }
+export interface AppLimitEvent {
+  name: string | null;
+  actorId: string | null;
+  entityId: string | null;
+  eventType: string | null;
+  delta: string | null;
+  numBefore: string | null;
+  numAfter: string | null;
+  maxAtEvent: string | null;
+  reason: string | null;
+}
+export interface OrgLimitEvent {
+  name: string | null;
+  actorId: string | null;
+  entityId: string | null;
+  eventType: string | null;
+  delta: string | null;
+  numBefore: string | null;
+  numAfter: string | null;
+  maxAtEvent: string | null;
+  reason: string | null;
+}
 export interface OrgGrant {
   id: string | null;
   permissions: string | null;
@@ -210,6 +219,26 @@ export interface OrgChartEdge {
   positionTitle: string | null;
   positionLevel: number | null;
 }
+export interface AppLimit {
+  id: string | null;
+  name: string | null;
+  actorId: string | null;
+  num: string | null;
+  max: string | null;
+  softMax: string | null;
+  windowStart: string | null;
+  windowDuration: string | null;
+}
+export interface OrgLimitAggregate {
+  id: string | null;
+  name: string | null;
+  entityId: string | null;
+  num: string | null;
+  max: string | null;
+  softMax: string | null;
+  windowStart: string | null;
+  windowDuration: string | null;
+}
 export interface OrgMemberProfile {
   id: string | null;
   createdAt: string | null;
@@ -223,19 +252,16 @@ export interface OrgMemberProfile {
   bio: string | null;
   profilePicture: ConstructiveInternalTypeImage | null;
 }
-export interface OrgMembershipSetting {
+export interface OrgLimit {
   id: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  createdBy: string | null;
-  updatedBy: string | null;
+  name: string | null;
+  actorId: string | null;
+  num: string | null;
+  max: string | null;
+  softMax: string | null;
+  windowStart: string | null;
+  windowDuration: string | null;
   entityId: string | null;
-  deleteMemberCascadeChildren: boolean | null;
-  createChildCascadeOwners: boolean | null;
-  createChildCascadeAdmins: boolean | null;
-  createChildCascadeMembers: boolean | null;
-  allowExternalMembers: boolean | null;
-  populateMemberEmail: boolean | null;
 }
 export interface AppLevel {
   id: string | null;
@@ -256,9 +282,26 @@ export interface AppInvite {
   inviteCount: number | null;
   multiple: boolean | null;
   data: unknown | null;
+  profileId: string | null;
   expiresAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+}
+export interface OrgMembershipSetting {
+  id: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  entityId: string | null;
+  deleteMemberCascadeChildren: boolean | null;
+  createChildCascadeOwners: boolean | null;
+  createChildCascadeAdmins: boolean | null;
+  createChildCascadeMembers: boolean | null;
+  allowExternalMembers: boolean | null;
+  inviteProfileAssignmentMode: string | null;
+  populateMemberEmail: boolean | null;
+  limitAllocationMode: string | null;
 }
 export interface OrgInvite {
   id: string | null;
@@ -271,6 +314,7 @@ export interface OrgInvite {
   inviteCount: number | null;
   multiple: boolean | null;
   data: unknown | null;
+  profileId: string | null;
   expiresAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -287,7 +331,6 @@ export interface AppMembership {
   isDisabled: boolean | null;
   isVerified: boolean | null;
   isActive: boolean | null;
-  isExternal: boolean | null;
   isOwner: boolean | null;
   isAdmin: boolean | null;
   permissions: string | null;

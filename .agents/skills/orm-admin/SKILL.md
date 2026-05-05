@@ -1,13 +1,13 @@
 ---
 name: orm-admin
-description: ORM client for the admin API — provides typed CRUD operations for 34 tables and 16 custom operations
+description: ORM client for the admin API — provides typed CRUD operations for 37 tables and 15 custom operations
 ---
 
 # orm-admin
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-ORM client for the admin API — provides typed CRUD operations for 34 tables and 16 custom operations
+ORM client for the admin API — provides typed CRUD operations for 37 tables and 15 custom operations
 
 ## Usage
 
@@ -47,27 +47,30 @@ See the `references/` directory for detailed per-entity API documentation:
 - [org-permission-default](references/org-permission-default.md)
 - [app-admin-grant](references/app-admin-grant.md)
 - [app-owner-grant](references/app-owner-grant.md)
-- [app-limit-default](references/app-limit-default.md)
-- [org-limit-default](references/org-limit-default.md)
-- [org-admin-grant](references/org-admin-grant.md)
-- [org-owner-grant](references/org-owner-grant.md)
-- [app-limit](references/app-limit.md)
 - [app-achievement](references/app-achievement.md)
 - [app-step](references/app-step.md)
-- [app-claimed-invite](references/app-claimed-invite.md)
-- [org-chart-edge-grant](references/org-chart-edge-grant.md)
-- [org-limit](references/org-limit.md)
+- [org-admin-grant](references/org-admin-grant.md)
+- [org-owner-grant](references/org-owner-grant.md)
 - [membership-type](references/membership-type.md)
+- [app-limit-default](references/app-limit-default.md)
+- [org-limit-default](references/org-limit-default.md)
+- [org-chart-edge-grant](references/org-chart-edge-grant.md)
+- [app-claimed-invite](references/app-claimed-invite.md)
 - [app-grant](references/app-grant.md)
 - [app-membership-default](references/app-membership-default.md)
 - [org-membership-default](references/org-membership-default.md)
 - [org-claimed-invite](references/org-claimed-invite.md)
+- [app-limit-event](references/app-limit-event.md)
+- [org-limit-event](references/org-limit-event.md)
 - [org-grant](references/org-grant.md)
 - [org-chart-edge](references/org-chart-edge.md)
+- [app-limit](references/app-limit.md)
+- [org-limit-aggregate](references/org-limit-aggregate.md)
 - [org-member-profile](references/org-member-profile.md)
-- [org-membership-setting](references/org-membership-setting.md)
+- [org-limit](references/org-limit.md)
 - [app-level](references/app-level.md)
 - [app-invite](references/app-invite.md)
+- [org-membership-setting](references/org-membership-setting.md)
 - [org-invite](references/org-invite.md)
 - [app-membership](references/app-membership.md)
 - [org-membership](references/org-membership.md)
@@ -85,5 +88,4 @@ See the `references/` directory for detailed per-entity API documentation:
 - [submit-app-invite-code](references/submit-app-invite-code.md)
 - [submit-org-invite-code](references/submit-org-invite-code.md)
 - [request-upload-url](references/request-upload-url.md)
-- [confirm-upload](references/confirm-upload.md)
 - [provision-bucket](references/provision-bucket.md)

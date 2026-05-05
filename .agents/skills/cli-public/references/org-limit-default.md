@@ -12,8 +12,8 @@ csdk org-limit-default list --where.<field>.<op> <value> --orderBy <values>
 csdk org-limit-default list --limit 10 --after <cursor>
 csdk org-limit-default find-first --where.<field>.<op> <value>
 csdk org-limit-default get --id <UUID>
-csdk org-limit-default create --name <String> [--max <Int>]
-csdk org-limit-default update --id <UUID> [--name <String>] [--max <Int>]
+csdk org-limit-default create --name <String> [--max <BigInt>] [--softMax <BigInt>]
+csdk org-limit-default update --id <UUID> [--name <String>] [--max <BigInt>] [--softMax <BigInt>]
 csdk org-limit-default delete --id <UUID>
 ```
 
@@ -58,7 +58,7 @@ csdk org-limit-default list --where.id.equalTo <value> --orderBy ID_ASC
 ### Create a orgLimitDefault
 
 ```bash
-csdk org-limit-default create --name <String> [--max <Int>]
+csdk org-limit-default create --name <String> [--max <BigInt>] [--softMax <BigInt>]
 ```
 
 ### Get a orgLimitDefault by id

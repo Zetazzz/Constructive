@@ -5,6 +5,9 @@
  */
 
 import type {
+  AgentMessage,
+  AgentTask,
+  AgentThread,
   Api,
   ApiModule,
   ApiSchema,
@@ -18,6 +21,7 @@ import type {
   AppLevelRequirement,
   AppLimit,
   AppLimitDefault,
+  AppLimitEvent,
   AppMembership,
   AppMembershipDefault,
   AppOwnerGrant,
@@ -26,6 +30,7 @@ import type {
   AppStep,
   AstMigration,
   AuditLog,
+  BillingModule,
   Blueprint,
   BlueprintConstruction,
   BlueprintTemplate,
@@ -64,6 +69,7 @@ import type {
   MembershipTypesModule,
   MembershipsModule,
   MigrateFile,
+  NodeTypeRegistry,
   NotificationsModule,
   Object,
   OrgAdminGrant,
@@ -75,7 +81,9 @@ import type {
   OrgGrant,
   OrgInvite,
   OrgLimit,
+  OrgLimitAggregate,
   OrgLimitDefault,
+  OrgLimitEvent,
   OrgMember,
   OrgMemberProfile,
   OrgMembership,
@@ -87,6 +95,7 @@ import type {
   PermissionsModule,
   PhoneNumber,
   PhoneNumbersModule,
+  PlansModule,
   Policy,
   PrimaryKeyConstraint,
   ProfilesModule,
@@ -1392,6 +1401,8 @@ export type LimitsModuleOrderBy =
   | 'LIMIT_UPDATE_TRIGGER_DESC'
   | 'LIMIT_CHECK_FUNCTION_ASC'
   | 'LIMIT_CHECK_FUNCTION_DESC'
+  | 'AGGREGATE_TABLE_ID_ASC'
+  | 'AGGREGATE_TABLE_ID_DESC'
   | 'PREFIX_ASC'
   | 'PREFIX_DESC'
   | 'MEMBERSHIP_TYPE_ASC'
@@ -1575,6 +1586,10 @@ export type ProfilesModuleOrderBy =
   | 'PROFILE_DEFINITION_GRANTS_TABLE_ID_DESC'
   | 'PROFILE_DEFINITION_GRANTS_TABLE_NAME_ASC'
   | 'PROFILE_DEFINITION_GRANTS_TABLE_NAME_DESC'
+  | 'PROFILE_TEMPLATES_TABLE_ID_ASC'
+  | 'PROFILE_TEMPLATES_TABLE_ID_DESC'
+  | 'PROFILE_TEMPLATES_TABLE_NAME_ASC'
+  | 'PROFILE_TEMPLATES_TABLE_NAME_DESC'
   | 'MEMBERSHIP_TYPE_ASC'
   | 'MEMBERSHIP_TYPE_DESC'
   | 'ENTITY_TABLE_ID_ASC'
@@ -1823,14 +1838,10 @@ export type StorageModuleOrderBy =
   | 'BUCKETS_TABLE_ID_DESC'
   | 'FILES_TABLE_ID_ASC'
   | 'FILES_TABLE_ID_DESC'
-  | 'UPLOAD_REQUESTS_TABLE_ID_ASC'
-  | 'UPLOAD_REQUESTS_TABLE_ID_DESC'
   | 'BUCKETS_TABLE_NAME_ASC'
   | 'BUCKETS_TABLE_NAME_DESC'
   | 'FILES_TABLE_NAME_ASC'
   | 'FILES_TABLE_NAME_DESC'
-  | 'UPLOAD_REQUESTS_TABLE_NAME_ASC'
-  | 'UPLOAD_REQUESTS_TABLE_NAME_DESC'
   | 'MEMBERSHIP_TYPE_ASC'
   | 'MEMBERSHIP_TYPE_DESC'
   | 'POLICIES_ASC'
@@ -1847,6 +1858,8 @@ export type StorageModuleOrderBy =
   | 'PROVIDER_DESC'
   | 'ALLOWED_ORIGINS_ASC'
   | 'ALLOWED_ORIGINS_DESC'
+  | 'RESTRICT_READS_ASC'
+  | 'RESTRICT_READS_DESC'
   | 'UPLOAD_URL_EXPIRY_SECONDS_ASC'
   | 'UPLOAD_URL_EXPIRY_SECONDS_DESC'
   | 'DOWNLOAD_URL_EXPIRY_SECONDS_ASC'
@@ -2321,7 +2334,13 @@ export type AppLimitOrderBy =
   | 'NUM_ASC'
   | 'NUM_DESC'
   | 'MAX_ASC'
-  | 'MAX_DESC';
+  | 'MAX_DESC'
+  | 'SOFT_MAX_ASC'
+  | 'SOFT_MAX_DESC'
+  | 'WINDOW_START_ASC'
+  | 'WINDOW_START_DESC'
+  | 'WINDOW_DURATION_ASC'
+  | 'WINDOW_DURATION_DESC';
 /** Methods to use when ordering `OrgLimit`. */
 export type OrgLimitOrderBy =
   | 'NATURAL'
@@ -2337,8 +2356,35 @@ export type OrgLimitOrderBy =
   | 'NUM_DESC'
   | 'MAX_ASC'
   | 'MAX_DESC'
+  | 'SOFT_MAX_ASC'
+  | 'SOFT_MAX_DESC'
+  | 'WINDOW_START_ASC'
+  | 'WINDOW_START_DESC'
+  | 'WINDOW_DURATION_ASC'
+  | 'WINDOW_DURATION_DESC'
   | 'ENTITY_ID_ASC'
   | 'ENTITY_ID_DESC';
+/** Methods to use when ordering `OrgLimitAggregate`. */
+export type OrgLimitAggregateOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'NUM_ASC'
+  | 'NUM_DESC'
+  | 'MAX_ASC'
+  | 'MAX_DESC'
+  | 'SOFT_MAX_ASC'
+  | 'SOFT_MAX_DESC'
+  | 'WINDOW_START_ASC'
+  | 'WINDOW_START_DESC'
+  | 'WINDOW_DURATION_ASC'
+  | 'WINDOW_DURATION_DESC';
 /** Methods to use when ordering `AppStep`. */
 export type AppStepOrderBy =
   | 'NATURAL'
@@ -2513,6 +2559,8 @@ export type AppInviteOrderBy =
   | 'MULTIPLE_DESC'
   | 'DATA_ASC'
   | 'DATA_DESC'
+  | 'PROFILE_ID_ASC'
+  | 'PROFILE_ID_DESC'
   | 'EXPIRES_AT_ASC'
   | 'EXPIRES_AT_DESC'
   | 'CREATED_AT_ASC'
@@ -2561,6 +2609,8 @@ export type OrgInviteOrderBy =
   | 'MULTIPLE_DESC'
   | 'DATA_ASC'
   | 'DATA_DESC'
+  | 'PROFILE_ID_ASC'
+  | 'PROFILE_ID_DESC'
   | 'EXPIRES_AT_ASC'
   | 'EXPIRES_AT_DESC'
   | 'CREATED_AT_ASC'
@@ -2609,15 +2659,86 @@ export type AuditLogOrderBy =
   | 'SUCCESS_DESC'
   | 'CREATED_AT_ASC'
   | 'CREATED_AT_DESC';
-/** Methods to use when ordering `AppPermissionDefault`. */
-export type AppPermissionDefaultOrderBy =
+/** Methods to use when ordering `AgentMessage`. */
+export type AgentMessageOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'THREAD_ID_ASC'
+  | 'THREAD_ID_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'AUTHOR_ROLE_ASC'
+  | 'AUTHOR_ROLE_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'OWNER_ID_ASC'
+  | 'OWNER_ID_DESC'
+  | 'PARTS_ASC'
+  | 'PARTS_DESC';
+/** Methods to use when ordering `AgentTask`. */
+export type AgentTaskOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'THREAD_ID_ASC'
+  | 'THREAD_ID_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'DESCRIPTION_ASC'
+  | 'DESCRIPTION_DESC'
+  | 'SOURCE_ASC'
+  | 'SOURCE_DESC'
+  | 'ERROR_ASC'
+  | 'ERROR_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'OWNER_ID_ASC'
+  | 'OWNER_ID_DESC'
+  | 'STATUS_ASC'
+  | 'STATUS_DESC';
+/** Methods to use when ordering `AgentThread`. */
+export type AgentThreadOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'TITLE_ASC'
+  | 'TITLE_DESC'
+  | 'MODE_ASC'
+  | 'MODE_DESC'
+  | 'MODEL_ASC'
+  | 'MODEL_DESC'
+  | 'SYSTEM_PROMPT_ASC'
+  | 'SYSTEM_PROMPT_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'OWNER_ID_ASC'
+  | 'OWNER_ID_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'STATUS_ASC'
+  | 'STATUS_DESC';
+/** Methods to use when ordering `RoleType`. */
+export type RoleTypeOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
   | 'PRIMARY_KEY_DESC'
   | 'ID_ASC'
   | 'ID_DESC'
-  | 'PERMISSIONS_ASC'
-  | 'PERMISSIONS_DESC';
+  | 'NAME_ASC'
+  | 'NAME_DESC';
 /** Methods to use when ordering `IdentityProvider`. */
 export type IdentityProviderOrderBy =
   | 'NATURAL'
@@ -2661,15 +2782,62 @@ export type StoreOrderBy =
   | 'HASH_DESC'
   | 'CREATED_AT_ASC'
   | 'CREATED_AT_DESC';
-/** Methods to use when ordering `RoleType`. */
-export type RoleTypeOrderBy =
+/** Methods to use when ordering `AppPermissionDefault`. */
+export type AppPermissionDefaultOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'PERMISSIONS_ASC'
+  | 'PERMISSIONS_DESC';
+/** Methods to use when ordering `AppPermission`. */
+export type AppPermissionOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
   | 'PRIMARY_KEY_DESC'
   | 'ID_ASC'
   | 'ID_DESC'
   | 'NAME_ASC'
-  | 'NAME_DESC';
+  | 'NAME_DESC'
+  | 'BITNUM_ASC'
+  | 'BITNUM_DESC'
+  | 'BITSTR_ASC'
+  | 'BITSTR_DESC'
+  | 'DESCRIPTION_ASC'
+  | 'DESCRIPTION_DESC';
+/** Methods to use when ordering `OrgPermission`. */
+export type OrgPermissionOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'BITNUM_ASC'
+  | 'BITNUM_DESC'
+  | 'BITSTR_ASC'
+  | 'BITSTR_DESC'
+  | 'DESCRIPTION_ASC'
+  | 'DESCRIPTION_DESC';
+/** Methods to use when ordering `MembershipType`. */
+export type MembershipTypeOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'DESCRIPTION_ASC'
+  | 'DESCRIPTION_DESC'
+  | 'PREFIX_ASC'
+  | 'PREFIX_DESC'
+  | 'PARENT_MEMBERSHIP_TYPE_ASC'
+  | 'PARENT_MEMBERSHIP_TYPE_DESC'
+  | 'HAS_USERS_TABLE_ENTRY_ASC'
+  | 'HAS_USERS_TABLE_ENTRY_DESC';
 /** Methods to use when ordering `MigrateFile`. */
 export type MigrateFileOrderBy =
   | 'NATURAL'
@@ -2679,28 +2847,6 @@ export type MigrateFileOrderBy =
   | 'DATABASE_ID_DESC'
   | 'UPLOAD_ASC'
   | 'UPLOAD_DESC';
-/** Methods to use when ordering `AppLimitDefault`. */
-export type AppLimitDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC';
-/** Methods to use when ordering `OrgLimitDefault`. */
-export type OrgLimitDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC';
 /** Methods to use when ordering `DevicesModule`. */
 export type DevicesModuleOrderBy =
   | 'NATURAL'
@@ -2720,6 +2866,51 @@ export type DevicesModuleOrderBy =
   | 'USER_DEVICES_TABLE_DESC'
   | 'DEVICE_SETTINGS_TABLE_ASC'
   | 'DEVICE_SETTINGS_TABLE_DESC';
+/** Methods to use when ordering `NodeTypeRegistry`. */
+export type NodeTypeRegistryOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'SLUG_ASC'
+  | 'SLUG_DESC'
+  | 'CATEGORY_ASC'
+  | 'CATEGORY_DESC'
+  | 'DISPLAY_NAME_ASC'
+  | 'DISPLAY_NAME_DESC'
+  | 'DESCRIPTION_ASC'
+  | 'DESCRIPTION_DESC'
+  | 'PARAMETER_SCHEMA_ASC'
+  | 'PARAMETER_SCHEMA_DESC'
+  | 'TAGS_ASC'
+  | 'TAGS_DESC';
+/** Methods to use when ordering `AppLimitDefault`. */
+export type AppLimitDefaultOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'MAX_ASC'
+  | 'MAX_DESC'
+  | 'SOFT_MAX_ASC'
+  | 'SOFT_MAX_DESC';
+/** Methods to use when ordering `OrgLimitDefault`. */
+export type OrgLimitDefaultOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'MAX_ASC'
+  | 'MAX_DESC'
+  | 'SOFT_MAX_ASC'
+  | 'SOFT_MAX_DESC';
 /** Methods to use when ordering `UserConnectedAccount`. */
 export type UserConnectedAccountOrderBy =
   | 'NATURAL'
@@ -2758,8 +2949,8 @@ export type ObjectOrderBy =
   | 'FRZN_DESC'
   | 'CREATED_AT_ASC'
   | 'CREATED_AT_DESC';
-/** Methods to use when ordering `AppPermission`. */
-export type AppPermissionOrderBy =
+/** Methods to use when ordering `AppLevelRequirement`. */
+export type AppLevelRequirementOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
   | 'PRIMARY_KEY_DESC'
@@ -2767,65 +2958,18 @@ export type AppPermissionOrderBy =
   | 'ID_DESC'
   | 'NAME_ASC'
   | 'NAME_DESC'
-  | 'BITNUM_ASC'
-  | 'BITNUM_DESC'
-  | 'BITSTR_ASC'
-  | 'BITSTR_DESC'
+  | 'LEVEL_ASC'
+  | 'LEVEL_DESC'
   | 'DESCRIPTION_ASC'
-  | 'DESCRIPTION_DESC';
-/** Methods to use when ordering `OrgPermission`. */
-export type OrgPermissionOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'BITNUM_ASC'
-  | 'BITNUM_DESC'
-  | 'BITSTR_ASC'
-  | 'BITSTR_DESC'
-  | 'DESCRIPTION_ASC'
-  | 'DESCRIPTION_DESC';
-/** Methods to use when ordering `AppMembershipDefault`. */
-export type AppMembershipDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
+  | 'DESCRIPTION_DESC'
+  | 'REQUIRED_COUNT_ASC'
+  | 'REQUIRED_COUNT_DESC'
+  | 'PRIORITY_ASC'
+  | 'PRIORITY_DESC'
   | 'CREATED_AT_ASC'
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC'
-  | 'CREATED_BY_ASC'
-  | 'CREATED_BY_DESC'
-  | 'UPDATED_BY_ASC'
-  | 'UPDATED_BY_DESC'
-  | 'IS_APPROVED_ASC'
-  | 'IS_APPROVED_DESC'
-  | 'IS_VERIFIED_ASC'
-  | 'IS_VERIFIED_DESC';
-/** Methods to use when ordering `OrgMembershipDefault`. */
-export type OrgMembershipDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC'
-  | 'CREATED_BY_ASC'
-  | 'CREATED_BY_DESC'
-  | 'UPDATED_BY_ASC'
-  | 'UPDATED_BY_DESC'
-  | 'IS_APPROVED_ASC'
-  | 'IS_APPROVED_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC';
+  | 'UPDATED_AT_DESC';
 /** Methods to use when ordering `Commit`. */
 export type CommitOrderBy =
   | 'NATURAL'
@@ -2872,23 +3016,113 @@ export type RateLimitsModuleOrderBy =
   | 'IP_RATE_LIMITS_TABLE_DESC'
   | 'RATE_LIMITS_TABLE_ASC'
   | 'RATE_LIMITS_TABLE_DESC';
-/** Methods to use when ordering `MembershipType`. */
-export type MembershipTypeOrderBy =
+/** Methods to use when ordering `AppMembershipDefault`. */
+export type AppMembershipDefaultOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
   | 'PRIMARY_KEY_DESC'
   | 'ID_ASC'
   | 'ID_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'CREATED_BY_ASC'
+  | 'CREATED_BY_DESC'
+  | 'UPDATED_BY_ASC'
+  | 'UPDATED_BY_DESC'
+  | 'IS_APPROVED_ASC'
+  | 'IS_APPROVED_DESC'
+  | 'IS_VERIFIED_ASC'
+  | 'IS_VERIFIED_DESC';
+/** Methods to use when ordering `OrgMembershipDefault`. */
+export type OrgMembershipDefaultOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'CREATED_BY_ASC'
+  | 'CREATED_BY_DESC'
+  | 'UPDATED_BY_ASC'
+  | 'UPDATED_BY_DESC'
+  | 'IS_APPROVED_ASC'
+  | 'IS_APPROVED_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC';
+/** Methods to use when ordering `AppLimitEvent`. */
+export type AppLimitEventOrderBy =
+  | 'NATURAL'
   | 'NAME_ASC'
   | 'NAME_DESC'
-  | 'DESCRIPTION_ASC'
-  | 'DESCRIPTION_DESC'
+  | 'ACTOR_ID_ASC'
+  | 'ACTOR_ID_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'EVENT_TYPE_ASC'
+  | 'EVENT_TYPE_DESC'
+  | 'DELTA_ASC'
+  | 'DELTA_DESC'
+  | 'NUM_BEFORE_ASC'
+  | 'NUM_BEFORE_DESC'
+  | 'NUM_AFTER_ASC'
+  | 'NUM_AFTER_DESC'
+  | 'MAX_AT_EVENT_ASC'
+  | 'MAX_AT_EVENT_DESC'
+  | 'REASON_ASC'
+  | 'REASON_DESC';
+/** Methods to use when ordering `OrgLimitEvent`. */
+export type OrgLimitEventOrderBy =
+  | 'NATURAL'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'ACTOR_ID_ASC'
+  | 'ACTOR_ID_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'EVENT_TYPE_ASC'
+  | 'EVENT_TYPE_DESC'
+  | 'DELTA_ASC'
+  | 'DELTA_DESC'
+  | 'NUM_BEFORE_ASC'
+  | 'NUM_BEFORE_DESC'
+  | 'NUM_AFTER_ASC'
+  | 'NUM_AFTER_DESC'
+  | 'MAX_AT_EVENT_ASC'
+  | 'MAX_AT_EVENT_DESC'
+  | 'REASON_ASC'
+  | 'REASON_DESC';
+/** Methods to use when ordering `PlansModule`. */
+export type PlansModuleOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'DATABASE_ID_ASC'
+  | 'DATABASE_ID_DESC'
+  | 'SCHEMA_ID_ASC'
+  | 'SCHEMA_ID_DESC'
+  | 'PRIVATE_SCHEMA_ID_ASC'
+  | 'PRIVATE_SCHEMA_ID_DESC'
+  | 'PLANS_TABLE_ID_ASC'
+  | 'PLANS_TABLE_ID_DESC'
+  | 'PLANS_TABLE_NAME_ASC'
+  | 'PLANS_TABLE_NAME_DESC'
+  | 'PLAN_LIMITS_TABLE_ID_ASC'
+  | 'PLAN_LIMITS_TABLE_ID_DESC'
+  | 'PLAN_LIMITS_TABLE_NAME_ASC'
+  | 'PLAN_LIMITS_TABLE_NAME_DESC'
+  | 'APPLY_PLAN_FUNCTION_ASC'
+  | 'APPLY_PLAN_FUNCTION_DESC'
+  | 'APPLY_PLAN_AGGREGATE_FUNCTION_ASC'
+  | 'APPLY_PLAN_AGGREGATE_FUNCTION_DESC'
   | 'PREFIX_ASC'
-  | 'PREFIX_DESC'
-  | 'PARENT_MEMBERSHIP_TYPE_ASC'
-  | 'PARENT_MEMBERSHIP_TYPE_DESC'
-  | 'HAS_USERS_TABLE_ENTRY_ASC'
-  | 'HAS_USERS_TABLE_ENTRY_DESC';
+  | 'PREFIX_DESC';
 /** Methods to use when ordering `RlsModule`. */
 export type RlsModuleOrderBy =
   | 'NATURAL'
@@ -2916,27 +3150,6 @@ export type RlsModuleOrderBy =
   | 'CURRENT_ROLE_DESC'
   | 'CURRENT_ROLE_ID_ASC'
   | 'CURRENT_ROLE_ID_DESC';
-/** Methods to use when ordering `AppLevelRequirement`. */
-export type AppLevelRequirementOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'LEVEL_ASC'
-  | 'LEVEL_DESC'
-  | 'DESCRIPTION_ASC'
-  | 'DESCRIPTION_DESC'
-  | 'REQUIRED_COUNT_ASC'
-  | 'REQUIRED_COUNT_DESC'
-  | 'PRIORITY_ASC'
-  | 'PRIORITY_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC';
 /** Methods to use when ordering `SqlAction`. */
 export type SqlActionOrderBy =
   | 'NATURAL'
@@ -2966,62 +3179,39 @@ export type SqlActionOrderBy =
   | 'ACTION_ID_DESC'
   | 'ACTOR_ID_ASC'
   | 'ACTOR_ID_DESC';
-/** Methods to use when ordering `OrgMembershipSetting`. */
-export type OrgMembershipSettingOrderBy =
+/** Methods to use when ordering `BillingModule`. */
+export type BillingModuleOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
   | 'PRIMARY_KEY_DESC'
   | 'ID_ASC'
   | 'ID_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC'
-  | 'CREATED_BY_ASC'
-  | 'CREATED_BY_DESC'
-  | 'UPDATED_BY_ASC'
-  | 'UPDATED_BY_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'DELETE_MEMBER_CASCADE_CHILDREN_ASC'
-  | 'DELETE_MEMBER_CASCADE_CHILDREN_DESC'
-  | 'CREATE_CHILD_CASCADE_OWNERS_ASC'
-  | 'CREATE_CHILD_CASCADE_OWNERS_DESC'
-  | 'CREATE_CHILD_CASCADE_ADMINS_ASC'
-  | 'CREATE_CHILD_CASCADE_ADMINS_DESC'
-  | 'CREATE_CHILD_CASCADE_MEMBERS_ASC'
-  | 'CREATE_CHILD_CASCADE_MEMBERS_DESC'
-  | 'ALLOW_EXTERNAL_MEMBERS_ASC'
-  | 'ALLOW_EXTERNAL_MEMBERS_DESC'
-  | 'POPULATE_MEMBER_EMAIL_ASC'
-  | 'POPULATE_MEMBER_EMAIL_DESC';
-/** Methods to use when ordering `User`. */
-export type UserOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'USERNAME_ASC'
-  | 'USERNAME_DESC'
-  | 'DISPLAY_NAME_ASC'
-  | 'DISPLAY_NAME_DESC'
-  | 'PROFILE_PICTURE_ASC'
-  | 'PROFILE_PICTURE_DESC'
-  | 'SEARCH_TSV_ASC'
-  | 'SEARCH_TSV_DESC'
-  | 'TYPE_ASC'
-  | 'TYPE_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC'
-  | 'SEARCH_TSV_RANK_ASC'
-  | 'SEARCH_TSV_RANK_DESC'
-  | 'DISPLAY_NAME_TRGM_SIMILARITY_ASC'
-  | 'DISPLAY_NAME_TRGM_SIMILARITY_DESC'
-  | 'SEARCH_SCORE_ASC'
-  | 'SEARCH_SCORE_DESC';
+  | 'DATABASE_ID_ASC'
+  | 'DATABASE_ID_DESC'
+  | 'SCHEMA_ID_ASC'
+  | 'SCHEMA_ID_DESC'
+  | 'PRIVATE_SCHEMA_ID_ASC'
+  | 'PRIVATE_SCHEMA_ID_DESC'
+  | 'METERS_TABLE_ID_ASC'
+  | 'METERS_TABLE_ID_DESC'
+  | 'METERS_TABLE_NAME_ASC'
+  | 'METERS_TABLE_NAME_DESC'
+  | 'PLAN_SUBSCRIPTIONS_TABLE_ID_ASC'
+  | 'PLAN_SUBSCRIPTIONS_TABLE_ID_DESC'
+  | 'PLAN_SUBSCRIPTIONS_TABLE_NAME_ASC'
+  | 'PLAN_SUBSCRIPTIONS_TABLE_NAME_DESC'
+  | 'LEDGER_TABLE_ID_ASC'
+  | 'LEDGER_TABLE_ID_DESC'
+  | 'LEDGER_TABLE_NAME_ASC'
+  | 'LEDGER_TABLE_NAME_DESC'
+  | 'BALANCES_TABLE_ID_ASC'
+  | 'BALANCES_TABLE_ID_DESC'
+  | 'BALANCES_TABLE_NAME_ASC'
+  | 'BALANCES_TABLE_NAME_DESC'
+  | 'RECORD_USAGE_FUNCTION_ASC'
+  | 'RECORD_USAGE_FUNCTION_DESC'
+  | 'PREFIX_ASC'
+  | 'PREFIX_DESC';
 /** Methods to use when ordering `AstMigration`. */
 export type AstMigrationOrderBy =
   | 'NATURAL'
@@ -3051,6 +3241,66 @@ export type AstMigrationOrderBy =
   | 'ACTION_ID_DESC'
   | 'ACTOR_ID_ASC'
   | 'ACTOR_ID_DESC';
+/** Methods to use when ordering `User`. */
+export type UserOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'USERNAME_ASC'
+  | 'USERNAME_DESC'
+  | 'DISPLAY_NAME_ASC'
+  | 'DISPLAY_NAME_DESC'
+  | 'PROFILE_PICTURE_ASC'
+  | 'PROFILE_PICTURE_DESC'
+  | 'SEARCH_TSV_ASC'
+  | 'SEARCH_TSV_DESC'
+  | 'TYPE_ASC'
+  | 'TYPE_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'SEARCH_TSV_RANK_ASC'
+  | 'SEARCH_TSV_RANK_DESC'
+  | 'DISPLAY_NAME_TRGM_SIMILARITY_ASC'
+  | 'DISPLAY_NAME_TRGM_SIMILARITY_DESC'
+  | 'SEARCH_SCORE_ASC'
+  | 'SEARCH_SCORE_DESC';
+/** Methods to use when ordering `OrgMembershipSetting`. */
+export type OrgMembershipSettingOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'CREATED_BY_ASC'
+  | 'CREATED_BY_DESC'
+  | 'UPDATED_BY_ASC'
+  | 'UPDATED_BY_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'DELETE_MEMBER_CASCADE_CHILDREN_ASC'
+  | 'DELETE_MEMBER_CASCADE_CHILDREN_DESC'
+  | 'CREATE_CHILD_CASCADE_OWNERS_ASC'
+  | 'CREATE_CHILD_CASCADE_OWNERS_DESC'
+  | 'CREATE_CHILD_CASCADE_ADMINS_ASC'
+  | 'CREATE_CHILD_CASCADE_ADMINS_DESC'
+  | 'CREATE_CHILD_CASCADE_MEMBERS_ASC'
+  | 'CREATE_CHILD_CASCADE_MEMBERS_DESC'
+  | 'ALLOW_EXTERNAL_MEMBERS_ASC'
+  | 'ALLOW_EXTERNAL_MEMBERS_DESC'
+  | 'INVITE_PROFILE_ASSIGNMENT_MODE_ASC'
+  | 'INVITE_PROFILE_ASSIGNMENT_MODE_DESC'
+  | 'POPULATE_MEMBER_EMAIL_ASC'
+  | 'POPULATE_MEMBER_EMAIL_DESC'
+  | 'LIMIT_ALLOCATION_MODE_ASC'
+  | 'LIMIT_ALLOCATION_MODE_DESC';
 /** Methods to use when ordering `AppMembership`. */
 export type AppMembershipOrderBy =
   | 'NATURAL'
@@ -3076,8 +3326,6 @@ export type AppMembershipOrderBy =
   | 'IS_VERIFIED_DESC'
   | 'IS_ACTIVE_ASC'
   | 'IS_ACTIVE_DESC'
-  | 'IS_EXTERNAL_ASC'
-  | 'IS_EXTERNAL_DESC'
   | 'IS_OWNER_ASC'
   | 'IS_OWNER_DESC'
   | 'IS_ADMIN_ASC'
@@ -3489,6 +3737,14 @@ export interface DatabaseFilter {
   notificationsModules?: DatabaseToManyNotificationsModuleFilter;
   /** `notificationsModules` exist. */
   notificationsModulesExist?: boolean;
+  /** Filter by the object’s `plansModule` relation. */
+  plansModule?: PlansModuleFilter;
+  /** A related `plansModule` exists. */
+  plansModuleExists?: boolean;
+  /** Filter by the object’s `billingModule` relation. */
+  billingModule?: BillingModuleFilter;
+  /** A related `billingModule` exists. */
+  billingModuleExists?: boolean;
   /** Filter by the object’s `databaseProvisionModules` relation. */
   databaseProvisionModules?: DatabaseToManyDatabaseProvisionModuleFilter;
   /** `databaseProvisionModules` exist. */
@@ -3664,6 +3920,10 @@ export interface UserFilter {
   orgLimitsByEntityId?: UserToManyOrgLimitFilter;
   /** `orgLimitsByEntityId` exist. */
   orgLimitsByEntityIdExist?: boolean;
+  /** Filter by the object’s `orgLimitAggregatesByEntityId` relation. */
+  orgLimitAggregatesByEntityId?: UserToManyOrgLimitAggregateFilter;
+  /** `orgLimitAggregatesByEntityId` exist. */
+  orgLimitAggregatesByEntityIdExist?: boolean;
   /** Filter by the object’s `appStepsByActorId` relation. */
   appStepsByActorId?: UserToManyAppStepFilter;
   /** `appStepsByActorId` exist. */
@@ -3732,6 +3992,22 @@ export interface UserFilter {
   auditLogsByActorId?: UserToManyAuditLogFilter;
   /** `auditLogsByActorId` exist. */
   auditLogsByActorIdExist?: boolean;
+  /** Filter by the object’s `agentThreadsByEntityId` relation. */
+  agentThreadsByEntityId?: UserToManyAgentThreadFilter;
+  /** `agentThreadsByEntityId` exist. */
+  agentThreadsByEntityIdExist?: boolean;
+  /** Filter by the object’s `ownedAgentThreads` relation. */
+  ownedAgentThreads?: UserToManyAgentThreadFilter;
+  /** `ownedAgentThreads` exist. */
+  ownedAgentThreadsExist?: boolean;
+  /** Filter by the object’s `ownedAgentMessages` relation. */
+  ownedAgentMessages?: UserToManyAgentMessageFilter;
+  /** `ownedAgentMessages` exist. */
+  ownedAgentMessagesExist?: boolean;
+  /** Filter by the object’s `ownedAgentTasks` relation. */
+  ownedAgentTasks?: UserToManyAgentTaskFilter;
+  /** `ownedAgentTasks` exist. */
+  ownedAgentTasksExist?: boolean;
   /** TSV search on the `search_tsv` column. */
   tsvSearchTsv?: string;
   /** TRGM search on the `display_name` column. */
@@ -3911,8 +4187,6 @@ export interface AppMembershipFilter {
   isVerified?: BooleanFilter;
   /** Filter by the object’s `isActive` field. */
   isActive?: BooleanFilter;
-  /** Filter by the object’s `isExternal` field. */
-  isExternal?: BooleanFilter;
   /** Filter by the object’s `isOwner` field. */
   isOwner?: BooleanFilter;
   /** Filter by the object’s `isAdmin` field. */
@@ -4192,8 +4466,12 @@ export interface OrgMembershipSettingFilter {
   createChildCascadeMembers?: BooleanFilter;
   /** Filter by the object’s `allowExternalMembers` field. */
   allowExternalMembers?: BooleanFilter;
+  /** Filter by the object’s `inviteProfileAssignmentMode` field. */
+  inviteProfileAssignmentMode?: StringFilter;
   /** Filter by the object’s `populateMemberEmail` field. */
   populateMemberEmail?: BooleanFilter;
+  /** Filter by the object’s `limitAllocationMode` field. */
+  limitAllocationMode?: StringFilter;
   /** Checks for all expressions in this list. */
   and?: OrgMembershipSettingFilter[];
   /** Checks for any expressions in this list. */
@@ -4498,9 +4776,15 @@ export interface AppLimitFilter {
   /** Filter by the object’s `actorId` field. */
   actorId?: UUIDFilter;
   /** Filter by the object’s `num` field. */
-  num?: IntFilter;
+  num?: BigIntFilter;
   /** Filter by the object’s `max` field. */
-  max?: IntFilter;
+  max?: BigIntFilter;
+  /** Filter by the object’s `softMax` field. */
+  softMax?: BigIntFilter;
+  /** Filter by the object’s `windowStart` field. */
+  windowStart?: DatetimeFilter;
+  /** Filter by the object’s `windowDuration` field. */
+  windowDuration?: IntervalFilter;
   /** Checks for all expressions in this list. */
   and?: AppLimitFilter[];
   /** Checks for any expressions in this list. */
@@ -4509,6 +4793,50 @@ export interface AppLimitFilter {
   not?: AppLimitFilter;
   /** Filter by the object’s `actor` relation. */
   actor?: UserFilter;
+}
+/** A filter to be used against Interval fields. All fields are combined with a logical ‘and.’ */
+export interface IntervalFilter {
+  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
+  isNull?: boolean;
+  /** Equal to the specified value. */
+  equalTo?: IntervalInput;
+  /** Not equal to the specified value. */
+  notEqualTo?: IntervalInput;
+  /** Not equal to the specified value, treating null like an ordinary value. */
+  distinctFrom?: IntervalInput;
+  /** Equal to the specified value, treating null like an ordinary value. */
+  notDistinctFrom?: IntervalInput;
+  /** Included in the specified list. */
+  in?: IntervalInput[];
+  /** Not included in the specified list. */
+  notIn?: IntervalInput[];
+  /** Less than the specified value. */
+  lessThan?: IntervalInput;
+  /** Less than or equal to the specified value. */
+  lessThanOrEqualTo?: IntervalInput;
+  /** Greater than the specified value. */
+  greaterThan?: IntervalInput;
+  /** Greater than or equal to the specified value. */
+  greaterThanOrEqualTo?: IntervalInput;
+}
+/** An interval of time that has passed where the smallest distinct unit is a second. */
+export interface IntervalInput {
+  /**
+   * A quantity of seconds. This is the only non-integer field, as all the other
+   * fields will dump their overflow into a smaller unit of time. Intervals don’t
+   * have a smaller unit than seconds.
+   */
+  seconds?: number;
+  /** A quantity of minutes. */
+  minutes?: number;
+  /** A quantity of hours. */
+  hours?: number;
+  /** A quantity of days. */
+  days?: number;
+  /** A quantity of months. */
+  months?: number;
+  /** A quantity of years. */
+  years?: number;
 }
 /** A filter to be used against many `OrgLimit` object types. All fields are combined with a logical ‘and.’ */
 export interface UserToManyOrgLimitFilter {
@@ -4528,9 +4856,15 @@ export interface OrgLimitFilter {
   /** Filter by the object’s `actorId` field. */
   actorId?: UUIDFilter;
   /** Filter by the object’s `num` field. */
-  num?: IntFilter;
+  num?: BigIntFilter;
   /** Filter by the object’s `max` field. */
-  max?: IntFilter;
+  max?: BigIntFilter;
+  /** Filter by the object’s `softMax` field. */
+  softMax?: BigIntFilter;
+  /** Filter by the object’s `windowStart` field. */
+  windowStart?: DatetimeFilter;
+  /** Filter by the object’s `windowDuration` field. */
+  windowDuration?: IntervalFilter;
   /** Filter by the object’s `entityId` field. */
   entityId?: UUIDFilter;
   /** Checks for all expressions in this list. */
@@ -4541,6 +4875,42 @@ export interface OrgLimitFilter {
   not?: OrgLimitFilter;
   /** Filter by the object’s `actor` relation. */
   actor?: UserFilter;
+  /** Filter by the object’s `entity` relation. */
+  entity?: UserFilter;
+}
+/** A filter to be used against many `OrgLimitAggregate` object types. All fields are combined with a logical ‘and.’ */
+export interface UserToManyOrgLimitAggregateFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: OrgLimitAggregateFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: OrgLimitAggregateFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: OrgLimitAggregateFilter;
+}
+/** A filter to be used against `OrgLimitAggregate` object types. All fields are combined with a logical ‘and.’ */
+export interface OrgLimitAggregateFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Filter by the object’s `num` field. */
+  num?: BigIntFilter;
+  /** Filter by the object’s `max` field. */
+  max?: BigIntFilter;
+  /** Filter by the object’s `softMax` field. */
+  softMax?: BigIntFilter;
+  /** Filter by the object’s `windowStart` field. */
+  windowStart?: DatetimeFilter;
+  /** Filter by the object’s `windowDuration` field. */
+  windowDuration?: IntervalFilter;
+  /** Checks for all expressions in this list. */
+  and?: OrgLimitAggregateFilter[];
+  /** Checks for any expressions in this list. */
+  or?: OrgLimitAggregateFilter[];
+  /** Negates the expression. */
+  not?: OrgLimitAggregateFilter;
   /** Filter by the object’s `entity` relation. */
   entity?: UserFilter;
 }
@@ -4923,6 +5293,8 @@ export interface AppInviteFilter {
   inviteCount?: IntFilter;
   /** Filter by the object’s `multiple` field. */
   multiple?: BooleanFilter;
+  /** Filter by the object’s `profileId` field. */
+  profileId?: UUIDFilter;
   /** Filter by the object’s `expiresAt` field. */
   expiresAt?: DatetimeFilter;
   /** Filter by the object’s `createdAt` field. */
@@ -5003,6 +5375,8 @@ export interface OrgInviteFilter {
   inviteCount?: IntFilter;
   /** Filter by the object’s `multiple` field. */
   multiple?: BooleanFilter;
+  /** Filter by the object’s `profileId` field. */
+  profileId?: UUIDFilter;
   /** Filter by the object’s `expiresAt` field. */
   expiresAt?: DatetimeFilter;
   /** Filter by the object’s `createdAt` field. */
@@ -5180,6 +5554,154 @@ export interface ConstructiveInternalTypeOriginFilter {
   greaterThanInsensitive?: string;
   /** Greater than or equal to the specified value (case-insensitive). */
   greaterThanOrEqualToInsensitive?: string;
+}
+/** A filter to be used against many `AgentThread` object types. All fields are combined with a logical ‘and.’ */
+export interface UserToManyAgentThreadFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: AgentThreadFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: AgentThreadFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: AgentThreadFilter;
+}
+/** A filter to be used against `AgentThread` object types. All fields are combined with a logical ‘and.’ */
+export interface AgentThreadFilter {
+  /** Filter by the object’s `title` field. */
+  title?: StringFilter;
+  /** Filter by the object’s `mode` field. */
+  mode?: StringFilter;
+  /** Filter by the object’s `model` field. */
+  model?: StringFilter;
+  /** Filter by the object’s `systemPrompt` field. */
+  systemPrompt?: StringFilter;
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Filter by the object’s `updatedAt` field. */
+  updatedAt?: DatetimeFilter;
+  /** Filter by the object’s `ownerId` field. */
+  ownerId?: UUIDFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Filter by the object’s `status` field. */
+  status?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: AgentThreadFilter[];
+  /** Checks for any expressions in this list. */
+  or?: AgentThreadFilter[];
+  /** Negates the expression. */
+  not?: AgentThreadFilter;
+  /** Filter by the object’s `entity` relation. */
+  entity?: UserFilter;
+  /** Filter by the object’s `owner` relation. */
+  owner?: UserFilter;
+  /** Filter by the object’s `agentMessagesByThreadId` relation. */
+  agentMessagesByThreadId?: AgentThreadToManyAgentMessageFilter;
+  /** `agentMessagesByThreadId` exist. */
+  agentMessagesByThreadIdExist?: boolean;
+  /** Filter by the object’s `agentTasksByThreadId` relation. */
+  agentTasksByThreadId?: AgentThreadToManyAgentTaskFilter;
+  /** `agentTasksByThreadId` exist. */
+  agentTasksByThreadIdExist?: boolean;
+}
+/** A filter to be used against many `AgentMessage` object types. All fields are combined with a logical ‘and.’ */
+export interface AgentThreadToManyAgentMessageFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: AgentMessageFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: AgentMessageFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: AgentMessageFilter;
+}
+/** A filter to be used against `AgentMessage` object types. All fields are combined with a logical ‘and.’ */
+export interface AgentMessageFilter {
+  /** Filter by the object’s `threadId` field. */
+  threadId?: UUIDFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Filter by the object’s `authorRole` field. */
+  authorRole?: StringFilter;
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Filter by the object’s `updatedAt` field. */
+  updatedAt?: DatetimeFilter;
+  /** Filter by the object’s `ownerId` field. */
+  ownerId?: UUIDFilter;
+  /** Filter by the object’s `parts` field. */
+  parts?: JSONFilter;
+  /** Checks for all expressions in this list. */
+  and?: AgentMessageFilter[];
+  /** Checks for any expressions in this list. */
+  or?: AgentMessageFilter[];
+  /** Negates the expression. */
+  not?: AgentMessageFilter;
+  /** Filter by the object’s `owner` relation. */
+  owner?: UserFilter;
+  /** Filter by the object’s `thread` relation. */
+  thread?: AgentThreadFilter;
+}
+/** A filter to be used against many `AgentTask` object types. All fields are combined with a logical ‘and.’ */
+export interface AgentThreadToManyAgentTaskFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: AgentTaskFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: AgentTaskFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: AgentTaskFilter;
+}
+/** A filter to be used against `AgentTask` object types. All fields are combined with a logical ‘and.’ */
+export interface AgentTaskFilter {
+  /** Filter by the object’s `threadId` field. */
+  threadId?: UUIDFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Filter by the object’s `description` field. */
+  description?: StringFilter;
+  /** Filter by the object’s `source` field. */
+  source?: StringFilter;
+  /** Filter by the object’s `error` field. */
+  error?: StringFilter;
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Filter by the object’s `updatedAt` field. */
+  updatedAt?: DatetimeFilter;
+  /** Filter by the object’s `ownerId` field. */
+  ownerId?: UUIDFilter;
+  /** Filter by the object’s `status` field. */
+  status?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: AgentTaskFilter[];
+  /** Checks for any expressions in this list. */
+  or?: AgentTaskFilter[];
+  /** Negates the expression. */
+  not?: AgentTaskFilter;
+  /** Filter by the object’s `owner` relation. */
+  owner?: UserFilter;
+  /** Filter by the object’s `thread` relation. */
+  thread?: AgentThreadFilter;
+}
+/** A filter to be used against many `AgentMessage` object types. All fields are combined with a logical ‘and.’ */
+export interface UserToManyAgentMessageFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: AgentMessageFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: AgentMessageFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: AgentMessageFilter;
+}
+/** A filter to be used against many `AgentTask` object types. All fields are combined with a logical ‘and.’ */
+export interface UserToManyAgentTaskFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: AgentTaskFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: AgentTaskFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: AgentTaskFilter;
 }
 /** A filter to be used against many `Schema` object types. All fields are combined with a logical ‘and.’ */
 export interface DatabaseToManySchemaFilter {
@@ -7981,6 +8503,8 @@ export interface LimitsModuleFilter {
   limitUpdateTrigger?: StringFilter;
   /** Filter by the object’s `limitCheckFunction` field. */
   limitCheckFunction?: StringFilter;
+  /** Filter by the object’s `aggregateTableId` field. */
+  aggregateTableId?: UUIDFilter;
   /** Filter by the object’s `prefix` field. */
   prefix?: StringFilter;
   /** Filter by the object’s `membershipType` field. */
@@ -7997,6 +8521,10 @@ export interface LimitsModuleFilter {
   not?: LimitsModuleFilter;
   /** Filter by the object’s `actorTable` relation. */
   actorTable?: TableFilter;
+  /** Filter by the object’s `aggregateTable` relation. */
+  aggregateTable?: TableFilter;
+  /** A related `aggregateTable` exists. */
+  aggregateTableExists?: boolean;
   /** Filter by the object’s `database` relation. */
   database?: DatabaseFilter;
   /** Filter by the object’s `defaultTable` relation. */
@@ -8315,6 +8843,10 @@ export interface ProfilesModuleFilter {
   profileDefinitionGrantsTableId?: UUIDFilter;
   /** Filter by the object’s `profileDefinitionGrantsTableName` field. */
   profileDefinitionGrantsTableName?: StringFilter;
+  /** Filter by the object’s `profileTemplatesTableId` field. */
+  profileTemplatesTableId?: UUIDFilter;
+  /** Filter by the object’s `profileTemplatesTableName` field. */
+  profileTemplatesTableName?: StringFilter;
   /** Filter by the object’s `membershipType` field. */
   membershipType?: IntFilter;
   /** Filter by the object’s `entityTableId` field. */
@@ -8353,6 +8885,8 @@ export interface ProfilesModuleFilter {
   profileGrantsTable?: TableFilter;
   /** Filter by the object’s `profilePermissionsTable` relation. */
   profilePermissionsTable?: TableFilter;
+  /** Filter by the object’s `profileTemplatesTable` relation. */
+  profileTemplatesTable?: TableFilter;
   /** Filter by the object’s `schema` relation. */
   schema?: SchemaFilter;
   /** Filter by the object’s `table` relation. */
@@ -8486,50 +9020,6 @@ export interface SessionsModuleFilter {
   sessionsTableBySessionsTableId?: TableFilter;
   /** Filter by the object’s `usersTable` relation. */
   usersTable?: TableFilter;
-}
-/** A filter to be used against Interval fields. All fields are combined with a logical ‘and.’ */
-export interface IntervalFilter {
-  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
-  isNull?: boolean;
-  /** Equal to the specified value. */
-  equalTo?: IntervalInput;
-  /** Not equal to the specified value. */
-  notEqualTo?: IntervalInput;
-  /** Not equal to the specified value, treating null like an ordinary value. */
-  distinctFrom?: IntervalInput;
-  /** Equal to the specified value, treating null like an ordinary value. */
-  notDistinctFrom?: IntervalInput;
-  /** Included in the specified list. */
-  in?: IntervalInput[];
-  /** Not included in the specified list. */
-  notIn?: IntervalInput[];
-  /** Less than the specified value. */
-  lessThan?: IntervalInput;
-  /** Less than or equal to the specified value. */
-  lessThanOrEqualTo?: IntervalInput;
-  /** Greater than the specified value. */
-  greaterThan?: IntervalInput;
-  /** Greater than or equal to the specified value. */
-  greaterThanOrEqualTo?: IntervalInput;
-}
-/** An interval of time that has passed where the smallest distinct unit is a second. */
-export interface IntervalInput {
-  /**
-   * A quantity of seconds. This is the only non-integer field, as all the other
-   * fields will dump their overflow into a smaller unit of time. Intervals don’t
-   * have a smaller unit than seconds.
-   */
-  seconds?: number;
-  /** A quantity of minutes. */
-  minutes?: number;
-  /** A quantity of hours. */
-  hours?: number;
-  /** A quantity of days. */
-  days?: number;
-  /** A quantity of months. */
-  months?: number;
-  /** A quantity of years. */
-  years?: number;
 }
 /** A filter to be used against many `UserAuthModule` object types. All fields are combined with a logical ‘and.’ */
 export interface DatabaseToManyUserAuthModuleFilter {
@@ -8947,14 +9437,10 @@ export interface StorageModuleFilter {
   bucketsTableId?: UUIDFilter;
   /** Filter by the object’s `filesTableId` field. */
   filesTableId?: UUIDFilter;
-  /** Filter by the object’s `uploadRequestsTableId` field. */
-  uploadRequestsTableId?: UUIDFilter;
   /** Filter by the object’s `bucketsTableName` field. */
   bucketsTableName?: StringFilter;
   /** Filter by the object’s `filesTableName` field. */
   filesTableName?: StringFilter;
-  /** Filter by the object’s `uploadRequestsTableName` field. */
-  uploadRequestsTableName?: StringFilter;
   /** Filter by the object’s `membershipType` field. */
   membershipType?: IntFilter;
   /** Filter by the object’s `policies` field. */
@@ -8971,6 +9457,8 @@ export interface StorageModuleFilter {
   provider?: StringFilter;
   /** Filter by the object’s `allowedOrigins` field. */
   allowedOrigins?: StringListFilter;
+  /** Filter by the object’s `restrictReads` field. */
+  restrictReads?: BooleanFilter;
   /** Filter by the object’s `uploadUrlExpirySeconds` field. */
   uploadUrlExpirySeconds?: IntFilter;
   /** Filter by the object’s `downloadUrlExpirySeconds` field. */
@@ -9001,8 +9489,6 @@ export interface StorageModuleFilter {
   privateSchema?: SchemaFilter;
   /** Filter by the object’s `schema` relation. */
   schema?: SchemaFilter;
-  /** Filter by the object’s `uploadRequestsTable` relation. */
-  uploadRequestsTable?: TableFilter;
 }
 /** A filter to be used against many `EntityTypeProvision` object types. All fields are combined with a logical ‘and.’ */
 export interface DatabaseToManyEntityTypeProvisionFilter {
@@ -9350,6 +9836,98 @@ export interface NotificationsModuleFilter {
   /** A related `userSettingsTableByUserSettingsTableId` exists. */
   userSettingsTableByUserSettingsTableIdExists?: boolean;
 }
+/** A filter to be used against `PlansModule` object types. All fields are combined with a logical ‘and.’ */
+export interface PlansModuleFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `databaseId` field. */
+  databaseId?: UUIDFilter;
+  /** Filter by the object’s `schemaId` field. */
+  schemaId?: UUIDFilter;
+  /** Filter by the object’s `privateSchemaId` field. */
+  privateSchemaId?: UUIDFilter;
+  /** Filter by the object’s `plansTableId` field. */
+  plansTableId?: UUIDFilter;
+  /** Filter by the object’s `plansTableName` field. */
+  plansTableName?: StringFilter;
+  /** Filter by the object’s `planLimitsTableId` field. */
+  planLimitsTableId?: UUIDFilter;
+  /** Filter by the object’s `planLimitsTableName` field. */
+  planLimitsTableName?: StringFilter;
+  /** Filter by the object’s `applyPlanFunction` field. */
+  applyPlanFunction?: StringFilter;
+  /** Filter by the object’s `applyPlanAggregateFunction` field. */
+  applyPlanAggregateFunction?: StringFilter;
+  /** Filter by the object’s `prefix` field. */
+  prefix?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: PlansModuleFilter[];
+  /** Checks for any expressions in this list. */
+  or?: PlansModuleFilter[];
+  /** Negates the expression. */
+  not?: PlansModuleFilter;
+  /** Filter by the object’s `database` relation. */
+  database?: DatabaseFilter;
+  /** Filter by the object’s `planLimitsTable` relation. */
+  planLimitsTable?: TableFilter;
+  /** Filter by the object’s `plansTable` relation. */
+  plansTable?: TableFilter;
+  /** Filter by the object’s `privateSchema` relation. */
+  privateSchema?: SchemaFilter;
+  /** Filter by the object’s `schema` relation. */
+  schema?: SchemaFilter;
+}
+/** A filter to be used against `BillingModule` object types. All fields are combined with a logical ‘and.’ */
+export interface BillingModuleFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `databaseId` field. */
+  databaseId?: UUIDFilter;
+  /** Filter by the object’s `schemaId` field. */
+  schemaId?: UUIDFilter;
+  /** Filter by the object’s `privateSchemaId` field. */
+  privateSchemaId?: UUIDFilter;
+  /** Filter by the object’s `metersTableId` field. */
+  metersTableId?: UUIDFilter;
+  /** Filter by the object’s `metersTableName` field. */
+  metersTableName?: StringFilter;
+  /** Filter by the object’s `planSubscriptionsTableId` field. */
+  planSubscriptionsTableId?: UUIDFilter;
+  /** Filter by the object’s `planSubscriptionsTableName` field. */
+  planSubscriptionsTableName?: StringFilter;
+  /** Filter by the object’s `ledgerTableId` field. */
+  ledgerTableId?: UUIDFilter;
+  /** Filter by the object’s `ledgerTableName` field. */
+  ledgerTableName?: StringFilter;
+  /** Filter by the object’s `balancesTableId` field. */
+  balancesTableId?: UUIDFilter;
+  /** Filter by the object’s `balancesTableName` field. */
+  balancesTableName?: StringFilter;
+  /** Filter by the object’s `recordUsageFunction` field. */
+  recordUsageFunction?: StringFilter;
+  /** Filter by the object’s `prefix` field. */
+  prefix?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: BillingModuleFilter[];
+  /** Checks for any expressions in this list. */
+  or?: BillingModuleFilter[];
+  /** Negates the expression. */
+  not?: BillingModuleFilter;
+  /** Filter by the object’s `balancesTable` relation. */
+  balancesTable?: TableFilter;
+  /** Filter by the object’s `database` relation. */
+  database?: DatabaseFilter;
+  /** Filter by the object’s `ledgerTable` relation. */
+  ledgerTable?: TableFilter;
+  /** Filter by the object’s `metersTable` relation. */
+  metersTable?: TableFilter;
+  /** Filter by the object’s `planSubscriptionsTable` relation. */
+  planSubscriptionsTable?: TableFilter;
+  /** Filter by the object’s `privateSchema` relation. */
+  privateSchema?: SchemaFilter;
+  /** Filter by the object’s `schema` relation. */
+  schema?: SchemaFilter;
+}
 /** A filter to be used against many `DatabaseProvisionModule` object types. All fields are combined with a logical ‘and.’ */
 export interface DatabaseToManyDatabaseProvisionModuleFilter {
   /** Filters to entities where at least one related entity matches. */
@@ -9399,19 +9977,6 @@ export interface DatabaseProvisionModuleFilter {
   database?: DatabaseFilter;
   /** A related `database` exists. */
   databaseExists?: boolean;
-}
-/** A filter to be used against `AppPermissionDefault` object types. All fields are combined with a logical ‘and.’ */
-export interface AppPermissionDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `permissions` field. */
-  permissions?: BitStringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppPermissionDefaultFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppPermissionDefaultFilter[];
-  /** Negates the expression. */
-  not?: AppPermissionDefaultFilter;
 }
 /** A filter to be used against `IdentityProvider` object types. All fields are combined with a logical ‘and.’ */
 export interface IdentityProviderFilter {
@@ -9470,6 +10035,78 @@ export interface StoreFilter {
   /** Negates the expression. */
   not?: StoreFilter;
 }
+/** A filter to be used against `AppPermissionDefault` object types. All fields are combined with a logical ‘and.’ */
+export interface AppPermissionDefaultFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `permissions` field. */
+  permissions?: BitStringFilter;
+  /** Checks for all expressions in this list. */
+  and?: AppPermissionDefaultFilter[];
+  /** Checks for any expressions in this list. */
+  or?: AppPermissionDefaultFilter[];
+  /** Negates the expression. */
+  not?: AppPermissionDefaultFilter;
+}
+/** A filter to be used against `AppPermission` object types. All fields are combined with a logical ‘and.’ */
+export interface AppPermissionFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `bitnum` field. */
+  bitnum?: IntFilter;
+  /** Filter by the object’s `bitstr` field. */
+  bitstr?: BitStringFilter;
+  /** Filter by the object’s `description` field. */
+  description?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: AppPermissionFilter[];
+  /** Checks for any expressions in this list. */
+  or?: AppPermissionFilter[];
+  /** Negates the expression. */
+  not?: AppPermissionFilter;
+}
+/** A filter to be used against `OrgPermission` object types. All fields are combined with a logical ‘and.’ */
+export interface OrgPermissionFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `bitnum` field. */
+  bitnum?: IntFilter;
+  /** Filter by the object’s `bitstr` field. */
+  bitstr?: BitStringFilter;
+  /** Filter by the object’s `description` field. */
+  description?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: OrgPermissionFilter[];
+  /** Checks for any expressions in this list. */
+  or?: OrgPermissionFilter[];
+  /** Negates the expression. */
+  not?: OrgPermissionFilter;
+}
+/** A filter to be used against `MembershipType` object types. All fields are combined with a logical ‘and.’ */
+export interface MembershipTypeFilter {
+  /** Filter by the object’s `id` field. */
+  id?: IntFilter;
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `description` field. */
+  description?: StringFilter;
+  /** Filter by the object’s `prefix` field. */
+  prefix?: StringFilter;
+  /** Filter by the object’s `parentMembershipType` field. */
+  parentMembershipType?: IntFilter;
+  /** Filter by the object’s `hasUsersTableEntry` field. */
+  hasUsersTableEntry?: BooleanFilter;
+  /** Checks for all expressions in this list. */
+  and?: MembershipTypeFilter[];
+  /** Checks for any expressions in this list. */
+  or?: MembershipTypeFilter[];
+  /** Negates the expression. */
+  not?: MembershipTypeFilter;
+}
 /** A filter to be used against `MigrateFile` object types. All fields are combined with a logical ‘and.’ */
 export interface MigrateFileFilter {
   /** Filter by the object’s `id` field. */
@@ -9520,6 +10157,29 @@ export interface ConstructiveInternalTypeUploadFilter {
   /** Contained by the specified JSON. */
   containedBy?: ConstructiveInternalTypeUpload;
 }
+/** A filter to be used against `NodeTypeRegistry` object types. All fields are combined with a logical ‘and.’ */
+export interface NodeTypeRegistryFilter {
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `slug` field. */
+  slug?: StringFilter;
+  /** Filter by the object’s `category` field. */
+  category?: StringFilter;
+  /** Filter by the object’s `displayName` field. */
+  displayName?: StringFilter;
+  /** Filter by the object’s `description` field. */
+  description?: StringFilter;
+  /** Filter by the object’s `parameterSchema` field. */
+  parameterSchema?: JSONFilter;
+  /** Filter by the object’s `tags` field. */
+  tags?: StringListFilter;
+  /** Checks for all expressions in this list. */
+  and?: NodeTypeRegistryFilter[];
+  /** Checks for any expressions in this list. */
+  or?: NodeTypeRegistryFilter[];
+  /** Negates the expression. */
+  not?: NodeTypeRegistryFilter;
+}
 /** A filter to be used against `AppLimitDefault` object types. All fields are combined with a logical ‘and.’ */
 export interface AppLimitDefaultFilter {
   /** Filter by the object’s `id` field. */
@@ -9527,7 +10187,9 @@ export interface AppLimitDefaultFilter {
   /** Filter by the object’s `name` field. */
   name?: StringFilter;
   /** Filter by the object’s `max` field. */
-  max?: IntFilter;
+  max?: BigIntFilter;
+  /** Filter by the object’s `softMax` field. */
+  softMax?: BigIntFilter;
   /** Checks for all expressions in this list. */
   and?: AppLimitDefaultFilter[];
   /** Checks for any expressions in this list. */
@@ -9542,7 +10204,9 @@ export interface OrgLimitDefaultFilter {
   /** Filter by the object’s `name` field. */
   name?: StringFilter;
   /** Filter by the object’s `max` field. */
-  max?: IntFilter;
+  max?: BigIntFilter;
+  /** Filter by the object’s `softMax` field. */
+  softMax?: BigIntFilter;
   /** Checks for all expressions in this list. */
   and?: OrgLimitDefaultFilter[];
   /** Checks for any expressions in this list. */
@@ -9598,66 +10262,30 @@ export interface ObjectFilter {
   /** Negates the expression. */
   not?: ObjectFilter;
 }
-/** A filter to be used against `AppPermission` object types. All fields are combined with a logical ‘and.’ */
-export interface AppPermissionFilter {
+/** A filter to be used against `AppLevelRequirement` object types. All fields are combined with a logical ‘and.’ */
+export interface AppLevelRequirementFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
   /** Filter by the object’s `name` field. */
   name?: StringFilter;
-  /** Filter by the object’s `bitnum` field. */
-  bitnum?: IntFilter;
-  /** Filter by the object’s `bitstr` field. */
-  bitstr?: BitStringFilter;
+  /** Filter by the object’s `level` field. */
+  level?: StringFilter;
   /** Filter by the object’s `description` field. */
   description?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppPermissionFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppPermissionFilter[];
-  /** Negates the expression. */
-  not?: AppPermissionFilter;
-}
-/** A filter to be used against `OrgPermission` object types. All fields are combined with a logical ‘and.’ */
-export interface OrgPermissionFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `bitnum` field. */
-  bitnum?: IntFilter;
-  /** Filter by the object’s `bitstr` field. */
-  bitstr?: BitStringFilter;
-  /** Filter by the object’s `description` field. */
-  description?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgPermissionFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgPermissionFilter[];
-  /** Negates the expression. */
-  not?: OrgPermissionFilter;
-}
-/** A filter to be used against `AppMembershipDefault` object types. All fields are combined with a logical ‘and.’ */
-export interface AppMembershipDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
+  /** Filter by the object’s `requiredCount` field. */
+  requiredCount?: IntFilter;
+  /** Filter by the object’s `priority` field. */
+  priority?: IntFilter;
   /** Filter by the object’s `createdAt` field. */
   createdAt?: DatetimeFilter;
   /** Filter by the object’s `updatedAt` field. */
   updatedAt?: DatetimeFilter;
-  /** Filter by the object’s `createdBy` field. */
-  createdBy?: UUIDFilter;
-  /** Filter by the object’s `updatedBy` field. */
-  updatedBy?: UUIDFilter;
-  /** Filter by the object’s `isApproved` field. */
-  isApproved?: BooleanFilter;
-  /** Filter by the object’s `isVerified` field. */
-  isVerified?: BooleanFilter;
   /** Checks for all expressions in this list. */
-  and?: AppMembershipDefaultFilter[];
+  and?: AppLevelRequirementFilter[];
   /** Checks for any expressions in this list. */
-  or?: AppMembershipDefaultFilter[];
+  or?: AppLevelRequirementFilter[];
   /** Negates the expression. */
-  not?: AppMembershipDefaultFilter;
+  not?: AppLevelRequirementFilter;
 }
 /** A filter to be used against `Commit` object types. All fields are combined with a logical ‘and.’ */
 export interface CommitFilter {
@@ -9686,51 +10314,82 @@ export interface CommitFilter {
   /** Negates the expression. */
   not?: CommitFilter;
 }
-/** A filter to be used against `MembershipType` object types. All fields are combined with a logical ‘and.’ */
-export interface MembershipTypeFilter {
-  /** Filter by the object’s `id` field. */
-  id?: IntFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `description` field. */
-  description?: StringFilter;
-  /** Filter by the object’s `prefix` field. */
-  prefix?: StringFilter;
-  /** Filter by the object’s `parentMembershipType` field. */
-  parentMembershipType?: IntFilter;
-  /** Filter by the object’s `hasUsersTableEntry` field. */
-  hasUsersTableEntry?: BooleanFilter;
-  /** Checks for all expressions in this list. */
-  and?: MembershipTypeFilter[];
-  /** Checks for any expressions in this list. */
-  or?: MembershipTypeFilter[];
-  /** Negates the expression. */
-  not?: MembershipTypeFilter;
-}
-/** A filter to be used against `AppLevelRequirement` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLevelRequirementFilter {
+/** A filter to be used against `AppMembershipDefault` object types. All fields are combined with a logical ‘and.’ */
+export interface AppMembershipDefaultFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `level` field. */
-  level?: StringFilter;
-  /** Filter by the object’s `description` field. */
-  description?: StringFilter;
-  /** Filter by the object’s `requiredCount` field. */
-  requiredCount?: IntFilter;
-  /** Filter by the object’s `priority` field. */
-  priority?: IntFilter;
   /** Filter by the object’s `createdAt` field. */
   createdAt?: DatetimeFilter;
   /** Filter by the object’s `updatedAt` field. */
   updatedAt?: DatetimeFilter;
+  /** Filter by the object’s `createdBy` field. */
+  createdBy?: UUIDFilter;
+  /** Filter by the object’s `updatedBy` field. */
+  updatedBy?: UUIDFilter;
+  /** Filter by the object’s `isApproved` field. */
+  isApproved?: BooleanFilter;
+  /** Filter by the object’s `isVerified` field. */
+  isVerified?: BooleanFilter;
   /** Checks for all expressions in this list. */
-  and?: AppLevelRequirementFilter[];
+  and?: AppMembershipDefaultFilter[];
   /** Checks for any expressions in this list. */
-  or?: AppLevelRequirementFilter[];
+  or?: AppMembershipDefaultFilter[];
   /** Negates the expression. */
-  not?: AppLevelRequirementFilter;
+  not?: AppMembershipDefaultFilter;
+}
+/** A filter to be used against `AppLimitEvent` object types. All fields are combined with a logical ‘and.’ */
+export interface AppLimitEventFilter {
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `actorId` field. */
+  actorId?: UUIDFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Filter by the object’s `eventType` field. */
+  eventType?: StringFilter;
+  /** Filter by the object’s `delta` field. */
+  delta?: BigIntFilter;
+  /** Filter by the object’s `numBefore` field. */
+  numBefore?: BigIntFilter;
+  /** Filter by the object’s `numAfter` field. */
+  numAfter?: BigIntFilter;
+  /** Filter by the object’s `maxAtEvent` field. */
+  maxAtEvent?: BigIntFilter;
+  /** Filter by the object’s `reason` field. */
+  reason?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: AppLimitEventFilter[];
+  /** Checks for any expressions in this list. */
+  or?: AppLimitEventFilter[];
+  /** Negates the expression. */
+  not?: AppLimitEventFilter;
+}
+/** A filter to be used against `OrgLimitEvent` object types. All fields are combined with a logical ‘and.’ */
+export interface OrgLimitEventFilter {
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `actorId` field. */
+  actorId?: UUIDFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Filter by the object’s `eventType` field. */
+  eventType?: StringFilter;
+  /** Filter by the object’s `delta` field. */
+  delta?: BigIntFilter;
+  /** Filter by the object’s `numBefore` field. */
+  numBefore?: BigIntFilter;
+  /** Filter by the object’s `numAfter` field. */
+  numAfter?: BigIntFilter;
+  /** Filter by the object’s `maxAtEvent` field. */
+  maxAtEvent?: BigIntFilter;
+  /** Filter by the object’s `reason` field. */
+  reason?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: OrgLimitEventFilter[];
+  /** Checks for any expressions in this list. */
+  or?: OrgLimitEventFilter[];
+  /** Negates the expression. */
+  not?: OrgLimitEventFilter;
 }
 /** A filter to be used against `SqlAction` object types. All fields are combined with a logical ‘and.’ */
 export interface SqlActionFilter {
@@ -10057,6 +10716,14 @@ export interface CreateApiKeyInput {
   mfaLevel?: string;
   expiresIn?: IntervalInput;
 }
+export interface SendVerificationEmailInput {
+  clientMutationId?: string;
+  email?: ConstructiveInternalTypeEmail;
+}
+export interface ForgotPasswordInput {
+  clientMutationId?: string;
+  email?: ConstructiveInternalTypeEmail;
+}
 export interface SignUpInput {
   clientMutationId?: string;
   email?: string;
@@ -10097,14 +10764,6 @@ export interface ProvisionTableInput {
   uniqueConstraints?: unknown;
   description?: string;
 }
-export interface SendVerificationEmailInput {
-  clientMutationId?: string;
-  email?: ConstructiveInternalTypeEmail;
-}
-export interface ForgotPasswordInput {
-  clientMutationId?: string;
-  email?: ConstructiveInternalTypeEmail;
-}
 export interface CreateDefaultIdsModuleInput {
   clientMutationId?: string;
   /** The `DefaultIdsModule` to be created by this mutation. */
@@ -10114,6 +10773,16 @@ export interface CreateDefaultIdsModuleInput {
 export interface DefaultIdsModuleInput {
   id?: string;
   databaseId: string;
+}
+export interface CreateRoleTypeInput {
+  clientMutationId?: string;
+  /** The `RoleType` to be created by this mutation. */
+  roleType: RoleTypeInput;
+}
+/** An input for mutations affecting `RoleType` */
+export interface RoleTypeInput {
+  id: number;
+  name: string;
 }
 export interface CreateViewTableInput {
   clientMutationId?: string;
@@ -10143,22 +10812,6 @@ export interface ApiSchemaInput {
   /** API that exposes this schema */
   apiId: string;
 }
-export interface CreateSiteThemeInput {
-  clientMutationId?: string;
-  /** The `SiteTheme` to be created by this mutation. */
-  siteTheme: SiteThemeInput;
-}
-/** An input for mutations affecting `SiteTheme` */
-export interface SiteThemeInput {
-  /** Unique identifier for this theme record */
-  id?: string;
-  /** Reference to the metaschema database */
-  databaseId: string;
-  /** Site this theme belongs to */
-  siteId: string;
-  /** JSONB object containing theme tokens (colors, typography, spacing, etc.) */
-  theme: unknown;
-}
 export interface CreateOrgMemberInput {
   clientMutationId?: string;
   /** The `OrgMember` to be created by this mutation. */
@@ -10174,16 +10827,21 @@ export interface OrgMemberInput {
   /** References the entity (org or group) this member belongs to */
   entityId: string;
 }
-export interface CreateAppPermissionDefaultInput {
+export interface CreateSiteThemeInput {
   clientMutationId?: string;
-  /** The `AppPermissionDefault` to be created by this mutation. */
-  appPermissionDefault: AppPermissionDefaultInput;
+  /** The `SiteTheme` to be created by this mutation. */
+  siteTheme: SiteThemeInput;
 }
-/** An input for mutations affecting `AppPermissionDefault` */
-export interface AppPermissionDefaultInput {
+/** An input for mutations affecting `SiteTheme` */
+export interface SiteThemeInput {
+  /** Unique identifier for this theme record */
   id?: string;
-  /** Default permission bitmask applied to new members */
-  permissions?: string;
+  /** Reference to the metaschema database */
+  databaseId: string;
+  /** Site this theme belongs to */
+  siteId: string;
+  /** JSONB object containing theme tokens (colors, typography, spacing, etc.) */
+  theme: unknown;
 }
 export interface CreateIdentityProviderInput {
   clientMutationId?: string;
@@ -10230,42 +10888,6 @@ export interface StoreInput {
   hash?: string;
   createdAt?: string;
 }
-export interface CreateApiModuleInput {
-  clientMutationId?: string;
-  /** The `ApiModule` to be created by this mutation. */
-  apiModule: ApiModuleInput;
-}
-/** An input for mutations affecting `ApiModule` */
-export interface ApiModuleInput {
-  /** Unique identifier for this API module record */
-  id?: string;
-  /** Reference to the metaschema database */
-  databaseId: string;
-  /** API this module configuration belongs to */
-  apiId: string;
-  /** Module name (e.g. auth, uploads, webhooks) */
-  name: string;
-  /** JSON configuration data for this module */
-  data: unknown;
-}
-export interface CreateSiteModuleInput {
-  clientMutationId?: string;
-  /** The `SiteModule` to be created by this mutation. */
-  siteModule: SiteModuleInput;
-}
-/** An input for mutations affecting `SiteModule` */
-export interface SiteModuleInput {
-  /** Unique identifier for this site module record */
-  id?: string;
-  /** Reference to the metaschema database */
-  databaseId: string;
-  /** Site this module configuration belongs to */
-  siteId: string;
-  /** Module name (e.g. user_auth_module, analytics) */
-  name: string;
-  /** JSON configuration data for this module */
-  data: unknown;
-}
 export interface CreateEncryptedSecretsModuleInput {
   clientMutationId?: string;
   /** The `EncryptedSecretsModule` to be created by this mutation. */
@@ -10305,28 +10927,52 @@ export interface SecretsModuleInput {
   tableId?: string;
   tableName?: string;
 }
-export interface CreateRoleTypeInput {
+export interface CreateAppPermissionDefaultInput {
   clientMutationId?: string;
-  /** The `RoleType` to be created by this mutation. */
-  roleType: RoleTypeInput;
+  /** The `AppPermissionDefault` to be created by this mutation. */
+  appPermissionDefault: AppPermissionDefaultInput;
 }
-/** An input for mutations affecting `RoleType` */
-export interface RoleTypeInput {
-  id: number;
-  name: string;
-}
-export interface CreateOrgPermissionDefaultInput {
-  clientMutationId?: string;
-  /** The `OrgPermissionDefault` to be created by this mutation. */
-  orgPermissionDefault: OrgPermissionDefaultInput;
-}
-/** An input for mutations affecting `OrgPermissionDefault` */
-export interface OrgPermissionDefaultInput {
+/** An input for mutations affecting `AppPermissionDefault` */
+export interface AppPermissionDefaultInput {
   id?: string;
   /** Default permission bitmask applied to new members */
   permissions?: string;
-  /** References the entity these default permissions apply to */
-  entityId: string;
+}
+export interface CreateApiModuleInput {
+  clientMutationId?: string;
+  /** The `ApiModule` to be created by this mutation. */
+  apiModule: ApiModuleInput;
+}
+/** An input for mutations affecting `ApiModule` */
+export interface ApiModuleInput {
+  /** Unique identifier for this API module record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId: string;
+  /** API this module configuration belongs to */
+  apiId: string;
+  /** Module name (e.g. auth, uploads, webhooks) */
+  name: string;
+  /** JSON configuration data for this module */
+  data: unknown;
+}
+export interface CreateSiteModuleInput {
+  clientMutationId?: string;
+  /** The `SiteModule` to be created by this mutation. */
+  siteModule: SiteModuleInput;
+}
+/** An input for mutations affecting `SiteModule` */
+export interface SiteModuleInput {
+  /** Unique identifier for this site module record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId: string;
+  /** Site this module configuration belongs to */
+  siteId: string;
+  /** Module name (e.g. user_auth_module, analytics) */
+  name: string;
+  /** JSON configuration data for this module */
+  data: unknown;
 }
 export interface CreateSchemaGrantInput {
   clientMutationId?: string;
@@ -10434,6 +11080,105 @@ export interface AppOwnerGrantInput {
   createdAt?: string;
   updatedAt?: string;
 }
+export interface CreateAppAchievementInput {
+  clientMutationId?: string;
+  /** The `AppAchievement` to be created by this mutation. */
+  appAchievement: AppAchievementInput;
+}
+/** An input for mutations affecting `AppAchievement` */
+export interface AppAchievementInput {
+  id?: string;
+  actorId?: string;
+  /** Name identifier of the level requirement being tracked */
+  name: string;
+  /** Cumulative count of completed steps toward this requirement */
+  count?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface CreateAppStepInput {
+  clientMutationId?: string;
+  /** The `AppStep` to be created by this mutation. */
+  appStep: AppStepInput;
+}
+/** An input for mutations affecting `AppStep` */
+export interface AppStepInput {
+  id?: string;
+  actorId?: string;
+  /** Name identifier of the level requirement this step fulfills */
+  name: string;
+  /** Number of units completed in this step action */
+  count?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface CreateOrgPermissionDefaultInput {
+  clientMutationId?: string;
+  /** The `OrgPermissionDefault` to be created by this mutation. */
+  orgPermissionDefault: OrgPermissionDefaultInput;
+}
+/** An input for mutations affecting `OrgPermissionDefault` */
+export interface OrgPermissionDefaultInput {
+  id?: string;
+  /** Default permission bitmask applied to new members */
+  permissions?: string;
+  /** References the entity these default permissions apply to */
+  entityId: string;
+}
+export interface CreateAppPermissionInput {
+  clientMutationId?: string;
+  /** The `AppPermission` to be created by this mutation. */
+  appPermission: AppPermissionInput;
+}
+/** An input for mutations affecting `AppPermission` */
+export interface AppPermissionInput {
+  id?: string;
+  /** Human-readable permission name (e.g. read, write, manage) */
+  name?: string;
+  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
+  bitnum?: number;
+  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
+  bitstr?: string;
+  /** Human-readable description of what this permission allows */
+  description?: string;
+}
+export interface CreateOrgPermissionInput {
+  clientMutationId?: string;
+  /** The `OrgPermission` to be created by this mutation. */
+  orgPermission: OrgPermissionInput;
+}
+/** An input for mutations affecting `OrgPermission` */
+export interface OrgPermissionInput {
+  id?: string;
+  /** Human-readable permission name (e.g. read, write, manage) */
+  name?: string;
+  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
+  bitnum?: number;
+  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
+  bitstr?: string;
+  /** Human-readable description of what this permission allows */
+  description?: string;
+}
+export interface CreateMembershipTypeInput {
+  clientMutationId?: string;
+  /** The `MembershipType` to be created by this mutation. */
+  membershipType: MembershipTypeInput;
+}
+/** An input for mutations affecting `MembershipType` */
+export interface MembershipTypeInput {
+  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
+  id: number;
+  /** Human-readable name of the membership type */
+  name: string;
+  /** Description of what this membership type represents */
+  description: string;
+  /** Short prefix used to namespace tables and functions for this membership scope */
+  prefix: string;
+  /** Parent membership type ID for SPRT cascade chain (e.g. type 2 parent=1, type 3 parent=2) */
+  parentMembershipType?: number;
+  /** When true, entities of this membership type get a one-to-one ID in the users table and a corresponding role_type entry, enabling them to own resources via owner_id FKs */
+  hasUsersTableEntry?: boolean;
+}
 export interface CreateMigrateFileInput {
   clientMutationId?: string;
   /** The `MigrateFile` to be created by this mutation. */
@@ -10444,32 +11189,6 @@ export interface MigrateFileInput {
   id?: string;
   databaseId?: string;
   upload?: ConstructiveInternalTypeUpload;
-}
-export interface CreateAppLimitDefaultInput {
-  clientMutationId?: string;
-  /** The `AppLimitDefault` to be created by this mutation. */
-  appLimitDefault: AppLimitDefaultInput;
-}
-/** An input for mutations affecting `AppLimitDefault` */
-export interface AppLimitDefaultInput {
-  id?: string;
-  /** Name identifier of the limit this default applies to */
-  name: string;
-  /** Default maximum usage allowed for this limit */
-  max?: number;
-}
-export interface CreateOrgLimitDefaultInput {
-  clientMutationId?: string;
-  /** The `OrgLimitDefault` to be created by this mutation. */
-  orgLimitDefault: OrgLimitDefaultInput;
-}
-/** An input for mutations affecting `OrgLimitDefault` */
-export interface OrgLimitDefaultInput {
-  id?: string;
-  /** Name identifier of the limit this default applies to */
-  name: string;
-  /** Default maximum usage allowed for this limit */
-  max?: number;
 }
 export interface CreateDefaultPrivilegeInput {
   clientMutationId?: string;
@@ -10650,6 +11369,51 @@ export interface OrgOwnerGrantInput {
   createdAt?: string;
   updatedAt?: string;
 }
+export interface CreateNodeTypeRegistryInput {
+  clientMutationId?: string;
+  /** The `NodeTypeRegistry` to be created by this mutation. */
+  nodeTypeRegistry: NodeTypeRegistryInput;
+}
+/** An input for mutations affecting `NodeTypeRegistry` */
+export interface NodeTypeRegistryInput {
+  name: string;
+  slug: string;
+  category: string;
+  displayName?: string;
+  description?: string;
+  parameterSchema?: unknown;
+  tags?: string[];
+}
+export interface CreateAppLimitDefaultInput {
+  clientMutationId?: string;
+  /** The `AppLimitDefault` to be created by this mutation. */
+  appLimitDefault: AppLimitDefaultInput;
+}
+/** An input for mutations affecting `AppLimitDefault` */
+export interface AppLimitDefaultInput {
+  id?: string;
+  /** Name identifier of the limit this default applies to */
+  name: string;
+  /** Default maximum usage allowed for this limit */
+  max?: string;
+  /** Default soft limit threshold for warnings; NULL means no soft limit */
+  softMax?: string;
+}
+export interface CreateOrgLimitDefaultInput {
+  clientMutationId?: string;
+  /** The `OrgLimitDefault` to be created by this mutation. */
+  orgLimitDefault: OrgLimitDefaultInput;
+}
+/** An input for mutations affecting `OrgLimitDefault` */
+export interface OrgLimitDefaultInput {
+  id?: string;
+  /** Name identifier of the limit this default applies to */
+  name: string;
+  /** Default maximum usage allowed for this limit */
+  max?: string;
+  /** Default soft limit threshold for warnings; NULL means no soft limit */
+  softMax?: string;
+}
 export interface CreateUserConnectedAccountInput {
   clientMutationId?: string;
   /** The `UserConnectedAccount` to be created by this mutation. */
@@ -10665,21 +11429,6 @@ export interface UserConnectedAccountInput {
   isVerified?: boolean;
   createdAt?: string;
   updatedAt?: string;
-}
-export interface CreateObjectInput {
-  clientMutationId?: string;
-  /** The `Object` to be created by this mutation. */
-  object: ObjectInput;
-}
-/** An input for mutations affecting `Object` */
-export interface ObjectInput {
-  id: string;
-  databaseId: string;
-  kids?: string[];
-  ktree?: string[];
-  data?: unknown;
-  frzn?: boolean;
-  createdAt?: string;
 }
 export interface CreateDatabaseInput {
   clientMutationId?: string;
@@ -10733,88 +11482,43 @@ export interface CryptoAddressInput {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface CreateAppPermissionInput {
+export interface CreateAgentMessageInput {
   clientMutationId?: string;
-  /** The `AppPermission` to be created by this mutation. */
-  appPermission: AppPermissionInput;
+  /** The `AgentMessage` to be created by this mutation. */
+  agentMessage: AgentMessageInput;
 }
-/** An input for mutations affecting `AppPermission` */
-export interface AppPermissionInput {
+/** An input for mutations affecting `AgentMessage` */
+export interface AgentMessageInput {
+  /** Foreign key to agent_thread. Required; the FK constraint and cascade-delete behaviour are declared in the blueprint's relations[]. Declared explicitly in fields[] (rather than left for RelationBelongsTo to create) so that the DataInheritFromParent generator can validate this field exists when it provisions the entity_id-inheritance trigger. */
+  threadId: string;
+  /** Entity (org/group/personal-org id) this message is filed under. Populated automatically by the DataInheritFromParent BEFORE INSERT trigger, which copies it from agent_thread.entity_id via thread_id; the application never sets this column directly. Used for org-scoped grouping queries (e.g. 'all my messages in org X'), NOT for RLS — RLS is owner-only. */
+  entityId: string;
+  /** Who authored this message: 'user' or 'assistant'. Stored as free-text (no CHECK) so additional roles can be introduced without migration. Tool inputs/outputs do NOT get their own role — they appear as ToolPart entries inside the assistant message's `parts` array. */
+  authorRole: string;
   id?: string;
-  /** Human-readable permission name (e.g. read, write, manage) */
-  name?: string;
-  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
-  bitnum?: number;
-  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
-  bitstr?: string;
-  /** Human-readable description of what this permission allows */
-  description?: string;
-}
-export interface CreateOrgPermissionInput {
-  clientMutationId?: string;
-  /** The `OrgPermission` to be created by this mutation. */
-  orgPermission: OrgPermissionInput;
-}
-/** An input for mutations affecting `OrgPermission` */
-export interface OrgPermissionInput {
-  id?: string;
-  /** Human-readable permission name (e.g. read, write, manage) */
-  name?: string;
-  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
-  bitnum?: number;
-  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
-  bitstr?: string;
-  /** Human-readable description of what this permission allows */
-  description?: string;
-}
-export interface CreateAppLimitInput {
-  clientMutationId?: string;
-  /** The `AppLimit` to be created by this mutation. */
-  appLimit: AppLimitInput;
-}
-/** An input for mutations affecting `AppLimit` */
-export interface AppLimitInput {
-  id?: string;
-  /** Name identifier of the limit being tracked */
-  name?: string;
-  /** User whose usage is being tracked against this limit */
-  actorId: string;
-  /** Current usage count for this actor and limit */
-  num?: number;
-  /** Maximum allowed usage; NULL means use the default limit value */
-  max?: number;
-}
-export interface CreateAppAchievementInput {
-  clientMutationId?: string;
-  /** The `AppAchievement` to be created by this mutation. */
-  appAchievement: AppAchievementInput;
-}
-/** An input for mutations affecting `AppAchievement` */
-export interface AppAchievementInput {
-  id?: string;
-  actorId?: string;
-  /** Name identifier of the level requirement being tracked */
-  name: string;
-  /** Cumulative count of completed steps toward this requirement */
-  count?: number;
+  /** Timestamp when this record was created */
   createdAt?: string;
+  /** Timestamp when this record was last updated */
   updatedAt?: string;
+  /** User who owns this record */
+  ownerId?: string;
+  /** JSON metadata for extensible key-value storage */
+  parts?: unknown;
 }
-export interface CreateAppStepInput {
+export interface CreateObjectInput {
   clientMutationId?: string;
-  /** The `AppStep` to be created by this mutation. */
-  appStep: AppStepInput;
+  /** The `Object` to be created by this mutation. */
+  object: ObjectInput;
 }
-/** An input for mutations affecting `AppStep` */
-export interface AppStepInput {
-  id?: string;
-  actorId?: string;
-  /** Name identifier of the level requirement this step fulfills */
-  name: string;
-  /** Number of units completed in this step action */
-  count?: number;
+/** An input for mutations affecting `Object` */
+export interface ObjectInput {
+  id: string;
+  databaseId: string;
+  kids?: string[];
+  ktree?: string[];
+  data?: unknown;
+  frzn?: boolean;
   createdAt?: string;
-  updatedAt?: string;
 }
 export interface CreateSiteMetadatumInput {
   clientMutationId?: string;
@@ -10836,56 +11540,26 @@ export interface SiteMetadatumInput {
   /** Open Graph image for social media previews */
   ogImage?: ConstructiveInternalTypeImage;
 }
-export interface CreateAppClaimedInviteInput {
+export interface CreateAppLevelRequirementInput {
   clientMutationId?: string;
-  /** The `AppClaimedInvite` to be created by this mutation. */
-  appClaimedInvite: AppClaimedInviteInput;
+  /** The `AppLevelRequirement` to be created by this mutation. */
+  appLevelRequirement: AppLevelRequirementInput;
 }
-/** An input for mutations affecting `AppClaimedInvite` */
-export interface AppClaimedInviteInput {
+/** An input for mutations affecting `AppLevelRequirement` */
+export interface AppLevelRequirementInput {
   id?: string;
-  /** Optional JSON payload captured at the time the invite was claimed */
-  data?: unknown;
-  /** User ID of the original invitation sender */
-  senderId?: string;
-  /** User ID of the person who claimed and redeemed the invitation */
-  receiverId?: string;
+  /** Name identifier of the requirement (matches step names) */
+  name: string;
+  /** Name of the level this requirement belongs to */
+  level: string;
+  /** Human-readable description of what this requirement entails */
+  description?: string;
+  /** Number of steps needed to satisfy this requirement */
+  requiredCount?: number;
+  /** Display ordering priority; lower values appear first */
+  priority?: number;
   createdAt?: string;
   updatedAt?: string;
-}
-export interface CreateAppMembershipDefaultInput {
-  clientMutationId?: string;
-  /** The `AppMembershipDefault` to be created by this mutation. */
-  appMembershipDefault: AppMembershipDefaultInput;
-}
-/** An input for mutations affecting `AppMembershipDefault` */
-export interface AppMembershipDefaultInput {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** Whether new members are automatically approved upon joining */
-  isApproved?: boolean;
-  /** Whether new members are automatically verified upon joining */
-  isVerified?: boolean;
-}
-export interface CreateOrgMembershipDefaultInput {
-  clientMutationId?: string;
-  /** The `OrgMembershipDefault` to be created by this mutation. */
-  orgMembershipDefault: OrgMembershipDefaultInput;
-}
-/** An input for mutations affecting `OrgMembershipDefault` */
-export interface OrgMembershipDefaultInput {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** Whether new members are automatically approved upon joining */
-  isApproved?: boolean;
-  /** References the entity these membership defaults apply to */
-  entityId: string;
 }
 export interface CreateFullTextSearchInput {
   clientMutationId?: string;
@@ -11009,43 +11683,79 @@ export interface PhoneNumberInput {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface CreateOrgLimitInput {
+export interface CreateAppClaimedInviteInput {
   clientMutationId?: string;
-  /** The `OrgLimit` to be created by this mutation. */
-  orgLimit: OrgLimitInput;
+  /** The `AppClaimedInvite` to be created by this mutation. */
+  appClaimedInvite: AppClaimedInviteInput;
 }
-/** An input for mutations affecting `OrgLimit` */
-export interface OrgLimitInput {
+/** An input for mutations affecting `AppClaimedInvite` */
+export interface AppClaimedInviteInput {
   id?: string;
-  /** Name identifier of the limit being tracked */
-  name?: string;
-  /** User whose usage is being tracked against this limit */
-  actorId: string;
-  /** Current usage count for this actor and limit */
-  num?: number;
-  /** Maximum allowed usage; NULL means use the default limit value */
-  max?: number;
+  /** Optional JSON payload captured at the time the invite was claimed */
+  data?: unknown;
+  /** User ID of the original invitation sender */
+  senderId?: string;
+  /** User ID of the person who claimed and redeemed the invitation */
+  receiverId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface CreateAppMembershipDefaultInput {
+  clientMutationId?: string;
+  /** The `AppMembershipDefault` to be created by this mutation. */
+  appMembershipDefault: AppMembershipDefaultInput;
+}
+/** An input for mutations affecting `AppMembershipDefault` */
+export interface AppMembershipDefaultInput {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** Whether new members are automatically approved upon joining */
+  isApproved?: boolean;
+  /** Whether new members are automatically verified upon joining */
+  isVerified?: boolean;
+}
+export interface CreateOrgMembershipDefaultInput {
+  clientMutationId?: string;
+  /** The `OrgMembershipDefault` to be created by this mutation. */
+  orgMembershipDefault: OrgMembershipDefaultInput;
+}
+/** An input for mutations affecting `OrgMembershipDefault` */
+export interface OrgMembershipDefaultInput {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** Whether new members are automatically approved upon joining */
+  isApproved?: boolean;
+  /** References the entity these membership defaults apply to */
   entityId: string;
 }
-export interface CreateMembershipTypeInput {
+export interface CreateAuditLogInput {
   clientMutationId?: string;
-  /** The `MembershipType` to be created by this mutation. */
-  membershipType: MembershipTypeInput;
+  /** The `AuditLog` to be created by this mutation. */
+  auditLog: AuditLogInput;
 }
-/** An input for mutations affecting `MembershipType` */
-export interface MembershipTypeInput {
-  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
-  id: number;
-  /** Human-readable name of the membership type */
-  name: string;
-  /** Description of what this membership type represents */
-  description: string;
-  /** Short prefix used to namespace tables and functions for this membership scope */
-  prefix: string;
-  /** Parent membership type ID for SPRT cascade chain (e.g. type 2 parent=1, type 3 parent=2) */
-  parentMembershipType?: number;
-  /** When true, entities of this membership type get a one-to-one ID in the users table and a corresponding role_type entry, enabling them to own resources via owner_id FKs */
-  hasUsersTableEntry?: boolean;
+/** An input for mutations affecting `AuditLog` */
+export interface AuditLogInput {
+  id?: string;
+  /** Type of authentication event (e.g. sign_in, sign_up, password_change, verify_email) */
+  event: string;
+  /** User who performed the authentication action; NULL if user was deleted */
+  actorId?: string;
+  /** Request origin (domain) where the auth event occurred */
+  origin?: ConstructiveInternalTypeOrigin;
+  /** Browser or client user-agent string from the request */
+  userAgent?: string;
+  /** IP address of the client that initiated the auth event */
+  ipAddress?: string;
+  /** Whether the authentication attempt succeeded */
+  success: boolean;
+  /** Timestamp when the audit event was recorded */
+  createdAt?: string;
 }
 export interface CreateDomainInput {
   clientMutationId?: string;
@@ -11066,6 +11776,80 @@ export interface DomainInput {
   subdomain?: ConstructiveInternalTypeHostname;
   /** Root domain of the hostname */
   domain?: ConstructiveInternalTypeHostname;
+}
+export interface CreateAgentTaskInput {
+  clientMutationId?: string;
+  /** The `AgentTask` to be created by this mutation. */
+  agentTask: AgentTaskInput;
+}
+/** An input for mutations affecting `AgentTask` */
+export interface AgentTaskInput {
+  /** Foreign key to agent_thread. Required; the FK constraint and cascade-delete behaviour are declared in the blueprint's relations[]. Declared explicitly in fields[] (rather than left for RelationBelongsTo to create) so that the DataInheritFromParent generator can validate this field exists when it provisions the entity_id-inheritance trigger. */
+  threadId: string;
+  /** Entity (org/group/personal-org id) this task is filed under. Populated automatically by the DataInheritFromParent BEFORE INSERT trigger from agent_thread.entity_id via thread_id; the application never sets this column directly. */
+  entityId: string;
+  /** Natural-language description of the work to do. Required. */
+  description: string;
+  /** Who created the task: 'agent' (added by the LLM during planning) or 'user' (added manually by the human). Stored as free-text (no CHECK) so additional sources can be introduced later. */
+  source?: string;
+  /** Error message captured when the task transitioned to 'failed'. NULL while the task is still pending/in-progress, or when it completed successfully. */
+  error?: string;
+  id?: string;
+  /** Timestamp when this record was created */
+  createdAt?: string;
+  /** Timestamp when this record was last updated */
+  updatedAt?: string;
+  /** User who owns this record */
+  ownerId?: string;
+  /** Current status of this record */
+  status?: string;
+}
+export interface CreateAgentThreadInput {
+  clientMutationId?: string;
+  /** The `AgentThread` to be created by this mutation. */
+  agentThread: AgentThreadInput;
+}
+/** An input for mutations affecting `AgentThread` */
+export interface AgentThreadInput {
+  /** Human-readable conversation title. Typically auto-generated from the first user message and editable by the user. NULL until a title has been computed. */
+  title?: string;
+  /** Conversation mode: 'ask' for plain Q&A (no tool execution) or 'agent' for tool-enabled execution. Stored as free-text (no CHECK) so new modes can be added without migration. */
+  mode?: string;
+  /** Snapshot of the LLM model id this thread is bound to (e.g. 'gpt-5', 'claude-sonnet-4'). Captured on creation so a resumed conversation stays on the same model even if app defaults change. NULL means use the app default at request time. */
+  model?: string;
+  /** Snapshot of the system prompt active for this thread. Stored on the thread (rather than referenced from a registry) so the conversation remains reproducible even if a future system_prompt registry changes its canonical text. NULL means use the app default at request time. */
+  systemPrompt?: string;
+  id?: string;
+  /** Timestamp when this record was created */
+  createdAt?: string;
+  /** Timestamp when this record was last updated */
+  updatedAt?: string;
+  /** User who owns this record within the entity */
+  ownerId?: string;
+  /** Entity this record belongs to */
+  entityId: string;
+  /** Current status of this record */
+  status?: string;
+}
+export interface CreateEmailInput {
+  clientMutationId?: string;
+  /** The `Email` to be created by this mutation. */
+  email: EmailInput;
+}
+/** An input for mutations affecting `Email` */
+export interface EmailInput {
+  id?: string;
+  ownerId?: string;
+  /** The email address */
+  email: ConstructiveInternalTypeEmail;
+  /** Whether the email address has been verified via confirmation link */
+  isVerified?: boolean;
+  /** Whether this is the user's primary email address */
+  isPrimary?: boolean;
+  /** Optional user-provided label for this email (e.g. "Work", "Personal"). */
+  name?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 export interface CreateAppGrantInput {
   clientMutationId?: string;
@@ -11103,6 +11887,58 @@ export interface OrgClaimedInviteInput {
   updatedAt?: string;
   entityId: string;
 }
+export interface CreateAppLimitEventInput {
+  clientMutationId?: string;
+  /** The `AppLimitEvent` to be created by this mutation. */
+  appLimitEvent: AppLimitEventInput;
+}
+/** An input for mutations affecting `AppLimitEvent` */
+export interface AppLimitEventInput {
+  /** Limit name this event applies to */
+  name?: string;
+  /** User who triggered this event; NULL for system/aggregate events */
+  actorId?: string;
+  /** Entity this event applies to; NULL for app-level events */
+  entityId?: string;
+  /** Event type: inc, dec, check, modify, transfer, apply_plan, reset */
+  eventType?: string;
+  /** Change amount: positive for increment, negative for decrement */
+  delta?: string;
+  /** Usage count before this event */
+  numBefore?: string;
+  /** Usage count after this event */
+  numAfter?: string;
+  /** Max limit ceiling at the time of this event */
+  maxAtEvent?: string;
+  /** Optional reason or source: achievement, invite, plan_change, purchase, etc. */
+  reason?: string;
+}
+export interface CreateOrgLimitEventInput {
+  clientMutationId?: string;
+  /** The `OrgLimitEvent` to be created by this mutation. */
+  orgLimitEvent: OrgLimitEventInput;
+}
+/** An input for mutations affecting `OrgLimitEvent` */
+export interface OrgLimitEventInput {
+  /** Limit name this event applies to */
+  name?: string;
+  /** User who triggered this event; NULL for system/aggregate events */
+  actorId?: string;
+  /** Entity this event applies to; NULL for app-level events */
+  entityId?: string;
+  /** Event type: inc, dec, check, modify, transfer, apply_plan, reset */
+  eventType?: string;
+  /** Change amount: positive for increment, negative for decrement */
+  delta?: string;
+  /** Usage count before this event */
+  numBefore?: string;
+  /** Usage count after this event */
+  numAfter?: string;
+  /** Max limit ceiling at the time of this event */
+  maxAtEvent?: string;
+  /** Optional reason or source: achievement, invite, plan_change, purchase, etc. */
+  reason?: string;
+}
 export interface CreateOrgChartEdgeInput {
   clientMutationId?: string;
   /** The `OrgChartEdge` to be created by this mutation. */
@@ -11124,25 +11960,51 @@ export interface OrgChartEdgeInput {
   /** Numeric seniority level for this position (higher = more senior) */
   positionLevel?: number;
 }
-export interface CreateOrgGrantInput {
+export interface CreateAppLimitInput {
   clientMutationId?: string;
-  /** The `OrgGrant` to be created by this mutation. */
-  orgGrant: OrgGrantInput;
+  /** The `AppLimit` to be created by this mutation. */
+  appLimit: AppLimitInput;
 }
-/** An input for mutations affecting `OrgGrant` */
-export interface OrgGrantInput {
+/** An input for mutations affecting `AppLimit` */
+export interface AppLimitInput {
   id?: string;
-  /** Bitmask of permissions being granted or revoked */
-  permissions?: string;
-  /** True to grant the permissions, false to revoke them */
-  isGrant?: boolean;
-  /** The member receiving or losing the permission grant */
+  /** Name identifier of the limit being tracked */
+  name?: string;
+  /** User whose usage is being tracked against this limit */
   actorId: string;
-  /** The entity (org or group) this permission grant applies to */
+  /** Current usage count for this actor and limit */
+  num?: string;
+  /** Maximum allowed usage; negative means unlimited. Modified by plans, credits, and achievements. */
+  max?: string;
+  /** Soft limit threshold for warnings; NULL means no soft limit. When num >= soft_max, consumers should warn but still allow until max is reached. */
+  softMax?: string;
+  /** Start of the current metering window; NULL means no time window */
+  windowStart?: string;
+  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
+  windowDuration?: IntervalInput;
+}
+export interface CreateOrgLimitAggregateInput {
+  clientMutationId?: string;
+  /** The `OrgLimitAggregate` to be created by this mutation. */
+  orgLimitAggregate: OrgLimitAggregateInput;
+}
+/** An input for mutations affecting `OrgLimitAggregate` */
+export interface OrgLimitAggregateInput {
+  id?: string;
+  /** Name identifier of the aggregate limit being tracked */
+  name?: string;
+  /** Entity (org) whose aggregate usage is being tracked */
   entityId: string;
-  grantorId?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  /** Current aggregate usage count for this entity and limit */
+  num?: string;
+  /** Maximum allowed aggregate usage; negative means unlimited */
+  max?: string;
+  /** Soft limit threshold for warnings; NULL means no soft limit */
+  softMax?: string;
+  /** Start of the current metering window; NULL means no time window */
+  windowStart?: string;
+  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
+  windowDuration?: IntervalInput;
 }
 export interface CreateBlueprintConstructionInput {
   clientMutationId?: string;
@@ -11173,6 +12035,25 @@ export interface BlueprintConstructionInput {
   createdAt?: string;
   /** Timestamp when this construction attempt was last modified. */
   updatedAt?: string;
+}
+export interface CreatePlansModuleInput {
+  clientMutationId?: string;
+  /** The `PlansModule` to be created by this mutation. */
+  plansModule: PlansModuleInput;
+}
+/** An input for mutations affecting `PlansModule` */
+export interface PlansModuleInput {
+  id?: string;
+  databaseId: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  plansTableId?: string;
+  plansTableName?: string;
+  planLimitsTableId?: string;
+  planLimitsTableName?: string;
+  applyPlanFunction?: string;
+  applyPlanAggregateFunction?: string;
+  prefix?: string;
 }
 export interface CreateRlsModuleInput {
   clientMutationId?: string;
@@ -11212,49 +12093,25 @@ export interface SessionsModuleInput {
   sessionCredentialsTable?: string;
   authSettingsTable?: string;
 }
-export interface CreateAppLevelRequirementInput {
+export interface CreateOrgGrantInput {
   clientMutationId?: string;
-  /** The `AppLevelRequirement` to be created by this mutation. */
-  appLevelRequirement: AppLevelRequirementInput;
+  /** The `OrgGrant` to be created by this mutation. */
+  orgGrant: OrgGrantInput;
 }
-/** An input for mutations affecting `AppLevelRequirement` */
-export interface AppLevelRequirementInput {
+/** An input for mutations affecting `OrgGrant` */
+export interface OrgGrantInput {
   id?: string;
-  /** Name identifier of the requirement (matches step names) */
-  name: string;
-  /** Name of the level this requirement belongs to */
-  level: string;
-  /** Human-readable description of what this requirement entails */
-  description?: string;
-  /** Number of steps needed to satisfy this requirement */
-  requiredCount?: number;
-  /** Display ordering priority; lower values appear first */
-  priority?: number;
+  /** Bitmask of permissions being granted or revoked */
+  permissions?: string;
+  /** True to grant the permissions, false to revoke them */
+  isGrant?: boolean;
+  /** The member receiving or losing the permission grant */
+  actorId: string;
+  /** The entity (org or group) this permission grant applies to */
+  entityId: string;
+  grantorId?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-export interface CreateAuditLogInput {
-  clientMutationId?: string;
-  /** The `AuditLog` to be created by this mutation. */
-  auditLog: AuditLogInput;
-}
-/** An input for mutations affecting `AuditLog` */
-export interface AuditLogInput {
-  id?: string;
-  /** Type of authentication event (e.g. sign_in, sign_up, password_change, verify_email) */
-  event: string;
-  /** User who performed the authentication action; NULL if user was deleted */
-  actorId?: string;
-  /** Request origin (domain) where the auth event occurred */
-  origin?: ConstructiveInternalTypeOrigin;
-  /** Browser or client user-agent string from the request */
-  userAgent?: string;
-  /** IP address of the client that initiated the auth event */
-  ipAddress?: string;
-  /** Whether the authentication attempt succeeded */
-  success: boolean;
-  /** Timestamp when the audit event was recorded */
-  createdAt?: string;
 }
 export interface CreateAppLevelInput {
   clientMutationId?: string;
@@ -11274,6 +12131,30 @@ export interface AppLevelInput {
   ownerId?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+export interface CreateOrgLimitInput {
+  clientMutationId?: string;
+  /** The `OrgLimit` to be created by this mutation. */
+  orgLimit: OrgLimitInput;
+}
+/** An input for mutations affecting `OrgLimit` */
+export interface OrgLimitInput {
+  id?: string;
+  /** Name identifier of the limit being tracked */
+  name?: string;
+  /** User whose usage is being tracked against this limit */
+  actorId: string;
+  /** Current usage count for this actor and limit */
+  num?: string;
+  /** Maximum allowed usage; negative means unlimited. Modified by plans, credits, and achievements. */
+  max?: string;
+  /** Soft limit threshold for warnings; NULL means no soft limit. When num >= soft_max, consumers should warn but still allow until max is reached. */
+  softMax?: string;
+  /** Start of the current metering window; NULL means no time window */
+  windowStart?: string;
+  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
+  windowDuration?: IntervalInput;
+  entityId: string;
 }
 export interface CreateBlueprintInput {
   clientMutationId?: string;
@@ -11327,26 +12208,6 @@ export interface DenormalizedTableFieldInput {
   funcName?: string;
   funcOrder?: number;
 }
-export interface CreateEmailInput {
-  clientMutationId?: string;
-  /** The `Email` to be created by this mutation. */
-  email: EmailInput;
-}
-/** An input for mutations affecting `Email` */
-export interface EmailInput {
-  id?: string;
-  ownerId?: string;
-  /** The email address */
-  email: ConstructiveInternalTypeEmail;
-  /** Whether the email address has been verified via confirmation link */
-  isVerified?: boolean;
-  /** Whether this is the user's primary email address */
-  isPrimary?: boolean;
-  /** Optional user-provided label for this email (e.g. "Work", "Personal"). */
-  name?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 export interface CreateOrgMemberProfileInput {
   clientMutationId?: string;
   /** The `OrgMemberProfile` to be created by this mutation. */
@@ -11395,63 +12256,6 @@ export interface SqlActionInput {
   actionId?: string;
   actorId?: string;
 }
-export interface CreateSecureTableProvisionInput {
-  clientMutationId?: string;
-  /** The `SecureTableProvision` to be created by this mutation. */
-  secureTableProvision: SecureTableProvisionInput;
-}
-/** An input for mutations affecting `SecureTableProvision` */
-export interface SecureTableProvisionInput {
-  /** Unique identifier for this provision row. */
-  id?: string;
-  /** The database this provision belongs to. Required. */
-  databaseId: string;
-  /** Target schema for the table. Defaults to uuid_nil(); the trigger resolves this to the app_public schema if not explicitly provided. */
-  schemaId?: string;
-  /** Target table to provision. Defaults to uuid_nil(); the trigger creates or resolves the table via table_name if not explicitly provided. */
-  tableId?: string;
-  /** Name of the target table. Used to create or look up the table when table_id is not provided. If omitted, it is backfilled from the resolved table. */
-  tableName?: string;
-  /** Array of node objects to apply to the table. Each element is a jsonb object with a required "$type" key (one of: DataId, DataDirectOwner, DataEntityMembership, DataOwnershipInEntity, DataTimestamps, DataPeoplestamps, DataPublishable, DataSoftDelete, DataEmbedding, DataFullTextSearch, DataSlug, etc.) and an optional "data" key containing generator-specific configuration. Supports multiple nodes per row, matching the blueprint definition format. Example: [{"$type": "DataId"}, {"$type": "DataTimestamps"}, {"$type": "DataDirectOwner", "data": {"owner_field_name": "author_id"}}]. Defaults to '[]' (no node processing). */
-  nodes?: unknown;
-  /** If true and Row Level Security is not yet enabled on the target table, enable it. Automatically set to true by the trigger when policies[] is non-empty. Defaults to true. */
-  useRls?: boolean;
-  /** PostgreSQL array of jsonb field definition objects to create on the target table. Each object has keys: "name" (text, required), "type" (text, required), "default" (text, optional), "is_required" (boolean, optional, defaults to false), "min" (float, optional), "max" (float, optional), "regexp" (text, optional), "index" (boolean, optional, defaults to false — creates a btree index on the field). min/max generate CHECK constraints: for text/citext they constrain character_length, for integer/float types they constrain the value. regexp generates a CHECK (col ~ pattern) constraint for text/citext. Fields are created via metaschema.create_field() after any node_type generator runs, and their IDs are appended to out_fields. Example: ARRAY['{"name":"username","type":"citext","max":256,"regexp":"^[a-z0-9_]+$"}'::jsonb, '{"name":"score","type":"integer","min":0,"max":100}'::jsonb]. Defaults to '{}' (no additional fields). */
-  fields?: unknown[];
-  /** Array of grant objects defining table privileges. Each element is a jsonb object with keys: "roles" (text[], required — database roles to grant to, e.g. ["authenticated","admin"]), "privileges" (jsonb[], required — array of [privilege, columns] tuples, e.g. [["select","*"],["insert","*"]]). "*" means all columns; an array means column-level grant. Supports per-role privilege targeting: different grant entries can target different roles with different privileges. Example: [{"roles":["authenticated"],"privileges":[["select","*"]]},{"roles":["admin"],"privileges":[["insert","*"],["update","*"],["delete","*"]]}]. Defaults to '[]' (no grants). When policies[] omit explicit privileges/policy_role, they fall back to the verbs and first role from grants[]. */
-  grants?: unknown;
-  /** Array of policy objects to create on the target table. Each element is a jsonb object with keys: "$type" (text, required — the Authz* policy generator type, e.g. AuthzEntityMembership, AuthzMembership, AuthzDirectOwner, AuthzPublishable, AuthzAllowAll), "data" (jsonb, optional — opaque configuration passed to metaschema.create_policy(), structure varies by type), "privileges" (text[], optional — privileges the policy applies to, e.g. ["select","insert"]; if omitted, derived from grants[] privilege verbs), "policy_role" (text, optional — role the policy targets; if omitted, falls back to first role in first grants[] entry, or 'authenticated' if no grants), "permissive" (boolean, optional — PERMISSIVE or RESTRICTIVE; defaults to true), "policy_name" (text, optional — custom suffix for the generated policy name; if omitted, auto-derived from $type by stripping Authz prefix). Supports multiple policies per row. Example: [{"$type": "AuthzEntityMembership", "data": {"entity_field": "owner_id", "membership_type": 3}, "privileges": ["select", "insert"]}, {"$type": "AuthzDirectOwner", "data": {"entity_field": "actor_id"}, "privileges": ["update", "delete"]}]. Defaults to '[]' (no policies created). When non-empty, the trigger automatically enables RLS. */
-  policies?: unknown;
-  /** Output column populated by the trigger after field creation. Contains the UUIDs of the metaschema fields created on the target table by this provision row's nodes. NULL when nodes is empty or before the trigger runs. Callers should not set this directly. */
-  outFields?: string[];
-}
-export interface CreateOrgMembershipSettingInput {
-  clientMutationId?: string;
-  /** The `OrgMembershipSetting` to be created by this mutation. */
-  orgMembershipSetting: OrgMembershipSettingInput;
-}
-/** An input for mutations affecting `OrgMembershipSetting` */
-export interface OrgMembershipSettingInput {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** References the entity these settings apply to */
-  entityId: string;
-  /** When a member is deleted, whether to cascade-remove their descendant-entity memberships */
-  deleteMemberCascadeChildren?: boolean;
-  /** When a child entity is created, whether to auto-add existing org-level owners as child-entity owners */
-  createChildCascadeOwners?: boolean;
-  /** When a child entity is created, whether to auto-add existing org-level admins as child-entity admins */
-  createChildCascadeAdmins?: boolean;
-  /** When a child entity is created, whether to auto-add existing org-level members (non-admin, non-owner) as child-entity members */
-  createChildCascadeMembers?: boolean;
-  /** Whether descendants of this org may admit members who are not already org members (outside-collaborators toggle) */
-  allowExternalMembers?: boolean;
-  /** Whether member_profiles.email is snapshot on join and kept synced with the user's primary email. When FALSE, the email field is left blank and never synced from the user's primary email. */
-  populateMemberEmail?: boolean;
-}
 export interface CreateDatabaseTransferInput {
   clientMutationId?: string;
   /** The `DatabaseTransfer` to be created by this mutation. */
@@ -11473,6 +12277,28 @@ export interface DatabaseTransferInput {
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;
+}
+export interface CreateBillingModuleInput {
+  clientMutationId?: string;
+  /** The `BillingModule` to be created by this mutation. */
+  billingModule: BillingModuleInput;
+}
+/** An input for mutations affecting `BillingModule` */
+export interface BillingModuleInput {
+  id?: string;
+  databaseId: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  metersTableId?: string;
+  metersTableName?: string;
+  planSubscriptionsTableId?: string;
+  planSubscriptionsTableName?: string;
+  ledgerTableId?: string;
+  ledgerTableName?: string;
+  balancesTableId?: string;
+  balancesTableName?: string;
+  recordUsageFunction?: string;
+  prefix?: string;
 }
 export interface CreateCryptoAuthModuleInput {
   clientMutationId?: string;
@@ -11548,6 +12374,57 @@ export interface InvitesModuleInput {
   prefix?: string;
   membershipType: number;
   entityTableId?: string;
+}
+export interface CreateSecureTableProvisionInput {
+  clientMutationId?: string;
+  /** The `SecureTableProvision` to be created by this mutation. */
+  secureTableProvision: SecureTableProvisionInput;
+}
+/** An input for mutations affecting `SecureTableProvision` */
+export interface SecureTableProvisionInput {
+  /** Unique identifier for this provision row. */
+  id?: string;
+  /** The database this provision belongs to. Required. */
+  databaseId: string;
+  /** Target schema for the table. Defaults to uuid_nil(); the trigger resolves this to the app_public schema if not explicitly provided. */
+  schemaId?: string;
+  /** Target table to provision. Defaults to uuid_nil(); the trigger creates or resolves the table via table_name if not explicitly provided. */
+  tableId?: string;
+  /** Name of the target table. Used to create or look up the table when table_id is not provided. If omitted, it is backfilled from the resolved table. */
+  tableName?: string;
+  /** Array of node objects to apply to the table. Each element is a jsonb object with a required "$type" key (one of: DataId, DataDirectOwner, DataEntityMembership, DataOwnershipInEntity, DataTimestamps, DataPeoplestamps, DataPublishable, DataSoftDelete, DataEmbedding, DataFullTextSearch, DataSlug, etc.) and an optional "data" key containing generator-specific configuration. Supports multiple nodes per row, matching the blueprint definition format. Example: [{"$type": "DataId"}, {"$type": "DataTimestamps"}, {"$type": "DataDirectOwner", "data": {"owner_field_name": "author_id"}}]. Defaults to '[]' (no node processing). */
+  nodes?: unknown;
+  /** If true and Row Level Security is not yet enabled on the target table, enable it. Automatically set to true by the trigger when policies[] is non-empty. Defaults to true. */
+  useRls?: boolean;
+  /** PostgreSQL array of jsonb field definition objects to create on the target table. Each object has keys: "name" (text, required), "type" (text, required), "default" (text, optional), "is_required" (boolean, optional, defaults to false), "min" (float, optional), "max" (float, optional), "regexp" (text, optional), "index" (boolean, optional, defaults to false — creates a btree index on the field). min/max generate CHECK constraints: for text/citext they constrain character_length, for integer/float types they constrain the value. regexp generates a CHECK (col ~ pattern) constraint for text/citext. Fields are created via metaschema.create_field() after any node_type generator runs, and their IDs are appended to out_fields. Example: ARRAY['{"name":"username","type":"citext","max":256,"regexp":"^[a-z0-9_]+$"}'::jsonb, '{"name":"score","type":"integer","min":0,"max":100}'::jsonb]. Defaults to '{}' (no additional fields). */
+  fields?: unknown[];
+  /** Array of grant objects defining table privileges. Each element is a jsonb object with keys: "roles" (text[], required — database roles to grant to, e.g. ["authenticated","admin"]), "privileges" (jsonb[], required — array of [privilege, columns] tuples, e.g. [["select","*"],["insert","*"]]). "*" means all columns; an array means column-level grant. Supports per-role privilege targeting: different grant entries can target different roles with different privileges. Example: [{"roles":["authenticated"],"privileges":[["select","*"]]},{"roles":["admin"],"privileges":[["insert","*"],["update","*"],["delete","*"]]}]. Defaults to '[]' (no grants). When policies[] omit explicit privileges/policy_role, they fall back to the verbs and first role from grants[]. */
+  grants?: unknown;
+  /** Array of policy objects to create on the target table. Each element is a jsonb object with keys: "$type" (text, required — the Authz* policy generator type, e.g. AuthzEntityMembership, AuthzMembership, AuthzDirectOwner, AuthzPublishable, AuthzAllowAll), "data" (jsonb, optional — opaque configuration passed to metaschema.create_policy(), structure varies by type), "privileges" (text[], optional — privileges the policy applies to, e.g. ["select","insert"]; if omitted, derived from grants[] privilege verbs), "policy_role" (text, optional — role the policy targets; if omitted, falls back to first role in first grants[] entry, or 'authenticated' if no grants), "permissive" (boolean, optional — PERMISSIVE or RESTRICTIVE; defaults to true), "policy_name" (text, optional — custom suffix for the generated policy name; if omitted, auto-derived from $type by stripping Authz prefix). Supports multiple policies per row. Example: [{"$type": "AuthzEntityMembership", "data": {"entity_field": "owner_id", "membership_type": 3}, "privileges": ["select", "insert"]}, {"$type": "AuthzDirectOwner", "data": {"entity_field": "actor_id"}, "privileges": ["update", "delete"]}]. Defaults to '[]' (no policies created). When non-empty, the trigger automatically enables RLS. */
+  policies?: unknown;
+  /** Output column populated by the trigger after field creation. Contains the UUIDs of the metaschema fields created on the target table by this provision row's nodes. NULL when nodes is empty or before the trigger runs. Callers should not set this directly. */
+  outFields?: string[];
+}
+export interface CreateAstMigrationInput {
+  clientMutationId?: string;
+  /** The `AstMigration` to be created by this mutation. */
+  astMigration: AstMigrationInput;
+}
+/** An input for mutations affecting `AstMigration` */
+export interface AstMigrationInput {
+  id?: number;
+  databaseId?: string;
+  name?: string;
+  requires?: string[];
+  payload?: unknown;
+  deploys?: string;
+  deploy?: unknown;
+  revert?: unknown;
+  verify?: unknown;
+  createdAt?: string;
+  action?: string;
+  actionId?: string;
+  actorId?: string;
 }
 export interface CreateEnumInput {
   clientMutationId?: string;
@@ -11632,6 +12509,68 @@ export interface WebauthnAuthModuleInput {
   residentKey?: string;
   challengeExpiry?: IntervalInput;
 }
+export interface CreateAppInviteInput {
+  clientMutationId?: string;
+  /** The `AppInvite` to be created by this mutation. */
+  appInvite: AppInviteInput;
+}
+/** An input for mutations affecting `AppInvite` */
+export interface AppInviteInput {
+  id?: string;
+  /** Email address of the invited recipient */
+  email?: ConstructiveInternalTypeEmail;
+  /** User ID of the member who sent this invitation */
+  senderId?: string;
+  /** Unique random hex token used to redeem this invitation */
+  inviteToken?: string;
+  /** Whether this invitation is still valid and can be redeemed */
+  inviteValid?: boolean;
+  /** Maximum number of times this invite can be claimed; -1 means unlimited */
+  inviteLimit?: number;
+  /** Running count of how many times this invite has been claimed */
+  inviteCount?: number;
+  /** Whether this invite can be claimed by multiple recipients */
+  multiple?: boolean;
+  /** Optional JSON payload of additional invite metadata */
+  data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
+  /** Timestamp after which this invitation can no longer be redeemed */
+  expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface CreateOrgMembershipSettingInput {
+  clientMutationId?: string;
+  /** The `OrgMembershipSetting` to be created by this mutation. */
+  orgMembershipSetting: OrgMembershipSettingInput;
+}
+/** An input for mutations affecting `OrgMembershipSetting` */
+export interface OrgMembershipSettingInput {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** References the entity these settings apply to */
+  entityId: string;
+  /** When a member is deleted, whether to cascade-remove their descendant-entity memberships */
+  deleteMemberCascadeChildren?: boolean;
+  /** When a child entity is created, whether to auto-add existing org-level owners as child-entity owners */
+  createChildCascadeOwners?: boolean;
+  /** When a child entity is created, whether to auto-add existing org-level admins as child-entity admins */
+  createChildCascadeAdmins?: boolean;
+  /** When a child entity is created, whether to auto-add existing org-level members (non-admin, non-owner) as child-entity members */
+  createChildCascadeMembers?: boolean;
+  /** Whether descendants of this org may admit members who are not already org members (outside-collaborators toggle) */
+  allowExternalMembers?: boolean;
+  /** Controls how profile assignment on invites is validated: strict (permission + subset check), permission_only (permission only), or subset_only (subset check only) */
+  inviteProfileAssignmentMode?: string;
+  /** Whether member_profiles.email is snapshot on join and kept synced with the user's primary email. When FALSE, the email field is left blank and never synced from the user's primary email. */
+  populateMemberEmail?: boolean;
+  /** Allocation mode for sub-entity limits: pooled (shared parent cap, no per-entity budgets) or budgeted (explicit per-entity allocations, transfer enabled) */
+  limitAllocationMode?: string;
+}
 export interface CreateAppInput {
   clientMutationId?: string;
   /** The `App` to be created by this mutation. */
@@ -11684,26 +12623,87 @@ export interface SiteInput {
   /** PostgreSQL database name this site connects to */
   dbname?: string;
 }
-export interface CreateAstMigrationInput {
+export interface CreateNotificationsModuleInput {
   clientMutationId?: string;
-  /** The `AstMigration` to be created by this mutation. */
-  astMigration: AstMigrationInput;
+  /** The `NotificationsModule` to be created by this mutation. */
+  notificationsModule: NotificationsModuleInput;
 }
-/** An input for mutations affecting `AstMigration` */
-export interface AstMigrationInput {
-  id?: number;
-  databaseId?: string;
+/** An input for mutations affecting `NotificationsModule` */
+export interface NotificationsModuleInput {
+  id?: string;
+  databaseId: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  notificationsTableId?: string;
+  readStateTableId?: string;
+  preferencesTableId?: string;
+  channelsTableId?: string;
+  deliveryLogTableId?: string;
+  ownerTableId?: string;
+  userSettingsTableId?: string;
+  organizationSettingsTableId?: string;
+  hasChannels?: boolean;
+  hasPreferences?: boolean;
+  hasSettingsExtension?: boolean;
+  hasDigestMetadata?: boolean;
+  hasSubscriptions?: boolean;
+}
+export interface CreatePermissionsModuleInput {
+  clientMutationId?: string;
+  /** The `PermissionsModule` to be created by this mutation. */
+  permissionsModule: PermissionsModuleInput;
+}
+/** An input for mutations affecting `PermissionsModule` */
+export interface PermissionsModuleInput {
+  id?: string;
+  databaseId: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  tableId?: string;
+  tableName?: string;
+  defaultTableId?: string;
+  defaultTableName?: string;
+  bitlen?: number;
+  membershipType: number;
+  entityTableId?: string;
+  actorTableId?: string;
+  prefix?: string;
+  getPaddedMask?: string;
+  getMask?: string;
+  getByMask?: string;
+  getMaskByName?: string;
+}
+export interface CreateWebauthnCredentialInput {
+  clientMutationId?: string;
+  /** The `WebauthnCredential` to be created by this mutation. */
+  webauthnCredential: WebauthnCredentialInput;
+}
+/** An input for mutations affecting `WebauthnCredential` */
+export interface WebauthnCredentialInput {
+  id?: string;
+  ownerId?: string;
+  /** Base64url-encoded credential ID returned by the authenticator. Globally unique per WebAuthn spec. */
+  credentialId: string;
+  /** COSE-encoded public key bytes from the authenticator attestation. */
+  publicKey: Base64EncodedBinary;
+  /** Monotonic signature counter. Strict-increase check during sign-in detects cloned credentials. 0 means the authenticator does not implement a counter. */
+  signCount?: string;
+  /** Random per-user handle sent to authenticators as user.id. Privacy-preserving; NOT the internal user UUID. */
+  webauthnUserId: string;
+  /** Authenticator transport hints (e.g. usb, nfc, ble, internal, hybrid). Used to hint browser UI during sign-in. */
+  transports?: string[];
+  /** Either 'singleDevice' (hardware-bound) or 'multiDevice' (synced passkey). Enforced by CHECK constraint below. */
+  credentialDeviceType: string;
+  /** Whether this credential is eligible for backup (syncing) per the authenticator's flags at registration. */
+  backupEligible?: boolean;
+  /** Current backup state; updated on each successful sign-in assertion. */
+  backupState?: boolean;
+  /** User-provided label for this credential (e.g. "YubiKey 5C", "iPhone 15"). Renamed via rename_passkey. */
   name?: string;
-  requires?: string[];
-  payload?: unknown;
-  deploys?: string;
-  deploy?: unknown;
-  revert?: unknown;
-  verify?: unknown;
+  /** Timestamp of the most recent successful sign-in assertion using this credential. */
+  lastUsedAt?: string;
   createdAt?: string;
-  action?: string;
-  actionId?: string;
-  actorId?: string;
+  updatedAt?: string;
 }
 export interface CreatePrimaryKeyConstraintInput {
   clientMutationId?: string;
@@ -11839,85 +12839,6 @@ export interface PolicyInput {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface CreateNotificationsModuleInput {
-  clientMutationId?: string;
-  /** The `NotificationsModule` to be created by this mutation. */
-  notificationsModule: NotificationsModuleInput;
-}
-/** An input for mutations affecting `NotificationsModule` */
-export interface NotificationsModuleInput {
-  id?: string;
-  databaseId: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  notificationsTableId?: string;
-  readStateTableId?: string;
-  preferencesTableId?: string;
-  channelsTableId?: string;
-  deliveryLogTableId?: string;
-  ownerTableId?: string;
-  userSettingsTableId?: string;
-  organizationSettingsTableId?: string;
-  hasChannels?: boolean;
-  hasPreferences?: boolean;
-  hasSettingsExtension?: boolean;
-  hasDigestMetadata?: boolean;
-  hasSubscriptions?: boolean;
-}
-export interface CreatePermissionsModuleInput {
-  clientMutationId?: string;
-  /** The `PermissionsModule` to be created by this mutation. */
-  permissionsModule: PermissionsModuleInput;
-}
-/** An input for mutations affecting `PermissionsModule` */
-export interface PermissionsModuleInput {
-  id?: string;
-  databaseId: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  tableId?: string;
-  tableName?: string;
-  defaultTableId?: string;
-  defaultTableName?: string;
-  bitlen?: number;
-  membershipType: number;
-  entityTableId?: string;
-  actorTableId?: string;
-  prefix?: string;
-  getPaddedMask?: string;
-  getMask?: string;
-  getByMask?: string;
-  getMaskByName?: string;
-}
-export interface CreateAppInviteInput {
-  clientMutationId?: string;
-  /** The `AppInvite` to be created by this mutation. */
-  appInvite: AppInviteInput;
-}
-/** An input for mutations affecting `AppInvite` */
-export interface AppInviteInput {
-  id?: string;
-  /** Email address of the invited recipient */
-  email?: ConstructiveInternalTypeEmail;
-  /** User ID of the member who sent this invitation */
-  senderId?: string;
-  /** Unique random hex token used to redeem this invitation */
-  inviteToken?: string;
-  /** Whether this invitation is still valid and can be redeemed */
-  inviteValid?: boolean;
-  /** Maximum number of times this invite can be claimed; -1 means unlimited */
-  inviteLimit?: number;
-  /** Running count of how many times this invite has been claimed */
-  inviteCount?: number;
-  /** Whether this invite can be claimed by multiple recipients */
-  multiple?: boolean;
-  /** Optional JSON payload of additional invite metadata */
-  data?: unknown;
-  /** Timestamp after which this invitation can no longer be redeemed */
-  expiresAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 export interface CreateEmbeddingChunkInput {
   clientMutationId?: string;
   /** The `EmbeddingChunk` to be created by this mutation. */
@@ -11941,175 +12862,6 @@ export interface EmbeddingChunkInput {
   enqueueChunkingJob?: boolean;
   chunkingTaskName?: string;
   parentFkFieldId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface CreateSchemaInput {
-  clientMutationId?: string;
-  /** The `Schema` to be created by this mutation. */
-  schema: SchemaInput;
-}
-/** An input for mutations affecting `Schema` */
-export interface SchemaInput {
-  id?: string;
-  databaseId: string;
-  name: string;
-  schemaName: string;
-  label?: string;
-  description?: string;
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  tags?: string[];
-  isPublic?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface CreateLimitsModuleInput {
-  clientMutationId?: string;
-  /** The `LimitsModule` to be created by this mutation. */
-  limitsModule: LimitsModuleInput;
-}
-/** An input for mutations affecting `LimitsModule` */
-export interface LimitsModuleInput {
-  id?: string;
-  databaseId: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  tableId?: string;
-  tableName?: string;
-  defaultTableId?: string;
-  defaultTableName?: string;
-  limitIncrementFunction?: string;
-  limitDecrementFunction?: string;
-  limitIncrementTrigger?: string;
-  limitDecrementTrigger?: string;
-  limitUpdateTrigger?: string;
-  limitCheckFunction?: string;
-  prefix?: string;
-  membershipType: number;
-  entityTableId?: string;
-  actorTableId?: string;
-}
-export interface CreateProfilesModuleInput {
-  clientMutationId?: string;
-  /** The `ProfilesModule` to be created by this mutation. */
-  profilesModule: ProfilesModuleInput;
-}
-/** An input for mutations affecting `ProfilesModule` */
-export interface ProfilesModuleInput {
-  id?: string;
-  databaseId: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  tableId?: string;
-  tableName?: string;
-  profilePermissionsTableId?: string;
-  profilePermissionsTableName?: string;
-  profileGrantsTableId?: string;
-  profileGrantsTableName?: string;
-  profileDefinitionGrantsTableId?: string;
-  profileDefinitionGrantsTableName?: string;
-  membershipType: number;
-  entityTableId?: string;
-  actorTableId?: string;
-  permissionsTableId?: string;
-  membershipsTableId?: string;
-  prefix?: string;
-}
-export interface CreateAppMembershipInput {
-  clientMutationId?: string;
-  /** The `AppMembership` to be created by this mutation. */
-  appMembership: AppMembershipInput;
-}
-/** An input for mutations affecting `AppMembership` */
-export interface AppMembershipInput {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** Whether this membership has been approved by an admin */
-  isApproved?: boolean;
-  /** Whether this member has been banned from the entity */
-  isBanned?: boolean;
-  /** Whether this membership is temporarily disabled */
-  isDisabled?: boolean;
-  /** Whether this member has been verified (e.g. email confirmation) */
-  isVerified?: boolean;
-  /** Computed field indicating the membership is approved, verified, not banned, and not disabled */
-  isActive?: boolean;
-  /** Whether this member is external (not a member of the parent scope). External members may have restricted permissions. */
-  isExternal?: boolean;
-  /** Whether the actor is the owner of this entity */
-  isOwner?: boolean;
-  /** Whether the actor has admin privileges on this entity */
-  isAdmin?: boolean;
-  /** Aggregated permission bitmask combining profile-based and directly granted permissions */
-  permissions?: string;
-  /** Bitmask of permissions directly granted to this member (not from profiles) */
-  granted?: string;
-  /** References the user who holds this membership */
-  actorId: string;
-  profileId?: string;
-}
-export interface CreateIndexInput {
-  clientMutationId?: string;
-  /** The `Index` to be created by this mutation. */
-  index: IndexInput;
-}
-/** An input for mutations affecting `Index` */
-export interface IndexInput {
-  id?: string;
-  databaseId: string;
-  tableId: string;
-  name?: string;
-  fieldIds?: string[];
-  includeFieldIds?: string[];
-  accessMethod?: string;
-  indexParams?: unknown;
-  whereClause?: unknown;
-  isUnique?: boolean;
-  options?: unknown;
-  opClasses?: string[];
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface CreateWebauthnCredentialInput {
-  clientMutationId?: string;
-  /** The `WebauthnCredential` to be created by this mutation. */
-  webauthnCredential: WebauthnCredentialInput;
-}
-/** An input for mutations affecting `WebauthnCredential` */
-export interface WebauthnCredentialInput {
-  id?: string;
-  ownerId?: string;
-  /** Base64url-encoded credential ID returned by the authenticator. Globally unique per WebAuthn spec. */
-  credentialId: string;
-  /** COSE-encoded public key bytes from the authenticator attestation. */
-  publicKey: Base64EncodedBinary;
-  /** Monotonic signature counter. Strict-increase check during sign-in detects cloned credentials. 0 means the authenticator does not implement a counter. */
-  signCount?: string;
-  /** Random per-user handle sent to authenticators as user.id. Privacy-preserving; NOT the internal user UUID. */
-  webauthnUserId: string;
-  /** Authenticator transport hints (e.g. usb, nfc, ble, internal, hybrid). Used to hint browser UI during sign-in. */
-  transports?: string[];
-  /** Either 'singleDevice' (hardware-bound) or 'multiDevice' (synced passkey). Enforced by CHECK constraint below. */
-  credentialDeviceType: string;
-  /** Whether this credential is eligible for backup (syncing) per the authenticator's flags at registration. */
-  backupEligible?: boolean;
-  /** Current backup state; updated on each successful sign-in assertion. */
-  backupState?: boolean;
-  /** User-provided label for this credential (e.g. "YubiKey 5C", "iPhone 15"). Renamed via rename_passkey. */
-  name?: string;
-  /** Timestamp of the most recent successful sign-in assertion using this credential. */
-  lastUsedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -12139,19 +12891,21 @@ export interface OrgInviteInput {
   multiple?: boolean;
   /** Optional JSON payload of additional invite metadata */
   data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
   /** Timestamp after which this invitation can no longer be redeemed */
   expiresAt?: string;
   createdAt?: string;
   updatedAt?: string;
   entityId: string;
 }
-export interface CreateOrgMembershipInput {
+export interface CreateAppMembershipInput {
   clientMutationId?: string;
-  /** The `OrgMembership` to be created by this mutation. */
-  orgMembership: OrgMembershipInput;
+  /** The `AppMembership` to be created by this mutation. */
+  appMembership: AppMembershipInput;
 }
-/** An input for mutations affecting `OrgMembership` */
-export interface OrgMembershipInput {
+/** An input for mutations affecting `AppMembership` */
+export interface AppMembershipInput {
   id?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -12163,10 +12917,10 @@ export interface OrgMembershipInput {
   isBanned?: boolean;
   /** Whether this membership is temporarily disabled */
   isDisabled?: boolean;
+  /** Whether this member has been verified (e.g. email confirmation) */
+  isVerified?: boolean;
   /** Computed field indicating the membership is approved, verified, not banned, and not disabled */
   isActive?: boolean;
-  /** Whether this member is external (not a member of the parent scope). External members may have restricted permissions. */
-  isExternal?: boolean;
   /** Whether the actor is the owner of this entity */
   isOwner?: boolean;
   /** Whether the actor has admin privileges on this entity */
@@ -12177,11 +12931,83 @@ export interface OrgMembershipInput {
   granted?: string;
   /** References the user who holds this membership */
   actorId: string;
-  /** References the entity (org or group) this membership belongs to */
-  entityId: string;
-  /** Whether this member has read-only access (blocks mutations when true) */
-  isReadOnly?: boolean;
   profileId?: string;
+}
+export interface CreateSchemaInput {
+  clientMutationId?: string;
+  /** The `Schema` to be created by this mutation. */
+  schema: SchemaInput;
+}
+/** An input for mutations affecting `Schema` */
+export interface SchemaInput {
+  id?: string;
+  databaseId: string;
+  name: string;
+  schemaName: string;
+  label?: string;
+  description?: string;
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  tags?: string[];
+  isPublic?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface CreateIndexInput {
+  clientMutationId?: string;
+  /** The `Index` to be created by this mutation. */
+  index: IndexInput;
+}
+/** An input for mutations affecting `Index` */
+export interface IndexInput {
+  id?: string;
+  databaseId: string;
+  tableId: string;
+  name?: string;
+  fieldIds?: string[];
+  includeFieldIds?: string[];
+  accessMethod?: string;
+  indexParams?: unknown;
+  whereClause?: unknown;
+  isUnique?: boolean;
+  options?: unknown;
+  opClasses?: string[];
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface CreateLimitsModuleInput {
+  clientMutationId?: string;
+  /** The `LimitsModule` to be created by this mutation. */
+  limitsModule: LimitsModuleInput;
+}
+/** An input for mutations affecting `LimitsModule` */
+export interface LimitsModuleInput {
+  id?: string;
+  databaseId: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  tableId?: string;
+  tableName?: string;
+  defaultTableId?: string;
+  defaultTableName?: string;
+  limitIncrementFunction?: string;
+  limitDecrementFunction?: string;
+  limitIncrementTrigger?: string;
+  limitDecrementTrigger?: string;
+  limitUpdateTrigger?: string;
+  limitCheckFunction?: string;
+  aggregateTableId?: string;
+  prefix?: string;
+  membershipType: number;
+  entityTableId?: string;
+  actorTableId?: string;
 }
 export interface CreateBlueprintTemplateInput {
   clientMutationId?: string;
@@ -12259,6 +13085,72 @@ export interface HierarchyModuleInput {
   isManagerOfFunction?: string;
   createdAt?: string;
 }
+export interface CreateProfilesModuleInput {
+  clientMutationId?: string;
+  /** The `ProfilesModule` to be created by this mutation. */
+  profilesModule: ProfilesModuleInput;
+}
+/** An input for mutations affecting `ProfilesModule` */
+export interface ProfilesModuleInput {
+  id?: string;
+  databaseId: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  tableId?: string;
+  tableName?: string;
+  profilePermissionsTableId?: string;
+  profilePermissionsTableName?: string;
+  profileGrantsTableId?: string;
+  profileGrantsTableName?: string;
+  profileDefinitionGrantsTableId?: string;
+  profileDefinitionGrantsTableName?: string;
+  profileTemplatesTableId?: string;
+  profileTemplatesTableName?: string;
+  membershipType: number;
+  entityTableId?: string;
+  actorTableId?: string;
+  permissionsTableId?: string;
+  membershipsTableId?: string;
+  prefix?: string;
+}
+export interface CreateOrgMembershipInput {
+  clientMutationId?: string;
+  /** The `OrgMembership` to be created by this mutation. */
+  orgMembership: OrgMembershipInput;
+}
+/** An input for mutations affecting `OrgMembership` */
+export interface OrgMembershipInput {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** Whether this membership has been approved by an admin */
+  isApproved?: boolean;
+  /** Whether this member has been banned from the entity */
+  isBanned?: boolean;
+  /** Whether this membership is temporarily disabled */
+  isDisabled?: boolean;
+  /** Computed field indicating the membership is approved, verified, not banned, and not disabled */
+  isActive?: boolean;
+  /** Whether this member is external (not a member of the parent scope). External members may have restricted permissions. */
+  isExternal?: boolean;
+  /** Whether the actor is the owner of this entity */
+  isOwner?: boolean;
+  /** Whether the actor has admin privileges on this entity */
+  isAdmin?: boolean;
+  /** Aggregated permission bitmask combining profile-based and directly granted permissions */
+  permissions?: string;
+  /** Bitmask of permissions directly granted to this member (not from profiles) */
+  granted?: string;
+  /** References the user who holds this membership */
+  actorId: string;
+  /** References the entity (org or group) this membership belongs to */
+  entityId: string;
+  /** Whether this member has read-only access (blocks mutations when true) */
+  isReadOnly?: boolean;
+  profileId?: string;
+}
 export interface CreateForeignKeyConstraintInput {
   clientMutationId?: string;
   /** The `ForeignKeyConstraint` to be created by this mutation. */
@@ -12284,6 +13176,36 @@ export interface ForeignKeyConstraintInput {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+export interface CreateStorageModuleInput {
+  clientMutationId?: string;
+  /** The `StorageModule` to be created by this mutation. */
+  storageModule: StorageModuleInput;
+}
+/** An input for mutations affecting `StorageModule` */
+export interface StorageModuleInput {
+  id?: string;
+  databaseId: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  bucketsTableId?: string;
+  filesTableId?: string;
+  bucketsTableName?: string;
+  filesTableName?: string;
+  membershipType?: number;
+  policies?: unknown;
+  skipDefaultPolicyTables?: string[];
+  entityTableId?: string;
+  endpoint?: string;
+  publicUrlPrefix?: string;
+  provider?: string;
+  allowedOrigins?: string[];
+  restrictReads?: boolean;
+  uploadUrlExpirySeconds?: number;
+  downloadUrlExpirySeconds?: number;
+  defaultMaxFileSize?: string;
+  maxFilenameLength?: number;
+  cacheTtlSeconds?: number;
 }
 export interface CreateTableInput {
   clientMutationId?: string;
@@ -12311,37 +13233,6 @@ export interface TableInput {
   inheritsId?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-export interface CreateStorageModuleInput {
-  clientMutationId?: string;
-  /** The `StorageModule` to be created by this mutation. */
-  storageModule: StorageModuleInput;
-}
-/** An input for mutations affecting `StorageModule` */
-export interface StorageModuleInput {
-  id?: string;
-  databaseId: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  bucketsTableId?: string;
-  filesTableId?: string;
-  uploadRequestsTableId?: string;
-  bucketsTableName?: string;
-  filesTableName?: string;
-  uploadRequestsTableName?: string;
-  membershipType?: number;
-  policies?: unknown;
-  skipDefaultPolicyTables?: string[];
-  entityTableId?: string;
-  endpoint?: string;
-  publicUrlPrefix?: string;
-  provider?: string;
-  allowedOrigins?: string[];
-  uploadUrlExpirySeconds?: number;
-  downloadUrlExpirySeconds?: number;
-  defaultMaxFileSize?: string;
-  maxFilenameLength?: number;
-  cacheTtlSeconds?: number;
 }
 export interface CreateEntityTypeProvisionInput {
   clientMutationId?: string;
@@ -12412,7 +13303,7 @@ export interface EntityTypeProvisionInput {
   hasLevels?: boolean;
   /**
    * Whether to provision storage_module for this type. Defaults to false.
-   *      When true, creates {prefix}_buckets, {prefix}_files, and {prefix}_upload_requests tables
+   *      When true, creates {prefix}_buckets and {prefix}_files tables
    *      with entity-scoped RLS (AuthzEntityMembership) using the entity's membership_type.
    *      Storage tables get owner_id FK to the entity table, so files are owned by the entity.
    */
@@ -12445,7 +13336,7 @@ export interface EntityTypeProvisionInput {
    *        - allowed_origins     (text[])         per-bucket CORS override
    *        - provisions (jsonb object) optional: customize storage tables
    *                                   with additional nodes, fields, grants, and policies.
-   *                                   Keyed by table role: "files", "buckets", "upload_requests".
+   *                                   Keyed by table role: "files", "buckets".
    *                                   Each value uses the same shape as table_provision:
    *                                   { nodes, fields, grants, use_rls, policies }. Fanned out
    *                                   to secure_table_provision targeting the corresponding table.
@@ -12818,6 +13709,17 @@ export interface DefaultIdsModulePatch {
   id?: string;
   databaseId?: string;
 }
+export interface UpdateRoleTypeInput {
+  clientMutationId?: string;
+  id: number;
+  /** An object where the defined keys will be set on the `RoleType` being updated. */
+  roleTypePatch: RoleTypePatch;
+}
+/** Represents an update to a `RoleType`. Fields that are set will be updated. */
+export interface RoleTypePatch {
+  id?: number;
+  name?: string;
+}
 export interface UpdateViewTableInput {
   clientMutationId?: string;
   id: string;
@@ -12849,6 +13751,22 @@ export interface ApiSchemaPatch {
   /** API that exposes this schema */
   apiId?: string;
 }
+export interface UpdateOrgMemberInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgMember` being updated. */
+  orgMemberPatch: OrgMemberPatch;
+}
+/** Represents an update to a `OrgMember`. Fields that are set will be updated. */
+export interface OrgMemberPatch {
+  id?: string;
+  /** Whether this member has admin privileges */
+  isAdmin?: boolean;
+  /** References the user who is a member */
+  actorId?: string;
+  /** References the entity (org or group) this member belongs to */
+  entityId?: string;
+}
 export interface UpdateSiteThemeInput {
   clientMutationId?: string;
   /** Unique identifier for this theme record */
@@ -12866,34 +13784,6 @@ export interface SiteThemePatch {
   siteId?: string;
   /** JSONB object containing theme tokens (colors, typography, spacing, etc.) */
   theme?: unknown;
-}
-export interface UpdateOrgMemberInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `OrgMember` being updated. */
-  orgMemberPatch: OrgMemberPatch;
-}
-/** Represents an update to a `OrgMember`. Fields that are set will be updated. */
-export interface OrgMemberPatch {
-  id?: string;
-  /** Whether this member has admin privileges */
-  isAdmin?: boolean;
-  /** References the user who is a member */
-  actorId?: string;
-  /** References the entity (org or group) this member belongs to */
-  entityId?: string;
-}
-export interface UpdateAppPermissionDefaultInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `AppPermissionDefault` being updated. */
-  appPermissionDefaultPatch: AppPermissionDefaultPatch;
-}
-/** Represents an update to a `AppPermissionDefault`. Fields that are set will be updated. */
-export interface AppPermissionDefaultPatch {
-  id?: string;
-  /** Default permission bitmask applied to new members */
-  permissions?: string;
 }
 export interface UpdateRefInput {
   clientMutationId?: string;
@@ -12931,46 +13821,6 @@ export interface StorePatch {
   /** The current head tree_id for this store. */
   hash?: string;
   createdAt?: string;
-}
-export interface UpdateApiModuleInput {
-  clientMutationId?: string;
-  /** Unique identifier for this API module record */
-  id: string;
-  /** An object where the defined keys will be set on the `ApiModule` being updated. */
-  apiModulePatch: ApiModulePatch;
-}
-/** Represents an update to a `ApiModule`. Fields that are set will be updated. */
-export interface ApiModulePatch {
-  /** Unique identifier for this API module record */
-  id?: string;
-  /** Reference to the metaschema database */
-  databaseId?: string;
-  /** API this module configuration belongs to */
-  apiId?: string;
-  /** Module name (e.g. auth, uploads, webhooks) */
-  name?: string;
-  /** JSON configuration data for this module */
-  data?: unknown;
-}
-export interface UpdateSiteModuleInput {
-  clientMutationId?: string;
-  /** Unique identifier for this site module record */
-  id: string;
-  /** An object where the defined keys will be set on the `SiteModule` being updated. */
-  siteModulePatch: SiteModulePatch;
-}
-/** Represents an update to a `SiteModule`. Fields that are set will be updated. */
-export interface SiteModulePatch {
-  /** Unique identifier for this site module record */
-  id?: string;
-  /** Reference to the metaschema database */
-  databaseId?: string;
-  /** Site this module configuration belongs to */
-  siteId?: string;
-  /** Module name (e.g. user_auth_module, analytics) */
-  name?: string;
-  /** JSON configuration data for this module */
-  data?: unknown;
 }
 export interface UpdateEncryptedSecretsModuleInput {
   clientMutationId?: string;
@@ -13014,30 +13864,57 @@ export interface SecretsModulePatch {
   tableId?: string;
   tableName?: string;
 }
-export interface UpdateRoleTypeInput {
-  clientMutationId?: string;
-  id: number;
-  /** An object where the defined keys will be set on the `RoleType` being updated. */
-  roleTypePatch: RoleTypePatch;
-}
-/** Represents an update to a `RoleType`. Fields that are set will be updated. */
-export interface RoleTypePatch {
-  id?: number;
-  name?: string;
-}
-export interface UpdateOrgPermissionDefaultInput {
+export interface UpdateAppPermissionDefaultInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `OrgPermissionDefault` being updated. */
-  orgPermissionDefaultPatch: OrgPermissionDefaultPatch;
+  /** An object where the defined keys will be set on the `AppPermissionDefault` being updated. */
+  appPermissionDefaultPatch: AppPermissionDefaultPatch;
 }
-/** Represents an update to a `OrgPermissionDefault`. Fields that are set will be updated. */
-export interface OrgPermissionDefaultPatch {
+/** Represents an update to a `AppPermissionDefault`. Fields that are set will be updated. */
+export interface AppPermissionDefaultPatch {
   id?: string;
   /** Default permission bitmask applied to new members */
   permissions?: string;
-  /** References the entity these default permissions apply to */
-  entityId?: string;
+}
+export interface UpdateApiModuleInput {
+  clientMutationId?: string;
+  /** Unique identifier for this API module record */
+  id: string;
+  /** An object where the defined keys will be set on the `ApiModule` being updated. */
+  apiModulePatch: ApiModulePatch;
+}
+/** Represents an update to a `ApiModule`. Fields that are set will be updated. */
+export interface ApiModulePatch {
+  /** Unique identifier for this API module record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId?: string;
+  /** API this module configuration belongs to */
+  apiId?: string;
+  /** Module name (e.g. auth, uploads, webhooks) */
+  name?: string;
+  /** JSON configuration data for this module */
+  data?: unknown;
+}
+export interface UpdateSiteModuleInput {
+  clientMutationId?: string;
+  /** Unique identifier for this site module record */
+  id: string;
+  /** An object where the defined keys will be set on the `SiteModule` being updated. */
+  siteModulePatch: SiteModulePatch;
+}
+/** Represents an update to a `SiteModule`. Fields that are set will be updated. */
+export interface SiteModulePatch {
+  /** Unique identifier for this site module record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId?: string;
+  /** Site this module configuration belongs to */
+  siteId?: string;
+  /** Module name (e.g. user_auth_module, analytics) */
+  name?: string;
+  /** JSON configuration data for this module */
+  data?: unknown;
 }
 export interface UpdateSchemaGrantInput {
   clientMutationId?: string;
@@ -13152,33 +14029,111 @@ export interface AppOwnerGrantPatch {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface UpdateAppLimitDefaultInput {
+export interface UpdateAppAchievementInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `AppLimitDefault` being updated. */
-  appLimitDefaultPatch: AppLimitDefaultPatch;
+  /** An object where the defined keys will be set on the `AppAchievement` being updated. */
+  appAchievementPatch: AppAchievementPatch;
 }
-/** Represents an update to a `AppLimitDefault`. Fields that are set will be updated. */
-export interface AppLimitDefaultPatch {
+/** Represents an update to a `AppAchievement`. Fields that are set will be updated. */
+export interface AppAchievementPatch {
   id?: string;
-  /** Name identifier of the limit this default applies to */
+  actorId?: string;
+  /** Name identifier of the level requirement being tracked */
   name?: string;
-  /** Default maximum usage allowed for this limit */
-  max?: number;
+  /** Cumulative count of completed steps toward this requirement */
+  count?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
-export interface UpdateOrgLimitDefaultInput {
+export interface UpdateAppStepInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `OrgLimitDefault` being updated. */
-  orgLimitDefaultPatch: OrgLimitDefaultPatch;
+  /** An object where the defined keys will be set on the `AppStep` being updated. */
+  appStepPatch: AppStepPatch;
 }
-/** Represents an update to a `OrgLimitDefault`. Fields that are set will be updated. */
-export interface OrgLimitDefaultPatch {
+/** Represents an update to a `AppStep`. Fields that are set will be updated. */
+export interface AppStepPatch {
   id?: string;
-  /** Name identifier of the limit this default applies to */
+  actorId?: string;
+  /** Name identifier of the level requirement this step fulfills */
   name?: string;
-  /** Default maximum usage allowed for this limit */
-  max?: number;
+  /** Number of units completed in this step action */
+  count?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface UpdateOrgPermissionDefaultInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgPermissionDefault` being updated. */
+  orgPermissionDefaultPatch: OrgPermissionDefaultPatch;
+}
+/** Represents an update to a `OrgPermissionDefault`. Fields that are set will be updated. */
+export interface OrgPermissionDefaultPatch {
+  id?: string;
+  /** Default permission bitmask applied to new members */
+  permissions?: string;
+  /** References the entity these default permissions apply to */
+  entityId?: string;
+}
+export interface UpdateAppPermissionInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `AppPermission` being updated. */
+  appPermissionPatch: AppPermissionPatch;
+}
+/** Represents an update to a `AppPermission`. Fields that are set will be updated. */
+export interface AppPermissionPatch {
+  id?: string;
+  /** Human-readable permission name (e.g. read, write, manage) */
+  name?: string;
+  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
+  bitnum?: number;
+  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
+  bitstr?: string;
+  /** Human-readable description of what this permission allows */
+  description?: string;
+}
+export interface UpdateOrgPermissionInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgPermission` being updated. */
+  orgPermissionPatch: OrgPermissionPatch;
+}
+/** Represents an update to a `OrgPermission`. Fields that are set will be updated. */
+export interface OrgPermissionPatch {
+  id?: string;
+  /** Human-readable permission name (e.g. read, write, manage) */
+  name?: string;
+  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
+  bitnum?: number;
+  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
+  bitstr?: string;
+  /** Human-readable description of what this permission allows */
+  description?: string;
+}
+export interface UpdateMembershipTypeInput {
+  clientMutationId?: string;
+  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
+  id: number;
+  /** An object where the defined keys will be set on the `MembershipType` being updated. */
+  membershipTypePatch: MembershipTypePatch;
+}
+/** Represents an update to a `MembershipType`. Fields that are set will be updated. */
+export interface MembershipTypePatch {
+  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
+  id?: number;
+  /** Human-readable name of the membership type */
+  name?: string;
+  /** Description of what this membership type represents */
+  description?: string;
+  /** Short prefix used to namespace tables and functions for this membership scope */
+  prefix?: string;
+  /** Parent membership type ID for SPRT cascade chain (e.g. type 2 parent=1, type 3 parent=2) */
+  parentMembershipType?: number;
+  /** When true, entities of this membership type get a one-to-one ID in the users table and a corresponding role_type entry, enabling them to own resources via owner_id FKs */
+  hasUsersTableEntry?: boolean;
 }
 export interface UpdateDefaultPrivilegeInput {
   clientMutationId?: string;
@@ -13371,22 +14326,53 @@ export interface OrgOwnerGrantPatch {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface UpdateObjectInput {
+export interface UpdateNodeTypeRegistryInput {
+  clientMutationId?: string;
+  name: string;
+  /** An object where the defined keys will be set on the `NodeTypeRegistry` being updated. */
+  nodeTypeRegistryPatch: NodeTypeRegistryPatch;
+}
+/** Represents an update to a `NodeTypeRegistry`. Fields that are set will be updated. */
+export interface NodeTypeRegistryPatch {
+  name?: string;
+  slug?: string;
+  category?: string;
+  displayName?: string;
+  description?: string;
+  parameterSchema?: unknown;
+  tags?: string[];
+}
+export interface UpdateAppLimitDefaultInput {
   clientMutationId?: string;
   id: string;
-  databaseId: string;
-  /** An object where the defined keys will be set on the `Object` being updated. */
-  objectPatch: ObjectPatch;
+  /** An object where the defined keys will be set on the `AppLimitDefault` being updated. */
+  appLimitDefaultPatch: AppLimitDefaultPatch;
 }
-/** Represents an update to a `Object`. Fields that are set will be updated. */
-export interface ObjectPatch {
+/** Represents an update to a `AppLimitDefault`. Fields that are set will be updated. */
+export interface AppLimitDefaultPatch {
   id?: string;
-  databaseId?: string;
-  kids?: string[];
-  ktree?: string[];
-  data?: unknown;
-  frzn?: boolean;
-  createdAt?: string;
+  /** Name identifier of the limit this default applies to */
+  name?: string;
+  /** Default maximum usage allowed for this limit */
+  max?: string;
+  /** Default soft limit threshold for warnings; NULL means no soft limit */
+  softMax?: string;
+}
+export interface UpdateOrgLimitDefaultInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgLimitDefault` being updated. */
+  orgLimitDefaultPatch: OrgLimitDefaultPatch;
+}
+/** Represents an update to a `OrgLimitDefault`. Fields that are set will be updated. */
+export interface OrgLimitDefaultPatch {
+  id?: string;
+  /** Name identifier of the limit this default applies to */
+  name?: string;
+  /** Default maximum usage allowed for this limit */
+  max?: string;
+  /** Default soft limit threshold for warnings; NULL means no soft limit */
+  softMax?: string;
 }
 export interface UpdateDatabaseInput {
   clientMutationId?: string;
@@ -13443,93 +14429,46 @@ export interface CryptoAddressPatch {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface UpdateAppPermissionInput {
+export interface UpdateAgentMessageInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `AppPermission` being updated. */
-  appPermissionPatch: AppPermissionPatch;
+  /** An object where the defined keys will be set on the `AgentMessage` being updated. */
+  agentMessagePatch: AgentMessagePatch;
 }
-/** Represents an update to a `AppPermission`. Fields that are set will be updated. */
-export interface AppPermissionPatch {
+/** Represents an update to a `AgentMessage`. Fields that are set will be updated. */
+export interface AgentMessagePatch {
+  /** Foreign key to agent_thread. Required; the FK constraint and cascade-delete behaviour are declared in the blueprint's relations[]. Declared explicitly in fields[] (rather than left for RelationBelongsTo to create) so that the DataInheritFromParent generator can validate this field exists when it provisions the entity_id-inheritance trigger. */
+  threadId?: string;
+  /** Entity (org/group/personal-org id) this message is filed under. Populated automatically by the DataInheritFromParent BEFORE INSERT trigger, which copies it from agent_thread.entity_id via thread_id; the application never sets this column directly. Used for org-scoped grouping queries (e.g. 'all my messages in org X'), NOT for RLS — RLS is owner-only. */
+  entityId?: string;
+  /** Who authored this message: 'user' or 'assistant'. Stored as free-text (no CHECK) so additional roles can be introduced without migration. Tool inputs/outputs do NOT get their own role — they appear as ToolPart entries inside the assistant message's `parts` array. */
+  authorRole?: string;
   id?: string;
-  /** Human-readable permission name (e.g. read, write, manage) */
-  name?: string;
-  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
-  bitnum?: number;
-  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
-  bitstr?: string;
-  /** Human-readable description of what this permission allows */
-  description?: string;
-}
-export interface UpdateOrgPermissionInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `OrgPermission` being updated. */
-  orgPermissionPatch: OrgPermissionPatch;
-}
-/** Represents an update to a `OrgPermission`. Fields that are set will be updated. */
-export interface OrgPermissionPatch {
-  id?: string;
-  /** Human-readable permission name (e.g. read, write, manage) */
-  name?: string;
-  /** Position of this permission in the bitmask (1-indexed), must be unique per permission set */
-  bitnum?: number;
-  /** Pre-computed bitmask with only this permission bit set, used for bitwise OR/AND operations */
-  bitstr?: string;
-  /** Human-readable description of what this permission allows */
-  description?: string;
-}
-export interface UpdateAppLimitInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `AppLimit` being updated. */
-  appLimitPatch: AppLimitPatch;
-}
-/** Represents an update to a `AppLimit`. Fields that are set will be updated. */
-export interface AppLimitPatch {
-  id?: string;
-  /** Name identifier of the limit being tracked */
-  name?: string;
-  /** User whose usage is being tracked against this limit */
-  actorId?: string;
-  /** Current usage count for this actor and limit */
-  num?: number;
-  /** Maximum allowed usage; NULL means use the default limit value */
-  max?: number;
-}
-export interface UpdateAppAchievementInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `AppAchievement` being updated. */
-  appAchievementPatch: AppAchievementPatch;
-}
-/** Represents an update to a `AppAchievement`. Fields that are set will be updated. */
-export interface AppAchievementPatch {
-  id?: string;
-  actorId?: string;
-  /** Name identifier of the level requirement being tracked */
-  name?: string;
-  /** Cumulative count of completed steps toward this requirement */
-  count?: number;
+  /** Timestamp when this record was created */
   createdAt?: string;
+  /** Timestamp when this record was last updated */
   updatedAt?: string;
+  /** User who owns this record */
+  ownerId?: string;
+  /** JSON metadata for extensible key-value storage */
+  parts?: unknown;
 }
-export interface UpdateAppStepInput {
+export interface UpdateObjectInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `AppStep` being updated. */
-  appStepPatch: AppStepPatch;
+  databaseId: string;
+  /** An object where the defined keys will be set on the `Object` being updated. */
+  objectPatch: ObjectPatch;
 }
-/** Represents an update to a `AppStep`. Fields that are set will be updated. */
-export interface AppStepPatch {
+/** Represents an update to a `Object`. Fields that are set will be updated. */
+export interface ObjectPatch {
   id?: string;
-  actorId?: string;
-  /** Name identifier of the level requirement this step fulfills */
-  name?: string;
-  /** Number of units completed in this step action */
-  count?: number;
+  databaseId?: string;
+  kids?: string[];
+  ktree?: string[];
+  data?: unknown;
+  frzn?: boolean;
   createdAt?: string;
-  updatedAt?: string;
 }
 export interface UpdateSiteMetadatumInput {
   clientMutationId?: string;
@@ -13555,59 +14494,27 @@ export interface SiteMetadatumPatch {
   /** Upload for Open Graph image for social media previews */
   ogImageUpload?: File;
 }
-export interface UpdateAppClaimedInviteInput {
+export interface UpdateAppLevelRequirementInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `AppClaimedInvite` being updated. */
-  appClaimedInvitePatch: AppClaimedInvitePatch;
+  /** An object where the defined keys will be set on the `AppLevelRequirement` being updated. */
+  appLevelRequirementPatch: AppLevelRequirementPatch;
 }
-/** Represents an update to a `AppClaimedInvite`. Fields that are set will be updated. */
-export interface AppClaimedInvitePatch {
+/** Represents an update to a `AppLevelRequirement`. Fields that are set will be updated. */
+export interface AppLevelRequirementPatch {
   id?: string;
-  /** Optional JSON payload captured at the time the invite was claimed */
-  data?: unknown;
-  /** User ID of the original invitation sender */
-  senderId?: string;
-  /** User ID of the person who claimed and redeemed the invitation */
-  receiverId?: string;
+  /** Name identifier of the requirement (matches step names) */
+  name?: string;
+  /** Name of the level this requirement belongs to */
+  level?: string;
+  /** Human-readable description of what this requirement entails */
+  description?: string;
+  /** Number of steps needed to satisfy this requirement */
+  requiredCount?: number;
+  /** Display ordering priority; lower values appear first */
+  priority?: number;
   createdAt?: string;
   updatedAt?: string;
-}
-export interface UpdateAppMembershipDefaultInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `AppMembershipDefault` being updated. */
-  appMembershipDefaultPatch: AppMembershipDefaultPatch;
-}
-/** Represents an update to a `AppMembershipDefault`. Fields that are set will be updated. */
-export interface AppMembershipDefaultPatch {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** Whether new members are automatically approved upon joining */
-  isApproved?: boolean;
-  /** Whether new members are automatically verified upon joining */
-  isVerified?: boolean;
-}
-export interface UpdateOrgMembershipDefaultInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `OrgMembershipDefault` being updated. */
-  orgMembershipDefaultPatch: OrgMembershipDefaultPatch;
-}
-/** Represents an update to a `OrgMembershipDefault`. Fields that are set will be updated. */
-export interface OrgMembershipDefaultPatch {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** Whether new members are automatically approved upon joining */
-  isApproved?: boolean;
-  /** References the entity these membership defaults apply to */
-  entityId?: string;
 }
 export interface UpdateFullTextSearchInput {
   clientMutationId?: string;
@@ -13740,46 +14647,83 @@ export interface PhoneNumberPatch {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface UpdateOrgLimitInput {
+export interface UpdateAppClaimedInviteInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `OrgLimit` being updated. */
-  orgLimitPatch: OrgLimitPatch;
+  /** An object where the defined keys will be set on the `AppClaimedInvite` being updated. */
+  appClaimedInvitePatch: AppClaimedInvitePatch;
 }
-/** Represents an update to a `OrgLimit`. Fields that are set will be updated. */
-export interface OrgLimitPatch {
+/** Represents an update to a `AppClaimedInvite`. Fields that are set will be updated. */
+export interface AppClaimedInvitePatch {
   id?: string;
-  /** Name identifier of the limit being tracked */
-  name?: string;
-  /** User whose usage is being tracked against this limit */
-  actorId?: string;
-  /** Current usage count for this actor and limit */
-  num?: number;
-  /** Maximum allowed usage; NULL means use the default limit value */
-  max?: number;
+  /** Optional JSON payload captured at the time the invite was claimed */
+  data?: unknown;
+  /** User ID of the original invitation sender */
+  senderId?: string;
+  /** User ID of the person who claimed and redeemed the invitation */
+  receiverId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface UpdateAppMembershipDefaultInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `AppMembershipDefault` being updated. */
+  appMembershipDefaultPatch: AppMembershipDefaultPatch;
+}
+/** Represents an update to a `AppMembershipDefault`. Fields that are set will be updated. */
+export interface AppMembershipDefaultPatch {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** Whether new members are automatically approved upon joining */
+  isApproved?: boolean;
+  /** Whether new members are automatically verified upon joining */
+  isVerified?: boolean;
+}
+export interface UpdateOrgMembershipDefaultInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgMembershipDefault` being updated. */
+  orgMembershipDefaultPatch: OrgMembershipDefaultPatch;
+}
+/** Represents an update to a `OrgMembershipDefault`. Fields that are set will be updated. */
+export interface OrgMembershipDefaultPatch {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** Whether new members are automatically approved upon joining */
+  isApproved?: boolean;
+  /** References the entity these membership defaults apply to */
   entityId?: string;
 }
-export interface UpdateMembershipTypeInput {
+export interface UpdateAuditLogInput {
   clientMutationId?: string;
-  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
-  id: number;
-  /** An object where the defined keys will be set on the `MembershipType` being updated. */
-  membershipTypePatch: MembershipTypePatch;
+  id: string;
+  /** An object where the defined keys will be set on the `AuditLog` being updated. */
+  auditLogPatch: AuditLogPatch;
 }
-/** Represents an update to a `MembershipType`. Fields that are set will be updated. */
-export interface MembershipTypePatch {
-  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
-  id?: number;
-  /** Human-readable name of the membership type */
-  name?: string;
-  /** Description of what this membership type represents */
-  description?: string;
-  /** Short prefix used to namespace tables and functions for this membership scope */
-  prefix?: string;
-  /** Parent membership type ID for SPRT cascade chain (e.g. type 2 parent=1, type 3 parent=2) */
-  parentMembershipType?: number;
-  /** When true, entities of this membership type get a one-to-one ID in the users table and a corresponding role_type entry, enabling them to own resources via owner_id FKs */
-  hasUsersTableEntry?: boolean;
+/** Represents an update to a `AuditLog`. Fields that are set will be updated. */
+export interface AuditLogPatch {
+  id?: string;
+  /** Type of authentication event (e.g. sign_in, sign_up, password_change, verify_email) */
+  event?: string;
+  /** User who performed the authentication action; NULL if user was deleted */
+  actorId?: string;
+  /** Request origin (domain) where the auth event occurred */
+  origin?: ConstructiveInternalTypeOrigin;
+  /** Browser or client user-agent string from the request */
+  userAgent?: string;
+  /** IP address of the client that initiated the auth event */
+  ipAddress?: string;
+  /** Whether the authentication attempt succeeded */
+  success?: boolean;
+  /** Timestamp when the audit event was recorded */
+  createdAt?: string;
 }
 export interface UpdateDomainInput {
   clientMutationId?: string;
@@ -13802,6 +14746,83 @@ export interface DomainPatch {
   subdomain?: ConstructiveInternalTypeHostname;
   /** Root domain of the hostname */
   domain?: ConstructiveInternalTypeHostname;
+}
+export interface UpdateAgentTaskInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `AgentTask` being updated. */
+  agentTaskPatch: AgentTaskPatch;
+}
+/** Represents an update to a `AgentTask`. Fields that are set will be updated. */
+export interface AgentTaskPatch {
+  /** Foreign key to agent_thread. Required; the FK constraint and cascade-delete behaviour are declared in the blueprint's relations[]. Declared explicitly in fields[] (rather than left for RelationBelongsTo to create) so that the DataInheritFromParent generator can validate this field exists when it provisions the entity_id-inheritance trigger. */
+  threadId?: string;
+  /** Entity (org/group/personal-org id) this task is filed under. Populated automatically by the DataInheritFromParent BEFORE INSERT trigger from agent_thread.entity_id via thread_id; the application never sets this column directly. */
+  entityId?: string;
+  /** Natural-language description of the work to do. Required. */
+  description?: string;
+  /** Who created the task: 'agent' (added by the LLM during planning) or 'user' (added manually by the human). Stored as free-text (no CHECK) so additional sources can be introduced later. */
+  source?: string;
+  /** Error message captured when the task transitioned to 'failed'. NULL while the task is still pending/in-progress, or when it completed successfully. */
+  error?: string;
+  id?: string;
+  /** Timestamp when this record was created */
+  createdAt?: string;
+  /** Timestamp when this record was last updated */
+  updatedAt?: string;
+  /** User who owns this record */
+  ownerId?: string;
+  /** Current status of this record */
+  status?: string;
+}
+export interface UpdateAgentThreadInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `AgentThread` being updated. */
+  agentThreadPatch: AgentThreadPatch;
+}
+/** Represents an update to a `AgentThread`. Fields that are set will be updated. */
+export interface AgentThreadPatch {
+  /** Human-readable conversation title. Typically auto-generated from the first user message and editable by the user. NULL until a title has been computed. */
+  title?: string;
+  /** Conversation mode: 'ask' for plain Q&A (no tool execution) or 'agent' for tool-enabled execution. Stored as free-text (no CHECK) so new modes can be added without migration. */
+  mode?: string;
+  /** Snapshot of the LLM model id this thread is bound to (e.g. 'gpt-5', 'claude-sonnet-4'). Captured on creation so a resumed conversation stays on the same model even if app defaults change. NULL means use the app default at request time. */
+  model?: string;
+  /** Snapshot of the system prompt active for this thread. Stored on the thread (rather than referenced from a registry) so the conversation remains reproducible even if a future system_prompt registry changes its canonical text. NULL means use the app default at request time. */
+  systemPrompt?: string;
+  id?: string;
+  /** Timestamp when this record was created */
+  createdAt?: string;
+  /** Timestamp when this record was last updated */
+  updatedAt?: string;
+  /** User who owns this record within the entity */
+  ownerId?: string;
+  /** Entity this record belongs to */
+  entityId?: string;
+  /** Current status of this record */
+  status?: string;
+}
+export interface UpdateEmailInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `Email` being updated. */
+  emailPatch: EmailPatch;
+}
+/** Represents an update to a `Email`. Fields that are set will be updated. */
+export interface EmailPatch {
+  id?: string;
+  ownerId?: string;
+  /** The email address */
+  email?: ConstructiveInternalTypeEmail;
+  /** Whether the email address has been verified via confirmation link */
+  isVerified?: boolean;
+  /** Whether this is the user's primary email address */
+  isPrimary?: boolean;
+  /** Optional user-provided label for this email (e.g. "Work", "Personal"). */
+  name?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 export interface UpdateAppGrantInput {
   clientMutationId?: string;
@@ -13863,26 +14884,53 @@ export interface OrgChartEdgePatch {
   /** Numeric seniority level for this position (higher = more senior) */
   positionLevel?: number;
 }
-export interface UpdateOrgGrantInput {
+export interface UpdateAppLimitInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `OrgGrant` being updated. */
-  orgGrantPatch: OrgGrantPatch;
+  /** An object where the defined keys will be set on the `AppLimit` being updated. */
+  appLimitPatch: AppLimitPatch;
 }
-/** Represents an update to a `OrgGrant`. Fields that are set will be updated. */
-export interface OrgGrantPatch {
+/** Represents an update to a `AppLimit`. Fields that are set will be updated. */
+export interface AppLimitPatch {
   id?: string;
-  /** Bitmask of permissions being granted or revoked */
-  permissions?: string;
-  /** True to grant the permissions, false to revoke them */
-  isGrant?: boolean;
-  /** The member receiving or losing the permission grant */
+  /** Name identifier of the limit being tracked */
+  name?: string;
+  /** User whose usage is being tracked against this limit */
   actorId?: string;
-  /** The entity (org or group) this permission grant applies to */
+  /** Current usage count for this actor and limit */
+  num?: string;
+  /** Maximum allowed usage; negative means unlimited. Modified by plans, credits, and achievements. */
+  max?: string;
+  /** Soft limit threshold for warnings; NULL means no soft limit. When num >= soft_max, consumers should warn but still allow until max is reached. */
+  softMax?: string;
+  /** Start of the current metering window; NULL means no time window */
+  windowStart?: string;
+  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
+  windowDuration?: IntervalInput;
+}
+export interface UpdateOrgLimitAggregateInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgLimitAggregate` being updated. */
+  orgLimitAggregatePatch: OrgLimitAggregatePatch;
+}
+/** Represents an update to a `OrgLimitAggregate`. Fields that are set will be updated. */
+export interface OrgLimitAggregatePatch {
+  id?: string;
+  /** Name identifier of the aggregate limit being tracked */
+  name?: string;
+  /** Entity (org) whose aggregate usage is being tracked */
   entityId?: string;
-  grantorId?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  /** Current aggregate usage count for this entity and limit */
+  num?: string;
+  /** Maximum allowed aggregate usage; negative means unlimited */
+  max?: string;
+  /** Soft limit threshold for warnings; NULL means no soft limit */
+  softMax?: string;
+  /** Start of the current metering window; NULL means no time window */
+  windowStart?: string;
+  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
+  windowDuration?: IntervalInput;
 }
 export interface UpdateBlueprintConstructionInput {
   clientMutationId?: string;
@@ -13915,6 +14963,26 @@ export interface BlueprintConstructionPatch {
   createdAt?: string;
   /** Timestamp when this construction attempt was last modified. */
   updatedAt?: string;
+}
+export interface UpdatePlansModuleInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `PlansModule` being updated. */
+  plansModulePatch: PlansModulePatch;
+}
+/** Represents an update to a `PlansModule`. Fields that are set will be updated. */
+export interface PlansModulePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  plansTableId?: string;
+  plansTableName?: string;
+  planLimitsTableId?: string;
+  planLimitsTableName?: string;
+  applyPlanFunction?: string;
+  applyPlanAggregateFunction?: string;
+  prefix?: string;
 }
 export interface UpdateRlsModuleInput {
   clientMutationId?: string;
@@ -13956,51 +15024,26 @@ export interface SessionsModulePatch {
   sessionCredentialsTable?: string;
   authSettingsTable?: string;
 }
-export interface UpdateAppLevelRequirementInput {
+export interface UpdateOrgGrantInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `AppLevelRequirement` being updated. */
-  appLevelRequirementPatch: AppLevelRequirementPatch;
+  /** An object where the defined keys will be set on the `OrgGrant` being updated. */
+  orgGrantPatch: OrgGrantPatch;
 }
-/** Represents an update to a `AppLevelRequirement`. Fields that are set will be updated. */
-export interface AppLevelRequirementPatch {
+/** Represents an update to a `OrgGrant`. Fields that are set will be updated. */
+export interface OrgGrantPatch {
   id?: string;
-  /** Name identifier of the requirement (matches step names) */
-  name?: string;
-  /** Name of the level this requirement belongs to */
-  level?: string;
-  /** Human-readable description of what this requirement entails */
-  description?: string;
-  /** Number of steps needed to satisfy this requirement */
-  requiredCount?: number;
-  /** Display ordering priority; lower values appear first */
-  priority?: number;
+  /** Bitmask of permissions being granted or revoked */
+  permissions?: string;
+  /** True to grant the permissions, false to revoke them */
+  isGrant?: boolean;
+  /** The member receiving or losing the permission grant */
+  actorId?: string;
+  /** The entity (org or group) this permission grant applies to */
+  entityId?: string;
+  grantorId?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-export interface UpdateAuditLogInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `AuditLog` being updated. */
-  auditLogPatch: AuditLogPatch;
-}
-/** Represents an update to a `AuditLog`. Fields that are set will be updated. */
-export interface AuditLogPatch {
-  id?: string;
-  /** Type of authentication event (e.g. sign_in, sign_up, password_change, verify_email) */
-  event?: string;
-  /** User who performed the authentication action; NULL if user was deleted */
-  actorId?: string;
-  /** Request origin (domain) where the auth event occurred */
-  origin?: ConstructiveInternalTypeOrigin;
-  /** Browser or client user-agent string from the request */
-  userAgent?: string;
-  /** IP address of the client that initiated the auth event */
-  ipAddress?: string;
-  /** Whether the authentication attempt succeeded */
-  success?: boolean;
-  /** Timestamp when the audit event was recorded */
-  createdAt?: string;
 }
 export interface UpdateAppLevelInput {
   clientMutationId?: string;
@@ -14023,6 +15066,31 @@ export interface AppLevelPatch {
   updatedAt?: string;
   /** Upload for Badge or icon image associated with this level */
   imageUpload?: File;
+}
+export interface UpdateOrgLimitInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgLimit` being updated. */
+  orgLimitPatch: OrgLimitPatch;
+}
+/** Represents an update to a `OrgLimit`. Fields that are set will be updated. */
+export interface OrgLimitPatch {
+  id?: string;
+  /** Name identifier of the limit being tracked */
+  name?: string;
+  /** User whose usage is being tracked against this limit */
+  actorId?: string;
+  /** Current usage count for this actor and limit */
+  num?: string;
+  /** Maximum allowed usage; negative means unlimited. Modified by plans, credits, and achievements. */
+  max?: string;
+  /** Soft limit threshold for warnings; NULL means no soft limit. When num >= soft_max, consumers should warn but still allow until max is reached. */
+  softMax?: string;
+  /** Start of the current metering window; NULL means no time window */
+  windowStart?: string;
+  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
+  windowDuration?: IntervalInput;
+  entityId?: string;
 }
 export interface UpdateBlueprintInput {
   clientMutationId?: string;
@@ -14079,27 +15147,6 @@ export interface DenormalizedTableFieldPatch {
   funcName?: string;
   funcOrder?: number;
 }
-export interface UpdateEmailInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `Email` being updated. */
-  emailPatch: EmailPatch;
-}
-/** Represents an update to a `Email`. Fields that are set will be updated. */
-export interface EmailPatch {
-  id?: string;
-  ownerId?: string;
-  /** The email address */
-  email?: ConstructiveInternalTypeEmail;
-  /** Whether the email address has been verified via confirmation link */
-  isVerified?: boolean;
-  /** Whether this is the user's primary email address */
-  isPrimary?: boolean;
-  /** Optional user-provided label for this email (e.g. "Work", "Personal"). */
-  name?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 export interface UpdateOrgMemberProfileInput {
   clientMutationId?: string;
   id: string;
@@ -14130,66 +15177,6 @@ export interface OrgMemberProfilePatch {
   /** Upload for Profile picture visible to other entity members */
   profilePictureUpload?: File;
 }
-export interface UpdateSecureTableProvisionInput {
-  clientMutationId?: string;
-  /** Unique identifier for this provision row. */
-  id: string;
-  /** An object where the defined keys will be set on the `SecureTableProvision` being updated. */
-  secureTableProvisionPatch: SecureTableProvisionPatch;
-}
-/** Represents an update to a `SecureTableProvision`. Fields that are set will be updated. */
-export interface SecureTableProvisionPatch {
-  /** Unique identifier for this provision row. */
-  id?: string;
-  /** The database this provision belongs to. Required. */
-  databaseId?: string;
-  /** Target schema for the table. Defaults to uuid_nil(); the trigger resolves this to the app_public schema if not explicitly provided. */
-  schemaId?: string;
-  /** Target table to provision. Defaults to uuid_nil(); the trigger creates or resolves the table via table_name if not explicitly provided. */
-  tableId?: string;
-  /** Name of the target table. Used to create or look up the table when table_id is not provided. If omitted, it is backfilled from the resolved table. */
-  tableName?: string;
-  /** Array of node objects to apply to the table. Each element is a jsonb object with a required "$type" key (one of: DataId, DataDirectOwner, DataEntityMembership, DataOwnershipInEntity, DataTimestamps, DataPeoplestamps, DataPublishable, DataSoftDelete, DataEmbedding, DataFullTextSearch, DataSlug, etc.) and an optional "data" key containing generator-specific configuration. Supports multiple nodes per row, matching the blueprint definition format. Example: [{"$type": "DataId"}, {"$type": "DataTimestamps"}, {"$type": "DataDirectOwner", "data": {"owner_field_name": "author_id"}}]. Defaults to '[]' (no node processing). */
-  nodes?: unknown;
-  /** If true and Row Level Security is not yet enabled on the target table, enable it. Automatically set to true by the trigger when policies[] is non-empty. Defaults to true. */
-  useRls?: boolean;
-  /** PostgreSQL array of jsonb field definition objects to create on the target table. Each object has keys: "name" (text, required), "type" (text, required), "default" (text, optional), "is_required" (boolean, optional, defaults to false), "min" (float, optional), "max" (float, optional), "regexp" (text, optional), "index" (boolean, optional, defaults to false — creates a btree index on the field). min/max generate CHECK constraints: for text/citext they constrain character_length, for integer/float types they constrain the value. regexp generates a CHECK (col ~ pattern) constraint for text/citext. Fields are created via metaschema.create_field() after any node_type generator runs, and their IDs are appended to out_fields. Example: ARRAY['{"name":"username","type":"citext","max":256,"regexp":"^[a-z0-9_]+$"}'::jsonb, '{"name":"score","type":"integer","min":0,"max":100}'::jsonb]. Defaults to '{}' (no additional fields). */
-  fields?: unknown[];
-  /** Array of grant objects defining table privileges. Each element is a jsonb object with keys: "roles" (text[], required — database roles to grant to, e.g. ["authenticated","admin"]), "privileges" (jsonb[], required — array of [privilege, columns] tuples, e.g. [["select","*"],["insert","*"]]). "*" means all columns; an array means column-level grant. Supports per-role privilege targeting: different grant entries can target different roles with different privileges. Example: [{"roles":["authenticated"],"privileges":[["select","*"]]},{"roles":["admin"],"privileges":[["insert","*"],["update","*"],["delete","*"]]}]. Defaults to '[]' (no grants). When policies[] omit explicit privileges/policy_role, they fall back to the verbs and first role from grants[]. */
-  grants?: unknown;
-  /** Array of policy objects to create on the target table. Each element is a jsonb object with keys: "$type" (text, required — the Authz* policy generator type, e.g. AuthzEntityMembership, AuthzMembership, AuthzDirectOwner, AuthzPublishable, AuthzAllowAll), "data" (jsonb, optional — opaque configuration passed to metaschema.create_policy(), structure varies by type), "privileges" (text[], optional — privileges the policy applies to, e.g. ["select","insert"]; if omitted, derived from grants[] privilege verbs), "policy_role" (text, optional — role the policy targets; if omitted, falls back to first role in first grants[] entry, or 'authenticated' if no grants), "permissive" (boolean, optional — PERMISSIVE or RESTRICTIVE; defaults to true), "policy_name" (text, optional — custom suffix for the generated policy name; if omitted, auto-derived from $type by stripping Authz prefix). Supports multiple policies per row. Example: [{"$type": "AuthzEntityMembership", "data": {"entity_field": "owner_id", "membership_type": 3}, "privileges": ["select", "insert"]}, {"$type": "AuthzDirectOwner", "data": {"entity_field": "actor_id"}, "privileges": ["update", "delete"]}]. Defaults to '[]' (no policies created). When non-empty, the trigger automatically enables RLS. */
-  policies?: unknown;
-  /** Output column populated by the trigger after field creation. Contains the UUIDs of the metaschema fields created on the target table by this provision row's nodes. NULL when nodes is empty or before the trigger runs. Callers should not set this directly. */
-  outFields?: string[];
-}
-export interface UpdateOrgMembershipSettingInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `OrgMembershipSetting` being updated. */
-  orgMembershipSettingPatch: OrgMembershipSettingPatch;
-}
-/** Represents an update to a `OrgMembershipSetting`. Fields that are set will be updated. */
-export interface OrgMembershipSettingPatch {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** References the entity these settings apply to */
-  entityId?: string;
-  /** When a member is deleted, whether to cascade-remove their descendant-entity memberships */
-  deleteMemberCascadeChildren?: boolean;
-  /** When a child entity is created, whether to auto-add existing org-level owners as child-entity owners */
-  createChildCascadeOwners?: boolean;
-  /** When a child entity is created, whether to auto-add existing org-level admins as child-entity admins */
-  createChildCascadeAdmins?: boolean;
-  /** When a child entity is created, whether to auto-add existing org-level members (non-admin, non-owner) as child-entity members */
-  createChildCascadeMembers?: boolean;
-  /** Whether descendants of this org may admit members who are not already org members (outside-collaborators toggle) */
-  allowExternalMembers?: boolean;
-  /** Whether member_profiles.email is snapshot on join and kept synced with the user's primary email. When FALSE, the email field is left blank and never synced from the user's primary email. */
-  populateMemberEmail?: boolean;
-}
 export interface UpdateDatabaseTransferInput {
   clientMutationId?: string;
   id: string;
@@ -14212,6 +15199,29 @@ export interface DatabaseTransferPatch {
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;
+}
+export interface UpdateBillingModuleInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `BillingModule` being updated. */
+  billingModulePatch: BillingModulePatch;
+}
+/** Represents an update to a `BillingModule`. Fields that are set will be updated. */
+export interface BillingModulePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  metersTableId?: string;
+  metersTableName?: string;
+  planSubscriptionsTableId?: string;
+  planSubscriptionsTableName?: string;
+  ledgerTableId?: string;
+  ledgerTableName?: string;
+  balancesTableId?: string;
+  balancesTableName?: string;
+  recordUsageFunction?: string;
+  prefix?: string;
 }
 export interface UpdateCryptoAuthModuleInput {
   clientMutationId?: string;
@@ -14290,6 +15300,38 @@ export interface InvitesModulePatch {
   prefix?: string;
   membershipType?: number;
   entityTableId?: string;
+}
+export interface UpdateSecureTableProvisionInput {
+  clientMutationId?: string;
+  /** Unique identifier for this provision row. */
+  id: string;
+  /** An object where the defined keys will be set on the `SecureTableProvision` being updated. */
+  secureTableProvisionPatch: SecureTableProvisionPatch;
+}
+/** Represents an update to a `SecureTableProvision`. Fields that are set will be updated. */
+export interface SecureTableProvisionPatch {
+  /** Unique identifier for this provision row. */
+  id?: string;
+  /** The database this provision belongs to. Required. */
+  databaseId?: string;
+  /** Target schema for the table. Defaults to uuid_nil(); the trigger resolves this to the app_public schema if not explicitly provided. */
+  schemaId?: string;
+  /** Target table to provision. Defaults to uuid_nil(); the trigger creates or resolves the table via table_name if not explicitly provided. */
+  tableId?: string;
+  /** Name of the target table. Used to create or look up the table when table_id is not provided. If omitted, it is backfilled from the resolved table. */
+  tableName?: string;
+  /** Array of node objects to apply to the table. Each element is a jsonb object with a required "$type" key (one of: DataId, DataDirectOwner, DataEntityMembership, DataOwnershipInEntity, DataTimestamps, DataPeoplestamps, DataPublishable, DataSoftDelete, DataEmbedding, DataFullTextSearch, DataSlug, etc.) and an optional "data" key containing generator-specific configuration. Supports multiple nodes per row, matching the blueprint definition format. Example: [{"$type": "DataId"}, {"$type": "DataTimestamps"}, {"$type": "DataDirectOwner", "data": {"owner_field_name": "author_id"}}]. Defaults to '[]' (no node processing). */
+  nodes?: unknown;
+  /** If true and Row Level Security is not yet enabled on the target table, enable it. Automatically set to true by the trigger when policies[] is non-empty. Defaults to true. */
+  useRls?: boolean;
+  /** PostgreSQL array of jsonb field definition objects to create on the target table. Each object has keys: "name" (text, required), "type" (text, required), "default" (text, optional), "is_required" (boolean, optional, defaults to false), "min" (float, optional), "max" (float, optional), "regexp" (text, optional), "index" (boolean, optional, defaults to false — creates a btree index on the field). min/max generate CHECK constraints: for text/citext they constrain character_length, for integer/float types they constrain the value. regexp generates a CHECK (col ~ pattern) constraint for text/citext. Fields are created via metaschema.create_field() after any node_type generator runs, and their IDs are appended to out_fields. Example: ARRAY['{"name":"username","type":"citext","max":256,"regexp":"^[a-z0-9_]+$"}'::jsonb, '{"name":"score","type":"integer","min":0,"max":100}'::jsonb]. Defaults to '{}' (no additional fields). */
+  fields?: unknown[];
+  /** Array of grant objects defining table privileges. Each element is a jsonb object with keys: "roles" (text[], required — database roles to grant to, e.g. ["authenticated","admin"]), "privileges" (jsonb[], required — array of [privilege, columns] tuples, e.g. [["select","*"],["insert","*"]]). "*" means all columns; an array means column-level grant. Supports per-role privilege targeting: different grant entries can target different roles with different privileges. Example: [{"roles":["authenticated"],"privileges":[["select","*"]]},{"roles":["admin"],"privileges":[["insert","*"],["update","*"],["delete","*"]]}]. Defaults to '[]' (no grants). When policies[] omit explicit privileges/policy_role, they fall back to the verbs and first role from grants[]. */
+  grants?: unknown;
+  /** Array of policy objects to create on the target table. Each element is a jsonb object with keys: "$type" (text, required — the Authz* policy generator type, e.g. AuthzEntityMembership, AuthzMembership, AuthzDirectOwner, AuthzPublishable, AuthzAllowAll), "data" (jsonb, optional — opaque configuration passed to metaschema.create_policy(), structure varies by type), "privileges" (text[], optional — privileges the policy applies to, e.g. ["select","insert"]; if omitted, derived from grants[] privilege verbs), "policy_role" (text, optional — role the policy targets; if omitted, falls back to first role in first grants[] entry, or 'authenticated' if no grants), "permissive" (boolean, optional — PERMISSIVE or RESTRICTIVE; defaults to true), "policy_name" (text, optional — custom suffix for the generated policy name; if omitted, auto-derived from $type by stripping Authz prefix). Supports multiple policies per row. Example: [{"$type": "AuthzEntityMembership", "data": {"entity_field": "owner_id", "membership_type": 3}, "privileges": ["select", "insert"]}, {"$type": "AuthzDirectOwner", "data": {"entity_field": "actor_id"}, "privileges": ["update", "delete"]}]. Defaults to '[]' (no policies created). When non-empty, the trigger automatically enables RLS. */
+  policies?: unknown;
+  /** Output column populated by the trigger after field creation. Contains the UUIDs of the metaschema fields created on the target table by this provision row's nodes. NULL when nodes is empty or before the trigger runs. Callers should not set this directly. */
+  outFields?: string[];
 }
 export interface UpdateEnumInput {
   clientMutationId?: string;
@@ -14380,6 +15422,70 @@ export interface WebauthnAuthModulePatch {
   residentKey?: string;
   challengeExpiry?: IntervalInput;
 }
+export interface UpdateAppInviteInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `AppInvite` being updated. */
+  appInvitePatch: AppInvitePatch;
+}
+/** Represents an update to a `AppInvite`. Fields that are set will be updated. */
+export interface AppInvitePatch {
+  id?: string;
+  /** Email address of the invited recipient */
+  email?: ConstructiveInternalTypeEmail;
+  /** User ID of the member who sent this invitation */
+  senderId?: string;
+  /** Unique random hex token used to redeem this invitation */
+  inviteToken?: string;
+  /** Whether this invitation is still valid and can be redeemed */
+  inviteValid?: boolean;
+  /** Maximum number of times this invite can be claimed; -1 means unlimited */
+  inviteLimit?: number;
+  /** Running count of how many times this invite has been claimed */
+  inviteCount?: number;
+  /** Whether this invite can be claimed by multiple recipients */
+  multiple?: boolean;
+  /** Optional JSON payload of additional invite metadata */
+  data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
+  /** Timestamp after which this invitation can no longer be redeemed */
+  expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface UpdateOrgMembershipSettingInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgMembershipSetting` being updated. */
+  orgMembershipSettingPatch: OrgMembershipSettingPatch;
+}
+/** Represents an update to a `OrgMembershipSetting`. Fields that are set will be updated. */
+export interface OrgMembershipSettingPatch {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** References the entity these settings apply to */
+  entityId?: string;
+  /** When a member is deleted, whether to cascade-remove their descendant-entity memberships */
+  deleteMemberCascadeChildren?: boolean;
+  /** When a child entity is created, whether to auto-add existing org-level owners as child-entity owners */
+  createChildCascadeOwners?: boolean;
+  /** When a child entity is created, whether to auto-add existing org-level admins as child-entity admins */
+  createChildCascadeAdmins?: boolean;
+  /** When a child entity is created, whether to auto-add existing org-level members (non-admin, non-owner) as child-entity members */
+  createChildCascadeMembers?: boolean;
+  /** Whether descendants of this org may admit members who are not already org members (outside-collaborators toggle) */
+  allowExternalMembers?: boolean;
+  /** Controls how profile assignment on invites is validated: strict (permission + subset check), permission_only (permission only), or subset_only (subset check only) */
+  inviteProfileAssignmentMode?: string;
+  /** Whether member_profiles.email is snapshot on join and kept synced with the user's primary email. When FALSE, the email field is left blank and never synced from the user's primary email. */
+  populateMemberEmail?: boolean;
+  /** Allocation mode for sub-entity limits: pooled (shared parent cap, no per-entity budgets) or budgeted (explicit per-entity allocations, transfer enabled) */
+  limitAllocationMode?: string;
+}
 export interface UpdateAppInput {
   clientMutationId?: string;
   /** Unique identifier for this app */
@@ -14445,6 +15551,91 @@ export interface SitePatch {
   appleTouchIconUpload?: File;
   /** Upload for Primary logo image for the site */
   logoUpload?: File;
+}
+export interface UpdateNotificationsModuleInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `NotificationsModule` being updated. */
+  notificationsModulePatch: NotificationsModulePatch;
+}
+/** Represents an update to a `NotificationsModule`. Fields that are set will be updated. */
+export interface NotificationsModulePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  notificationsTableId?: string;
+  readStateTableId?: string;
+  preferencesTableId?: string;
+  channelsTableId?: string;
+  deliveryLogTableId?: string;
+  ownerTableId?: string;
+  userSettingsTableId?: string;
+  organizationSettingsTableId?: string;
+  hasChannels?: boolean;
+  hasPreferences?: boolean;
+  hasSettingsExtension?: boolean;
+  hasDigestMetadata?: boolean;
+  hasSubscriptions?: boolean;
+}
+export interface UpdatePermissionsModuleInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `PermissionsModule` being updated. */
+  permissionsModulePatch: PermissionsModulePatch;
+}
+/** Represents an update to a `PermissionsModule`. Fields that are set will be updated. */
+export interface PermissionsModulePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  tableId?: string;
+  tableName?: string;
+  defaultTableId?: string;
+  defaultTableName?: string;
+  bitlen?: number;
+  membershipType?: number;
+  entityTableId?: string;
+  actorTableId?: string;
+  prefix?: string;
+  getPaddedMask?: string;
+  getMask?: string;
+  getByMask?: string;
+  getMaskByName?: string;
+}
+export interface UpdateWebauthnCredentialInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `WebauthnCredential` being updated. */
+  webauthnCredentialPatch: WebauthnCredentialPatch;
+}
+/** Represents an update to a `WebauthnCredential`. Fields that are set will be updated. */
+export interface WebauthnCredentialPatch {
+  id?: string;
+  ownerId?: string;
+  /** Base64url-encoded credential ID returned by the authenticator. Globally unique per WebAuthn spec. */
+  credentialId?: string;
+  /** COSE-encoded public key bytes from the authenticator attestation. */
+  publicKey?: Base64EncodedBinary;
+  /** Monotonic signature counter. Strict-increase check during sign-in detects cloned credentials. 0 means the authenticator does not implement a counter. */
+  signCount?: string;
+  /** Random per-user handle sent to authenticators as user.id. Privacy-preserving; NOT the internal user UUID. */
+  webauthnUserId?: string;
+  /** Authenticator transport hints (e.g. usb, nfc, ble, internal, hybrid). Used to hint browser UI during sign-in. */
+  transports?: string[];
+  /** Either 'singleDevice' (hardware-bound) or 'multiDevice' (synced passkey). Enforced by CHECK constraint below. */
+  credentialDeviceType?: string;
+  /** Whether this credential is eligible for backup (syncing) per the authenticator's flags at registration. */
+  backupEligible?: boolean;
+  /** Current backup state; updated on each successful sign-in assertion. */
+  backupState?: boolean;
+  /** User-provided label for this credential (e.g. "YubiKey 5C", "iPhone 15"). Renamed via rename_passkey. */
+  name?: string;
+  /** Timestamp of the most recent successful sign-in assertion using this credential. */
+  lastUsedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 export interface UpdatePrimaryKeyConstraintInput {
   clientMutationId?: string;
@@ -14586,88 +15777,6 @@ export interface PolicyPatch {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface UpdateNotificationsModuleInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `NotificationsModule` being updated. */
-  notificationsModulePatch: NotificationsModulePatch;
-}
-/** Represents an update to a `NotificationsModule`. Fields that are set will be updated. */
-export interface NotificationsModulePatch {
-  id?: string;
-  databaseId?: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  notificationsTableId?: string;
-  readStateTableId?: string;
-  preferencesTableId?: string;
-  channelsTableId?: string;
-  deliveryLogTableId?: string;
-  ownerTableId?: string;
-  userSettingsTableId?: string;
-  organizationSettingsTableId?: string;
-  hasChannels?: boolean;
-  hasPreferences?: boolean;
-  hasSettingsExtension?: boolean;
-  hasDigestMetadata?: boolean;
-  hasSubscriptions?: boolean;
-}
-export interface UpdatePermissionsModuleInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `PermissionsModule` being updated. */
-  permissionsModulePatch: PermissionsModulePatch;
-}
-/** Represents an update to a `PermissionsModule`. Fields that are set will be updated. */
-export interface PermissionsModulePatch {
-  id?: string;
-  databaseId?: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  tableId?: string;
-  tableName?: string;
-  defaultTableId?: string;
-  defaultTableName?: string;
-  bitlen?: number;
-  membershipType?: number;
-  entityTableId?: string;
-  actorTableId?: string;
-  prefix?: string;
-  getPaddedMask?: string;
-  getMask?: string;
-  getByMask?: string;
-  getMaskByName?: string;
-}
-export interface UpdateAppInviteInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `AppInvite` being updated. */
-  appInvitePatch: AppInvitePatch;
-}
-/** Represents an update to a `AppInvite`. Fields that are set will be updated. */
-export interface AppInvitePatch {
-  id?: string;
-  /** Email address of the invited recipient */
-  email?: ConstructiveInternalTypeEmail;
-  /** User ID of the member who sent this invitation */
-  senderId?: string;
-  /** Unique random hex token used to redeem this invitation */
-  inviteToken?: string;
-  /** Whether this invitation is still valid and can be redeemed */
-  inviteValid?: boolean;
-  /** Maximum number of times this invite can be claimed; -1 means unlimited */
-  inviteLimit?: number;
-  /** Running count of how many times this invite has been claimed */
-  inviteCount?: number;
-  /** Whether this invite can be claimed by multiple recipients */
-  multiple?: boolean;
-  /** Optional JSON payload of additional invite metadata */
-  data?: unknown;
-  /** Timestamp after which this invitation can no longer be redeemed */
-  expiresAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 export interface UpdateEmbeddingChunkInput {
   clientMutationId?: string;
   id: string;
@@ -14692,181 +15801,6 @@ export interface EmbeddingChunkPatch {
   enqueueChunkingJob?: boolean;
   chunkingTaskName?: string;
   parentFkFieldId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface UpdateSchemaInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `Schema` being updated. */
-  schemaPatch: SchemaPatch;
-}
-/** Represents an update to a `Schema`. Fields that are set will be updated. */
-export interface SchemaPatch {
-  id?: string;
-  databaseId?: string;
-  name?: string;
-  schemaName?: string;
-  label?: string;
-  description?: string;
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  tags?: string[];
-  isPublic?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface UpdateLimitsModuleInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `LimitsModule` being updated. */
-  limitsModulePatch: LimitsModulePatch;
-}
-/** Represents an update to a `LimitsModule`. Fields that are set will be updated. */
-export interface LimitsModulePatch {
-  id?: string;
-  databaseId?: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  tableId?: string;
-  tableName?: string;
-  defaultTableId?: string;
-  defaultTableName?: string;
-  limitIncrementFunction?: string;
-  limitDecrementFunction?: string;
-  limitIncrementTrigger?: string;
-  limitDecrementTrigger?: string;
-  limitUpdateTrigger?: string;
-  limitCheckFunction?: string;
-  prefix?: string;
-  membershipType?: number;
-  entityTableId?: string;
-  actorTableId?: string;
-}
-export interface UpdateProfilesModuleInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `ProfilesModule` being updated. */
-  profilesModulePatch: ProfilesModulePatch;
-}
-/** Represents an update to a `ProfilesModule`. Fields that are set will be updated. */
-export interface ProfilesModulePatch {
-  id?: string;
-  databaseId?: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  tableId?: string;
-  tableName?: string;
-  profilePermissionsTableId?: string;
-  profilePermissionsTableName?: string;
-  profileGrantsTableId?: string;
-  profileGrantsTableName?: string;
-  profileDefinitionGrantsTableId?: string;
-  profileDefinitionGrantsTableName?: string;
-  membershipType?: number;
-  entityTableId?: string;
-  actorTableId?: string;
-  permissionsTableId?: string;
-  membershipsTableId?: string;
-  prefix?: string;
-}
-export interface UpdateAppMembershipInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `AppMembership` being updated. */
-  appMembershipPatch: AppMembershipPatch;
-}
-/** Represents an update to a `AppMembership`. Fields that are set will be updated. */
-export interface AppMembershipPatch {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  /** Whether this membership has been approved by an admin */
-  isApproved?: boolean;
-  /** Whether this member has been banned from the entity */
-  isBanned?: boolean;
-  /** Whether this membership is temporarily disabled */
-  isDisabled?: boolean;
-  /** Whether this member has been verified (e.g. email confirmation) */
-  isVerified?: boolean;
-  /** Computed field indicating the membership is approved, verified, not banned, and not disabled */
-  isActive?: boolean;
-  /** Whether this member is external (not a member of the parent scope). External members may have restricted permissions. */
-  isExternal?: boolean;
-  /** Whether the actor is the owner of this entity */
-  isOwner?: boolean;
-  /** Whether the actor has admin privileges on this entity */
-  isAdmin?: boolean;
-  /** Aggregated permission bitmask combining profile-based and directly granted permissions */
-  permissions?: string;
-  /** Bitmask of permissions directly granted to this member (not from profiles) */
-  granted?: string;
-  /** References the user who holds this membership */
-  actorId?: string;
-  profileId?: string;
-}
-export interface UpdateIndexInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `Index` being updated. */
-  indexPatch: IndexPatch;
-}
-/** Represents an update to a `Index`. Fields that are set will be updated. */
-export interface IndexPatch {
-  id?: string;
-  databaseId?: string;
-  tableId?: string;
-  name?: string;
-  fieldIds?: string[];
-  includeFieldIds?: string[];
-  accessMethod?: string;
-  indexParams?: unknown;
-  whereClause?: unknown;
-  isUnique?: boolean;
-  options?: unknown;
-  opClasses?: string[];
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface UpdateWebauthnCredentialInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `WebauthnCredential` being updated. */
-  webauthnCredentialPatch: WebauthnCredentialPatch;
-}
-/** Represents an update to a `WebauthnCredential`. Fields that are set will be updated. */
-export interface WebauthnCredentialPatch {
-  id?: string;
-  ownerId?: string;
-  /** Base64url-encoded credential ID returned by the authenticator. Globally unique per WebAuthn spec. */
-  credentialId?: string;
-  /** COSE-encoded public key bytes from the authenticator attestation. */
-  publicKey?: Base64EncodedBinary;
-  /** Monotonic signature counter. Strict-increase check during sign-in detects cloned credentials. 0 means the authenticator does not implement a counter. */
-  signCount?: string;
-  /** Random per-user handle sent to authenticators as user.id. Privacy-preserving; NOT the internal user UUID. */
-  webauthnUserId?: string;
-  /** Authenticator transport hints (e.g. usb, nfc, ble, internal, hybrid). Used to hint browser UI during sign-in. */
-  transports?: string[];
-  /** Either 'singleDevice' (hardware-bound) or 'multiDevice' (synced passkey). Enforced by CHECK constraint below. */
-  credentialDeviceType?: string;
-  /** Whether this credential is eligible for backup (syncing) per the authenticator's flags at registration. */
-  backupEligible?: boolean;
-  /** Current backup state; updated on each successful sign-in assertion. */
-  backupState?: boolean;
-  /** User-provided label for this credential (e.g. "YubiKey 5C", "iPhone 15"). Renamed via rename_passkey. */
-  name?: string;
-  /** Timestamp of the most recent successful sign-in assertion using this credential. */
-  lastUsedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -14897,20 +15831,22 @@ export interface OrgInvitePatch {
   multiple?: boolean;
   /** Optional JSON payload of additional invite metadata */
   data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
   /** Timestamp after which this invitation can no longer be redeemed */
   expiresAt?: string;
   createdAt?: string;
   updatedAt?: string;
   entityId?: string;
 }
-export interface UpdateOrgMembershipInput {
+export interface UpdateAppMembershipInput {
   clientMutationId?: string;
   id: string;
-  /** An object where the defined keys will be set on the `OrgMembership` being updated. */
-  orgMembershipPatch: OrgMembershipPatch;
+  /** An object where the defined keys will be set on the `AppMembership` being updated. */
+  appMembershipPatch: AppMembershipPatch;
 }
-/** Represents an update to a `OrgMembership`. Fields that are set will be updated. */
-export interface OrgMembershipPatch {
+/** Represents an update to a `AppMembership`. Fields that are set will be updated. */
+export interface AppMembershipPatch {
   id?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -14922,10 +15858,10 @@ export interface OrgMembershipPatch {
   isBanned?: boolean;
   /** Whether this membership is temporarily disabled */
   isDisabled?: boolean;
+  /** Whether this member has been verified (e.g. email confirmation) */
+  isVerified?: boolean;
   /** Computed field indicating the membership is approved, verified, not banned, and not disabled */
   isActive?: boolean;
-  /** Whether this member is external (not a member of the parent scope). External members may have restricted permissions. */
-  isExternal?: boolean;
   /** Whether the actor is the owner of this entity */
   isOwner?: boolean;
   /** Whether the actor has admin privileges on this entity */
@@ -14936,11 +15872,86 @@ export interface OrgMembershipPatch {
   granted?: string;
   /** References the user who holds this membership */
   actorId?: string;
-  /** References the entity (org or group) this membership belongs to */
-  entityId?: string;
-  /** Whether this member has read-only access (blocks mutations when true) */
-  isReadOnly?: boolean;
   profileId?: string;
+}
+export interface UpdateSchemaInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `Schema` being updated. */
+  schemaPatch: SchemaPatch;
+}
+/** Represents an update to a `Schema`. Fields that are set will be updated. */
+export interface SchemaPatch {
+  id?: string;
+  databaseId?: string;
+  name?: string;
+  schemaName?: string;
+  label?: string;
+  description?: string;
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  tags?: string[];
+  isPublic?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface UpdateIndexInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `Index` being updated. */
+  indexPatch: IndexPatch;
+}
+/** Represents an update to a `Index`. Fields that are set will be updated. */
+export interface IndexPatch {
+  id?: string;
+  databaseId?: string;
+  tableId?: string;
+  name?: string;
+  fieldIds?: string[];
+  includeFieldIds?: string[];
+  accessMethod?: string;
+  indexParams?: unknown;
+  whereClause?: unknown;
+  isUnique?: boolean;
+  options?: unknown;
+  opClasses?: string[];
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface UpdateLimitsModuleInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `LimitsModule` being updated. */
+  limitsModulePatch: LimitsModulePatch;
+}
+/** Represents an update to a `LimitsModule`. Fields that are set will be updated. */
+export interface LimitsModulePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  tableId?: string;
+  tableName?: string;
+  defaultTableId?: string;
+  defaultTableName?: string;
+  limitIncrementFunction?: string;
+  limitDecrementFunction?: string;
+  limitIncrementTrigger?: string;
+  limitDecrementTrigger?: string;
+  limitUpdateTrigger?: string;
+  limitCheckFunction?: string;
+  aggregateTableId?: string;
+  prefix?: string;
+  membershipType?: number;
+  entityTableId?: string;
+  actorTableId?: string;
 }
 export interface UpdateBlueprintTemplateInput {
   clientMutationId?: string;
@@ -15021,6 +16032,74 @@ export interface HierarchyModulePatch {
   isManagerOfFunction?: string;
   createdAt?: string;
 }
+export interface UpdateProfilesModuleInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `ProfilesModule` being updated. */
+  profilesModulePatch: ProfilesModulePatch;
+}
+/** Represents an update to a `ProfilesModule`. Fields that are set will be updated. */
+export interface ProfilesModulePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  tableId?: string;
+  tableName?: string;
+  profilePermissionsTableId?: string;
+  profilePermissionsTableName?: string;
+  profileGrantsTableId?: string;
+  profileGrantsTableName?: string;
+  profileDefinitionGrantsTableId?: string;
+  profileDefinitionGrantsTableName?: string;
+  profileTemplatesTableId?: string;
+  profileTemplatesTableName?: string;
+  membershipType?: number;
+  entityTableId?: string;
+  actorTableId?: string;
+  permissionsTableId?: string;
+  membershipsTableId?: string;
+  prefix?: string;
+}
+export interface UpdateOrgMembershipInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgMembership` being updated. */
+  orgMembershipPatch: OrgMembershipPatch;
+}
+/** Represents an update to a `OrgMembership`. Fields that are set will be updated. */
+export interface OrgMembershipPatch {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  /** Whether this membership has been approved by an admin */
+  isApproved?: boolean;
+  /** Whether this member has been banned from the entity */
+  isBanned?: boolean;
+  /** Whether this membership is temporarily disabled */
+  isDisabled?: boolean;
+  /** Computed field indicating the membership is approved, verified, not banned, and not disabled */
+  isActive?: boolean;
+  /** Whether this member is external (not a member of the parent scope). External members may have restricted permissions. */
+  isExternal?: boolean;
+  /** Whether the actor is the owner of this entity */
+  isOwner?: boolean;
+  /** Whether the actor has admin privileges on this entity */
+  isAdmin?: boolean;
+  /** Aggregated permission bitmask combining profile-based and directly granted permissions */
+  permissions?: string;
+  /** Bitmask of permissions directly granted to this member (not from profiles) */
+  granted?: string;
+  /** References the user who holds this membership */
+  actorId?: string;
+  /** References the entity (org or group) this membership belongs to */
+  entityId?: string;
+  /** Whether this member has read-only access (blocks mutations when true) */
+  isReadOnly?: boolean;
+  profileId?: string;
+}
 export interface UpdateForeignKeyConstraintInput {
   clientMutationId?: string;
   id: string;
@@ -15047,6 +16126,37 @@ export interface ForeignKeyConstraintPatch {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+export interface UpdateStorageModuleInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `StorageModule` being updated. */
+  storageModulePatch: StorageModulePatch;
+}
+/** Represents an update to a `StorageModule`. Fields that are set will be updated. */
+export interface StorageModulePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  privateSchemaId?: string;
+  bucketsTableId?: string;
+  filesTableId?: string;
+  bucketsTableName?: string;
+  filesTableName?: string;
+  membershipType?: number;
+  policies?: unknown;
+  skipDefaultPolicyTables?: string[];
+  entityTableId?: string;
+  endpoint?: string;
+  publicUrlPrefix?: string;
+  provider?: string;
+  allowedOrigins?: string[];
+  restrictReads?: boolean;
+  uploadUrlExpirySeconds?: number;
+  downloadUrlExpirySeconds?: number;
+  defaultMaxFileSize?: string;
+  maxFilenameLength?: number;
+  cacheTtlSeconds?: number;
 }
 export interface UpdateTableInput {
   clientMutationId?: string;
@@ -15075,38 +16185,6 @@ export interface TablePatch {
   inheritsId?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-export interface UpdateStorageModuleInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `StorageModule` being updated. */
-  storageModulePatch: StorageModulePatch;
-}
-/** Represents an update to a `StorageModule`. Fields that are set will be updated. */
-export interface StorageModulePatch {
-  id?: string;
-  databaseId?: string;
-  schemaId?: string;
-  privateSchemaId?: string;
-  bucketsTableId?: string;
-  filesTableId?: string;
-  uploadRequestsTableId?: string;
-  bucketsTableName?: string;
-  filesTableName?: string;
-  uploadRequestsTableName?: string;
-  membershipType?: number;
-  policies?: unknown;
-  skipDefaultPolicyTables?: string[];
-  entityTableId?: string;
-  endpoint?: string;
-  publicUrlPrefix?: string;
-  provider?: string;
-  allowedOrigins?: string[];
-  uploadUrlExpirySeconds?: number;
-  downloadUrlExpirySeconds?: number;
-  defaultMaxFileSize?: string;
-  maxFilenameLength?: number;
-  cacheTtlSeconds?: number;
 }
 export interface UpdateEntityTypeProvisionInput {
   clientMutationId?: string;
@@ -15179,7 +16257,7 @@ export interface EntityTypeProvisionPatch {
   hasLevels?: boolean;
   /**
    * Whether to provision storage_module for this type. Defaults to false.
-   *      When true, creates {prefix}_buckets, {prefix}_files, and {prefix}_upload_requests tables
+   *      When true, creates {prefix}_buckets and {prefix}_files tables
    *      with entity-scoped RLS (AuthzEntityMembership) using the entity's membership_type.
    *      Storage tables get owner_id FK to the entity table, so files are owned by the entity.
    */
@@ -15212,7 +16290,7 @@ export interface EntityTypeProvisionPatch {
    *        - allowed_origins     (text[])         per-bucket CORS override
    *        - provisions (jsonb object) optional: customize storage tables
    *                                   with additional nodes, fields, grants, and policies.
-   *                                   Keyed by table role: "files", "buckets", "upload_requests".
+   *                                   Keyed by table role: "files", "buckets".
    *                                   Each value uses the same shape as table_provision:
    *                                   { nodes, fields, grants, use_rls, policies }. Fanned out
    *                                   to secure_table_provision targeting the corresponding table.
@@ -15584,6 +16662,10 @@ export interface DeleteDefaultIdsModuleInput {
   clientMutationId?: string;
   id: string;
 }
+export interface DeleteRoleTypeInput {
+  clientMutationId?: string;
+  id: number;
+}
 export interface DeleteViewTableInput {
   clientMutationId?: string;
   id: string;
@@ -15593,17 +16675,13 @@ export interface DeleteApiSchemaInput {
   /** Unique identifier for this API-schema mapping */
   id: string;
 }
-export interface DeleteSiteThemeInput {
-  clientMutationId?: string;
-  /** Unique identifier for this theme record */
-  id: string;
-}
 export interface DeleteOrgMemberInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteAppPermissionDefaultInput {
+export interface DeleteSiteThemeInput {
   clientMutationId?: string;
+  /** Unique identifier for this theme record */
   id: string;
 }
 export interface DeleteRefInput {
@@ -15615,16 +16693,6 @@ export interface DeleteRefInput {
 export interface DeleteStoreInput {
   clientMutationId?: string;
   /** The primary unique identifier for the store. */
-  id: string;
-}
-export interface DeleteApiModuleInput {
-  clientMutationId?: string;
-  /** Unique identifier for this API module record */
-  id: string;
-}
-export interface DeleteSiteModuleInput {
-  clientMutationId?: string;
-  /** Unique identifier for this site module record */
   id: string;
 }
 export interface DeleteEncryptedSecretsModuleInput {
@@ -15639,12 +16707,18 @@ export interface DeleteSecretsModuleInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteRoleTypeInput {
+export interface DeleteAppPermissionDefaultInput {
   clientMutationId?: string;
-  id: number;
+  id: string;
 }
-export interface DeleteOrgPermissionDefaultInput {
+export interface DeleteApiModuleInput {
   clientMutationId?: string;
+  /** Unique identifier for this API module record */
+  id: string;
+}
+export interface DeleteSiteModuleInput {
+  clientMutationId?: string;
+  /** Unique identifier for this site module record */
   id: string;
 }
 export interface DeleteSchemaGrantInput {
@@ -15675,13 +16749,30 @@ export interface DeleteAppOwnerGrantInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteAppLimitDefaultInput {
+export interface DeleteAppAchievementInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteOrgLimitDefaultInput {
+export interface DeleteAppStepInput {
   clientMutationId?: string;
   id: string;
+}
+export interface DeleteOrgPermissionDefaultInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteAppPermissionInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteOrgPermissionInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteMembershipTypeInput {
+  clientMutationId?: string;
+  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
+  id: number;
 }
 export interface DeleteDefaultPrivilegeInput {
   clientMutationId?: string;
@@ -15728,10 +16819,17 @@ export interface DeleteOrgOwnerGrantInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteObjectInput {
+export interface DeleteNodeTypeRegistryInput {
+  clientMutationId?: string;
+  name: string;
+}
+export interface DeleteAppLimitDefaultInput {
   clientMutationId?: string;
   id: string;
-  databaseId: string;
+}
+export interface DeleteOrgLimitDefaultInput {
+  clientMutationId?: string;
+  id: string;
 }
 export interface DeleteDatabaseInput {
   clientMutationId?: string;
@@ -15745,40 +16843,21 @@ export interface DeleteCryptoAddressInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteAppPermissionInput {
+export interface DeleteAgentMessageInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteOrgPermissionInput {
+export interface DeleteObjectInput {
   clientMutationId?: string;
   id: string;
-}
-export interface DeleteAppLimitInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteAppAchievementInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteAppStepInput {
-  clientMutationId?: string;
-  id: string;
+  databaseId: string;
 }
 export interface DeleteSiteMetadatumInput {
   clientMutationId?: string;
   /** Unique identifier for this metadata record */
   id: string;
 }
-export interface DeleteAppClaimedInviteInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteAppMembershipDefaultInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteOrgMembershipDefaultInput {
+export interface DeleteAppLevelRequirementInput {
   clientMutationId?: string;
   id: string;
 }
@@ -15809,18 +16888,37 @@ export interface DeletePhoneNumberInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteOrgLimitInput {
+export interface DeleteAppClaimedInviteInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteMembershipTypeInput {
+export interface DeleteAppMembershipDefaultInput {
   clientMutationId?: string;
-  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
-  id: number;
+  id: string;
+}
+export interface DeleteOrgMembershipDefaultInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteAuditLogInput {
+  clientMutationId?: string;
+  id: string;
 }
 export interface DeleteDomainInput {
   clientMutationId?: string;
   /** Unique identifier for this domain record */
+  id: string;
+}
+export interface DeleteAgentTaskInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteAgentThreadInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteEmailInput {
+  clientMutationId?: string;
   id: string;
 }
 export interface DeleteAppGrantInput {
@@ -15835,13 +16933,21 @@ export interface DeleteOrgChartEdgeInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteOrgGrantInput {
+export interface DeleteAppLimitInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteOrgLimitAggregateInput {
   clientMutationId?: string;
   id: string;
 }
 export interface DeleteBlueprintConstructionInput {
   clientMutationId?: string;
   /** Unique identifier for this construction attempt. */
+  id: string;
+}
+export interface DeletePlansModuleInput {
+  clientMutationId?: string;
   id: string;
 }
 export interface DeleteRlsModuleInput {
@@ -15852,15 +16958,15 @@ export interface DeleteSessionsModuleInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteAppLevelRequirementInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteAuditLogInput {
+export interface DeleteOrgGrantInput {
   clientMutationId?: string;
   id: string;
 }
 export interface DeleteAppLevelInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteOrgLimitInput {
   clientMutationId?: string;
   id: string;
 }
@@ -15873,24 +16979,15 @@ export interface DeleteDenormalizedTableFieldInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteEmailInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface DeleteOrgMemberProfileInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteSecureTableProvisionInput {
-  clientMutationId?: string;
-  /** Unique identifier for this provision row. */
-  id: string;
-}
-export interface DeleteOrgMembershipSettingInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface DeleteDatabaseTransferInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteBillingModuleInput {
   clientMutationId?: string;
   id: string;
 }
@@ -15904,6 +17001,11 @@ export interface DeleteDatabaseProvisionModuleInput {
 }
 export interface DeleteInvitesModuleInput {
   clientMutationId?: string;
+  id: string;
+}
+export interface DeleteSecureTableProvisionInput {
+  clientMutationId?: string;
+  /** Unique identifier for this provision row. */
   id: string;
 }
 export interface DeleteEnumInput {
@@ -15922,6 +17024,14 @@ export interface DeleteWebauthnAuthModuleInput {
   clientMutationId?: string;
   id: string;
 }
+export interface DeleteAppInviteInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteOrgMembershipSettingInput {
+  clientMutationId?: string;
+  id: string;
+}
 export interface DeleteAppInput {
   clientMutationId?: string;
   /** Unique identifier for this app */
@@ -15930,6 +17040,18 @@ export interface DeleteAppInput {
 export interface DeleteSiteInput {
   clientMutationId?: string;
   /** Unique identifier for this site */
+  id: string;
+}
+export interface DeleteNotificationsModuleInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeletePermissionsModuleInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteWebauthnCredentialInput {
+  clientMutationId?: string;
   id: string;
 }
 export interface DeletePrimaryKeyConstraintInput {
@@ -15956,43 +17078,7 @@ export interface DeletePolicyInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteNotificationsModuleInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeletePermissionsModuleInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteAppInviteInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface DeleteEmbeddingChunkInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteSchemaInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteLimitsModuleInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteProfilesModuleInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteAppMembershipInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteIndexInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface DeleteWebauthnCredentialInput {
   clientMutationId?: string;
   id: string;
 }
@@ -16000,7 +17086,19 @@ export interface DeleteOrgInviteInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteOrgMembershipInput {
+export interface DeleteAppMembershipInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteSchemaInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteIndexInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteLimitsModuleInput {
   clientMutationId?: string;
   id: string;
 }
@@ -16013,15 +17111,23 @@ export interface DeleteHierarchyModuleInput {
   clientMutationId?: string;
   id: string;
 }
+export interface DeleteProfilesModuleInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteOrgMembershipInput {
+  clientMutationId?: string;
+  id: string;
+}
 export interface DeleteForeignKeyConstraintInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteTableInput {
+export interface DeleteStorageModuleInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteStorageModuleInput {
+export interface DeleteTableInput {
   clientMutationId?: string;
   id: string;
 }
@@ -16070,10 +17176,6 @@ export interface RequestUploadUrlInput {
   /** Original filename (optional, for display and Content-Disposition) */
   filename?: string;
 }
-export interface ConfirmUploadInput {
-  /** The file ID returned by requestUploadUrl */
-  fileId: string;
-}
 export interface ProvisionBucketInput {
   /** The logical bucket key (e.g., "public", "private") */
   bucketKey: string;
@@ -16104,13 +17206,6 @@ export interface GetAllConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `Object` values. */
-export interface ObjectConnection {
-  nodes: Object[];
-  edges: ObjectEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `AppPermission` values. */
 export interface AppPermissionConnection {
   nodes: AppPermission[];
@@ -16122,6 +17217,13 @@ export interface AppPermissionConnection {
 export interface OrgPermissionConnection {
   nodes: OrgPermission[];
   edges: OrgPermissionEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `Object` values. */
+export interface ObjectConnection {
+  nodes: Object[];
+  edges: ObjectEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16139,6 +17241,13 @@ export interface DefaultIdsModuleConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
+/** A connection to a list of `RoleType` values. */
+export interface RoleTypeConnection {
+  nodes: RoleType[];
+  edges: RoleTypeEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
 /** A connection to a list of `ViewTable` values. */
 export interface ViewTableConnection {
   nodes: ViewTable[];
@@ -16153,13 +17262,6 @@ export interface ApiSchemaConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `SiteTheme` values. */
-export interface SiteThemeConnection {
-  nodes: SiteTheme[];
-  edges: SiteThemeEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `OrgMember` values. */
 export interface OrgMemberConnection {
   nodes: OrgMember[];
@@ -16167,10 +17269,10 @@ export interface OrgMemberConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `AppPermissionDefault` values. */
-export interface AppPermissionDefaultConnection {
-  nodes: AppPermissionDefault[];
-  edges: AppPermissionDefaultEdge[];
+/** A connection to a list of `SiteTheme` values. */
+export interface SiteThemeConnection {
+  nodes: SiteTheme[];
+  edges: SiteThemeEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16195,20 +17297,6 @@ export interface StoreConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `ApiModule` values. */
-export interface ApiModuleConnection {
-  nodes: ApiModule[];
-  edges: ApiModuleEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `SiteModule` values. */
-export interface SiteModuleConnection {
-  nodes: SiteModule[];
-  edges: SiteModuleEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `EncryptedSecretsModule` values. */
 export interface EncryptedSecretsModuleConnection {
   nodes: EncryptedSecretsModule[];
@@ -16230,17 +17318,24 @@ export interface SecretsModuleConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `RoleType` values. */
-export interface RoleTypeConnection {
-  nodes: RoleType[];
-  edges: RoleTypeEdge[];
+/** A connection to a list of `AppPermissionDefault` values. */
+export interface AppPermissionDefaultConnection {
+  nodes: AppPermissionDefault[];
+  edges: AppPermissionDefaultEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `OrgPermissionDefault` values. */
-export interface OrgPermissionDefaultConnection {
-  nodes: OrgPermissionDefault[];
-  edges: OrgPermissionDefaultEdge[];
+/** A connection to a list of `ApiModule` values. */
+export interface ApiModuleConnection {
+  nodes: ApiModule[];
+  edges: ApiModuleEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `SiteModule` values. */
+export interface SiteModuleConnection {
+  nodes: SiteModule[];
+  edges: SiteModuleEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16293,24 +17388,38 @@ export interface AppOwnerGrantConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
+/** A connection to a list of `AppAchievement` values. */
+export interface AppAchievementConnection {
+  nodes: AppAchievement[];
+  edges: AppAchievementEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `AppStep` values. */
+export interface AppStepConnection {
+  nodes: AppStep[];
+  edges: AppStepEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgPermissionDefault` values. */
+export interface OrgPermissionDefaultConnection {
+  nodes: OrgPermissionDefault[];
+  edges: OrgPermissionDefaultEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `MembershipType` values. */
+export interface MembershipTypeConnection {
+  nodes: MembershipType[];
+  edges: MembershipTypeEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
 /** A connection to a list of `MigrateFile` values. */
 export interface MigrateFileConnection {
   nodes: MigrateFile[];
   edges: MigrateFileEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AppLimitDefault` values. */
-export interface AppLimitDefaultConnection {
-  nodes: AppLimitDefault[];
-  edges: AppLimitDefaultEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `OrgLimitDefault` values. */
-export interface OrgLimitDefaultConnection {
-  nodes: OrgLimitDefault[];
-  edges: OrgLimitDefaultEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16391,6 +17500,27 @@ export interface OrgOwnerGrantConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
+/** A connection to a list of `NodeTypeRegistry` values. */
+export interface NodeTypeRegistryConnection {
+  nodes: NodeTypeRegistry[];
+  edges: NodeTypeRegistryEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `AppLimitDefault` values. */
+export interface AppLimitDefaultConnection {
+  nodes: AppLimitDefault[];
+  edges: AppLimitDefaultEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgLimitDefault` values. */
+export interface OrgLimitDefaultConnection {
+  nodes: OrgLimitDefault[];
+  edges: OrgLimitDefaultEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
 /** A connection to a list of `UserConnectedAccount` values. */
 export interface UserConnectedAccountConnection {
   nodes: UserConnectedAccount[];
@@ -16419,24 +17549,10 @@ export interface CryptoAddressConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `AppLimit` values. */
-export interface AppLimitConnection {
-  nodes: AppLimit[];
-  edges: AppLimitEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AppAchievement` values. */
-export interface AppAchievementConnection {
-  nodes: AppAchievement[];
-  edges: AppAchievementEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AppStep` values. */
-export interface AppStepConnection {
-  nodes: AppStep[];
-  edges: AppStepEdge[];
+/** A connection to a list of `AgentMessage` values. */
+export interface AgentMessageConnection {
+  nodes: AgentMessage[];
+  edges: AgentMessageEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16444,27 +17560,6 @@ export interface AppStepConnection {
 export interface SiteMetadatumConnection {
   nodes: SiteMetadatum[];
   edges: SiteMetadatumEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AppClaimedInvite` values. */
-export interface AppClaimedInviteConnection {
-  nodes: AppClaimedInvite[];
-  edges: AppClaimedInviteEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AppMembershipDefault` values. */
-export interface AppMembershipDefaultConnection {
-  nodes: AppMembershipDefault[];
-  edges: AppMembershipDefaultEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `OrgMembershipDefault` values. */
-export interface OrgMembershipDefaultConnection {
-  nodes: OrgMembershipDefault[];
-  edges: OrgMembershipDefaultEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16510,17 +17605,31 @@ export interface PhoneNumberConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `OrgLimit` values. */
-export interface OrgLimitConnection {
-  nodes: OrgLimit[];
-  edges: OrgLimitEdge[];
+/** A connection to a list of `AppClaimedInvite` values. */
+export interface AppClaimedInviteConnection {
+  nodes: AppClaimedInvite[];
+  edges: AppClaimedInviteEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `MembershipType` values. */
-export interface MembershipTypeConnection {
-  nodes: MembershipType[];
-  edges: MembershipTypeEdge[];
+/** A connection to a list of `AppMembershipDefault` values. */
+export interface AppMembershipDefaultConnection {
+  nodes: AppMembershipDefault[];
+  edges: AppMembershipDefaultEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgMembershipDefault` values. */
+export interface OrgMembershipDefaultConnection {
+  nodes: OrgMembershipDefault[];
+  edges: OrgMembershipDefaultEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `AuditLog` values. */
+export interface AuditLogConnection {
+  nodes: AuditLog[];
+  edges: AuditLogEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16528,6 +17637,27 @@ export interface MembershipTypeConnection {
 export interface DomainConnection {
   nodes: Domain[];
   edges: DomainEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `AgentTask` values. */
+export interface AgentTaskConnection {
+  nodes: AgentTask[];
+  edges: AgentTaskEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `AgentThread` values. */
+export interface AgentThreadConnection {
+  nodes: AgentThread[];
+  edges: AgentThreadEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `Email` values. */
+export interface EmailConnection {
+  nodes: Email[];
+  edges: EmailEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16545,6 +17675,20 @@ export interface OrgClaimedInviteConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
+/** A connection to a list of `AppLimitEvent` values. */
+export interface AppLimitEventConnection {
+  nodes: AppLimitEvent[];
+  edges: AppLimitEventEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgLimitEvent` values. */
+export interface OrgLimitEventConnection {
+  nodes: OrgLimitEvent[];
+  edges: OrgLimitEventEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
 /** A connection to a list of `OrgChartEdge` values. */
 export interface OrgChartEdgeConnection {
   nodes: OrgChartEdge[];
@@ -16552,10 +17696,17 @@ export interface OrgChartEdgeConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `OrgGrant` values. */
-export interface OrgGrantConnection {
-  nodes: OrgGrant[];
-  edges: OrgGrantEdge[];
+/** A connection to a list of `AppLimit` values. */
+export interface AppLimitConnection {
+  nodes: AppLimit[];
+  edges: AppLimitEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgLimitAggregate` values. */
+export interface OrgLimitAggregateConnection {
+  nodes: OrgLimitAggregate[];
+  edges: OrgLimitAggregateEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16563,6 +17714,13 @@ export interface OrgGrantConnection {
 export interface BlueprintConstructionConnection {
   nodes: BlueprintConstruction[];
   edges: BlueprintConstructionEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `PlansModule` values. */
+export interface PlansModuleConnection {
+  nodes: PlansModule[];
+  edges: PlansModuleEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16580,10 +17738,10 @@ export interface SessionsModuleConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `AuditLog` values. */
-export interface AuditLogConnection {
-  nodes: AuditLog[];
-  edges: AuditLogEdge[];
+/** A connection to a list of `OrgGrant` values. */
+export interface OrgGrantConnection {
+  nodes: OrgGrant[];
+  edges: OrgGrantEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16591,6 +17749,13 @@ export interface AuditLogConnection {
 export interface AppLevelConnection {
   nodes: AppLevel[];
   edges: AppLevelEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgLimit` values. */
+export interface OrgLimitConnection {
+  nodes: OrgLimit[];
+  edges: OrgLimitEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16608,13 +17773,6 @@ export interface DenormalizedTableFieldConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `Email` values. */
-export interface EmailConnection {
-  nodes: Email[];
-  edges: EmailEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `OrgMemberProfile` values. */
 export interface OrgMemberProfileConnection {
   nodes: OrgMemberProfile[];
@@ -16629,24 +17787,17 @@ export interface SqlActionConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `SecureTableProvision` values. */
-export interface SecureTableProvisionConnection {
-  nodes: SecureTableProvision[];
-  edges: SecureTableProvisionEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `OrgMembershipSetting` values. */
-export interface OrgMembershipSettingConnection {
-  nodes: OrgMembershipSetting[];
-  edges: OrgMembershipSettingEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `DatabaseTransfer` values. */
 export interface DatabaseTransferConnection {
   nodes: DatabaseTransfer[];
   edges: DatabaseTransferEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `BillingModule` values. */
+export interface BillingModuleConnection {
+  nodes: BillingModule[];
+  edges: BillingModuleEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16668,6 +17819,20 @@ export interface DatabaseProvisionModuleConnection {
 export interface InvitesModuleConnection {
   nodes: InvitesModule[];
   edges: InvitesModuleEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `SecureTableProvision` values. */
+export interface SecureTableProvisionConnection {
+  nodes: SecureTableProvision[];
+  edges: SecureTableProvisionEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `AstMigration` values. */
+export interface AstMigrationConnection {
+  nodes: AstMigration[];
+  edges: AstMigrationEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16699,6 +17864,20 @@ export interface WebauthnAuthModuleConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
+/** A connection to a list of `AppInvite` values. */
+export interface AppInviteConnection {
+  nodes: AppInvite[];
+  edges: AppInviteEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgMembershipSetting` values. */
+export interface OrgMembershipSettingConnection {
+  nodes: OrgMembershipSetting[];
+  edges: OrgMembershipSettingEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
 /** A connection to a list of `App` values. */
 export interface AppConnection {
   nodes: App[];
@@ -16713,10 +17892,24 @@ export interface SiteConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `AstMigration` values. */
-export interface AstMigrationConnection {
-  nodes: AstMigration[];
-  edges: AstMigrationEdge[];
+/** A connection to a list of `NotificationsModule` values. */
+export interface NotificationsModuleConnection {
+  nodes: NotificationsModule[];
+  edges: NotificationsModuleEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `PermissionsModule` values. */
+export interface PermissionsModuleConnection {
+  nodes: PermissionsModule[];
+  edges: PermissionsModuleEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `WebauthnCredential` values. */
+export interface WebauthnCredentialConnection {
+  nodes: WebauthnCredential[];
+  edges: WebauthnCredentialEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16762,73 +17955,10 @@ export interface PolicyConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `NotificationsModule` values. */
-export interface NotificationsModuleConnection {
-  nodes: NotificationsModule[];
-  edges: NotificationsModuleEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `PermissionsModule` values. */
-export interface PermissionsModuleConnection {
-  nodes: PermissionsModule[];
-  edges: PermissionsModuleEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AppInvite` values. */
-export interface AppInviteConnection {
-  nodes: AppInvite[];
-  edges: AppInviteEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `EmbeddingChunk` values. */
 export interface EmbeddingChunkConnection {
   nodes: EmbeddingChunk[];
   edges: EmbeddingChunkEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `Schema` values. */
-export interface SchemaConnection {
-  nodes: Schema[];
-  edges: SchemaEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `LimitsModule` values. */
-export interface LimitsModuleConnection {
-  nodes: LimitsModule[];
-  edges: LimitsModuleEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `ProfilesModule` values. */
-export interface ProfilesModuleConnection {
-  nodes: ProfilesModule[];
-  edges: ProfilesModuleEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AppMembership` values. */
-export interface AppMembershipConnection {
-  nodes: AppMembership[];
-  edges: AppMembershipEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `Index` values. */
-export interface IndexConnection {
-  nodes: Index[];
-  edges: IndexEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `WebauthnCredential` values. */
-export interface WebauthnCredentialConnection {
-  nodes: WebauthnCredential[];
-  edges: WebauthnCredentialEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16839,10 +17969,31 @@ export interface OrgInviteConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `OrgMembership` values. */
-export interface OrgMembershipConnection {
-  nodes: OrgMembership[];
-  edges: OrgMembershipEdge[];
+/** A connection to a list of `AppMembership` values. */
+export interface AppMembershipConnection {
+  nodes: AppMembership[];
+  edges: AppMembershipEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `Schema` values. */
+export interface SchemaConnection {
+  nodes: Schema[];
+  edges: SchemaEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `Index` values. */
+export interface IndexConnection {
+  nodes: Index[];
+  edges: IndexEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `LimitsModule` values. */
+export interface LimitsModuleConnection {
+  nodes: LimitsModule[];
+  edges: LimitsModuleEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -16860,6 +18011,20 @@ export interface HierarchyModuleConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
+/** A connection to a list of `ProfilesModule` values. */
+export interface ProfilesModuleConnection {
+  nodes: ProfilesModule[];
+  edges: ProfilesModuleEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgMembership` values. */
+export interface OrgMembershipConnection {
+  nodes: OrgMembership[];
+  edges: OrgMembershipEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
 /** A connection to a list of `ForeignKeyConstraint` values. */
 export interface ForeignKeyConstraintConnection {
   nodes: ForeignKeyConstraint[];
@@ -16867,17 +18032,17 @@ export interface ForeignKeyConstraintConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `Table` values. */
-export interface TableConnection {
-  nodes: Table[];
-  edges: TableEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `StorageModule` values. */
 export interface StorageModuleConnection {
   nodes: StorageModule[];
   edges: StorageModuleEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `Table` values. */
+export interface TableConnection {
+  nodes: Table[];
+  edges: TableEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -17084,6 +18249,13 @@ export interface CreateApiKeyPayload {
   clientMutationId?: string | null;
   result?: CreateApiKeyRecord | null;
 }
+export interface SendVerificationEmailPayload {
+  clientMutationId?: string | null;
+  result?: boolean | null;
+}
+export interface ForgotPasswordPayload {
+  clientMutationId?: string | null;
+}
 export interface SignUpPayload {
   clientMutationId?: string | null;
   result?: SignUpRecord | null;
@@ -17100,18 +18272,17 @@ export interface ProvisionTablePayload {
   clientMutationId?: string | null;
   result?: ProvisionTableRecord[] | null;
 }
-export interface SendVerificationEmailPayload {
-  clientMutationId?: string | null;
-  result?: boolean | null;
-}
-export interface ForgotPasswordPayload {
-  clientMutationId?: string | null;
-}
 export interface CreateDefaultIdsModulePayload {
   clientMutationId?: string | null;
   /** The `DefaultIdsModule` that was created by this mutation. */
   defaultIdsModule?: DefaultIdsModule | null;
   defaultIdsModuleEdge?: DefaultIdsModuleEdge | null;
+}
+export interface CreateRoleTypePayload {
+  clientMutationId?: string | null;
+  /** The `RoleType` that was created by this mutation. */
+  roleType?: RoleType | null;
+  roleTypeEdge?: RoleTypeEdge | null;
 }
 export interface CreateViewTablePayload {
   clientMutationId?: string | null;
@@ -17125,23 +18296,17 @@ export interface CreateApiSchemaPayload {
   apiSchema?: ApiSchema | null;
   apiSchemaEdge?: ApiSchemaEdge | null;
 }
-export interface CreateSiteThemePayload {
-  clientMutationId?: string | null;
-  /** The `SiteTheme` that was created by this mutation. */
-  siteTheme?: SiteTheme | null;
-  siteThemeEdge?: SiteThemeEdge | null;
-}
 export interface CreateOrgMemberPayload {
   clientMutationId?: string | null;
   /** The `OrgMember` that was created by this mutation. */
   orgMember?: OrgMember | null;
   orgMemberEdge?: OrgMemberEdge | null;
 }
-export interface CreateAppPermissionDefaultPayload {
+export interface CreateSiteThemePayload {
   clientMutationId?: string | null;
-  /** The `AppPermissionDefault` that was created by this mutation. */
-  appPermissionDefault?: AppPermissionDefault | null;
-  appPermissionDefaultEdge?: AppPermissionDefaultEdge | null;
+  /** The `SiteTheme` that was created by this mutation. */
+  siteTheme?: SiteTheme | null;
+  siteThemeEdge?: SiteThemeEdge | null;
 }
 export interface CreateIdentityProviderPayload {
   clientMutationId?: string | null;
@@ -17159,18 +18324,6 @@ export interface CreateStorePayload {
   /** The `Store` that was created by this mutation. */
   store?: Store | null;
   storeEdge?: StoreEdge | null;
-}
-export interface CreateApiModulePayload {
-  clientMutationId?: string | null;
-  /** The `ApiModule` that was created by this mutation. */
-  apiModule?: ApiModule | null;
-  apiModuleEdge?: ApiModuleEdge | null;
-}
-export interface CreateSiteModulePayload {
-  clientMutationId?: string | null;
-  /** The `SiteModule` that was created by this mutation. */
-  siteModule?: SiteModule | null;
-  siteModuleEdge?: SiteModuleEdge | null;
 }
 export interface CreateEncryptedSecretsModulePayload {
   clientMutationId?: string | null;
@@ -17190,17 +18343,23 @@ export interface CreateSecretsModulePayload {
   secretsModule?: SecretsModule | null;
   secretsModuleEdge?: SecretsModuleEdge | null;
 }
-export interface CreateRoleTypePayload {
+export interface CreateAppPermissionDefaultPayload {
   clientMutationId?: string | null;
-  /** The `RoleType` that was created by this mutation. */
-  roleType?: RoleType | null;
-  roleTypeEdge?: RoleTypeEdge | null;
+  /** The `AppPermissionDefault` that was created by this mutation. */
+  appPermissionDefault?: AppPermissionDefault | null;
+  appPermissionDefaultEdge?: AppPermissionDefaultEdge | null;
 }
-export interface CreateOrgPermissionDefaultPayload {
+export interface CreateApiModulePayload {
   clientMutationId?: string | null;
-  /** The `OrgPermissionDefault` that was created by this mutation. */
-  orgPermissionDefault?: OrgPermissionDefault | null;
-  orgPermissionDefaultEdge?: OrgPermissionDefaultEdge | null;
+  /** The `ApiModule` that was created by this mutation. */
+  apiModule?: ApiModule | null;
+  apiModuleEdge?: ApiModuleEdge | null;
+}
+export interface CreateSiteModulePayload {
+  clientMutationId?: string | null;
+  /** The `SiteModule` that was created by this mutation. */
+  siteModule?: SiteModule | null;
+  siteModuleEdge?: SiteModuleEdge | null;
 }
 export interface CreateSchemaGrantPayload {
   clientMutationId?: string | null;
@@ -17244,22 +18403,46 @@ export interface CreateAppOwnerGrantPayload {
   appOwnerGrant?: AppOwnerGrant | null;
   appOwnerGrantEdge?: AppOwnerGrantEdge | null;
 }
+export interface CreateAppAchievementPayload {
+  clientMutationId?: string | null;
+  /** The `AppAchievement` that was created by this mutation. */
+  appAchievement?: AppAchievement | null;
+  appAchievementEdge?: AppAchievementEdge | null;
+}
+export interface CreateAppStepPayload {
+  clientMutationId?: string | null;
+  /** The `AppStep` that was created by this mutation. */
+  appStep?: AppStep | null;
+  appStepEdge?: AppStepEdge | null;
+}
+export interface CreateOrgPermissionDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgPermissionDefault` that was created by this mutation. */
+  orgPermissionDefault?: OrgPermissionDefault | null;
+  orgPermissionDefaultEdge?: OrgPermissionDefaultEdge | null;
+}
+export interface CreateAppPermissionPayload {
+  clientMutationId?: string | null;
+  /** The `AppPermission` that was created by this mutation. */
+  appPermission?: AppPermission | null;
+  appPermissionEdge?: AppPermissionEdge | null;
+}
+export interface CreateOrgPermissionPayload {
+  clientMutationId?: string | null;
+  /** The `OrgPermission` that was created by this mutation. */
+  orgPermission?: OrgPermission | null;
+  orgPermissionEdge?: OrgPermissionEdge | null;
+}
+export interface CreateMembershipTypePayload {
+  clientMutationId?: string | null;
+  /** The `MembershipType` that was created by this mutation. */
+  membershipType?: MembershipType | null;
+  membershipTypeEdge?: MembershipTypeEdge | null;
+}
 export interface CreateMigrateFilePayload {
   clientMutationId?: string | null;
   /** The `MigrateFile` that was created by this mutation. */
   migrateFile?: MigrateFile | null;
-}
-export interface CreateAppLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitDefault` that was created by this mutation. */
-  appLimitDefault?: AppLimitDefault | null;
-  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
-}
-export interface CreateOrgLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitDefault` that was created by this mutation. */
-  orgLimitDefault?: OrgLimitDefault | null;
-  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
 }
 export interface CreateDefaultPrivilegePayload {
   clientMutationId?: string | null;
@@ -17327,16 +18510,28 @@ export interface CreateOrgOwnerGrantPayload {
   orgOwnerGrant?: OrgOwnerGrant | null;
   orgOwnerGrantEdge?: OrgOwnerGrantEdge | null;
 }
+export interface CreateNodeTypeRegistryPayload {
+  clientMutationId?: string | null;
+  /** The `NodeTypeRegistry` that was created by this mutation. */
+  nodeTypeRegistry?: NodeTypeRegistry | null;
+  nodeTypeRegistryEdge?: NodeTypeRegistryEdge | null;
+}
+export interface CreateAppLimitDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `AppLimitDefault` that was created by this mutation. */
+  appLimitDefault?: AppLimitDefault | null;
+  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
+}
+export interface CreateOrgLimitDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimitDefault` that was created by this mutation. */
+  orgLimitDefault?: OrgLimitDefault | null;
+  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
+}
 export interface CreateUserConnectedAccountPayload {
   clientMutationId?: string | null;
   /** The `UserConnectedAccount` that was created by this mutation. */
   userConnectedAccount?: UserConnectedAccount | null;
-}
-export interface CreateObjectPayload {
-  clientMutationId?: string | null;
-  /** The `Object` that was created by this mutation. */
-  object?: Object | null;
-  objectEdge?: ObjectEdge | null;
 }
 export interface CreateDatabasePayload {
   clientMutationId?: string | null;
@@ -17356,35 +18551,17 @@ export interface CreateCryptoAddressPayload {
   cryptoAddress?: CryptoAddress | null;
   cryptoAddressEdge?: CryptoAddressEdge | null;
 }
-export interface CreateAppPermissionPayload {
+export interface CreateAgentMessagePayload {
   clientMutationId?: string | null;
-  /** The `AppPermission` that was created by this mutation. */
-  appPermission?: AppPermission | null;
-  appPermissionEdge?: AppPermissionEdge | null;
+  /** The `AgentMessage` that was created by this mutation. */
+  agentMessage?: AgentMessage | null;
+  agentMessageEdge?: AgentMessageEdge | null;
 }
-export interface CreateOrgPermissionPayload {
+export interface CreateObjectPayload {
   clientMutationId?: string | null;
-  /** The `OrgPermission` that was created by this mutation. */
-  orgPermission?: OrgPermission | null;
-  orgPermissionEdge?: OrgPermissionEdge | null;
-}
-export interface CreateAppLimitPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimit` that was created by this mutation. */
-  appLimit?: AppLimit | null;
-  appLimitEdge?: AppLimitEdge | null;
-}
-export interface CreateAppAchievementPayload {
-  clientMutationId?: string | null;
-  /** The `AppAchievement` that was created by this mutation. */
-  appAchievement?: AppAchievement | null;
-  appAchievementEdge?: AppAchievementEdge | null;
-}
-export interface CreateAppStepPayload {
-  clientMutationId?: string | null;
-  /** The `AppStep` that was created by this mutation. */
-  appStep?: AppStep | null;
-  appStepEdge?: AppStepEdge | null;
+  /** The `Object` that was created by this mutation. */
+  object?: Object | null;
+  objectEdge?: ObjectEdge | null;
 }
 export interface CreateSiteMetadatumPayload {
   clientMutationId?: string | null;
@@ -17392,23 +18569,11 @@ export interface CreateSiteMetadatumPayload {
   siteMetadatum?: SiteMetadatum | null;
   siteMetadatumEdge?: SiteMetadatumEdge | null;
 }
-export interface CreateAppClaimedInvitePayload {
+export interface CreateAppLevelRequirementPayload {
   clientMutationId?: string | null;
-  /** The `AppClaimedInvite` that was created by this mutation. */
-  appClaimedInvite?: AppClaimedInvite | null;
-  appClaimedInviteEdge?: AppClaimedInviteEdge | null;
-}
-export interface CreateAppMembershipDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppMembershipDefault` that was created by this mutation. */
-  appMembershipDefault?: AppMembershipDefault | null;
-  appMembershipDefaultEdge?: AppMembershipDefaultEdge | null;
-}
-export interface CreateOrgMembershipDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgMembershipDefault` that was created by this mutation. */
-  orgMembershipDefault?: OrgMembershipDefault | null;
-  orgMembershipDefaultEdge?: OrgMembershipDefaultEdge | null;
+  /** The `AppLevelRequirement` that was created by this mutation. */
+  appLevelRequirement?: AppLevelRequirement | null;
+  appLevelRequirementEdge?: AppLevelRequirementEdge | null;
 }
 export interface CreateFullTextSearchPayload {
   clientMutationId?: string | null;
@@ -17446,23 +18611,53 @@ export interface CreatePhoneNumberPayload {
   phoneNumber?: PhoneNumber | null;
   phoneNumberEdge?: PhoneNumberEdge | null;
 }
-export interface CreateOrgLimitPayload {
+export interface CreateAppClaimedInvitePayload {
   clientMutationId?: string | null;
-  /** The `OrgLimit` that was created by this mutation. */
-  orgLimit?: OrgLimit | null;
-  orgLimitEdge?: OrgLimitEdge | null;
+  /** The `AppClaimedInvite` that was created by this mutation. */
+  appClaimedInvite?: AppClaimedInvite | null;
+  appClaimedInviteEdge?: AppClaimedInviteEdge | null;
 }
-export interface CreateMembershipTypePayload {
+export interface CreateAppMembershipDefaultPayload {
   clientMutationId?: string | null;
-  /** The `MembershipType` that was created by this mutation. */
-  membershipType?: MembershipType | null;
-  membershipTypeEdge?: MembershipTypeEdge | null;
+  /** The `AppMembershipDefault` that was created by this mutation. */
+  appMembershipDefault?: AppMembershipDefault | null;
+  appMembershipDefaultEdge?: AppMembershipDefaultEdge | null;
+}
+export interface CreateOrgMembershipDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembershipDefault` that was created by this mutation. */
+  orgMembershipDefault?: OrgMembershipDefault | null;
+  orgMembershipDefaultEdge?: OrgMembershipDefaultEdge | null;
+}
+export interface CreateAuditLogPayload {
+  clientMutationId?: string | null;
+  /** The `AuditLog` that was created by this mutation. */
+  auditLog?: AuditLog | null;
+  auditLogEdge?: AuditLogEdge | null;
 }
 export interface CreateDomainPayload {
   clientMutationId?: string | null;
   /** The `Domain` that was created by this mutation. */
   domain?: Domain | null;
   domainEdge?: DomainEdge | null;
+}
+export interface CreateAgentTaskPayload {
+  clientMutationId?: string | null;
+  /** The `AgentTask` that was created by this mutation. */
+  agentTask?: AgentTask | null;
+  agentTaskEdge?: AgentTaskEdge | null;
+}
+export interface CreateAgentThreadPayload {
+  clientMutationId?: string | null;
+  /** The `AgentThread` that was created by this mutation. */
+  agentThread?: AgentThread | null;
+  agentThreadEdge?: AgentThreadEdge | null;
+}
+export interface CreateEmailPayload {
+  clientMutationId?: string | null;
+  /** The `Email` that was created by this mutation. */
+  email?: Email | null;
+  emailEdge?: EmailEdge | null;
 }
 export interface CreateAppGrantPayload {
   clientMutationId?: string | null;
@@ -17476,23 +18671,45 @@ export interface CreateOrgClaimedInvitePayload {
   orgClaimedInvite?: OrgClaimedInvite | null;
   orgClaimedInviteEdge?: OrgClaimedInviteEdge | null;
 }
+export interface CreateAppLimitEventPayload {
+  clientMutationId?: string | null;
+  /** The `AppLimitEvent` that was created by this mutation. */
+  appLimitEvent?: AppLimitEvent | null;
+}
+export interface CreateOrgLimitEventPayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimitEvent` that was created by this mutation. */
+  orgLimitEvent?: OrgLimitEvent | null;
+}
 export interface CreateOrgChartEdgePayload {
   clientMutationId?: string | null;
   /** The `OrgChartEdge` that was created by this mutation. */
   orgChartEdge?: OrgChartEdge | null;
   orgChartEdgeEdge?: OrgChartEdgeEdge | null;
 }
-export interface CreateOrgGrantPayload {
+export interface CreateAppLimitPayload {
   clientMutationId?: string | null;
-  /** The `OrgGrant` that was created by this mutation. */
-  orgGrant?: OrgGrant | null;
-  orgGrantEdge?: OrgGrantEdge | null;
+  /** The `AppLimit` that was created by this mutation. */
+  appLimit?: AppLimit | null;
+  appLimitEdge?: AppLimitEdge | null;
+}
+export interface CreateOrgLimitAggregatePayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimitAggregate` that was created by this mutation. */
+  orgLimitAggregate?: OrgLimitAggregate | null;
+  orgLimitAggregateEdge?: OrgLimitAggregateEdge | null;
 }
 export interface CreateBlueprintConstructionPayload {
   clientMutationId?: string | null;
   /** The `BlueprintConstruction` that was created by this mutation. */
   blueprintConstruction?: BlueprintConstruction | null;
   blueprintConstructionEdge?: BlueprintConstructionEdge | null;
+}
+export interface CreatePlansModulePayload {
+  clientMutationId?: string | null;
+  /** The `PlansModule` that was created by this mutation. */
+  plansModule?: PlansModule | null;
+  plansModuleEdge?: PlansModuleEdge | null;
 }
 export interface CreateRlsModulePayload {
   clientMutationId?: string | null;
@@ -17506,23 +18723,23 @@ export interface CreateSessionsModulePayload {
   sessionsModule?: SessionsModule | null;
   sessionsModuleEdge?: SessionsModuleEdge | null;
 }
-export interface CreateAppLevelRequirementPayload {
+export interface CreateOrgGrantPayload {
   clientMutationId?: string | null;
-  /** The `AppLevelRequirement` that was created by this mutation. */
-  appLevelRequirement?: AppLevelRequirement | null;
-  appLevelRequirementEdge?: AppLevelRequirementEdge | null;
-}
-export interface CreateAuditLogPayload {
-  clientMutationId?: string | null;
-  /** The `AuditLog` that was created by this mutation. */
-  auditLog?: AuditLog | null;
-  auditLogEdge?: AuditLogEdge | null;
+  /** The `OrgGrant` that was created by this mutation. */
+  orgGrant?: OrgGrant | null;
+  orgGrantEdge?: OrgGrantEdge | null;
 }
 export interface CreateAppLevelPayload {
   clientMutationId?: string | null;
   /** The `AppLevel` that was created by this mutation. */
   appLevel?: AppLevel | null;
   appLevelEdge?: AppLevelEdge | null;
+}
+export interface CreateOrgLimitPayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimit` that was created by this mutation. */
+  orgLimit?: OrgLimit | null;
+  orgLimitEdge?: OrgLimitEdge | null;
 }
 export interface CreateBlueprintPayload {
   clientMutationId?: string | null;
@@ -17536,12 +18753,6 @@ export interface CreateDenormalizedTableFieldPayload {
   denormalizedTableField?: DenormalizedTableField | null;
   denormalizedTableFieldEdge?: DenormalizedTableFieldEdge | null;
 }
-export interface CreateEmailPayload {
-  clientMutationId?: string | null;
-  /** The `Email` that was created by this mutation. */
-  email?: Email | null;
-  emailEdge?: EmailEdge | null;
-}
 export interface CreateOrgMemberProfilePayload {
   clientMutationId?: string | null;
   /** The `OrgMemberProfile` that was created by this mutation. */
@@ -17553,23 +18764,17 @@ export interface CreateSqlActionPayload {
   /** The `SqlAction` that was created by this mutation. */
   sqlAction?: SqlAction | null;
 }
-export interface CreateSecureTableProvisionPayload {
-  clientMutationId?: string | null;
-  /** The `SecureTableProvision` that was created by this mutation. */
-  secureTableProvision?: SecureTableProvision | null;
-  secureTableProvisionEdge?: SecureTableProvisionEdge | null;
-}
-export interface CreateOrgMembershipSettingPayload {
-  clientMutationId?: string | null;
-  /** The `OrgMembershipSetting` that was created by this mutation. */
-  orgMembershipSetting?: OrgMembershipSetting | null;
-  orgMembershipSettingEdge?: OrgMembershipSettingEdge | null;
-}
 export interface CreateDatabaseTransferPayload {
   clientMutationId?: string | null;
   /** The `DatabaseTransfer` that was created by this mutation. */
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
+}
+export interface CreateBillingModulePayload {
+  clientMutationId?: string | null;
+  /** The `BillingModule` that was created by this mutation. */
+  billingModule?: BillingModule | null;
+  billingModuleEdge?: BillingModuleEdge | null;
 }
 export interface CreateCryptoAuthModulePayload {
   clientMutationId?: string | null;
@@ -17588,6 +18793,17 @@ export interface CreateInvitesModulePayload {
   /** The `InvitesModule` that was created by this mutation. */
   invitesModule?: InvitesModule | null;
   invitesModuleEdge?: InvitesModuleEdge | null;
+}
+export interface CreateSecureTableProvisionPayload {
+  clientMutationId?: string | null;
+  /** The `SecureTableProvision` that was created by this mutation. */
+  secureTableProvision?: SecureTableProvision | null;
+  secureTableProvisionEdge?: SecureTableProvisionEdge | null;
+}
+export interface CreateAstMigrationPayload {
+  clientMutationId?: string | null;
+  /** The `AstMigration` that was created by this mutation. */
+  astMigration?: AstMigration | null;
 }
 export interface CreateEnumPayload {
   clientMutationId?: string | null;
@@ -17613,6 +18829,18 @@ export interface CreateWebauthnAuthModulePayload {
   webauthnAuthModule?: WebauthnAuthModule | null;
   webauthnAuthModuleEdge?: WebauthnAuthModuleEdge | null;
 }
+export interface CreateAppInvitePayload {
+  clientMutationId?: string | null;
+  /** The `AppInvite` that was created by this mutation. */
+  appInvite?: AppInvite | null;
+  appInviteEdge?: AppInviteEdge | null;
+}
+export interface CreateOrgMembershipSettingPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembershipSetting` that was created by this mutation. */
+  orgMembershipSetting?: OrgMembershipSetting | null;
+  orgMembershipSettingEdge?: OrgMembershipSettingEdge | null;
+}
 export interface CreateAppPayload {
   clientMutationId?: string | null;
   /** The `App` that was created by this mutation. */
@@ -17625,10 +18853,23 @@ export interface CreateSitePayload {
   site?: Site | null;
   siteEdge?: SiteEdge | null;
 }
-export interface CreateAstMigrationPayload {
+export interface CreateNotificationsModulePayload {
   clientMutationId?: string | null;
-  /** The `AstMigration` that was created by this mutation. */
-  astMigration?: AstMigration | null;
+  /** The `NotificationsModule` that was created by this mutation. */
+  notificationsModule?: NotificationsModule | null;
+  notificationsModuleEdge?: NotificationsModuleEdge | null;
+}
+export interface CreatePermissionsModulePayload {
+  clientMutationId?: string | null;
+  /** The `PermissionsModule` that was created by this mutation. */
+  permissionsModule?: PermissionsModule | null;
+  permissionsModuleEdge?: PermissionsModuleEdge | null;
+}
+export interface CreateWebauthnCredentialPayload {
+  clientMutationId?: string | null;
+  /** The `WebauthnCredential` that was created by this mutation. */
+  webauthnCredential?: WebauthnCredential | null;
+  webauthnCredentialEdge?: WebauthnCredentialEdge | null;
 }
 export interface CreatePrimaryKeyConstraintPayload {
   clientMutationId?: string | null;
@@ -17666,65 +18907,11 @@ export interface CreatePolicyPayload {
   policy?: Policy | null;
   policyEdge?: PolicyEdge | null;
 }
-export interface CreateNotificationsModulePayload {
-  clientMutationId?: string | null;
-  /** The `NotificationsModule` that was created by this mutation. */
-  notificationsModule?: NotificationsModule | null;
-  notificationsModuleEdge?: NotificationsModuleEdge | null;
-}
-export interface CreatePermissionsModulePayload {
-  clientMutationId?: string | null;
-  /** The `PermissionsModule` that was created by this mutation. */
-  permissionsModule?: PermissionsModule | null;
-  permissionsModuleEdge?: PermissionsModuleEdge | null;
-}
-export interface CreateAppInvitePayload {
-  clientMutationId?: string | null;
-  /** The `AppInvite` that was created by this mutation. */
-  appInvite?: AppInvite | null;
-  appInviteEdge?: AppInviteEdge | null;
-}
 export interface CreateEmbeddingChunkPayload {
   clientMutationId?: string | null;
   /** The `EmbeddingChunk` that was created by this mutation. */
   embeddingChunk?: EmbeddingChunk | null;
   embeddingChunkEdge?: EmbeddingChunkEdge | null;
-}
-export interface CreateSchemaPayload {
-  clientMutationId?: string | null;
-  /** The `Schema` that was created by this mutation. */
-  schema?: Schema | null;
-  schemaEdge?: SchemaEdge | null;
-}
-export interface CreateLimitsModulePayload {
-  clientMutationId?: string | null;
-  /** The `LimitsModule` that was created by this mutation. */
-  limitsModule?: LimitsModule | null;
-  limitsModuleEdge?: LimitsModuleEdge | null;
-}
-export interface CreateProfilesModulePayload {
-  clientMutationId?: string | null;
-  /** The `ProfilesModule` that was created by this mutation. */
-  profilesModule?: ProfilesModule | null;
-  profilesModuleEdge?: ProfilesModuleEdge | null;
-}
-export interface CreateAppMembershipPayload {
-  clientMutationId?: string | null;
-  /** The `AppMembership` that was created by this mutation. */
-  appMembership?: AppMembership | null;
-  appMembershipEdge?: AppMembershipEdge | null;
-}
-export interface CreateIndexPayload {
-  clientMutationId?: string | null;
-  /** The `Index` that was created by this mutation. */
-  index?: Index | null;
-  indexEdge?: IndexEdge | null;
-}
-export interface CreateWebauthnCredentialPayload {
-  clientMutationId?: string | null;
-  /** The `WebauthnCredential` that was created by this mutation. */
-  webauthnCredential?: WebauthnCredential | null;
-  webauthnCredentialEdge?: WebauthnCredentialEdge | null;
 }
 export interface CreateOrgInvitePayload {
   clientMutationId?: string | null;
@@ -17732,11 +18919,29 @@ export interface CreateOrgInvitePayload {
   orgInvite?: OrgInvite | null;
   orgInviteEdge?: OrgInviteEdge | null;
 }
-export interface CreateOrgMembershipPayload {
+export interface CreateAppMembershipPayload {
   clientMutationId?: string | null;
-  /** The `OrgMembership` that was created by this mutation. */
-  orgMembership?: OrgMembership | null;
-  orgMembershipEdge?: OrgMembershipEdge | null;
+  /** The `AppMembership` that was created by this mutation. */
+  appMembership?: AppMembership | null;
+  appMembershipEdge?: AppMembershipEdge | null;
+}
+export interface CreateSchemaPayload {
+  clientMutationId?: string | null;
+  /** The `Schema` that was created by this mutation. */
+  schema?: Schema | null;
+  schemaEdge?: SchemaEdge | null;
+}
+export interface CreateIndexPayload {
+  clientMutationId?: string | null;
+  /** The `Index` that was created by this mutation. */
+  index?: Index | null;
+  indexEdge?: IndexEdge | null;
+}
+export interface CreateLimitsModulePayload {
+  clientMutationId?: string | null;
+  /** The `LimitsModule` that was created by this mutation. */
+  limitsModule?: LimitsModule | null;
+  limitsModuleEdge?: LimitsModuleEdge | null;
 }
 export interface CreateBlueprintTemplatePayload {
   clientMutationId?: string | null;
@@ -17750,23 +18955,35 @@ export interface CreateHierarchyModulePayload {
   hierarchyModule?: HierarchyModule | null;
   hierarchyModuleEdge?: HierarchyModuleEdge | null;
 }
+export interface CreateProfilesModulePayload {
+  clientMutationId?: string | null;
+  /** The `ProfilesModule` that was created by this mutation. */
+  profilesModule?: ProfilesModule | null;
+  profilesModuleEdge?: ProfilesModuleEdge | null;
+}
+export interface CreateOrgMembershipPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembership` that was created by this mutation. */
+  orgMembership?: OrgMembership | null;
+  orgMembershipEdge?: OrgMembershipEdge | null;
+}
 export interface CreateForeignKeyConstraintPayload {
   clientMutationId?: string | null;
   /** The `ForeignKeyConstraint` that was created by this mutation. */
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface CreateTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was created by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface CreateStorageModulePayload {
   clientMutationId?: string | null;
   /** The `StorageModule` that was created by this mutation. */
   storageModule?: StorageModule | null;
   storageModuleEdge?: StorageModuleEdge | null;
+}
+export interface CreateTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was created by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface CreateEntityTypeProvisionPayload {
   clientMutationId?: string | null;
@@ -17810,6 +19027,12 @@ export interface UpdateDefaultIdsModulePayload {
   defaultIdsModule?: DefaultIdsModule | null;
   defaultIdsModuleEdge?: DefaultIdsModuleEdge | null;
 }
+export interface UpdateRoleTypePayload {
+  clientMutationId?: string | null;
+  /** The `RoleType` that was updated by this mutation. */
+  roleType?: RoleType | null;
+  roleTypeEdge?: RoleTypeEdge | null;
+}
 export interface UpdateViewTablePayload {
   clientMutationId?: string | null;
   /** The `ViewTable` that was updated by this mutation. */
@@ -17822,23 +19045,17 @@ export interface UpdateApiSchemaPayload {
   apiSchema?: ApiSchema | null;
   apiSchemaEdge?: ApiSchemaEdge | null;
 }
-export interface UpdateSiteThemePayload {
-  clientMutationId?: string | null;
-  /** The `SiteTheme` that was updated by this mutation. */
-  siteTheme?: SiteTheme | null;
-  siteThemeEdge?: SiteThemeEdge | null;
-}
 export interface UpdateOrgMemberPayload {
   clientMutationId?: string | null;
   /** The `OrgMember` that was updated by this mutation. */
   orgMember?: OrgMember | null;
   orgMemberEdge?: OrgMemberEdge | null;
 }
-export interface UpdateAppPermissionDefaultPayload {
+export interface UpdateSiteThemePayload {
   clientMutationId?: string | null;
-  /** The `AppPermissionDefault` that was updated by this mutation. */
-  appPermissionDefault?: AppPermissionDefault | null;
-  appPermissionDefaultEdge?: AppPermissionDefaultEdge | null;
+  /** The `SiteTheme` that was updated by this mutation. */
+  siteTheme?: SiteTheme | null;
+  siteThemeEdge?: SiteThemeEdge | null;
 }
 export interface UpdateRefPayload {
   clientMutationId?: string | null;
@@ -17851,18 +19068,6 @@ export interface UpdateStorePayload {
   /** The `Store` that was updated by this mutation. */
   store?: Store | null;
   storeEdge?: StoreEdge | null;
-}
-export interface UpdateApiModulePayload {
-  clientMutationId?: string | null;
-  /** The `ApiModule` that was updated by this mutation. */
-  apiModule?: ApiModule | null;
-  apiModuleEdge?: ApiModuleEdge | null;
-}
-export interface UpdateSiteModulePayload {
-  clientMutationId?: string | null;
-  /** The `SiteModule` that was updated by this mutation. */
-  siteModule?: SiteModule | null;
-  siteModuleEdge?: SiteModuleEdge | null;
 }
 export interface UpdateEncryptedSecretsModulePayload {
   clientMutationId?: string | null;
@@ -17882,17 +19087,23 @@ export interface UpdateSecretsModulePayload {
   secretsModule?: SecretsModule | null;
   secretsModuleEdge?: SecretsModuleEdge | null;
 }
-export interface UpdateRoleTypePayload {
+export interface UpdateAppPermissionDefaultPayload {
   clientMutationId?: string | null;
-  /** The `RoleType` that was updated by this mutation. */
-  roleType?: RoleType | null;
-  roleTypeEdge?: RoleTypeEdge | null;
+  /** The `AppPermissionDefault` that was updated by this mutation. */
+  appPermissionDefault?: AppPermissionDefault | null;
+  appPermissionDefaultEdge?: AppPermissionDefaultEdge | null;
 }
-export interface UpdateOrgPermissionDefaultPayload {
+export interface UpdateApiModulePayload {
   clientMutationId?: string | null;
-  /** The `OrgPermissionDefault` that was updated by this mutation. */
-  orgPermissionDefault?: OrgPermissionDefault | null;
-  orgPermissionDefaultEdge?: OrgPermissionDefaultEdge | null;
+  /** The `ApiModule` that was updated by this mutation. */
+  apiModule?: ApiModule | null;
+  apiModuleEdge?: ApiModuleEdge | null;
+}
+export interface UpdateSiteModulePayload {
+  clientMutationId?: string | null;
+  /** The `SiteModule` that was updated by this mutation. */
+  siteModule?: SiteModule | null;
+  siteModuleEdge?: SiteModuleEdge | null;
 }
 export interface UpdateSchemaGrantPayload {
   clientMutationId?: string | null;
@@ -17936,17 +19147,41 @@ export interface UpdateAppOwnerGrantPayload {
   appOwnerGrant?: AppOwnerGrant | null;
   appOwnerGrantEdge?: AppOwnerGrantEdge | null;
 }
-export interface UpdateAppLimitDefaultPayload {
+export interface UpdateAppAchievementPayload {
   clientMutationId?: string | null;
-  /** The `AppLimitDefault` that was updated by this mutation. */
-  appLimitDefault?: AppLimitDefault | null;
-  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
+  /** The `AppAchievement` that was updated by this mutation. */
+  appAchievement?: AppAchievement | null;
+  appAchievementEdge?: AppAchievementEdge | null;
 }
-export interface UpdateOrgLimitDefaultPayload {
+export interface UpdateAppStepPayload {
   clientMutationId?: string | null;
-  /** The `OrgLimitDefault` that was updated by this mutation. */
-  orgLimitDefault?: OrgLimitDefault | null;
-  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
+  /** The `AppStep` that was updated by this mutation. */
+  appStep?: AppStep | null;
+  appStepEdge?: AppStepEdge | null;
+}
+export interface UpdateOrgPermissionDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgPermissionDefault` that was updated by this mutation. */
+  orgPermissionDefault?: OrgPermissionDefault | null;
+  orgPermissionDefaultEdge?: OrgPermissionDefaultEdge | null;
+}
+export interface UpdateAppPermissionPayload {
+  clientMutationId?: string | null;
+  /** The `AppPermission` that was updated by this mutation. */
+  appPermission?: AppPermission | null;
+  appPermissionEdge?: AppPermissionEdge | null;
+}
+export interface UpdateOrgPermissionPayload {
+  clientMutationId?: string | null;
+  /** The `OrgPermission` that was updated by this mutation. */
+  orgPermission?: OrgPermission | null;
+  orgPermissionEdge?: OrgPermissionEdge | null;
+}
+export interface UpdateMembershipTypePayload {
+  clientMutationId?: string | null;
+  /** The `MembershipType` that was updated by this mutation. */
+  membershipType?: MembershipType | null;
+  membershipTypeEdge?: MembershipTypeEdge | null;
 }
 export interface UpdateDefaultPrivilegePayload {
   clientMutationId?: string | null;
@@ -18014,11 +19249,23 @@ export interface UpdateOrgOwnerGrantPayload {
   orgOwnerGrant?: OrgOwnerGrant | null;
   orgOwnerGrantEdge?: OrgOwnerGrantEdge | null;
 }
-export interface UpdateObjectPayload {
+export interface UpdateNodeTypeRegistryPayload {
   clientMutationId?: string | null;
-  /** The `Object` that was updated by this mutation. */
-  object?: Object | null;
-  objectEdge?: ObjectEdge | null;
+  /** The `NodeTypeRegistry` that was updated by this mutation. */
+  nodeTypeRegistry?: NodeTypeRegistry | null;
+  nodeTypeRegistryEdge?: NodeTypeRegistryEdge | null;
+}
+export interface UpdateAppLimitDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `AppLimitDefault` that was updated by this mutation. */
+  appLimitDefault?: AppLimitDefault | null;
+  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
+}
+export interface UpdateOrgLimitDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimitDefault` that was updated by this mutation. */
+  orgLimitDefault?: OrgLimitDefault | null;
+  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
 }
 export interface UpdateDatabasePayload {
   clientMutationId?: string | null;
@@ -18038,35 +19285,17 @@ export interface UpdateCryptoAddressPayload {
   cryptoAddress?: CryptoAddress | null;
   cryptoAddressEdge?: CryptoAddressEdge | null;
 }
-export interface UpdateAppPermissionPayload {
+export interface UpdateAgentMessagePayload {
   clientMutationId?: string | null;
-  /** The `AppPermission` that was updated by this mutation. */
-  appPermission?: AppPermission | null;
-  appPermissionEdge?: AppPermissionEdge | null;
+  /** The `AgentMessage` that was updated by this mutation. */
+  agentMessage?: AgentMessage | null;
+  agentMessageEdge?: AgentMessageEdge | null;
 }
-export interface UpdateOrgPermissionPayload {
+export interface UpdateObjectPayload {
   clientMutationId?: string | null;
-  /** The `OrgPermission` that was updated by this mutation. */
-  orgPermission?: OrgPermission | null;
-  orgPermissionEdge?: OrgPermissionEdge | null;
-}
-export interface UpdateAppLimitPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimit` that was updated by this mutation. */
-  appLimit?: AppLimit | null;
-  appLimitEdge?: AppLimitEdge | null;
-}
-export interface UpdateAppAchievementPayload {
-  clientMutationId?: string | null;
-  /** The `AppAchievement` that was updated by this mutation. */
-  appAchievement?: AppAchievement | null;
-  appAchievementEdge?: AppAchievementEdge | null;
-}
-export interface UpdateAppStepPayload {
-  clientMutationId?: string | null;
-  /** The `AppStep` that was updated by this mutation. */
-  appStep?: AppStep | null;
-  appStepEdge?: AppStepEdge | null;
+  /** The `Object` that was updated by this mutation. */
+  object?: Object | null;
+  objectEdge?: ObjectEdge | null;
 }
 export interface UpdateSiteMetadatumPayload {
   clientMutationId?: string | null;
@@ -18074,23 +19303,11 @@ export interface UpdateSiteMetadatumPayload {
   siteMetadatum?: SiteMetadatum | null;
   siteMetadatumEdge?: SiteMetadatumEdge | null;
 }
-export interface UpdateAppClaimedInvitePayload {
+export interface UpdateAppLevelRequirementPayload {
   clientMutationId?: string | null;
-  /** The `AppClaimedInvite` that was updated by this mutation. */
-  appClaimedInvite?: AppClaimedInvite | null;
-  appClaimedInviteEdge?: AppClaimedInviteEdge | null;
-}
-export interface UpdateAppMembershipDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppMembershipDefault` that was updated by this mutation. */
-  appMembershipDefault?: AppMembershipDefault | null;
-  appMembershipDefaultEdge?: AppMembershipDefaultEdge | null;
-}
-export interface UpdateOrgMembershipDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgMembershipDefault` that was updated by this mutation. */
-  orgMembershipDefault?: OrgMembershipDefault | null;
-  orgMembershipDefaultEdge?: OrgMembershipDefaultEdge | null;
+  /** The `AppLevelRequirement` that was updated by this mutation. */
+  appLevelRequirement?: AppLevelRequirement | null;
+  appLevelRequirementEdge?: AppLevelRequirementEdge | null;
 }
 export interface UpdateFullTextSearchPayload {
   clientMutationId?: string | null;
@@ -18128,23 +19345,53 @@ export interface UpdatePhoneNumberPayload {
   phoneNumber?: PhoneNumber | null;
   phoneNumberEdge?: PhoneNumberEdge | null;
 }
-export interface UpdateOrgLimitPayload {
+export interface UpdateAppClaimedInvitePayload {
   clientMutationId?: string | null;
-  /** The `OrgLimit` that was updated by this mutation. */
-  orgLimit?: OrgLimit | null;
-  orgLimitEdge?: OrgLimitEdge | null;
+  /** The `AppClaimedInvite` that was updated by this mutation. */
+  appClaimedInvite?: AppClaimedInvite | null;
+  appClaimedInviteEdge?: AppClaimedInviteEdge | null;
 }
-export interface UpdateMembershipTypePayload {
+export interface UpdateAppMembershipDefaultPayload {
   clientMutationId?: string | null;
-  /** The `MembershipType` that was updated by this mutation. */
-  membershipType?: MembershipType | null;
-  membershipTypeEdge?: MembershipTypeEdge | null;
+  /** The `AppMembershipDefault` that was updated by this mutation. */
+  appMembershipDefault?: AppMembershipDefault | null;
+  appMembershipDefaultEdge?: AppMembershipDefaultEdge | null;
+}
+export interface UpdateOrgMembershipDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembershipDefault` that was updated by this mutation. */
+  orgMembershipDefault?: OrgMembershipDefault | null;
+  orgMembershipDefaultEdge?: OrgMembershipDefaultEdge | null;
+}
+export interface UpdateAuditLogPayload {
+  clientMutationId?: string | null;
+  /** The `AuditLog` that was updated by this mutation. */
+  auditLog?: AuditLog | null;
+  auditLogEdge?: AuditLogEdge | null;
 }
 export interface UpdateDomainPayload {
   clientMutationId?: string | null;
   /** The `Domain` that was updated by this mutation. */
   domain?: Domain | null;
   domainEdge?: DomainEdge | null;
+}
+export interface UpdateAgentTaskPayload {
+  clientMutationId?: string | null;
+  /** The `AgentTask` that was updated by this mutation. */
+  agentTask?: AgentTask | null;
+  agentTaskEdge?: AgentTaskEdge | null;
+}
+export interface UpdateAgentThreadPayload {
+  clientMutationId?: string | null;
+  /** The `AgentThread` that was updated by this mutation. */
+  agentThread?: AgentThread | null;
+  agentThreadEdge?: AgentThreadEdge | null;
+}
+export interface UpdateEmailPayload {
+  clientMutationId?: string | null;
+  /** The `Email` that was updated by this mutation. */
+  email?: Email | null;
+  emailEdge?: EmailEdge | null;
 }
 export interface UpdateAppGrantPayload {
   clientMutationId?: string | null;
@@ -18164,17 +19411,29 @@ export interface UpdateOrgChartEdgePayload {
   orgChartEdge?: OrgChartEdge | null;
   orgChartEdgeEdge?: OrgChartEdgeEdge | null;
 }
-export interface UpdateOrgGrantPayload {
+export interface UpdateAppLimitPayload {
   clientMutationId?: string | null;
-  /** The `OrgGrant` that was updated by this mutation. */
-  orgGrant?: OrgGrant | null;
-  orgGrantEdge?: OrgGrantEdge | null;
+  /** The `AppLimit` that was updated by this mutation. */
+  appLimit?: AppLimit | null;
+  appLimitEdge?: AppLimitEdge | null;
+}
+export interface UpdateOrgLimitAggregatePayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimitAggregate` that was updated by this mutation. */
+  orgLimitAggregate?: OrgLimitAggregate | null;
+  orgLimitAggregateEdge?: OrgLimitAggregateEdge | null;
 }
 export interface UpdateBlueprintConstructionPayload {
   clientMutationId?: string | null;
   /** The `BlueprintConstruction` that was updated by this mutation. */
   blueprintConstruction?: BlueprintConstruction | null;
   blueprintConstructionEdge?: BlueprintConstructionEdge | null;
+}
+export interface UpdatePlansModulePayload {
+  clientMutationId?: string | null;
+  /** The `PlansModule` that was updated by this mutation. */
+  plansModule?: PlansModule | null;
+  plansModuleEdge?: PlansModuleEdge | null;
 }
 export interface UpdateRlsModulePayload {
   clientMutationId?: string | null;
@@ -18188,23 +19447,23 @@ export interface UpdateSessionsModulePayload {
   sessionsModule?: SessionsModule | null;
   sessionsModuleEdge?: SessionsModuleEdge | null;
 }
-export interface UpdateAppLevelRequirementPayload {
+export interface UpdateOrgGrantPayload {
   clientMutationId?: string | null;
-  /** The `AppLevelRequirement` that was updated by this mutation. */
-  appLevelRequirement?: AppLevelRequirement | null;
-  appLevelRequirementEdge?: AppLevelRequirementEdge | null;
-}
-export interface UpdateAuditLogPayload {
-  clientMutationId?: string | null;
-  /** The `AuditLog` that was updated by this mutation. */
-  auditLog?: AuditLog | null;
-  auditLogEdge?: AuditLogEdge | null;
+  /** The `OrgGrant` that was updated by this mutation. */
+  orgGrant?: OrgGrant | null;
+  orgGrantEdge?: OrgGrantEdge | null;
 }
 export interface UpdateAppLevelPayload {
   clientMutationId?: string | null;
   /** The `AppLevel` that was updated by this mutation. */
   appLevel?: AppLevel | null;
   appLevelEdge?: AppLevelEdge | null;
+}
+export interface UpdateOrgLimitPayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimit` that was updated by this mutation. */
+  orgLimit?: OrgLimit | null;
+  orgLimitEdge?: OrgLimitEdge | null;
 }
 export interface UpdateBlueprintPayload {
   clientMutationId?: string | null;
@@ -18218,35 +19477,23 @@ export interface UpdateDenormalizedTableFieldPayload {
   denormalizedTableField?: DenormalizedTableField | null;
   denormalizedTableFieldEdge?: DenormalizedTableFieldEdge | null;
 }
-export interface UpdateEmailPayload {
-  clientMutationId?: string | null;
-  /** The `Email` that was updated by this mutation. */
-  email?: Email | null;
-  emailEdge?: EmailEdge | null;
-}
 export interface UpdateOrgMemberProfilePayload {
   clientMutationId?: string | null;
   /** The `OrgMemberProfile` that was updated by this mutation. */
   orgMemberProfile?: OrgMemberProfile | null;
   orgMemberProfileEdge?: OrgMemberProfileEdge | null;
 }
-export interface UpdateSecureTableProvisionPayload {
-  clientMutationId?: string | null;
-  /** The `SecureTableProvision` that was updated by this mutation. */
-  secureTableProvision?: SecureTableProvision | null;
-  secureTableProvisionEdge?: SecureTableProvisionEdge | null;
-}
-export interface UpdateOrgMembershipSettingPayload {
-  clientMutationId?: string | null;
-  /** The `OrgMembershipSetting` that was updated by this mutation. */
-  orgMembershipSetting?: OrgMembershipSetting | null;
-  orgMembershipSettingEdge?: OrgMembershipSettingEdge | null;
-}
 export interface UpdateDatabaseTransferPayload {
   clientMutationId?: string | null;
   /** The `DatabaseTransfer` that was updated by this mutation. */
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
+}
+export interface UpdateBillingModulePayload {
+  clientMutationId?: string | null;
+  /** The `BillingModule` that was updated by this mutation. */
+  billingModule?: BillingModule | null;
+  billingModuleEdge?: BillingModuleEdge | null;
 }
 export interface UpdateCryptoAuthModulePayload {
   clientMutationId?: string | null;
@@ -18265,6 +19512,12 @@ export interface UpdateInvitesModulePayload {
   /** The `InvitesModule` that was updated by this mutation. */
   invitesModule?: InvitesModule | null;
   invitesModuleEdge?: InvitesModuleEdge | null;
+}
+export interface UpdateSecureTableProvisionPayload {
+  clientMutationId?: string | null;
+  /** The `SecureTableProvision` that was updated by this mutation. */
+  secureTableProvision?: SecureTableProvision | null;
+  secureTableProvisionEdge?: SecureTableProvisionEdge | null;
 }
 export interface UpdateEnumPayload {
   clientMutationId?: string | null;
@@ -18290,6 +19543,18 @@ export interface UpdateWebauthnAuthModulePayload {
   webauthnAuthModule?: WebauthnAuthModule | null;
   webauthnAuthModuleEdge?: WebauthnAuthModuleEdge | null;
 }
+export interface UpdateAppInvitePayload {
+  clientMutationId?: string | null;
+  /** The `AppInvite` that was updated by this mutation. */
+  appInvite?: AppInvite | null;
+  appInviteEdge?: AppInviteEdge | null;
+}
+export interface UpdateOrgMembershipSettingPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembershipSetting` that was updated by this mutation. */
+  orgMembershipSetting?: OrgMembershipSetting | null;
+  orgMembershipSettingEdge?: OrgMembershipSettingEdge | null;
+}
 export interface UpdateAppPayload {
   clientMutationId?: string | null;
   /** The `App` that was updated by this mutation. */
@@ -18301,6 +19566,24 @@ export interface UpdateSitePayload {
   /** The `Site` that was updated by this mutation. */
   site?: Site | null;
   siteEdge?: SiteEdge | null;
+}
+export interface UpdateNotificationsModulePayload {
+  clientMutationId?: string | null;
+  /** The `NotificationsModule` that was updated by this mutation. */
+  notificationsModule?: NotificationsModule | null;
+  notificationsModuleEdge?: NotificationsModuleEdge | null;
+}
+export interface UpdatePermissionsModulePayload {
+  clientMutationId?: string | null;
+  /** The `PermissionsModule` that was updated by this mutation. */
+  permissionsModule?: PermissionsModule | null;
+  permissionsModuleEdge?: PermissionsModuleEdge | null;
+}
+export interface UpdateWebauthnCredentialPayload {
+  clientMutationId?: string | null;
+  /** The `WebauthnCredential` that was updated by this mutation. */
+  webauthnCredential?: WebauthnCredential | null;
+  webauthnCredentialEdge?: WebauthnCredentialEdge | null;
 }
 export interface UpdatePrimaryKeyConstraintPayload {
   clientMutationId?: string | null;
@@ -18338,65 +19621,11 @@ export interface UpdatePolicyPayload {
   policy?: Policy | null;
   policyEdge?: PolicyEdge | null;
 }
-export interface UpdateNotificationsModulePayload {
-  clientMutationId?: string | null;
-  /** The `NotificationsModule` that was updated by this mutation. */
-  notificationsModule?: NotificationsModule | null;
-  notificationsModuleEdge?: NotificationsModuleEdge | null;
-}
-export interface UpdatePermissionsModulePayload {
-  clientMutationId?: string | null;
-  /** The `PermissionsModule` that was updated by this mutation. */
-  permissionsModule?: PermissionsModule | null;
-  permissionsModuleEdge?: PermissionsModuleEdge | null;
-}
-export interface UpdateAppInvitePayload {
-  clientMutationId?: string | null;
-  /** The `AppInvite` that was updated by this mutation. */
-  appInvite?: AppInvite | null;
-  appInviteEdge?: AppInviteEdge | null;
-}
 export interface UpdateEmbeddingChunkPayload {
   clientMutationId?: string | null;
   /** The `EmbeddingChunk` that was updated by this mutation. */
   embeddingChunk?: EmbeddingChunk | null;
   embeddingChunkEdge?: EmbeddingChunkEdge | null;
-}
-export interface UpdateSchemaPayload {
-  clientMutationId?: string | null;
-  /** The `Schema` that was updated by this mutation. */
-  schema?: Schema | null;
-  schemaEdge?: SchemaEdge | null;
-}
-export interface UpdateLimitsModulePayload {
-  clientMutationId?: string | null;
-  /** The `LimitsModule` that was updated by this mutation. */
-  limitsModule?: LimitsModule | null;
-  limitsModuleEdge?: LimitsModuleEdge | null;
-}
-export interface UpdateProfilesModulePayload {
-  clientMutationId?: string | null;
-  /** The `ProfilesModule` that was updated by this mutation. */
-  profilesModule?: ProfilesModule | null;
-  profilesModuleEdge?: ProfilesModuleEdge | null;
-}
-export interface UpdateAppMembershipPayload {
-  clientMutationId?: string | null;
-  /** The `AppMembership` that was updated by this mutation. */
-  appMembership?: AppMembership | null;
-  appMembershipEdge?: AppMembershipEdge | null;
-}
-export interface UpdateIndexPayload {
-  clientMutationId?: string | null;
-  /** The `Index` that was updated by this mutation. */
-  index?: Index | null;
-  indexEdge?: IndexEdge | null;
-}
-export interface UpdateWebauthnCredentialPayload {
-  clientMutationId?: string | null;
-  /** The `WebauthnCredential` that was updated by this mutation. */
-  webauthnCredential?: WebauthnCredential | null;
-  webauthnCredentialEdge?: WebauthnCredentialEdge | null;
 }
 export interface UpdateOrgInvitePayload {
   clientMutationId?: string | null;
@@ -18404,11 +19633,29 @@ export interface UpdateOrgInvitePayload {
   orgInvite?: OrgInvite | null;
   orgInviteEdge?: OrgInviteEdge | null;
 }
-export interface UpdateOrgMembershipPayload {
+export interface UpdateAppMembershipPayload {
   clientMutationId?: string | null;
-  /** The `OrgMembership` that was updated by this mutation. */
-  orgMembership?: OrgMembership | null;
-  orgMembershipEdge?: OrgMembershipEdge | null;
+  /** The `AppMembership` that was updated by this mutation. */
+  appMembership?: AppMembership | null;
+  appMembershipEdge?: AppMembershipEdge | null;
+}
+export interface UpdateSchemaPayload {
+  clientMutationId?: string | null;
+  /** The `Schema` that was updated by this mutation. */
+  schema?: Schema | null;
+  schemaEdge?: SchemaEdge | null;
+}
+export interface UpdateIndexPayload {
+  clientMutationId?: string | null;
+  /** The `Index` that was updated by this mutation. */
+  index?: Index | null;
+  indexEdge?: IndexEdge | null;
+}
+export interface UpdateLimitsModulePayload {
+  clientMutationId?: string | null;
+  /** The `LimitsModule` that was updated by this mutation. */
+  limitsModule?: LimitsModule | null;
+  limitsModuleEdge?: LimitsModuleEdge | null;
 }
 export interface UpdateBlueprintTemplatePayload {
   clientMutationId?: string | null;
@@ -18422,23 +19669,35 @@ export interface UpdateHierarchyModulePayload {
   hierarchyModule?: HierarchyModule | null;
   hierarchyModuleEdge?: HierarchyModuleEdge | null;
 }
+export interface UpdateProfilesModulePayload {
+  clientMutationId?: string | null;
+  /** The `ProfilesModule` that was updated by this mutation. */
+  profilesModule?: ProfilesModule | null;
+  profilesModuleEdge?: ProfilesModuleEdge | null;
+}
+export interface UpdateOrgMembershipPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembership` that was updated by this mutation. */
+  orgMembership?: OrgMembership | null;
+  orgMembershipEdge?: OrgMembershipEdge | null;
+}
 export interface UpdateForeignKeyConstraintPayload {
   clientMutationId?: string | null;
   /** The `ForeignKeyConstraint` that was updated by this mutation. */
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface UpdateTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was updated by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface UpdateStorageModulePayload {
   clientMutationId?: string | null;
   /** The `StorageModule` that was updated by this mutation. */
   storageModule?: StorageModule | null;
   storageModuleEdge?: StorageModuleEdge | null;
+}
+export interface UpdateTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was updated by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface UpdateEntityTypeProvisionPayload {
   clientMutationId?: string | null;
@@ -18482,6 +19741,12 @@ export interface DeleteDefaultIdsModulePayload {
   defaultIdsModule?: DefaultIdsModule | null;
   defaultIdsModuleEdge?: DefaultIdsModuleEdge | null;
 }
+export interface DeleteRoleTypePayload {
+  clientMutationId?: string | null;
+  /** The `RoleType` that was deleted by this mutation. */
+  roleType?: RoleType | null;
+  roleTypeEdge?: RoleTypeEdge | null;
+}
 export interface DeleteViewTablePayload {
   clientMutationId?: string | null;
   /** The `ViewTable` that was deleted by this mutation. */
@@ -18494,23 +19759,17 @@ export interface DeleteApiSchemaPayload {
   apiSchema?: ApiSchema | null;
   apiSchemaEdge?: ApiSchemaEdge | null;
 }
-export interface DeleteSiteThemePayload {
-  clientMutationId?: string | null;
-  /** The `SiteTheme` that was deleted by this mutation. */
-  siteTheme?: SiteTheme | null;
-  siteThemeEdge?: SiteThemeEdge | null;
-}
 export interface DeleteOrgMemberPayload {
   clientMutationId?: string | null;
   /** The `OrgMember` that was deleted by this mutation. */
   orgMember?: OrgMember | null;
   orgMemberEdge?: OrgMemberEdge | null;
 }
-export interface DeleteAppPermissionDefaultPayload {
+export interface DeleteSiteThemePayload {
   clientMutationId?: string | null;
-  /** The `AppPermissionDefault` that was deleted by this mutation. */
-  appPermissionDefault?: AppPermissionDefault | null;
-  appPermissionDefaultEdge?: AppPermissionDefaultEdge | null;
+  /** The `SiteTheme` that was deleted by this mutation. */
+  siteTheme?: SiteTheme | null;
+  siteThemeEdge?: SiteThemeEdge | null;
 }
 export interface DeleteRefPayload {
   clientMutationId?: string | null;
@@ -18523,18 +19782,6 @@ export interface DeleteStorePayload {
   /** The `Store` that was deleted by this mutation. */
   store?: Store | null;
   storeEdge?: StoreEdge | null;
-}
-export interface DeleteApiModulePayload {
-  clientMutationId?: string | null;
-  /** The `ApiModule` that was deleted by this mutation. */
-  apiModule?: ApiModule | null;
-  apiModuleEdge?: ApiModuleEdge | null;
-}
-export interface DeleteSiteModulePayload {
-  clientMutationId?: string | null;
-  /** The `SiteModule` that was deleted by this mutation. */
-  siteModule?: SiteModule | null;
-  siteModuleEdge?: SiteModuleEdge | null;
 }
 export interface DeleteEncryptedSecretsModulePayload {
   clientMutationId?: string | null;
@@ -18554,17 +19801,23 @@ export interface DeleteSecretsModulePayload {
   secretsModule?: SecretsModule | null;
   secretsModuleEdge?: SecretsModuleEdge | null;
 }
-export interface DeleteRoleTypePayload {
+export interface DeleteAppPermissionDefaultPayload {
   clientMutationId?: string | null;
-  /** The `RoleType` that was deleted by this mutation. */
-  roleType?: RoleType | null;
-  roleTypeEdge?: RoleTypeEdge | null;
+  /** The `AppPermissionDefault` that was deleted by this mutation. */
+  appPermissionDefault?: AppPermissionDefault | null;
+  appPermissionDefaultEdge?: AppPermissionDefaultEdge | null;
 }
-export interface DeleteOrgPermissionDefaultPayload {
+export interface DeleteApiModulePayload {
   clientMutationId?: string | null;
-  /** The `OrgPermissionDefault` that was deleted by this mutation. */
-  orgPermissionDefault?: OrgPermissionDefault | null;
-  orgPermissionDefaultEdge?: OrgPermissionDefaultEdge | null;
+  /** The `ApiModule` that was deleted by this mutation. */
+  apiModule?: ApiModule | null;
+  apiModuleEdge?: ApiModuleEdge | null;
+}
+export interface DeleteSiteModulePayload {
+  clientMutationId?: string | null;
+  /** The `SiteModule` that was deleted by this mutation. */
+  siteModule?: SiteModule | null;
+  siteModuleEdge?: SiteModuleEdge | null;
 }
 export interface DeleteSchemaGrantPayload {
   clientMutationId?: string | null;
@@ -18608,17 +19861,41 @@ export interface DeleteAppOwnerGrantPayload {
   appOwnerGrant?: AppOwnerGrant | null;
   appOwnerGrantEdge?: AppOwnerGrantEdge | null;
 }
-export interface DeleteAppLimitDefaultPayload {
+export interface DeleteAppAchievementPayload {
   clientMutationId?: string | null;
-  /** The `AppLimitDefault` that was deleted by this mutation. */
-  appLimitDefault?: AppLimitDefault | null;
-  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
+  /** The `AppAchievement` that was deleted by this mutation. */
+  appAchievement?: AppAchievement | null;
+  appAchievementEdge?: AppAchievementEdge | null;
 }
-export interface DeleteOrgLimitDefaultPayload {
+export interface DeleteAppStepPayload {
   clientMutationId?: string | null;
-  /** The `OrgLimitDefault` that was deleted by this mutation. */
-  orgLimitDefault?: OrgLimitDefault | null;
-  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
+  /** The `AppStep` that was deleted by this mutation. */
+  appStep?: AppStep | null;
+  appStepEdge?: AppStepEdge | null;
+}
+export interface DeleteOrgPermissionDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgPermissionDefault` that was deleted by this mutation. */
+  orgPermissionDefault?: OrgPermissionDefault | null;
+  orgPermissionDefaultEdge?: OrgPermissionDefaultEdge | null;
+}
+export interface DeleteAppPermissionPayload {
+  clientMutationId?: string | null;
+  /** The `AppPermission` that was deleted by this mutation. */
+  appPermission?: AppPermission | null;
+  appPermissionEdge?: AppPermissionEdge | null;
+}
+export interface DeleteOrgPermissionPayload {
+  clientMutationId?: string | null;
+  /** The `OrgPermission` that was deleted by this mutation. */
+  orgPermission?: OrgPermission | null;
+  orgPermissionEdge?: OrgPermissionEdge | null;
+}
+export interface DeleteMembershipTypePayload {
+  clientMutationId?: string | null;
+  /** The `MembershipType` that was deleted by this mutation. */
+  membershipType?: MembershipType | null;
+  membershipTypeEdge?: MembershipTypeEdge | null;
 }
 export interface DeleteDefaultPrivilegePayload {
   clientMutationId?: string | null;
@@ -18686,11 +19963,23 @@ export interface DeleteOrgOwnerGrantPayload {
   orgOwnerGrant?: OrgOwnerGrant | null;
   orgOwnerGrantEdge?: OrgOwnerGrantEdge | null;
 }
-export interface DeleteObjectPayload {
+export interface DeleteNodeTypeRegistryPayload {
   clientMutationId?: string | null;
-  /** The `Object` that was deleted by this mutation. */
-  object?: Object | null;
-  objectEdge?: ObjectEdge | null;
+  /** The `NodeTypeRegistry` that was deleted by this mutation. */
+  nodeTypeRegistry?: NodeTypeRegistry | null;
+  nodeTypeRegistryEdge?: NodeTypeRegistryEdge | null;
+}
+export interface DeleteAppLimitDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `AppLimitDefault` that was deleted by this mutation. */
+  appLimitDefault?: AppLimitDefault | null;
+  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
+}
+export interface DeleteOrgLimitDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimitDefault` that was deleted by this mutation. */
+  orgLimitDefault?: OrgLimitDefault | null;
+  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
 }
 export interface DeleteDatabasePayload {
   clientMutationId?: string | null;
@@ -18710,35 +19999,17 @@ export interface DeleteCryptoAddressPayload {
   cryptoAddress?: CryptoAddress | null;
   cryptoAddressEdge?: CryptoAddressEdge | null;
 }
-export interface DeleteAppPermissionPayload {
+export interface DeleteAgentMessagePayload {
   clientMutationId?: string | null;
-  /** The `AppPermission` that was deleted by this mutation. */
-  appPermission?: AppPermission | null;
-  appPermissionEdge?: AppPermissionEdge | null;
+  /** The `AgentMessage` that was deleted by this mutation. */
+  agentMessage?: AgentMessage | null;
+  agentMessageEdge?: AgentMessageEdge | null;
 }
-export interface DeleteOrgPermissionPayload {
+export interface DeleteObjectPayload {
   clientMutationId?: string | null;
-  /** The `OrgPermission` that was deleted by this mutation. */
-  orgPermission?: OrgPermission | null;
-  orgPermissionEdge?: OrgPermissionEdge | null;
-}
-export interface DeleteAppLimitPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimit` that was deleted by this mutation. */
-  appLimit?: AppLimit | null;
-  appLimitEdge?: AppLimitEdge | null;
-}
-export interface DeleteAppAchievementPayload {
-  clientMutationId?: string | null;
-  /** The `AppAchievement` that was deleted by this mutation. */
-  appAchievement?: AppAchievement | null;
-  appAchievementEdge?: AppAchievementEdge | null;
-}
-export interface DeleteAppStepPayload {
-  clientMutationId?: string | null;
-  /** The `AppStep` that was deleted by this mutation. */
-  appStep?: AppStep | null;
-  appStepEdge?: AppStepEdge | null;
+  /** The `Object` that was deleted by this mutation. */
+  object?: Object | null;
+  objectEdge?: ObjectEdge | null;
 }
 export interface DeleteSiteMetadatumPayload {
   clientMutationId?: string | null;
@@ -18746,23 +20017,11 @@ export interface DeleteSiteMetadatumPayload {
   siteMetadatum?: SiteMetadatum | null;
   siteMetadatumEdge?: SiteMetadatumEdge | null;
 }
-export interface DeleteAppClaimedInvitePayload {
+export interface DeleteAppLevelRequirementPayload {
   clientMutationId?: string | null;
-  /** The `AppClaimedInvite` that was deleted by this mutation. */
-  appClaimedInvite?: AppClaimedInvite | null;
-  appClaimedInviteEdge?: AppClaimedInviteEdge | null;
-}
-export interface DeleteAppMembershipDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppMembershipDefault` that was deleted by this mutation. */
-  appMembershipDefault?: AppMembershipDefault | null;
-  appMembershipDefaultEdge?: AppMembershipDefaultEdge | null;
-}
-export interface DeleteOrgMembershipDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgMembershipDefault` that was deleted by this mutation. */
-  orgMembershipDefault?: OrgMembershipDefault | null;
-  orgMembershipDefaultEdge?: OrgMembershipDefaultEdge | null;
+  /** The `AppLevelRequirement` that was deleted by this mutation. */
+  appLevelRequirement?: AppLevelRequirement | null;
+  appLevelRequirementEdge?: AppLevelRequirementEdge | null;
 }
 export interface DeleteFullTextSearchPayload {
   clientMutationId?: string | null;
@@ -18800,23 +20059,53 @@ export interface DeletePhoneNumberPayload {
   phoneNumber?: PhoneNumber | null;
   phoneNumberEdge?: PhoneNumberEdge | null;
 }
-export interface DeleteOrgLimitPayload {
+export interface DeleteAppClaimedInvitePayload {
   clientMutationId?: string | null;
-  /** The `OrgLimit` that was deleted by this mutation. */
-  orgLimit?: OrgLimit | null;
-  orgLimitEdge?: OrgLimitEdge | null;
+  /** The `AppClaimedInvite` that was deleted by this mutation. */
+  appClaimedInvite?: AppClaimedInvite | null;
+  appClaimedInviteEdge?: AppClaimedInviteEdge | null;
 }
-export interface DeleteMembershipTypePayload {
+export interface DeleteAppMembershipDefaultPayload {
   clientMutationId?: string | null;
-  /** The `MembershipType` that was deleted by this mutation. */
-  membershipType?: MembershipType | null;
-  membershipTypeEdge?: MembershipTypeEdge | null;
+  /** The `AppMembershipDefault` that was deleted by this mutation. */
+  appMembershipDefault?: AppMembershipDefault | null;
+  appMembershipDefaultEdge?: AppMembershipDefaultEdge | null;
+}
+export interface DeleteOrgMembershipDefaultPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembershipDefault` that was deleted by this mutation. */
+  orgMembershipDefault?: OrgMembershipDefault | null;
+  orgMembershipDefaultEdge?: OrgMembershipDefaultEdge | null;
+}
+export interface DeleteAuditLogPayload {
+  clientMutationId?: string | null;
+  /** The `AuditLog` that was deleted by this mutation. */
+  auditLog?: AuditLog | null;
+  auditLogEdge?: AuditLogEdge | null;
 }
 export interface DeleteDomainPayload {
   clientMutationId?: string | null;
   /** The `Domain` that was deleted by this mutation. */
   domain?: Domain | null;
   domainEdge?: DomainEdge | null;
+}
+export interface DeleteAgentTaskPayload {
+  clientMutationId?: string | null;
+  /** The `AgentTask` that was deleted by this mutation. */
+  agentTask?: AgentTask | null;
+  agentTaskEdge?: AgentTaskEdge | null;
+}
+export interface DeleteAgentThreadPayload {
+  clientMutationId?: string | null;
+  /** The `AgentThread` that was deleted by this mutation. */
+  agentThread?: AgentThread | null;
+  agentThreadEdge?: AgentThreadEdge | null;
+}
+export interface DeleteEmailPayload {
+  clientMutationId?: string | null;
+  /** The `Email` that was deleted by this mutation. */
+  email?: Email | null;
+  emailEdge?: EmailEdge | null;
 }
 export interface DeleteAppGrantPayload {
   clientMutationId?: string | null;
@@ -18836,17 +20125,29 @@ export interface DeleteOrgChartEdgePayload {
   orgChartEdge?: OrgChartEdge | null;
   orgChartEdgeEdge?: OrgChartEdgeEdge | null;
 }
-export interface DeleteOrgGrantPayload {
+export interface DeleteAppLimitPayload {
   clientMutationId?: string | null;
-  /** The `OrgGrant` that was deleted by this mutation. */
-  orgGrant?: OrgGrant | null;
-  orgGrantEdge?: OrgGrantEdge | null;
+  /** The `AppLimit` that was deleted by this mutation. */
+  appLimit?: AppLimit | null;
+  appLimitEdge?: AppLimitEdge | null;
+}
+export interface DeleteOrgLimitAggregatePayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimitAggregate` that was deleted by this mutation. */
+  orgLimitAggregate?: OrgLimitAggregate | null;
+  orgLimitAggregateEdge?: OrgLimitAggregateEdge | null;
 }
 export interface DeleteBlueprintConstructionPayload {
   clientMutationId?: string | null;
   /** The `BlueprintConstruction` that was deleted by this mutation. */
   blueprintConstruction?: BlueprintConstruction | null;
   blueprintConstructionEdge?: BlueprintConstructionEdge | null;
+}
+export interface DeletePlansModulePayload {
+  clientMutationId?: string | null;
+  /** The `PlansModule` that was deleted by this mutation. */
+  plansModule?: PlansModule | null;
+  plansModuleEdge?: PlansModuleEdge | null;
 }
 export interface DeleteRlsModulePayload {
   clientMutationId?: string | null;
@@ -18860,23 +20161,23 @@ export interface DeleteSessionsModulePayload {
   sessionsModule?: SessionsModule | null;
   sessionsModuleEdge?: SessionsModuleEdge | null;
 }
-export interface DeleteAppLevelRequirementPayload {
+export interface DeleteOrgGrantPayload {
   clientMutationId?: string | null;
-  /** The `AppLevelRequirement` that was deleted by this mutation. */
-  appLevelRequirement?: AppLevelRequirement | null;
-  appLevelRequirementEdge?: AppLevelRequirementEdge | null;
-}
-export interface DeleteAuditLogPayload {
-  clientMutationId?: string | null;
-  /** The `AuditLog` that was deleted by this mutation. */
-  auditLog?: AuditLog | null;
-  auditLogEdge?: AuditLogEdge | null;
+  /** The `OrgGrant` that was deleted by this mutation. */
+  orgGrant?: OrgGrant | null;
+  orgGrantEdge?: OrgGrantEdge | null;
 }
 export interface DeleteAppLevelPayload {
   clientMutationId?: string | null;
   /** The `AppLevel` that was deleted by this mutation. */
   appLevel?: AppLevel | null;
   appLevelEdge?: AppLevelEdge | null;
+}
+export interface DeleteOrgLimitPayload {
+  clientMutationId?: string | null;
+  /** The `OrgLimit` that was deleted by this mutation. */
+  orgLimit?: OrgLimit | null;
+  orgLimitEdge?: OrgLimitEdge | null;
 }
 export interface DeleteBlueprintPayload {
   clientMutationId?: string | null;
@@ -18890,35 +20191,23 @@ export interface DeleteDenormalizedTableFieldPayload {
   denormalizedTableField?: DenormalizedTableField | null;
   denormalizedTableFieldEdge?: DenormalizedTableFieldEdge | null;
 }
-export interface DeleteEmailPayload {
-  clientMutationId?: string | null;
-  /** The `Email` that was deleted by this mutation. */
-  email?: Email | null;
-  emailEdge?: EmailEdge | null;
-}
 export interface DeleteOrgMemberProfilePayload {
   clientMutationId?: string | null;
   /** The `OrgMemberProfile` that was deleted by this mutation. */
   orgMemberProfile?: OrgMemberProfile | null;
   orgMemberProfileEdge?: OrgMemberProfileEdge | null;
 }
-export interface DeleteSecureTableProvisionPayload {
-  clientMutationId?: string | null;
-  /** The `SecureTableProvision` that was deleted by this mutation. */
-  secureTableProvision?: SecureTableProvision | null;
-  secureTableProvisionEdge?: SecureTableProvisionEdge | null;
-}
-export interface DeleteOrgMembershipSettingPayload {
-  clientMutationId?: string | null;
-  /** The `OrgMembershipSetting` that was deleted by this mutation. */
-  orgMembershipSetting?: OrgMembershipSetting | null;
-  orgMembershipSettingEdge?: OrgMembershipSettingEdge | null;
-}
 export interface DeleteDatabaseTransferPayload {
   clientMutationId?: string | null;
   /** The `DatabaseTransfer` that was deleted by this mutation. */
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
+}
+export interface DeleteBillingModulePayload {
+  clientMutationId?: string | null;
+  /** The `BillingModule` that was deleted by this mutation. */
+  billingModule?: BillingModule | null;
+  billingModuleEdge?: BillingModuleEdge | null;
 }
 export interface DeleteCryptoAuthModulePayload {
   clientMutationId?: string | null;
@@ -18937,6 +20226,12 @@ export interface DeleteInvitesModulePayload {
   /** The `InvitesModule` that was deleted by this mutation. */
   invitesModule?: InvitesModule | null;
   invitesModuleEdge?: InvitesModuleEdge | null;
+}
+export interface DeleteSecureTableProvisionPayload {
+  clientMutationId?: string | null;
+  /** The `SecureTableProvision` that was deleted by this mutation. */
+  secureTableProvision?: SecureTableProvision | null;
+  secureTableProvisionEdge?: SecureTableProvisionEdge | null;
 }
 export interface DeleteEnumPayload {
   clientMutationId?: string | null;
@@ -18962,6 +20257,18 @@ export interface DeleteWebauthnAuthModulePayload {
   webauthnAuthModule?: WebauthnAuthModule | null;
   webauthnAuthModuleEdge?: WebauthnAuthModuleEdge | null;
 }
+export interface DeleteAppInvitePayload {
+  clientMutationId?: string | null;
+  /** The `AppInvite` that was deleted by this mutation. */
+  appInvite?: AppInvite | null;
+  appInviteEdge?: AppInviteEdge | null;
+}
+export interface DeleteOrgMembershipSettingPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembershipSetting` that was deleted by this mutation. */
+  orgMembershipSetting?: OrgMembershipSetting | null;
+  orgMembershipSettingEdge?: OrgMembershipSettingEdge | null;
+}
 export interface DeleteAppPayload {
   clientMutationId?: string | null;
   /** The `App` that was deleted by this mutation. */
@@ -18973,6 +20280,24 @@ export interface DeleteSitePayload {
   /** The `Site` that was deleted by this mutation. */
   site?: Site | null;
   siteEdge?: SiteEdge | null;
+}
+export interface DeleteNotificationsModulePayload {
+  clientMutationId?: string | null;
+  /** The `NotificationsModule` that was deleted by this mutation. */
+  notificationsModule?: NotificationsModule | null;
+  notificationsModuleEdge?: NotificationsModuleEdge | null;
+}
+export interface DeletePermissionsModulePayload {
+  clientMutationId?: string | null;
+  /** The `PermissionsModule` that was deleted by this mutation. */
+  permissionsModule?: PermissionsModule | null;
+  permissionsModuleEdge?: PermissionsModuleEdge | null;
+}
+export interface DeleteWebauthnCredentialPayload {
+  clientMutationId?: string | null;
+  /** The `WebauthnCredential` that was deleted by this mutation. */
+  webauthnCredential?: WebauthnCredential | null;
+  webauthnCredentialEdge?: WebauthnCredentialEdge | null;
 }
 export interface DeletePrimaryKeyConstraintPayload {
   clientMutationId?: string | null;
@@ -19010,65 +20335,11 @@ export interface DeletePolicyPayload {
   policy?: Policy | null;
   policyEdge?: PolicyEdge | null;
 }
-export interface DeleteNotificationsModulePayload {
-  clientMutationId?: string | null;
-  /** The `NotificationsModule` that was deleted by this mutation. */
-  notificationsModule?: NotificationsModule | null;
-  notificationsModuleEdge?: NotificationsModuleEdge | null;
-}
-export interface DeletePermissionsModulePayload {
-  clientMutationId?: string | null;
-  /** The `PermissionsModule` that was deleted by this mutation. */
-  permissionsModule?: PermissionsModule | null;
-  permissionsModuleEdge?: PermissionsModuleEdge | null;
-}
-export interface DeleteAppInvitePayload {
-  clientMutationId?: string | null;
-  /** The `AppInvite` that was deleted by this mutation. */
-  appInvite?: AppInvite | null;
-  appInviteEdge?: AppInviteEdge | null;
-}
 export interface DeleteEmbeddingChunkPayload {
   clientMutationId?: string | null;
   /** The `EmbeddingChunk` that was deleted by this mutation. */
   embeddingChunk?: EmbeddingChunk | null;
   embeddingChunkEdge?: EmbeddingChunkEdge | null;
-}
-export interface DeleteSchemaPayload {
-  clientMutationId?: string | null;
-  /** The `Schema` that was deleted by this mutation. */
-  schema?: Schema | null;
-  schemaEdge?: SchemaEdge | null;
-}
-export interface DeleteLimitsModulePayload {
-  clientMutationId?: string | null;
-  /** The `LimitsModule` that was deleted by this mutation. */
-  limitsModule?: LimitsModule | null;
-  limitsModuleEdge?: LimitsModuleEdge | null;
-}
-export interface DeleteProfilesModulePayload {
-  clientMutationId?: string | null;
-  /** The `ProfilesModule` that was deleted by this mutation. */
-  profilesModule?: ProfilesModule | null;
-  profilesModuleEdge?: ProfilesModuleEdge | null;
-}
-export interface DeleteAppMembershipPayload {
-  clientMutationId?: string | null;
-  /** The `AppMembership` that was deleted by this mutation. */
-  appMembership?: AppMembership | null;
-  appMembershipEdge?: AppMembershipEdge | null;
-}
-export interface DeleteIndexPayload {
-  clientMutationId?: string | null;
-  /** The `Index` that was deleted by this mutation. */
-  index?: Index | null;
-  indexEdge?: IndexEdge | null;
-}
-export interface DeleteWebauthnCredentialPayload {
-  clientMutationId?: string | null;
-  /** The `WebauthnCredential` that was deleted by this mutation. */
-  webauthnCredential?: WebauthnCredential | null;
-  webauthnCredentialEdge?: WebauthnCredentialEdge | null;
 }
 export interface DeleteOrgInvitePayload {
   clientMutationId?: string | null;
@@ -19076,11 +20347,29 @@ export interface DeleteOrgInvitePayload {
   orgInvite?: OrgInvite | null;
   orgInviteEdge?: OrgInviteEdge | null;
 }
-export interface DeleteOrgMembershipPayload {
+export interface DeleteAppMembershipPayload {
   clientMutationId?: string | null;
-  /** The `OrgMembership` that was deleted by this mutation. */
-  orgMembership?: OrgMembership | null;
-  orgMembershipEdge?: OrgMembershipEdge | null;
+  /** The `AppMembership` that was deleted by this mutation. */
+  appMembership?: AppMembership | null;
+  appMembershipEdge?: AppMembershipEdge | null;
+}
+export interface DeleteSchemaPayload {
+  clientMutationId?: string | null;
+  /** The `Schema` that was deleted by this mutation. */
+  schema?: Schema | null;
+  schemaEdge?: SchemaEdge | null;
+}
+export interface DeleteIndexPayload {
+  clientMutationId?: string | null;
+  /** The `Index` that was deleted by this mutation. */
+  index?: Index | null;
+  indexEdge?: IndexEdge | null;
+}
+export interface DeleteLimitsModulePayload {
+  clientMutationId?: string | null;
+  /** The `LimitsModule` that was deleted by this mutation. */
+  limitsModule?: LimitsModule | null;
+  limitsModuleEdge?: LimitsModuleEdge | null;
 }
 export interface DeleteBlueprintTemplatePayload {
   clientMutationId?: string | null;
@@ -19094,23 +20383,35 @@ export interface DeleteHierarchyModulePayload {
   hierarchyModule?: HierarchyModule | null;
   hierarchyModuleEdge?: HierarchyModuleEdge | null;
 }
+export interface DeleteProfilesModulePayload {
+  clientMutationId?: string | null;
+  /** The `ProfilesModule` that was deleted by this mutation. */
+  profilesModule?: ProfilesModule | null;
+  profilesModuleEdge?: ProfilesModuleEdge | null;
+}
+export interface DeleteOrgMembershipPayload {
+  clientMutationId?: string | null;
+  /** The `OrgMembership` that was deleted by this mutation. */
+  orgMembership?: OrgMembership | null;
+  orgMembershipEdge?: OrgMembershipEdge | null;
+}
 export interface DeleteForeignKeyConstraintPayload {
   clientMutationId?: string | null;
   /** The `ForeignKeyConstraint` that was deleted by this mutation. */
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface DeleteTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was deleted by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface DeleteStorageModulePayload {
   clientMutationId?: string | null;
   /** The `StorageModule` that was deleted by this mutation. */
   storageModule?: StorageModule | null;
   storageModuleEdge?: StorageModuleEdge | null;
+}
+export interface DeleteTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was deleted by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface DeleteEntityTypeProvisionPayload {
   clientMutationId?: string | null;
@@ -19159,16 +20460,6 @@ export interface RequestUploadUrlPayload {
   deduplicated: boolean;
   /** Presigned URL expiry time (null if deduplicated) */
   expiresAt?: string | null;
-  /** File status — 'pending' for fresh uploads, 'ready' or 'processed' for deduplicated files. Clients can use this to know immediately whether the file is usable. */
-  status: string;
-}
-export interface ConfirmUploadPayload {
-  /** The confirmed file ID */
-  fileId: string;
-  /** New file status */
-  status: string;
-  /** Whether confirmation succeeded */
-  success: boolean;
 }
 export interface ProvisionBucketPayload {
   /** Whether provisioning succeeded */
@@ -19213,12 +20504,6 @@ export interface GetAllEdge {
   /** The `GetAllRecord` at the end of the edge. */
   node?: GetAllRecord | null;
 }
-/** A `Object` edge in the connection. */
-export interface ObjectEdge {
-  cursor?: string | null;
-  /** The `Object` at the end of the edge. */
-  node?: Object | null;
-}
 /** A `AppPermission` edge in the connection. */
 export interface AppPermissionEdge {
   cursor?: string | null;
@@ -19230,6 +20515,12 @@ export interface OrgPermissionEdge {
   cursor?: string | null;
   /** The `OrgPermission` at the end of the edge. */
   node?: OrgPermission | null;
+}
+/** A `Object` edge in the connection. */
+export interface ObjectEdge {
+  cursor?: string | null;
+  /** The `Object` at the end of the edge. */
+  node?: Object | null;
 }
 /** A `AppLevelRequirement` edge in the connection. */
 export interface AppLevelRequirementEdge {
@@ -19243,6 +20534,12 @@ export interface DefaultIdsModuleEdge {
   /** The `DefaultIdsModule` at the end of the edge. */
   node?: DefaultIdsModule | null;
 }
+/** A `RoleType` edge in the connection. */
+export interface RoleTypeEdge {
+  cursor?: string | null;
+  /** The `RoleType` at the end of the edge. */
+  node?: RoleType | null;
+}
 /** A `ViewTable` edge in the connection. */
 export interface ViewTableEdge {
   cursor?: string | null;
@@ -19255,23 +20552,17 @@ export interface ApiSchemaEdge {
   /** The `ApiSchema` at the end of the edge. */
   node?: ApiSchema | null;
 }
-/** A `SiteTheme` edge in the connection. */
-export interface SiteThemeEdge {
-  cursor?: string | null;
-  /** The `SiteTheme` at the end of the edge. */
-  node?: SiteTheme | null;
-}
 /** A `OrgMember` edge in the connection. */
 export interface OrgMemberEdge {
   cursor?: string | null;
   /** The `OrgMember` at the end of the edge. */
   node?: OrgMember | null;
 }
-/** A `AppPermissionDefault` edge in the connection. */
-export interface AppPermissionDefaultEdge {
+/** A `SiteTheme` edge in the connection. */
+export interface SiteThemeEdge {
   cursor?: string | null;
-  /** The `AppPermissionDefault` at the end of the edge. */
-  node?: AppPermissionDefault | null;
+  /** The `SiteTheme` at the end of the edge. */
+  node?: SiteTheme | null;
 }
 /** A `IdentityProvider` edge in the connection. */
 export interface IdentityProviderEdge {
@@ -19291,18 +20582,6 @@ export interface StoreEdge {
   /** The `Store` at the end of the edge. */
   node?: Store | null;
 }
-/** A `ApiModule` edge in the connection. */
-export interface ApiModuleEdge {
-  cursor?: string | null;
-  /** The `ApiModule` at the end of the edge. */
-  node?: ApiModule | null;
-}
-/** A `SiteModule` edge in the connection. */
-export interface SiteModuleEdge {
-  cursor?: string | null;
-  /** The `SiteModule` at the end of the edge. */
-  node?: SiteModule | null;
-}
 /** A `EncryptedSecretsModule` edge in the connection. */
 export interface EncryptedSecretsModuleEdge {
   cursor?: string | null;
@@ -19321,17 +20600,23 @@ export interface SecretsModuleEdge {
   /** The `SecretsModule` at the end of the edge. */
   node?: SecretsModule | null;
 }
-/** A `RoleType` edge in the connection. */
-export interface RoleTypeEdge {
+/** A `AppPermissionDefault` edge in the connection. */
+export interface AppPermissionDefaultEdge {
   cursor?: string | null;
-  /** The `RoleType` at the end of the edge. */
-  node?: RoleType | null;
+  /** The `AppPermissionDefault` at the end of the edge. */
+  node?: AppPermissionDefault | null;
 }
-/** A `OrgPermissionDefault` edge in the connection. */
-export interface OrgPermissionDefaultEdge {
+/** A `ApiModule` edge in the connection. */
+export interface ApiModuleEdge {
   cursor?: string | null;
-  /** The `OrgPermissionDefault` at the end of the edge. */
-  node?: OrgPermissionDefault | null;
+  /** The `ApiModule` at the end of the edge. */
+  node?: ApiModule | null;
+}
+/** A `SiteModule` edge in the connection. */
+export interface SiteModuleEdge {
+  cursor?: string | null;
+  /** The `SiteModule` at the end of the edge. */
+  node?: SiteModule | null;
 }
 /** A `SchemaGrant` edge in the connection. */
 export interface SchemaGrantEdge {
@@ -19375,23 +20660,35 @@ export interface AppOwnerGrantEdge {
   /** The `AppOwnerGrant` at the end of the edge. */
   node?: AppOwnerGrant | null;
 }
+/** A `AppAchievement` edge in the connection. */
+export interface AppAchievementEdge {
+  cursor?: string | null;
+  /** The `AppAchievement` at the end of the edge. */
+  node?: AppAchievement | null;
+}
+/** A `AppStep` edge in the connection. */
+export interface AppStepEdge {
+  cursor?: string | null;
+  /** The `AppStep` at the end of the edge. */
+  node?: AppStep | null;
+}
+/** A `OrgPermissionDefault` edge in the connection. */
+export interface OrgPermissionDefaultEdge {
+  cursor?: string | null;
+  /** The `OrgPermissionDefault` at the end of the edge. */
+  node?: OrgPermissionDefault | null;
+}
+/** A `MembershipType` edge in the connection. */
+export interface MembershipTypeEdge {
+  cursor?: string | null;
+  /** The `MembershipType` at the end of the edge. */
+  node?: MembershipType | null;
+}
 /** A `MigrateFile` edge in the connection. */
 export interface MigrateFileEdge {
   cursor?: string | null;
   /** The `MigrateFile` at the end of the edge. */
   node?: MigrateFile | null;
-}
-/** A `AppLimitDefault` edge in the connection. */
-export interface AppLimitDefaultEdge {
-  cursor?: string | null;
-  /** The `AppLimitDefault` at the end of the edge. */
-  node?: AppLimitDefault | null;
-}
-/** A `OrgLimitDefault` edge in the connection. */
-export interface OrgLimitDefaultEdge {
-  cursor?: string | null;
-  /** The `OrgLimitDefault` at the end of the edge. */
-  node?: OrgLimitDefault | null;
 }
 /** A `DefaultPrivilege` edge in the connection. */
 export interface DefaultPrivilegeEdge {
@@ -19459,6 +20756,24 @@ export interface OrgOwnerGrantEdge {
   /** The `OrgOwnerGrant` at the end of the edge. */
   node?: OrgOwnerGrant | null;
 }
+/** A `NodeTypeRegistry` edge in the connection. */
+export interface NodeTypeRegistryEdge {
+  cursor?: string | null;
+  /** The `NodeTypeRegistry` at the end of the edge. */
+  node?: NodeTypeRegistry | null;
+}
+/** A `AppLimitDefault` edge in the connection. */
+export interface AppLimitDefaultEdge {
+  cursor?: string | null;
+  /** The `AppLimitDefault` at the end of the edge. */
+  node?: AppLimitDefault | null;
+}
+/** A `OrgLimitDefault` edge in the connection. */
+export interface OrgLimitDefaultEdge {
+  cursor?: string | null;
+  /** The `OrgLimitDefault` at the end of the edge. */
+  node?: OrgLimitDefault | null;
+}
 /** A `UserConnectedAccount` edge in the connection. */
 export interface UserConnectedAccountEdge {
   cursor?: string | null;
@@ -19483,47 +20798,17 @@ export interface CryptoAddressEdge {
   /** The `CryptoAddress` at the end of the edge. */
   node?: CryptoAddress | null;
 }
-/** A `AppLimit` edge in the connection. */
-export interface AppLimitEdge {
+/** A `AgentMessage` edge in the connection. */
+export interface AgentMessageEdge {
   cursor?: string | null;
-  /** The `AppLimit` at the end of the edge. */
-  node?: AppLimit | null;
-}
-/** A `AppAchievement` edge in the connection. */
-export interface AppAchievementEdge {
-  cursor?: string | null;
-  /** The `AppAchievement` at the end of the edge. */
-  node?: AppAchievement | null;
-}
-/** A `AppStep` edge in the connection. */
-export interface AppStepEdge {
-  cursor?: string | null;
-  /** The `AppStep` at the end of the edge. */
-  node?: AppStep | null;
+  /** The `AgentMessage` at the end of the edge. */
+  node?: AgentMessage | null;
 }
 /** A `SiteMetadatum` edge in the connection. */
 export interface SiteMetadatumEdge {
   cursor?: string | null;
   /** The `SiteMetadatum` at the end of the edge. */
   node?: SiteMetadatum | null;
-}
-/** A `AppClaimedInvite` edge in the connection. */
-export interface AppClaimedInviteEdge {
-  cursor?: string | null;
-  /** The `AppClaimedInvite` at the end of the edge. */
-  node?: AppClaimedInvite | null;
-}
-/** A `AppMembershipDefault` edge in the connection. */
-export interface AppMembershipDefaultEdge {
-  cursor?: string | null;
-  /** The `AppMembershipDefault` at the end of the edge. */
-  node?: AppMembershipDefault | null;
-}
-/** A `OrgMembershipDefault` edge in the connection. */
-export interface OrgMembershipDefaultEdge {
-  cursor?: string | null;
-  /** The `OrgMembershipDefault` at the end of the edge. */
-  node?: OrgMembershipDefault | null;
 }
 /** A `FullTextSearch` edge in the connection. */
 export interface FullTextSearchEdge {
@@ -19561,23 +20846,53 @@ export interface PhoneNumberEdge {
   /** The `PhoneNumber` at the end of the edge. */
   node?: PhoneNumber | null;
 }
-/** A `OrgLimit` edge in the connection. */
-export interface OrgLimitEdge {
+/** A `AppClaimedInvite` edge in the connection. */
+export interface AppClaimedInviteEdge {
   cursor?: string | null;
-  /** The `OrgLimit` at the end of the edge. */
-  node?: OrgLimit | null;
+  /** The `AppClaimedInvite` at the end of the edge. */
+  node?: AppClaimedInvite | null;
 }
-/** A `MembershipType` edge in the connection. */
-export interface MembershipTypeEdge {
+/** A `AppMembershipDefault` edge in the connection. */
+export interface AppMembershipDefaultEdge {
   cursor?: string | null;
-  /** The `MembershipType` at the end of the edge. */
-  node?: MembershipType | null;
+  /** The `AppMembershipDefault` at the end of the edge. */
+  node?: AppMembershipDefault | null;
+}
+/** A `OrgMembershipDefault` edge in the connection. */
+export interface OrgMembershipDefaultEdge {
+  cursor?: string | null;
+  /** The `OrgMembershipDefault` at the end of the edge. */
+  node?: OrgMembershipDefault | null;
+}
+/** A `AuditLog` edge in the connection. */
+export interface AuditLogEdge {
+  cursor?: string | null;
+  /** The `AuditLog` at the end of the edge. */
+  node?: AuditLog | null;
 }
 /** A `Domain` edge in the connection. */
 export interface DomainEdge {
   cursor?: string | null;
   /** The `Domain` at the end of the edge. */
   node?: Domain | null;
+}
+/** A `AgentTask` edge in the connection. */
+export interface AgentTaskEdge {
+  cursor?: string | null;
+  /** The `AgentTask` at the end of the edge. */
+  node?: AgentTask | null;
+}
+/** A `AgentThread` edge in the connection. */
+export interface AgentThreadEdge {
+  cursor?: string | null;
+  /** The `AgentThread` at the end of the edge. */
+  node?: AgentThread | null;
+}
+/** A `Email` edge in the connection. */
+export interface EmailEdge {
+  cursor?: string | null;
+  /** The `Email` at the end of the edge. */
+  node?: Email | null;
 }
 /** A `AppGrant` edge in the connection. */
 export interface AppGrantEdge {
@@ -19591,23 +20906,47 @@ export interface OrgClaimedInviteEdge {
   /** The `OrgClaimedInvite` at the end of the edge. */
   node?: OrgClaimedInvite | null;
 }
+/** A `AppLimitEvent` edge in the connection. */
+export interface AppLimitEventEdge {
+  cursor?: string | null;
+  /** The `AppLimitEvent` at the end of the edge. */
+  node?: AppLimitEvent | null;
+}
+/** A `OrgLimitEvent` edge in the connection. */
+export interface OrgLimitEventEdge {
+  cursor?: string | null;
+  /** The `OrgLimitEvent` at the end of the edge. */
+  node?: OrgLimitEvent | null;
+}
 /** A `OrgChartEdge` edge in the connection. */
 export interface OrgChartEdgeEdge {
   cursor?: string | null;
   /** The `OrgChartEdge` at the end of the edge. */
   node?: OrgChartEdge | null;
 }
-/** A `OrgGrant` edge in the connection. */
-export interface OrgGrantEdge {
+/** A `AppLimit` edge in the connection. */
+export interface AppLimitEdge {
   cursor?: string | null;
-  /** The `OrgGrant` at the end of the edge. */
-  node?: OrgGrant | null;
+  /** The `AppLimit` at the end of the edge. */
+  node?: AppLimit | null;
+}
+/** A `OrgLimitAggregate` edge in the connection. */
+export interface OrgLimitAggregateEdge {
+  cursor?: string | null;
+  /** The `OrgLimitAggregate` at the end of the edge. */
+  node?: OrgLimitAggregate | null;
 }
 /** A `BlueprintConstruction` edge in the connection. */
 export interface BlueprintConstructionEdge {
   cursor?: string | null;
   /** The `BlueprintConstruction` at the end of the edge. */
   node?: BlueprintConstruction | null;
+}
+/** A `PlansModule` edge in the connection. */
+export interface PlansModuleEdge {
+  cursor?: string | null;
+  /** The `PlansModule` at the end of the edge. */
+  node?: PlansModule | null;
 }
 /** A `RlsModule` edge in the connection. */
 export interface RlsModuleEdge {
@@ -19621,17 +20960,23 @@ export interface SessionsModuleEdge {
   /** The `SessionsModule` at the end of the edge. */
   node?: SessionsModule | null;
 }
-/** A `AuditLog` edge in the connection. */
-export interface AuditLogEdge {
+/** A `OrgGrant` edge in the connection. */
+export interface OrgGrantEdge {
   cursor?: string | null;
-  /** The `AuditLog` at the end of the edge. */
-  node?: AuditLog | null;
+  /** The `OrgGrant` at the end of the edge. */
+  node?: OrgGrant | null;
 }
 /** A `AppLevel` edge in the connection. */
 export interface AppLevelEdge {
   cursor?: string | null;
   /** The `AppLevel` at the end of the edge. */
   node?: AppLevel | null;
+}
+/** A `OrgLimit` edge in the connection. */
+export interface OrgLimitEdge {
+  cursor?: string | null;
+  /** The `OrgLimit` at the end of the edge. */
+  node?: OrgLimit | null;
 }
 /** A `Blueprint` edge in the connection. */
 export interface BlueprintEdge {
@@ -19645,12 +20990,6 @@ export interface DenormalizedTableFieldEdge {
   /** The `DenormalizedTableField` at the end of the edge. */
   node?: DenormalizedTableField | null;
 }
-/** A `Email` edge in the connection. */
-export interface EmailEdge {
-  cursor?: string | null;
-  /** The `Email` at the end of the edge. */
-  node?: Email | null;
-}
 /** A `OrgMemberProfile` edge in the connection. */
 export interface OrgMemberProfileEdge {
   cursor?: string | null;
@@ -19663,23 +21002,17 @@ export interface SqlActionEdge {
   /** The `SqlAction` at the end of the edge. */
   node?: SqlAction | null;
 }
-/** A `SecureTableProvision` edge in the connection. */
-export interface SecureTableProvisionEdge {
-  cursor?: string | null;
-  /** The `SecureTableProvision` at the end of the edge. */
-  node?: SecureTableProvision | null;
-}
-/** A `OrgMembershipSetting` edge in the connection. */
-export interface OrgMembershipSettingEdge {
-  cursor?: string | null;
-  /** The `OrgMembershipSetting` at the end of the edge. */
-  node?: OrgMembershipSetting | null;
-}
 /** A `DatabaseTransfer` edge in the connection. */
 export interface DatabaseTransferEdge {
   cursor?: string | null;
   /** The `DatabaseTransfer` at the end of the edge. */
   node?: DatabaseTransfer | null;
+}
+/** A `BillingModule` edge in the connection. */
+export interface BillingModuleEdge {
+  cursor?: string | null;
+  /** The `BillingModule` at the end of the edge. */
+  node?: BillingModule | null;
 }
 /** A `CryptoAuthModule` edge in the connection. */
 export interface CryptoAuthModuleEdge {
@@ -19698,6 +21031,18 @@ export interface InvitesModuleEdge {
   cursor?: string | null;
   /** The `InvitesModule` at the end of the edge. */
   node?: InvitesModule | null;
+}
+/** A `SecureTableProvision` edge in the connection. */
+export interface SecureTableProvisionEdge {
+  cursor?: string | null;
+  /** The `SecureTableProvision` at the end of the edge. */
+  node?: SecureTableProvision | null;
+}
+/** A `AstMigration` edge in the connection. */
+export interface AstMigrationEdge {
+  cursor?: string | null;
+  /** The `AstMigration` at the end of the edge. */
+  node?: AstMigration | null;
 }
 /** A `Enum` edge in the connection. */
 export interface EnumEdge {
@@ -19723,6 +21068,18 @@ export interface WebauthnAuthModuleEdge {
   /** The `WebauthnAuthModule` at the end of the edge. */
   node?: WebauthnAuthModule | null;
 }
+/** A `AppInvite` edge in the connection. */
+export interface AppInviteEdge {
+  cursor?: string | null;
+  /** The `AppInvite` at the end of the edge. */
+  node?: AppInvite | null;
+}
+/** A `OrgMembershipSetting` edge in the connection. */
+export interface OrgMembershipSettingEdge {
+  cursor?: string | null;
+  /** The `OrgMembershipSetting` at the end of the edge. */
+  node?: OrgMembershipSetting | null;
+}
 /** A `App` edge in the connection. */
 export interface AppEdge {
   cursor?: string | null;
@@ -19735,11 +21092,23 @@ export interface SiteEdge {
   /** The `Site` at the end of the edge. */
   node?: Site | null;
 }
-/** A `AstMigration` edge in the connection. */
-export interface AstMigrationEdge {
+/** A `NotificationsModule` edge in the connection. */
+export interface NotificationsModuleEdge {
   cursor?: string | null;
-  /** The `AstMigration` at the end of the edge. */
-  node?: AstMigration | null;
+  /** The `NotificationsModule` at the end of the edge. */
+  node?: NotificationsModule | null;
+}
+/** A `PermissionsModule` edge in the connection. */
+export interface PermissionsModuleEdge {
+  cursor?: string | null;
+  /** The `PermissionsModule` at the end of the edge. */
+  node?: PermissionsModule | null;
+}
+/** A `WebauthnCredential` edge in the connection. */
+export interface WebauthnCredentialEdge {
+  cursor?: string | null;
+  /** The `WebauthnCredential` at the end of the edge. */
+  node?: WebauthnCredential | null;
 }
 /** A `PrimaryKeyConstraint` edge in the connection. */
 export interface PrimaryKeyConstraintEdge {
@@ -19777,65 +21146,11 @@ export interface PolicyEdge {
   /** The `Policy` at the end of the edge. */
   node?: Policy | null;
 }
-/** A `NotificationsModule` edge in the connection. */
-export interface NotificationsModuleEdge {
-  cursor?: string | null;
-  /** The `NotificationsModule` at the end of the edge. */
-  node?: NotificationsModule | null;
-}
-/** A `PermissionsModule` edge in the connection. */
-export interface PermissionsModuleEdge {
-  cursor?: string | null;
-  /** The `PermissionsModule` at the end of the edge. */
-  node?: PermissionsModule | null;
-}
-/** A `AppInvite` edge in the connection. */
-export interface AppInviteEdge {
-  cursor?: string | null;
-  /** The `AppInvite` at the end of the edge. */
-  node?: AppInvite | null;
-}
 /** A `EmbeddingChunk` edge in the connection. */
 export interface EmbeddingChunkEdge {
   cursor?: string | null;
   /** The `EmbeddingChunk` at the end of the edge. */
   node?: EmbeddingChunk | null;
-}
-/** A `Schema` edge in the connection. */
-export interface SchemaEdge {
-  cursor?: string | null;
-  /** The `Schema` at the end of the edge. */
-  node?: Schema | null;
-}
-/** A `LimitsModule` edge in the connection. */
-export interface LimitsModuleEdge {
-  cursor?: string | null;
-  /** The `LimitsModule` at the end of the edge. */
-  node?: LimitsModule | null;
-}
-/** A `ProfilesModule` edge in the connection. */
-export interface ProfilesModuleEdge {
-  cursor?: string | null;
-  /** The `ProfilesModule` at the end of the edge. */
-  node?: ProfilesModule | null;
-}
-/** A `AppMembership` edge in the connection. */
-export interface AppMembershipEdge {
-  cursor?: string | null;
-  /** The `AppMembership` at the end of the edge. */
-  node?: AppMembership | null;
-}
-/** A `Index` edge in the connection. */
-export interface IndexEdge {
-  cursor?: string | null;
-  /** The `Index` at the end of the edge. */
-  node?: Index | null;
-}
-/** A `WebauthnCredential` edge in the connection. */
-export interface WebauthnCredentialEdge {
-  cursor?: string | null;
-  /** The `WebauthnCredential` at the end of the edge. */
-  node?: WebauthnCredential | null;
 }
 /** A `OrgInvite` edge in the connection. */
 export interface OrgInviteEdge {
@@ -19843,11 +21158,29 @@ export interface OrgInviteEdge {
   /** The `OrgInvite` at the end of the edge. */
   node?: OrgInvite | null;
 }
-/** A `OrgMembership` edge in the connection. */
-export interface OrgMembershipEdge {
+/** A `AppMembership` edge in the connection. */
+export interface AppMembershipEdge {
   cursor?: string | null;
-  /** The `OrgMembership` at the end of the edge. */
-  node?: OrgMembership | null;
+  /** The `AppMembership` at the end of the edge. */
+  node?: AppMembership | null;
+}
+/** A `Schema` edge in the connection. */
+export interface SchemaEdge {
+  cursor?: string | null;
+  /** The `Schema` at the end of the edge. */
+  node?: Schema | null;
+}
+/** A `Index` edge in the connection. */
+export interface IndexEdge {
+  cursor?: string | null;
+  /** The `Index` at the end of the edge. */
+  node?: Index | null;
+}
+/** A `LimitsModule` edge in the connection. */
+export interface LimitsModuleEdge {
+  cursor?: string | null;
+  /** The `LimitsModule` at the end of the edge. */
+  node?: LimitsModule | null;
 }
 /** A `BlueprintTemplate` edge in the connection. */
 export interface BlueprintTemplateEdge {
@@ -19861,23 +21194,35 @@ export interface HierarchyModuleEdge {
   /** The `HierarchyModule` at the end of the edge. */
   node?: HierarchyModule | null;
 }
+/** A `ProfilesModule` edge in the connection. */
+export interface ProfilesModuleEdge {
+  cursor?: string | null;
+  /** The `ProfilesModule` at the end of the edge. */
+  node?: ProfilesModule | null;
+}
+/** A `OrgMembership` edge in the connection. */
+export interface OrgMembershipEdge {
+  cursor?: string | null;
+  /** The `OrgMembership` at the end of the edge. */
+  node?: OrgMembership | null;
+}
 /** A `ForeignKeyConstraint` edge in the connection. */
 export interface ForeignKeyConstraintEdge {
   cursor?: string | null;
   /** The `ForeignKeyConstraint` at the end of the edge. */
   node?: ForeignKeyConstraint | null;
 }
-/** A `Table` edge in the connection. */
-export interface TableEdge {
-  cursor?: string | null;
-  /** The `Table` at the end of the edge. */
-  node?: Table | null;
-}
 /** A `StorageModule` edge in the connection. */
 export interface StorageModuleEdge {
   cursor?: string | null;
   /** The `StorageModule` at the end of the edge. */
   node?: StorageModule | null;
+}
+/** A `Table` edge in the connection. */
+export interface TableEdge {
+  cursor?: string | null;
+  /** The `Table` at the end of the edge. */
+  node?: Table | null;
 }
 /** A `EntityTypeProvision` edge in the connection. */
 export interface EntityTypeProvisionEdge {

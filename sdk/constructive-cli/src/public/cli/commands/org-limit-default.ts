@@ -19,6 +19,7 @@ const fieldSchema: FieldSchema = {
   id: 'uuid',
   name: 'string',
   max: 'int',
+  softMax: 'int',
 };
 const usage =
   '\norg-limit-default <command>\n\nCommands:\n  list                  List orgLimitDefault records\n  find-first            Find first matching orgLimitDefault record\n  get                   Get a orgLimitDefault by ID\n  create                Create a new orgLimitDefault\n  update                Update an existing orgLimitDefault\n  delete                Delete a orgLimitDefault\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
@@ -74,6 +75,7 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       id: true,
       name: true,
       max: true,
+      softMax: true,
     };
     const findManyArgs = parseFindManyArgs<
       FindManyArgs<OrgLimitDefaultSelect, OrgLimitDefaultFilter, OrgLimitDefaultOrderBy> & {
@@ -97,6 +99,7 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       id: true,
       name: true,
       max: true,
+      softMax: true,
     };
     const findFirstArgs = parseFindFirstArgs<
       FindFirstArgs<OrgLimitDefaultSelect, OrgLimitDefaultFilter> & {
@@ -132,6 +135,7 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           id: true,
           name: true,
           max: true,
+          softMax: true,
         },
       })
       .execute();
@@ -160,6 +164,13 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         required: false,
         skipPrompt: true,
       },
+      {
+        type: 'text',
+        name: 'softMax',
+        message: 'softMax',
+        required: false,
+        skipPrompt: true,
+      },
     ]);
     const answers = coerceAnswers(rawAnswers, fieldSchema);
     const cleanedData = stripUndefined(
@@ -172,11 +183,13 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         data: {
           name: cleanedData.name,
           max: cleanedData.max,
+          softMax: cleanedData.softMax,
         },
         select: {
           id: true,
           name: true,
           max: true,
+          softMax: true,
         },
       })
       .execute();
@@ -211,6 +224,13 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         required: false,
         skipPrompt: true,
       },
+      {
+        type: 'text',
+        name: 'softMax',
+        message: 'softMax',
+        required: false,
+        skipPrompt: true,
+      },
     ]);
     const answers = coerceAnswers(rawAnswers, fieldSchema);
     const cleanedData = stripUndefined(answers, fieldSchema) as OrgLimitDefaultPatch;
@@ -223,11 +243,13 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         data: {
           name: cleanedData.name,
           max: cleanedData.max,
+          softMax: cleanedData.softMax,
         },
         select: {
           id: true,
           name: true,
           max: true,
+          softMax: true,
         },
       })
       .execute();
