@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS "simple-storage-public".buckets (
   owner_id uuid,
   allowed_mime_types text[] NULL,
   max_file_size bigint NULL,
+  allow_custom_keys boolean NOT NULL DEFAULT false,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   UNIQUE (key)
@@ -40,11 +41,13 @@ CREATE TABLE IF NOT EXISTS "simple-storage-public".files (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   bucket_id uuid NOT NULL REFERENCES "simple-storage-public".buckets(id),
   key text NOT NULL,
+  content_hash text NOT NULL,
   mime_type text NOT NULL,
   size bigint,
   filename text,
   owner_id uuid,
   is_public boolean NOT NULL DEFAULT false,
+  previous_version_id uuid REFERENCES "simple-storage-public".files(id),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   UNIQUE (bucket_id, key)

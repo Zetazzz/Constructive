@@ -55,11 +55,16 @@ CREATE TABLE IF NOT EXISTS metaschema_modules_public.storage_module (
   public_url_prefix text NULL,
   provider text NULL,
   allowed_origins text[] NULL,
+  restrict_reads boolean NOT NULL DEFAULT false,
+  has_path_shares boolean NOT NULL DEFAULT false,
+  path_shares_table_id uuid NULL DEFAULT NULL,
   upload_url_expiry_seconds integer NULL,
   download_url_expiry_seconds integer NULL,
   default_max_file_size bigint NULL,
   max_filename_length integer NULL,
   cache_ttl_seconds integer NULL,
+  max_bulk_files integer NULL,
+  max_bulk_total_size bigint NULL,
   CONSTRAINT sm_db_fkey FOREIGN KEY (database_id) REFERENCES metaschema_public.database (id) ON DELETE CASCADE
 );
 

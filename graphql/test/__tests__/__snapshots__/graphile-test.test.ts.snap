@@ -3262,6 +3262,20 @@ that owns this entity instance (e.g., a data room ID, team ID).",
                 "ofType": null,
               },
             },
+            {
+              "defaultValue": null,
+              "description": "Custom S3 key (e.g., "reports/2024/Q1.pdf").
+Only allowed when the bucket has allow_custom_keys=true.
+When omitted, key defaults to contentHash (content-addressed dedup).
+When provided, the file is stored at this key.
+Re-uploading to an existing key auto-creates a new version.",
+              "name": "key",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null,
+              },
+            },
           ],
           "interfaces": null,
           "kind": "INPUT_OBJECT",
@@ -3354,6 +3368,18 @@ that owns this entity instance (e.g., a data room ID, team ID).",
                 "ofType": null,
               },
             },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "ID of the previous version (set when re-uploading to an existing custom key)",
+              "isDeprecated": false,
+              "name": "previousVersionId",
+              "type": {
+                "kind": "SCALAR",
+                "name": "UUID",
+                "ofType": null,
+              },
+            },
           ],
           "inputFields": null,
           "interfaces": [],
@@ -3373,6 +3399,282 @@ to unexpected results.",
           "interfaces": null,
           "kind": "SCALAR",
           "name": "Datetime",
+          "possibleTypes": null,
+        },
+        {
+          "description": null,
+          "enumValues": null,
+          "fields": null,
+          "inputFields": [
+            {
+              "defaultValue": null,
+              "description": "SHA-256 content hash computed by the client (hex-encoded, 64 chars)",
+              "name": "contentHash",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "defaultValue": null,
+              "description": "MIME type of the file (e.g., "image/png")",
+              "name": "contentType",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "defaultValue": null,
+              "description": "File size in bytes",
+              "name": "size",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "defaultValue": null,
+              "description": "Original filename (optional, for display and Content-Disposition)",
+              "name": "filename",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null,
+              },
+            },
+            {
+              "defaultValue": null,
+              "description": "Custom S3 key (only when bucket has allow_custom_keys=true)",
+              "name": "key",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null,
+              },
+            },
+          ],
+          "interfaces": null,
+          "kind": "INPUT_OBJECT",
+          "name": "BulkUploadFileInput",
+          "possibleTypes": null,
+        },
+        {
+          "description": null,
+          "enumValues": null,
+          "fields": null,
+          "inputFields": [
+            {
+              "defaultValue": null,
+              "description": "Bucket key (e.g., "public", "private")",
+              "name": "bucketKey",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "defaultValue": null,
+              "description": "Owner entity ID for entity-scoped uploads",
+              "name": "ownerId",
+              "type": {
+                "kind": "SCALAR",
+                "name": "UUID",
+                "ofType": null,
+              },
+            },
+            {
+              "defaultValue": null,
+              "description": "Array of files to upload",
+              "name": "files",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "BulkUploadFileInput",
+                      "ofType": null,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          "interfaces": null,
+          "kind": "INPUT_OBJECT",
+          "name": "RequestBulkUploadUrlsInput",
+          "possibleTypes": null,
+        },
+        {
+          "description": null,
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Presigned PUT URL (null if file was deduplicated)",
+              "isDeprecated": false,
+              "name": "uploadUrl",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "The file ID",
+              "isDeprecated": false,
+              "name": "fileId",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "UUID",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "The S3 object key",
+              "isDeprecated": false,
+              "name": "key",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Whether this file was deduplicated",
+              "isDeprecated": false,
+              "name": "deduplicated",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Presigned URL expiry time (null if deduplicated)",
+              "isDeprecated": false,
+              "name": "expiresAt",
+              "type": {
+                "kind": "SCALAR",
+                "name": "Datetime",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "ID of the previous version (set when re-uploading to an existing custom key)",
+              "isDeprecated": false,
+              "name": "previousVersionId",
+              "type": {
+                "kind": "SCALAR",
+                "name": "UUID",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Index of this file in the input array (for client correlation)",
+              "isDeprecated": false,
+              "name": "index",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null,
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "BulkUploadFilePayload",
+          "possibleTypes": null,
+        },
+        {
+          "description": null,
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Array of results, one per input file",
+              "isDeprecated": false,
+              "name": "files",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "OBJECT",
+                      "name": "BulkUploadFilePayload",
+                      "ofType": null,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "RequestBulkUploadUrlsPayload",
           "possibleTypes": null,
         },
         {
@@ -3602,6 +3904,35 @@ existing file ID and deduplicated=true with no uploadUrl.",
               "type": {
                 "kind": "OBJECT",
                 "name": "RequestUploadUrlPayload",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [
+                {
+                  "defaultValue": null,
+                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
+                  "name": "input",
+                  "type": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "RequestBulkUploadUrlsInput",
+                      "ofType": null,
+                    },
+                  },
+                },
+              ],
+              "deprecationReason": null,
+              "description": "Request presigned URLs for uploading multiple files in a single batch.
+Subject to per-storage-module limits (max_bulk_files, max_bulk_total_size).
+Each file is processed independently — some may dedup while others get fresh URLs.",
+              "isDeprecated": false,
+              "name": "requestBulkUploadUrls",
+              "type": {
+                "kind": "OBJECT",
+                "name": "RequestBulkUploadUrlsPayload",
                 "ofType": null,
               },
             },
