@@ -123,6 +123,8 @@ jobs:
             env: {}
           - package: graphile/graphile-bucket-provisioner-plugin
             env: {}
+          - package: graphile/graphile-ltree
+            env: {}
 
     env:
       PGHOST: localhost

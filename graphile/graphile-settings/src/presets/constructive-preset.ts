@@ -1,26 +1,28 @@
+import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
 import type { GraphileConfig } from 'graphile-config';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
+import { createFolderOperatorFactory,createLtreeOperatorFactory, GraphileFolderPreset } from 'graphile-ltree';
+import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-postgis';
+import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
+import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearchPreset } from 'graphile-search';
+import { SqlExpressionValidatorPreset } from 'graphile-sql-expression-validator';
+import { UploadPreset } from 'graphile-upload-plugin';
+
+import { getBucketProvisionerConnection } from '../bucket-provisioner-resolver';
 import {
-  MinimalPreset,
-  InflektPreset,
   ConflictDetectorPreset,
-  InflectorLoggerPreset,
-  NoUniqueLookupPreset,
   EnableAllFilterColumnsPreset,
+  InflectorLoggerPreset,
+  InflektPreset,
   ManyToManyOptInPreset,
   MetaSchemaPreset,
+  MinimalPreset,
+  NoUniqueLookupPreset,
   PgTypeMappingsPreset,
-  RequiredInputPreset,
+  RequiredInputPreset
 } from '../plugins';
-import { UnifiedSearchPreset, createMatchesOperatorFactory, createTrgmOperatorFactories } from 'graphile-search';
-import { GraphilePostgisPreset, createPostgisOperatorFactory } from 'graphile-postgis';
-import { UploadPreset } from 'graphile-upload-plugin';
-import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
-import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
-import { SqlExpressionValidatorPreset } from 'graphile-sql-expression-validator';
+import { createBucketNameResolver, createEnsureBucketProvisioned, getAllowedOrigins,getPresignedUrlS3Config } from '../presigned-url-resolver';
 import { constructiveUploadFieldDefinitions } from '../upload-resolver';
-import { getPresignedUrlS3Config, createBucketNameResolver, createEnsureBucketProvisioned, getAllowedOrigins } from '../presigned-url-resolver';
-import { getBucketProvisionerConnection } from '../bucket-provisioner-resolver';
 
 /**
  * Constructive PostGraphile v5 Preset
@@ -51,6 +53,8 @@ import { getBucketProvisionerConnection } from '../bucket-provisioner-resolver';
  *   orderBy score — zero config)
  * - pg_trgm fuzzy matching (similarTo/wordSimilarTo on text columns, similarity score fields,
  *   orderBy similarity — zero config, typo-tolerant)
+ * - ltree support (auto-detects ltree columns, LTree scalar, folder fields, containment/glob filters)
+ * - Folder operators (within, ancestorOf, glob — slash-delimited path interface)
  *
  * RELATION FILTERS:
  * - Enabled via connectionFilterRelations: true
@@ -86,22 +90,23 @@ export const ConstructivePreset: GraphileConfig.Preset = {
     MetaSchemaPreset,
     UnifiedSearchPreset({ fullTextScalarName: 'FullText', tsConfig: 'english' }),
     GraphilePostgisPreset,
+    GraphileFolderPreset,
     UploadPreset({
       uploadFieldDefinitions: constructiveUploadFieldDefinitions,
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: 10 * 1024 * 1024 // 10MB
     }),
     PresignedUrlPreset({
       s3: getPresignedUrlS3Config,
       resolveBucketName: createBucketNameResolver(),
-      ensureBucketProvisioned: createEnsureBucketProvisioned(),
+      ensureBucketProvisioned: createEnsureBucketProvisioned()
     }),
     BucketProvisionerPreset({
       connection: getBucketProvisionerConnection,
-      allowedOrigins: getAllowedOrigins(),
+      allowedOrigins: getAllowedOrigins()
     }),
     SqlExpressionValidatorPreset(),
     PgTypeMappingsPreset,
-    RequiredInputPreset,
+    RequiredInputPreset
   ],
   /**
    * Disable PostGraphile core's condition argument entirely.
@@ -113,7 +118,7 @@ export const ConstructivePreset: GraphileConfig.Preset = {
    */
   disablePlugins: [
     'PgConditionArgumentPlugin',
-    'PgConditionCustomFieldsPlugin',
+    'PgConditionCustomFieldsPlugin'
   ],
   /**
    * Connection Filter Plugin Configuration
@@ -167,11 +172,13 @@ export const ConstructivePreset: GraphileConfig.Preset = {
       createMatchesOperatorFactory('FullText', 'english'),
       createTrgmOperatorFactories(),
       createPostgisOperatorFactory(),
-    ],
+      createLtreeOperatorFactory(),
+      createFolderOperatorFactory()
+    ]
     // NOTE: The UnifiedSearchPreset also registers matches + trgm operator factories.
     // graphile-config merges arrays from presets, so having them here as well is fine
     // and ensures they're present even if the preset order changes.
-  },
+  }
 };
 
 export default ConstructivePreset;
