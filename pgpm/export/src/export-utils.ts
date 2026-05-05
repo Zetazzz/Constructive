@@ -26,6 +26,7 @@ export const DB_REQUIRED_EXTENSIONS = [
   'postgis',
   'hstore',
   'vector',
+  'ltree',
   'metaschema-schema',
   'pgpm-inflection',
   'pgpm-uuid',
@@ -35,7 +36,8 @@ export const DB_REQUIRED_EXTENSIONS = [
   'pgpm-stamps',
   'pgpm-base32',
   'pgpm-totp',
-  'pgpm-types'
+  'pgpm-types',
+  'pgpm-ltree-helpers'
 ] as const;
 
 /**
