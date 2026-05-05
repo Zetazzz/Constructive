@@ -14,6 +14,7 @@ import {
 } from '../plugins';
 import { UnifiedSearchPreset, createMatchesOperatorFactory, createTrgmOperatorFactories } from 'graphile-search';
 import { GraphilePostgisPreset, createPostgisOperatorFactory } from 'graphile-postgis';
+import { GraphileLtreePreset, createLtreeOperatorFactory } from 'graphile-ltree';
 import { UploadPreset } from 'graphile-upload-plugin';
 import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
 import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
@@ -51,6 +52,7 @@ import { getBucketProvisionerConnection } from '../bucket-provisioner-resolver';
  *   orderBy score — zero config)
  * - pg_trgm fuzzy matching (similarTo/wordSimilarTo on text columns, similarity score fields,
  *   orderBy similarity — zero config, typo-tolerant)
+ * - ltree support (auto-detects ltree columns, Ltree scalar, folder fields, containment/glob filters)
  *
  * RELATION FILTERS:
  * - Enabled via connectionFilterRelations: true
@@ -86,6 +88,7 @@ export const ConstructivePreset: GraphileConfig.Preset = {
     MetaSchemaPreset,
     UnifiedSearchPreset({ fullTextScalarName: 'FullText', tsConfig: 'english' }),
     GraphilePostgisPreset,
+    GraphileLtreePreset,
     UploadPreset({
       uploadFieldDefinitions: constructiveUploadFieldDefinitions,
       maxFileSize: 10 * 1024 * 1024, // 10MB
@@ -167,6 +170,7 @@ export const ConstructivePreset: GraphileConfig.Preset = {
       createMatchesOperatorFactory('FullText', 'english'),
       createTrgmOperatorFactories(),
       createPostgisOperatorFactory(),
+      createLtreeOperatorFactory(),
     ],
     // NOTE: The UnifiedSearchPreset also registers matches + trgm operator factories.
     // graphile-config merges arrays from presets, so having them here as well is fine

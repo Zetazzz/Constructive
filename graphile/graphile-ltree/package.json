@@ -1,0 +1,66 @@
+{
+  "name": "graphile-ltree",
+  "version": "1.0.0",
+  "description": "PostGraphile v5 ltree plugin — auto-detects ltree columns, exposes slash-path folder fields, and provides containment/glob filter operators",
+  "author": "Constructive <developers@constructive.io>",
+  "homepage": "https://github.com/constructive-io/constructive",
+  "license": "MIT",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "clean": "makage clean",
+    "prepack": "npm run build",
+    "build": "makage build",
+    "build:dev": "makage build --dev",
+    "lint": "eslint . --fix",
+    "test": "jest --forceExit",
+    "test:watch": "jest --watch"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/constructive-io/constructive"
+  },
+  "bugs": {
+    "url": "https://github.com/constructive-io/constructive/issues"
+  },
+  "peerDependencies": {
+    "@dataplan/pg": "1.0.0",
+    "grafast": "1.0.0",
+    "graphile-build": "5.0.0",
+    "graphile-build-pg": "5.0.0",
+    "graphile-config": "1.0.0",
+    "graphile-connection-filter": "workspace:^",
+    "graphql": "16.13.0",
+    "pg-sql2": "5.0.0",
+    "postgraphile": "5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "graphile-connection-filter": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.11",
+    "graphile-test": "workspace:^",
+    "makage": "^0.3.0",
+    "pgsql-test": "workspace:^"
+  },
+  "keywords": [
+    "postgraphile",
+    "graphile",
+    "constructive",
+    "plugin",
+    "postgres",
+    "graphql",
+    "ltree",
+    "hierarchy",
+    "path",
+    "folder",
+    "tree"
+  ]
+}
