@@ -1,4 +1,5 @@
 export { AuthzAllowAll } from './authz-allow-all';
+export { AuthzAppMembership } from './authz-app-membership';
 export { AuthzComposite } from './authz-composite';
 export { AuthzDenyAll } from './authz-deny-all';
 export { AuthzDirectOwner } from './authz-direct-owner';
