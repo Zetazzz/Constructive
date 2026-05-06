@@ -452,12 +452,8 @@ export interface SearchVectorParams {
 ;
 /** Allows all access. Generates TRUE expression. */
 export type AuthzAllowAllParams = {};
-/** App-level membership check (membership_type=1). Verifies the user has app membership (optionally with specific permission) without binding to any entity from the row. Uses EXISTS subquery against SPRT table. Replaces AuthzMembership for clarity. */
+/** App-level membership check (hardcoded membership_type=1). Verifies the user has app membership (optionally with specific permission) without binding to any entity from the row. Uses EXISTS subquery against SPRT table. For entity-scoped checks (org, channel, etc.), use AuthzEntityMembership instead. */
 export interface AuthzAppMembershipParams {
-  /* Scope: 1=app, 2=org, 3+=dynamic entity types (or string name resolved via membership_types_module) */
-  membership_type?: number | string;
-  /* Entity type prefix (e.g. 'channel', 'department'). Resolved to membership_type integer via memberships_module lookup. Use instead of membership_type for readability. */
-  entity_type?: string;
   /* Single permission name to check (resolved to bitstring mask) */
   permission?: string;
   /* Multiple permission names to check (ORed together into mask) */

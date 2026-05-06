@@ -6,20 +6,10 @@ export const AuthzAppMembership: NodeTypeDefinition = {
   category: 'authz',
   display_name: 'App Membership Check',
   description:
-    'App-level membership check (membership_type=1). Verifies the user has app membership (optionally with specific permission) without binding to any entity from the row. Uses EXISTS subquery against SPRT table. Replaces AuthzMembership for clarity.',
+    'App-level membership check (hardcoded membership_type=1). Verifies the user has app membership (optionally with specific permission) without binding to any entity from the row. Uses EXISTS subquery against SPRT table. For entity-scoped checks (org, channel, etc.), use AuthzEntityMembership instead.',
   parameter_schema: {
     type: 'object',
     properties: {
-      membership_type: {
-        type: ['integer', 'string'],
-        description:
-          'Scope: 1=app, 2=org, 3+=dynamic entity types (or string name resolved via membership_types_module)',
-      },
-      entity_type: {
-        type: 'string',
-        description:
-          "Entity type prefix (e.g. 'channel', 'department'). Resolved to membership_type integer via memberships_module lookup. Use instead of membership_type for readability.",
-      },
       permission: {
         type: 'string',
         description:
