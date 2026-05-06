@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.8.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.7.6...graphile-search@1.8.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-search
+
 ## [1.7.6](https://github.com/constructive-io/constructive/compare/graphile-search@1.7.5...graphile-search@1.7.6) (2026-05-05)
 
 **Note:** Version bump only for package graphile-search

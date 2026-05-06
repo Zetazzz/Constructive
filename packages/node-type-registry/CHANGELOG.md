@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.23.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.22.0...node-type-registry@0.23.0) (2026-05-06)
+
+### Features
+
+- **node-type-registry:** add DataLimitCounter, DataFeatureFlag, AuthzAppMembership ([0f42108](https://github.com/constructive-io/constructive/commit/0f42108b13b6579e0d49aee16b50c3dde9940693))
+- **node-type-registry:** remove AuthzMembership, replaced by AuthzAppMembership ([3b3d8cd](https://github.com/constructive-io/constructive/commit/3b3d8cd1cf63c046b0c8021697f369d469683125))
+
 # [0.22.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.21.0...node-type-registry@0.22.0) (2026-05-03)
 
 ### Bug Fixes

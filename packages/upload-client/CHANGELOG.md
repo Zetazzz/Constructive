@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.5.0...@constructive-io/upload-client@0.6.0) (2026-05-06)
+
+**Note:** Version bump only for package @constructive-io/upload-client
+
 # [0.5.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.4.0...@constructive-io/upload-client@0.5.0) (2026-05-04)
 
 ### Features
