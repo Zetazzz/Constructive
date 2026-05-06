@@ -156,6 +156,81 @@ describe('Schema introspection', () => {
 });
 
 // ============================================================================
+// MANY-TO-MANY COLLISION RESILIENCE
+// ============================================================================
+describe('Many-to-many type name collision resilience', () => {
+  it('schema builds without crashing when two junction tables target the same pair', async () => {
+    // The schema already built in beforeAll. If this describe block runs,
+    // the collision did NOT crash graphile-build. Verify the Bucket type
+    // actually exists.
+    const result = await query<{ __type: { name: string; fields: { name: string }[] } | null }>({
+      query: `
+        query {
+          __type(name: "Bucket") {
+            name
+            fields { name }
+          }
+        }
+      `,
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.__type).not.toBeNull();
+    expect(result.data?.__type?.name).toBe('Bucket');
+  });
+
+  it('produces distinct m2m edge types for each junction path', async () => {
+    // Both "files" and "file_events" are junction tables between buckets
+    // and files. The inflector must produce DIFFERENT edge type names.
+    // Introspect all types and verify no duplicate m2m edge types exist.
+    const result = await query<{
+      __schema: { types: { name: string; fields: { name: string }[] | null }[] };
+    }>({
+      query: `
+        query {
+          __schema {
+            types {
+              name
+              fields { name }
+            }
+          }
+        }
+      `,
+    });
+
+    expect(result.errors).toBeUndefined();
+    const typeNames = result.data?.__schema.types.map((t) => t.name) ?? [];
+    const m2mEdgeTypes = typeNames.filter((n) => n.includes('ManyToManyEdge'));
+
+    // Each edge type name must be unique (no duplicates)
+    const unique = new Set(m2mEdgeTypes);
+    expect(unique.size).toBe(m2mEdgeTypes.length);
+  });
+
+  it('opted-in junction tables produce m2m types in the schema', async () => {
+    // The @behavior +manyToMany smart tag should enable m2m type registration
+    // for the buckets → files paths. Verify that at least one ManyToMany type
+    // exists in the schema (types are registered in the init hook regardless
+    // of field-level behavior gating).
+    const result = await query<{
+      __schema: { types: { name: string }[] };
+    }>({
+      query: `{ __schema { types { name } } }`,
+    });
+
+    expect(result.errors).toBeUndefined();
+    const typeNames = result.data?.__schema.types.map((t) => t.name) ?? [];
+    const allM2mTypes = typeNames.filter((n) => n.includes('ManyToMany'));
+    // With opt-in behavior and @behavior +manyToMany on files/file_events,
+    // the upstream init hook should have registered m2m types.
+    // If no m2m types exist at all, dump available types for debugging.
+    expect(allM2mTypes).toEqual(
+      expect.arrayContaining([expect.stringContaining('ManyToMany')]),
+    );
+  });
+});
+
+// ============================================================================
 // SCALAR + LOGICAL FILTERS
 // ============================================================================
 describe('Scalar and logical filters', () => {

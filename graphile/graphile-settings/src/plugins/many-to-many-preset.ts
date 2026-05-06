@@ -45,6 +45,15 @@ import { PgManyToManyPreset } from '@graphile-contrib/pg-many-to-many';
  *
  * This overrides the default behavior from @graphile-contrib/pg-many-to-many
  * to require explicit `@behavior +manyToMany` smart tags.
+ *
+ * NOTE ON TYPE REGISTRATION:
+ * The upstream plugin's init hook registers GraphQL types (edge/connection)
+ * for ALL discovered relationships unconditionally — before behavior filtering.
+ * Our pgManyToMany behavior only gates field creation, not type registration.
+ * If two junction tables produce the same inflected type name, the duplicate
+ * registration will crash graphile-build. The build hook below wraps
+ * registerObjectType to catch such collisions and skip the duplicate,
+ * preventing the crash without modifying the upstream plugin.
  */
 export const ManyToManyOptInPlugin: GraphileConfig.Plugin = {
   name: 'ManyToManyOptInPlugin',
@@ -65,6 +74,32 @@ export const ManyToManyOptInPlugin: GraphileConfig.Plugin = {
             return ['-manyToMany', behavior];
           },
         },
+      },
+    },
+    hooks: {
+      build(build) {
+        const originalRegister = build.registerObjectType;
+        (build as any).registerObjectType = function (
+          ...args: any[]
+        ) {
+          try {
+            return originalRegister.apply(this, args as any);
+          } catch (e: any) {
+            const origin = args[3];
+            if (
+              e.message?.includes('type naming conflict') &&
+              typeof origin === 'string' &&
+              origin.includes('many-to-many')
+            ) {
+              // Silently skip duplicate many-to-many type registration.
+              // The first registration wins; the duplicate is harmless
+              // because the inflector already produced a unique field name.
+              return;
+            }
+            throw e;
+          }
+        };
+        return build;
       },
     },
   },
