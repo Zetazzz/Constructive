@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.24.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.23.0...node-type-registry@0.24.0) (2026-05-06)
+
+### Features
+
+- **node-type-registry:** strip membership_type from AuthzAppMembership ([92607d9](https://github.com/constructive-io/constructive/commit/92607d9b1ad906ebbd3ba5230492a085403b2a4b))
+
 # [0.23.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.22.0...node-type-registry@0.23.0) (2026-05-06)
 
 ### Features
