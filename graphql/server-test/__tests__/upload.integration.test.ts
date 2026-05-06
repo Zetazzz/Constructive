@@ -1,8 +1,8 @@
 /**
  * Upload Integration Tests — end-to-end presigned URL flow
  *
- * Exercises the full upload pipeline for both public and private files:
- *   requestUploadUrl → PUT to presigned URL → downloadUrl
+ * Exercises the per-table upload pipeline:
+ *   query bucket → requestUploadUrl field → PUT to presigned URL → downloadUrl
  *
  * Uses real MinIO (available in CI as minio_cdn service) and lazy bucket
  * provisioning. No RLS — that will be tested in constructive-db.
@@ -42,29 +42,31 @@ const seedFiles = [
 // --- GraphQL operations ---
 
 const REQUEST_UPLOAD_URL = `
-  mutation RequestUploadUrl($input: RequestUploadUrlInput!) {
-    requestUploadUrl(input: $input) {
-      uploadUrl
-      fileId
-      key
-      deduplicated
-      expiresAt
+  query RequestUploadUrl($key: String!, $contentHash: String!, $contentType: String!, $size: Int!, $filename: String) {
+    bucketByKey(key: $key) {
+      id
+      requestUploadUrl(
+        contentHash: $contentHash
+        contentType: $contentType
+        size: $size
+        filename: $filename
+      ) {
+        uploadUrl
+        fileId
+        key
+        deduplicated
+        expiresAt
+      }
     }
   }
 `;
 
 // --- Helpers ---
 
-/**
- * Generate a deterministic SHA-256 hex hash for test content.
- */
 function sha256(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
-/**
- * PUT file content to a presigned URL using fetch.
- */
 async function putToPresignedUrl(
   url: string,
   content: string,
@@ -82,7 +84,7 @@ async function putToPresignedUrl(
 
 // --- Tests ---
 
-describe('Upload integration (presigned URL flow)', () => {
+describe('Upload integration (per-table presigned URL flow)', () => {
   let request: supertest.Agent;
   let teardown: () => Promise<void>;
 
@@ -118,31 +120,33 @@ describe('Upload integration (presigned URL flow)', () => {
     if (teardown) await teardown();
   });
 
-  describe('Public file upload', () => {
+  describe('Public file upload via bucket field', () => {
     const fileContent = 'Hello, public world!';
     const contentType = 'text/plain';
     const contentHash = sha256(fileContent);
     let uploadUrl: string;
     let fileId: string;
 
-    it('should return a presigned PUT URL via requestUploadUrl', async () => {
+    it('should return a presigned PUT URL via bucket.requestUploadUrl', async () => {
       const res = await postGraphQL({
         query: REQUEST_UPLOAD_URL,
         variables: {
-          input: {
-            bucketKey: 'public',
-            contentHash,
-            contentType,
-            size: Buffer.byteLength(fileContent),
-            filename: 'hello-public.txt',
-          },
+          key: 'public',
+          contentHash,
+          contentType,
+          size: Buffer.byteLength(fileContent),
+          filename: 'hello-public.txt',
         },
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const payload = res.body.data.requestUploadUrl;
+      const bucket = res.body.data.bucketByKey;
+      expect(bucket).toBeTruthy();
+      expect(bucket.id).toBeTruthy();
+
+      const payload = bucket.requestUploadUrl;
       expect(payload.uploadUrl).toBeTruthy();
       expect(payload.fileId).toBeTruthy();
       expect(payload.key).toBe(contentHash);
@@ -159,31 +163,32 @@ describe('Upload integration (presigned URL flow)', () => {
     });
   });
 
-  describe('Private file upload', () => {
+  describe('Private file upload via bucket field', () => {
     const fileContent = 'Hello, private world!';
     const contentType = 'text/plain';
     const contentHash = sha256(fileContent);
     let uploadUrl: string;
     let fileId: string;
 
-    it('should return a presigned PUT URL via requestUploadUrl', async () => {
+    it('should return a presigned PUT URL via bucket.requestUploadUrl', async () => {
       const res = await postGraphQL({
         query: REQUEST_UPLOAD_URL,
         variables: {
-          input: {
-            bucketKey: 'private',
-            contentHash,
-            contentType,
-            size: Buffer.byteLength(fileContent),
-            filename: 'hello-private.txt',
-          },
+          key: 'private',
+          contentHash,
+          contentType,
+          size: Buffer.byteLength(fileContent),
+          filename: 'hello-private.txt',
         },
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const payload = res.body.data.requestUploadUrl;
+      const bucket = res.body.data.bucketByKey;
+      expect(bucket).toBeTruthy();
+
+      const payload = bucket.requestUploadUrl;
       expect(payload.uploadUrl).toBeTruthy();
       expect(payload.fileId).toBeTruthy();
       expect(payload.key).toBe(contentHash);
@@ -202,27 +207,24 @@ describe('Upload integration (presigned URL flow)', () => {
 
   describe('Deduplication', () => {
     it('should return deduplicated=true for a file with an existing content hash', async () => {
-      // Re-request the same public file content hash
       const fileContent = 'Hello, public world!';
       const contentHash = sha256(fileContent);
 
       const res = await postGraphQL({
         query: REQUEST_UPLOAD_URL,
         variables: {
-          input: {
-            bucketKey: 'public',
-            contentHash,
-            contentType: 'text/plain',
-            size: Buffer.byteLength(fileContent),
-            filename: 'hello-public-copy.txt',
-          },
+          key: 'public',
+          contentHash,
+          contentType: 'text/plain',
+          size: Buffer.byteLength(fileContent),
+          filename: 'hello-public-copy.txt',
         },
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const payload = res.body.data.requestUploadUrl;
+      const payload = res.body.data.bucketByKey.requestUploadUrl;
       expect(payload.deduplicated).toBe(true);
       expect(payload.uploadUrl).toBeNull();
       expect(payload.expiresAt).toBeNull();

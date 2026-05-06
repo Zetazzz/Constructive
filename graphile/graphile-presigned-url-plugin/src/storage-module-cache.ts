@@ -321,6 +321,66 @@ export async function resolveStorageModuleByFileId(
   return null;
 }
 
+/**
+ * Load all storage modules for a database, using the LRU cache.
+ *
+ * Returns an array of all StorageModuleConfig entries (app-level + entity-scoped).
+ * The result is cached per-database so subsequent calls avoid the DB query.
+ */
+export async function loadAllStorageModules(
+  pgClient: { query: (opts: { text: string; values?: unknown[] }) => Promise<{ rows: unknown[] }> },
+  databaseId: string,
+): Promise<StorageModuleConfig[]> {
+  const cacheKey = `storage:${databaseId}:all-list`;
+  const cached = storageModuleCache.get(cacheKey);
+  if (cached) {
+    return (cached as any)._allConfigs as StorageModuleConfig[];
+  }
+
+  log.debug(`Loading all storage modules for database ${databaseId}`);
+  const result = await pgClient.query({ text: ALL_STORAGE_MODULES_QUERY, values: [databaseId] });
+  const configs = (result.rows as StorageModuleRow[]).map(buildConfig);
+
+  // Cache each individual config by its membership type
+  for (const config of configs) {
+    const key = config.membershipType === null
+      ? `storage:${databaseId}:app`
+      : `storage:${databaseId}:mt:${config.membershipType}`;
+    storageModuleCache.set(key, config);
+  }
+
+  // Store the full list under a sentinel key
+  const sentinel = { ...configs[0] || {}, _allConfigs: configs } as any;
+  storageModuleCache.set(cacheKey, sentinel);
+
+  return configs;
+}
+
+/**
+ * Resolve the storage module config from a PostGraphile pgCodec.
+ *
+ * Matches the codec's schema + table name against cached storage modules.
+ * Works for both files codecs (@storageFiles) and buckets codecs (@storageBuckets).
+ *
+ * @param pgCodec - The PostGraphile codec (has extensions.pg.schemaName, name)
+ * @param allConfigs - All storage module configs for this database
+ * @returns The matching StorageModuleConfig or null
+ */
+export function resolveStorageConfigFromCodec(
+  pgCodec: { name: string; extensions?: { pg?: { schemaName?: string } }; sqlType?: string },
+  allConfigs: StorageModuleConfig[],
+): StorageModuleConfig | null {
+  const schemaName = pgCodec.extensions?.pg?.schemaName;
+  const tableName = pgCodec.name;
+
+  if (!schemaName || !tableName) return null;
+
+  return allConfigs.find((c) =>
+    (c.filesTableName === tableName && c.schemaName === schemaName) ||
+    (c.bucketsTableName === tableName && c.schemaName === schemaName),
+  ) || null;
+}
+
 // --- Bucket metadata cache ---
 
 /**
