@@ -158,6 +158,55 @@ INSERT INTO integration_test.tags (location_id, label) VALUES
   (6, 'art'),
   (7, 'outdoor');
 
+-- ============================================================================
+-- MANY-TO-MANY COLLISION TEST TABLES
+-- Reproduces the scenario where two junction tables produce the same m2m type
+-- name for the same left→right pair (buckets → files):
+--   1. files has FK to buckets AND a self-referential FK (parent_id),
+--      so files is treated as a junction between buckets and files.
+--   2. file_events has FK to both buckets and files,
+--      so it's also treated as a junction between buckets and files.
+-- Without disambiguation, both paths generate the same edge/connection type
+-- name and crash graphile-build.
+-- ============================================================================
+CREATE TABLE integration_test.buckets (
+  id serial PRIMARY KEY,
+  name text NOT NULL
+);
+
+CREATE TABLE integration_test.files (
+  id serial PRIMARY KEY,
+  bucket_id int NOT NULL REFERENCES integration_test.buckets(id),
+  parent_id int REFERENCES integration_test.files(id),
+  name text NOT NULL
+);
+
+CREATE TABLE integration_test.file_events (
+  id serial PRIMARY KEY,
+  bucket_id int NOT NULL REFERENCES integration_test.buckets(id),
+  file_id int NOT NULL REFERENCES integration_test.files(id),
+  event_type text NOT NULL
+);
+
+-- Opt-in to many-to-many on both junction tables
+COMMENT ON TABLE integration_test.files IS E'@behavior +manyToMany';
+COMMENT ON TABLE integration_test.file_events IS E'@behavior +manyToMany';
+
+-- Seed data
+INSERT INTO integration_test.buckets (id, name) VALUES (1, 'uploads'), (2, 'backups');
+INSERT INTO integration_test.files (id, bucket_id, parent_id, name) VALUES
+  (1, 1, NULL, 'readme.md'),
+  (2, 1, 1, 'chapter1.md'),
+  (3, 2, NULL, 'backup.tar');
+INSERT INTO integration_test.file_events (id, bucket_id, file_id, event_type) VALUES
+  (1, 1, 1, 'upload'),
+  (2, 1, 2, 'upload'),
+  (3, 2, 3, 'upload');
+
+SELECT setval('integration_test.buckets_id_seq', 2);
+SELECT setval('integration_test.files_id_seq', 3);
+SELECT setval('integration_test.file_events_id_seq', 3);
+
 -- Reset sequences
 SELECT setval('integration_test.categories_id_seq', 3);
 SELECT setval('integration_test.locations_id_seq', 7);

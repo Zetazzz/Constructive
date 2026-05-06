@@ -380,10 +380,7 @@ export const InflektPlugin: GraphileConfig.Plugin = {
               hasDirectRelation = true;
             }
           }
-          if (
-            rel.isReferencee &&
-            rel.remoteResource?.codec?.name !== rightTable.codec.name
-          ) {
+          if (rel.isReferencee) {
             const junctionRelations = rel.remoteResource?.getRelations?.() || {};
             for (const [_jRelName, jRel] of Object.entries(junctionRelations)) {
               if (

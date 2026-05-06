@@ -156,6 +156,80 @@ describe('Schema introspection', () => {
 });
 
 // ============================================================================
+// MANY-TO-MANY COLLISION RESILIENCE
+// ============================================================================
+describe('Many-to-many type name collision resilience', () => {
+  it('schema builds without crashing when two junction tables target the same pair', async () => {
+    // The schema already built in beforeAll. If this describe block runs,
+    // the collision did NOT crash graphile-build. Verify the Bucket type
+    // actually exists.
+    const result = await query<{ __type: { name: string; fields: { name: string }[] } | null }>({
+      query: `
+        query {
+          __type(name: "Bucket") {
+            name
+            fields { name }
+          }
+        }
+      `,
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.__type).not.toBeNull();
+    expect(result.data?.__type?.name).toBe('Bucket');
+  });
+
+  it('produces distinct m2m edge types for each junction path', async () => {
+    // Both "files" and "file_events" are junction tables between buckets
+    // and files. The inflector must produce DIFFERENT edge type names.
+    // Introspect all types and verify no duplicate m2m edge types exist.
+    const result = await query<{
+      __schema: { types: { name: string; fields: { name: string }[] | null }[] };
+    }>({
+      query: `
+        query {
+          __schema {
+            types {
+              name
+              fields { name }
+            }
+          }
+        }
+      `,
+    });
+
+    expect(result.errors).toBeUndefined();
+    const typeNames = result.data?.__schema.types.map((t) => t.name) ?? [];
+    const m2mEdgeTypes = typeNames.filter((n) => n.includes('ManyToManyEdge'));
+
+    // Each edge type name must be unique (no duplicates)
+    const unique = new Set(m2mEdgeTypes);
+    expect(unique.size).toBe(m2mEdgeTypes.length);
+  });
+
+  it('m2m fields on Bucket are queryable when opted-in via @behavior', async () => {
+    const result = await query<{ __type: { fields: { name: string }[] } | null }>({
+      query: `
+        query {
+          __type(name: "Bucket") {
+            fields { name }
+          }
+        }
+      `,
+    });
+
+    expect(result.errors).toBeUndefined();
+    const fieldNames = result.data?.__type?.fields?.map((f) => f.name) ?? [];
+    // Bucket should have m2m connection fields to files (via two junction paths)
+    const m2mFields = fieldNames.filter(
+      (n) => n.toLowerCase().includes('file') && n.toLowerCase().includes('connection')
+    );
+    // At least one m2m connection field should exist
+    expect(m2mFields.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ============================================================================
 // SCALAR + LOGICAL FILTERS
 // ============================================================================
 describe('Scalar and logical filters', () => {
