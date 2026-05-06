@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.25.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.25.1...graphile-settings@4.25.2) (2026-05-06)
+
+### Bug Fixes
+
+- **pg-many-to-many:** auto-disambiguate type name collisions instead of crashing ([d64e3b1](https://github.com/constructive-io/constructive/commit/d64e3b16ef808b4ad880c77e9420a30d980825f6)), closes [constructive-io/constructive-planning#797](https://github.com/constructive-io/constructive-planning/issues/797)
+- **test:** check m2m edge type names instead of field names ([5b82ae5](https://github.com/constructive-io/constructive/commit/5b82ae5d4d7072aac12a73912f086008f84b23e4))
+- **test:** make m2m test more diagnostic for CI debugging ([5e55732](https://github.com/constructive-io/constructive/commit/5e557325835ad0c55dc387da09e9e1c8136a82f5))
+
 ## [4.25.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.25.0...graphile-settings@4.25.1) (2026-05-05)
 
 **Note:** Version bump only for package graphile-settings
