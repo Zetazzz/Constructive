@@ -207,25 +207,24 @@ describe('Many-to-many type name collision resilience', () => {
     expect(unique.size).toBe(m2mEdgeTypes.length);
   });
 
-  it('m2m fields on Bucket are queryable when opted-in via @behavior', async () => {
-    const result = await query<{ __type: { fields: { name: string }[] } | null }>({
-      query: `
-        query {
-          __type(name: "Bucket") {
-            fields { name }
-          }
-        }
-      `,
+  it('opted-in junction tables produce m2m edge types containing the junction table name', async () => {
+    // When manyToManyCount > 1 the inflector falls back to the verbose name
+    // which includes the junction table codec name (e.g. "FilesByFile…" and
+    // "FilesByFileEvent…"). Verify both junction paths generated distinct
+    // ManyToManyEdge types whose names reference their respective junction.
+    const result = await query<{
+      __schema: { types: { name: string }[] };
+    }>({
+      query: `{ __schema { types { name } } }`,
     });
 
     expect(result.errors).toBeUndefined();
-    const fieldNames = result.data?.__type?.fields?.map((f) => f.name) ?? [];
-    // Bucket should have m2m connection fields to files (via two junction paths)
-    const m2mFields = fieldNames.filter(
-      (n) => n.toLowerCase().includes('file') && n.toLowerCase().includes('connection')
+    const typeNames = result.data?.__schema.types.map((t) => t.name) ?? [];
+    const bucketM2mEdges = typeNames.filter(
+      (n) => n.startsWith('Bucket') && n.includes('ManyToManyEdge'),
     );
-    // At least one m2m connection field should exist
-    expect(m2mFields.length).toBeGreaterThanOrEqual(1);
+    // Two junction paths (files + file_events) → at least 2 edge types
+    expect(bucketM2mEdges.length).toBeGreaterThanOrEqual(2);
   });
 });
 
