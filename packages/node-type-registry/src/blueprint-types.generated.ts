@@ -68,6 +68,15 @@ export interface DataEntityMembershipParams {
   /* If true, adds a foreign key constraint from entity_id to the users table */
   include_user_fk?: boolean;
 }
+/** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
+export interface DataFeatureFlagParams {
+  /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
+  feature_name: string;
+  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
+  entity_field?: string;
+}
 /** BEFORE INSERT trigger that forces a field to the value of jwt_public.current_user_id(). Prevents clients from spoofing the actor/uploader identity. The field value is always overwritten regardless of what the client provides. */
 export interface DataForceCurrentUserParams {
   /* Name of the field to force to current_user_id() */
@@ -156,6 +165,17 @@ export interface DataJobTriggerParams {
   run_at_delay?: string;
   /* Maximum retry attempts for the job */
   max_attempts?: number;
+}
+/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
+export interface DataLimitCounterParams {
+  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
+  limit_name: string;
+  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the actor or entity id used for limit lookup */
+  actor_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
 }
 /** Adds a JSONB column with optional GIN index for containment queries (@>, ?, ?|, ?&). Standard pattern for semi-structured metadata. */
 export interface DataJsonbParams {
@@ -432,6 +452,21 @@ export interface SearchVectorParams {
 ;
 /** Allows all access. Generates TRUE expression. */
 export type AuthzAllowAllParams = {};
+/** App-level membership check (membership_type=1). Verifies the user has app membership (optionally with specific permission) without binding to any entity from the row. Uses EXISTS subquery against SPRT table. Replaces AuthzMembership for clarity. */
+export interface AuthzAppMembershipParams {
+  /* Scope: 1=app, 2=org, 3+=dynamic entity types (or string name resolved via membership_types_module) */
+  membership_type?: number | string;
+  /* Entity type prefix (e.g. 'channel', 'department'). Resolved to membership_type integer via memberships_module lookup. Use instead of membership_type for readability. */
+  entity_type?: string;
+  /* Single permission name to check (resolved to bitstring mask) */
+  permission?: string;
+  /* Multiple permission names to check (ORed together into mask) */
+  permissions?: string[];
+  /* If true, require is_admin flag */
+  is_admin?: boolean;
+  /* If true, require is_owner flag */
+  is_owner?: boolean;
+}
 /** Composite authorization policy that combines multiple authorization nodes using boolean logic (AND/OR). The data field contains a JSONB AST with nested authorization nodes. */
 export interface AuthzCompositeParams {
   /* Boolean expression combining multiple authorization nodes */
@@ -477,21 +512,6 @@ export interface AuthzEntityMembershipParams {
 export interface AuthzMemberListParams {
   /* Column name containing the array of user IDs */
   array_field: string;
-}
-/** Membership check that verifies the user has membership (optionally with specific permission) without binding to any entity from the row. Uses EXISTS subquery against SPRT table. */
-export interface AuthzMembershipParams {
-  /* Scope: 1=app, 2=org, 3+=dynamic entity types (or string name resolved via membership_types_module) */
-  membership_type?: number | string;
-  /* Entity type prefix (e.g. 'channel', 'department'). Resolved to membership_type integer via memberships_module lookup. Use instead of membership_type for readability. */
-  entity_type?: string;
-  /* Single permission name to check (resolved to bitstring mask) */
-  permission?: string;
-  /* Multiple permission names to check (ORed together into mask) */
-  permissions?: string[];
-  /* If true, require is_admin flag */
-  is_admin?: boolean;
-  /* If true, require is_owner flag */
-  is_owner?: boolean;
 }
 /** Restrictive policy that blocks read-only members from mutations. Checks actor_id + is_read_only IS NOT TRUE on the SPRT. Designed to run as a restrictive counterpart after a permissive AuthzEntityMembership policy has already verified membership. */
 export interface AuthzNotReadOnlyParams {
@@ -809,7 +829,7 @@ export interface BlueprintField {
 /** An RLS policy entry for a blueprint table. Uses $type to match the blueprint JSON convention. */
 export interface BlueprintPolicy {
   /** Authz* policy type name (e.g., "AuthzDirectOwner", "AuthzAllowAll"). */
-  $type: 'AuthzAllowAll' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzMembership' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
+  $type: 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
   /** Privileges this policy applies to (e.g., ["select"], ["insert", "update", "delete"]). */
   privileges?: string[];
   /** Whether this policy is permissive (true) or restrictive (false). Defaults to true. */
@@ -993,11 +1013,14 @@ export interface BlueprintEntityType {
  */
 ;
 /** String shorthand -- just the node type name. */
-export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzMembership' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataForceCurrentUser' | 'DataId' | 'DataImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJobTrigger' | 'DataJsonb' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
+export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'DataImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJobTrigger' | 'DataLimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
 /** Object form -- { $type, data } with typed parameters. */
 export type BlueprintNodeObject = {
   $type: 'AuthzAllowAll';
   data?: Record<string, never>;
+} | {
+  $type: 'AuthzAppMembership';
+  data: AuthzAppMembershipParams;
 } | {
   $type: 'AuthzComposite';
   data: AuthzCompositeParams;
@@ -1016,9 +1039,6 @@ export type BlueprintNodeObject = {
 } | {
   $type: 'AuthzMemberList';
   data: AuthzMemberListParams;
-} | {
-  $type: 'AuthzMembership';
-  data: AuthzMembershipParams;
 } | {
   $type: 'AuthzNotReadOnly';
   data: AuthzNotReadOnlyParams;
@@ -1053,6 +1073,9 @@ export type BlueprintNodeObject = {
   $type: 'DataEntityMembership';
   data: DataEntityMembershipParams;
 } | {
+  $type: 'DataFeatureFlag';
+  data: DataFeatureFlagParams;
+} | {
   $type: 'DataForceCurrentUser';
   data: DataForceCurrentUserParams;
 } | {
@@ -1073,6 +1096,9 @@ export type BlueprintNodeObject = {
 } | {
   $type: 'DataJobTrigger';
   data: DataJobTriggerParams;
+} | {
+  $type: 'DataLimitCounter';
+  data: DataLimitCounterParams;
 } | {
   $type: 'DataJsonb';
   data: DataJsonbParams;
