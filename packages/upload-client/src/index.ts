@@ -32,8 +32,8 @@ export { hashFile, hashFileChunked } from './hash';
 // Orchestrator
 export { uploadFile } from './upload';
 
-// GraphQL query strings (for custom integrations)
-export { REQUEST_UPLOAD_URL_MUTATION } from './queries';
+// GraphQL query builders (for custom integrations)
+export { buildRequestUploadUrlQuery, REQUEST_UPLOAD_URL_QUERY, REQUEST_UPLOAD_URL_MUTATION, DEFAULT_BUCKET_QUERY_FIELD } from './queries';
 
 // Types
 export type {

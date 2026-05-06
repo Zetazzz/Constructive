@@ -32,8 +32,8 @@ export interface RequestUploadUrlPayload {
   deduplicated: boolean;
   /** Presigned URL expiry time (ISO string, null if deduplicated) */
   expiresAt: string | null;
-  /** File status — 'requested' for fresh uploads, 'uploaded'/'processed' for deduplicated files */
-  status: string;
+  /** ID of the previous version (when uploading a new version of a custom-keyed file) */
+  previousVersionId: string | null;
 }
 
 // --- Client options ---
@@ -69,6 +69,12 @@ export interface UploadFileOptions {
   bucketKey: string;
   /** GraphQL executor function */
   execute: GraphQLExecutor;
+  /**
+   * PostGraphile query field for the bucket type (e.g., "bucketByKey", "appBucketByKey").
+   * Defaults to "bucketByKey". Override for entity-scoped storage modules where the
+   * bucket table has a different PostGraphile-inflected name.
+   */
+  bucketQueryField?: string;
   /** Progress callback (0-100) — only fires during the S3 PUT */
   onProgress?: (percent: number) => void;
   /** AbortSignal for cancellation */
@@ -82,8 +88,6 @@ export interface UploadResult {
   key: string;
   /** Whether this file was deduplicated (no bytes uploaded) */
   deduplicated: boolean;
-  /** File status after upload ("requested" for fresh uploads, existing status for dedup) */
-  status: string;
 }
 
 // --- File input abstraction ---

@@ -8,7 +8,7 @@
  */
 
 import { hashFile } from './hash';
-import { REQUEST_UPLOAD_URL_MUTATION } from './queries';
+import { buildRequestUploadUrlQuery, DEFAULT_BUCKET_QUERY_FIELD } from './queries';
 import { UploadError } from './types';
 import type {
   UploadFileOptions,
@@ -40,7 +40,7 @@ import type {
  * ```
  */
 export async function uploadFile(options: UploadFileOptions): Promise<UploadResult> {
-  const { file, bucketKey, execute, onProgress, signal } = options;
+  const { file, bucketKey, execute, onProgress, signal, bucketQueryField } = options;
 
   // --- Validate input ---
   if (!file) {
@@ -60,8 +60,9 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
 
   checkAborted(signal);
 
-  // --- Step 2: Request presigned URL ---
-  const requestPayload = await requestUploadUrl(execute, {
+  // --- Step 2: Request presigned URL via per-table bucket field ---
+  const queryField = bucketQueryField || DEFAULT_BUCKET_QUERY_FIELD;
+  const requestPayload = await requestUploadUrl(execute, queryField, {
     bucketKey,
     contentHash,
     contentType: file.type || 'application/octet-stream',
@@ -77,7 +78,6 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
       fileId: requestPayload.fileId,
       key: requestPayload.key,
       deduplicated: true,
-      status: requestPayload.status,
     };
   }
 
@@ -100,17 +100,17 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
     fileId: requestPayload.fileId,
     key: requestPayload.key,
     deduplicated: false,
-    status: requestPayload.status,
   };
 }
 
 // --- Internal helpers ---
 
 /**
- * Call the requestUploadUrl GraphQL mutation.
+ * Query the bucket by key and call requestUploadUrl on it.
  */
 async function requestUploadUrl(
   execute: UploadFileOptions['execute'],
+  bucketQueryField: string,
   input: {
     bucketKey: string;
     contentHash: string;
@@ -119,9 +119,23 @@ async function requestUploadUrl(
     filename?: string;
   },
 ): Promise<RequestUploadUrlPayload> {
+  const query = buildRequestUploadUrlQuery(bucketQueryField);
+
   try {
-    const data = await execute(REQUEST_UPLOAD_URL_MUTATION, { input });
-    const payload = data.requestUploadUrl as RequestUploadUrlPayload | undefined;
+    const data = await execute(query, {
+      key: input.bucketKey,
+      contentHash: input.contentHash,
+      contentType: input.contentType,
+      size: input.size,
+      filename: input.filename,
+    });
+
+    // Extract from the nested bucket response: { bucketByKey: { requestUploadUrl: { ... } } }
+    const bucketData = data[bucketQueryField] as Record<string, unknown> | undefined;
+    if (!bucketData) {
+      throw new UploadError('REQUEST_UPLOAD_URL_FAILED', `Bucket not found for query field "${bucketQueryField}"`);
+    }
+    const payload = bucketData.requestUploadUrl as RequestUploadUrlPayload | undefined;
     if (!payload) {
       throw new UploadError('REQUEST_UPLOAD_URL_FAILED', 'No data returned from requestUploadUrl');
     }
@@ -130,7 +144,7 @@ async function requestUploadUrl(
     if (err instanceof UploadError) throw err;
     throw new UploadError(
       'REQUEST_UPLOAD_URL_FAILED',
-      `requestUploadUrl mutation failed: ${err instanceof Error ? err.message : String(err)}`,
+      `requestUploadUrl query failed: ${err instanceof Error ? err.message : String(err)}`,
       err,
     );
   }
