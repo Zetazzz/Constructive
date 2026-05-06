@@ -1,6 +1,7 @@
 export { DataCompositeField } from './data-composite-field';
 export { DataDirectOwner } from './data-direct-owner';
 export { DataEntityMembership } from './data-entity-membership';
+export { DataFeatureFlag } from './data-feature-flag';
 export { DataForceCurrentUser } from './data-force-current-user';
 export { DataId } from './data-id';
 export { DataImageEmbedding } from './data-image-embedding';
@@ -8,6 +9,7 @@ export { DataImmutableFields } from './data-immutable-fields';
 export { DataInflection } from './data-inflection';
 export { DataInheritFromParent } from './data-inherit-from-parent';
 export { DataJobTrigger } from './data-job-trigger';
+export { DataLimitCounter } from './data-limit-counter';
 export { DataJsonb } from './data-jsonb';
 export { DataOwnedFields } from './data-owned-fields';
 export { DataOwnershipInEntity } from './data-ownership-in-entity';
