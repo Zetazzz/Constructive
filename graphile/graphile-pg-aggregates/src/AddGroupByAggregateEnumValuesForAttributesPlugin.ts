@@ -3,22 +3,24 @@ import type {
   PgCodecAttribute,
   PgResourceUnique,
   PgSelectQueryBuilder,
-} from "@dataplan/pg";
-import type { PgSQL } from "graphile-build-pg/pg-sql2";
+  sql
+} from '@dataplan/pg';
+
+type PgSQL = typeof sql;
 import type {
   GraphQLEnumValueConfig,
-  GraphQLEnumValueConfigMap,
-} from "graphql";
+  GraphQLEnumValueConfigMap
+} from 'graphql';
 
-import type { AggregateGroupBySpec } from ".";
-import { EXPORTABLE } from "./EXPORTABLE";
+import type { AggregateGroupBySpec } from '.';
+import { EXPORTABLE } from './EXPORTABLE';
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 declare global {
   namespace GraphileBuild {
     interface BehaviorStrings {
-      "attribute:groupBy": true;
+      'attribute:groupBy': true;
       groupBy: true;
     }
   }
@@ -37,11 +39,11 @@ const applyGroupByAggregateSpec = EXPORTABLE(
         fragment: aggregateGroupBySpec.sqlWrap(
           sql`${qb.alias}.${sql.identifier(attributeName)}`
         ),
-        codec: aggregateGroupBySpec.sqlWrapCodec(attrCodec),
+        codec: aggregateGroupBySpec.sqlWrapCodec(attrCodec)
       });
     },
   [],
-  "applyGroupByAggregateSpec"
+  'applyGroupByAggregateSpec'
 );
 
 const applyGroupByAttribute = EXPORTABLE(
@@ -54,37 +56,37 @@ const applyGroupByAttribute = EXPORTABLE(
     ) => {
       qb.groupBy({
         fragment: sql.fragment`${qb.alias}.${sql.identifier(attributeName)}`,
-        codec: attrCodec,
+        codec: attrCodec
       });
     },
   [],
-  "applyGroupByAttribute"
+  'applyGroupByAttribute'
 );
 
 const Plugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesAddGroupByAggregateEnumValuesForAttributesPlugin",
+  name: 'PgAggregatesAddGroupByAggregateEnumValuesForAttributesPlugin',
   description:
-    "Adds values representing table attributes to the enum that defines the groupedAggregates groupings.",
+    'Adds values representing table attributes to the enum that defines the groupedAggregates groupings.',
   version,
-  provides: ["aggregates"],
+  provides: ['aggregates'],
 
   // Now add group by attributes
   schema: {
     behaviorRegistry: {
       add: {
-        "attribute:groupBy": {
-          description: "Can we group by this attribute when aggregating?",
-          entities: ["pgCodecAttribute"],
+        'attribute:groupBy': {
+          description: 'Can we group by this attribute when aggregating?',
+          entities: ['pgCodecAttribute']
         },
         groupBy: {
-          description: "Can we group by this attribute when aggregating?",
-          entities: ["pgCodecAttribute"],
-        },
-      },
+          description: 'Can we group by this attribute when aggregating?',
+          entities: ['pgCodecAttribute']
+        }
+      }
     },
 
     entityBehavior: {
-      pgCodecAttribute: ["attribute:groupBy"],
+      pgCodecAttribute: ['attribute:groupBy']
     },
 
     hooks: {
@@ -92,7 +94,7 @@ const Plugin: GraphileConfig.Plugin = {
         const { extend, inflection, sql, pgAggregateGroupBySpecs, EXPORTABLE } =
           build;
         const {
-          scope: { isPgAggregateGroupEnum, pgTypeResource: table },
+          scope: { isPgAggregateGroupEnum, pgTypeResource: table }
         } = context;
         if (
           !isPgAggregateGroupEnum ||
@@ -114,7 +116,7 @@ const Plugin: GraphileConfig.Plugin = {
             if (
               !build.behavior.pgCodecAttributeMatches(
                 [table.codec, attributeName],
-                "orderBy"
+                'orderBy'
               )
             ) {
               return memo;
@@ -135,7 +137,7 @@ const Plugin: GraphileConfig.Plugin = {
 
             const fieldName = inflection.aggregateGroupByAttributeEnum({
               resource: table,
-              attributeName,
+              attributeName
             });
             const attrCodec = attribute.codec;
             memo = extend(
@@ -160,10 +162,10 @@ const Plugin: GraphileConfig.Plugin = {
                             );
                           },
                         [applyGroupByAttribute, attrCodec, attributeName, sql]
-                      ),
-                    },
-                  },
-                },
+                      )
+                    }
+                  }
+                }
               },
               `Adding groupBy enum value for ${table.name}.${attributeName}.`
             );
@@ -173,9 +175,9 @@ const Plugin: GraphileConfig.Plugin = {
               if (
                 (!aggregateGroupBySpec.shouldApplyToEntity ||
                   aggregateGroupBySpec.shouldApplyToEntity({
-                    type: "attribute",
+                    type: 'attribute',
                     codec: table.codec,
-                    attributeName,
+                    attributeName
                   })) &&
                 aggregateGroupBySpec.isSuitableType(attribute.codec)
               ) {
@@ -183,7 +185,7 @@ const Plugin: GraphileConfig.Plugin = {
                   inflection.aggregateGroupByAttributeDerivativeEnum({
                     resource: table,
                     attributeName,
-                    aggregateGroupBySpec,
+                    aggregateGroupBySpec
                   });
                 memo = extend(
                   memo,
@@ -213,12 +215,12 @@ const Plugin: GraphileConfig.Plugin = {
                               applyGroupByAggregateSpec,
                               attrCodec,
                               attributeName,
-                              sql,
+                              sql
                             ]
-                          ),
-                        },
-                      },
-                    } as GraphQLEnumValueConfig,
+                          )
+                        }
+                      }
+                    } as GraphQLEnumValueConfig
                   },
                   `Adding groupBy enum value for '${aggregateGroupBySpec.id}' derivative of ${table.name}.${attributeName}.`
                 );
@@ -229,9 +231,9 @@ const Plugin: GraphileConfig.Plugin = {
           }, Object.create(null) as GraphQLEnumValueConfigMap),
           `Adding group by values for attributes from table '${table.name}'`
         );
-      },
-    },
-  },
+      }
+    }
+  }
 };
 
 export { Plugin as PgAggregatesAddGroupByAggregateEnumValuesForAttributesPlugin };

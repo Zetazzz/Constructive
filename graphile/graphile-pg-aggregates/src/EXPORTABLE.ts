@@ -5,13 +5,13 @@ export function EXPORTABLE<T, TScope extends any[]>(
 ): T {
   const fn: T = factory(...args);
   if (
-    ((typeof fn === "object" && fn !== null) || typeof fn === "function") &&
-    !("$exporter$factory" in fn)
+    ((typeof fn === 'object' && fn !== null) || typeof fn === 'function') &&
+    !('$exporter$factory' in fn)
   ) {
     Object.defineProperties(fn, {
       $exporter$args: { value: args },
       $exporter$factory: { value: factory },
-      $exporter$name: { writable: true, value: nameHint },
+      $exporter$name: { writable: true, value: nameHint }
     });
   }
   return fn;

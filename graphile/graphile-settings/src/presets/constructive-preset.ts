@@ -2,6 +2,7 @@ import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
 import type { GraphileConfig } from 'graphile-config';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
 import { createFolderOperatorFactory, GraphileLtreePreset } from 'graphile-ltree';
+import { PgAggregatesPreset } from 'graphile-pg-aggregates';
 import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-postgis';
 import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
 import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearchPreset } from 'graphile-search';
@@ -55,6 +56,9 @@ import { constructiveUploadFieldDefinitions } from '../upload-resolver';
  *   orderBy similarity — zero config, typo-tolerant)
  * - ltree support (auto-detects ltree columns, LTree scalar with file-path syntax,
  *   containment/glob filters — within, ancestorOf, glob)
+ * - Aggregates (sum, avg, min, max, stddev, variance, distinctCount on connections,
+ *   groupedAggregates with groupBy + having, orderBy relational aggregates,
+ *   filter by relational aggregates — per-table opt-out via @behavior -aggregates)
  *
  * RELATION FILTERS:
  * - Enabled via connectionFilterRelations: true
@@ -85,6 +89,7 @@ export const ConstructivePreset: GraphileConfig.Preset = {
     InflectorLoggerPreset,
     NoUniqueLookupPreset,
     ConnectionFilterPreset({ connectionFilterRelations: true }),
+    PgAggregatesPreset,
     EnableAllFilterColumnsPreset,
     ManyToManyOptInPreset,
     MetaSchemaPreset,

@@ -7,55 +7,64 @@ import type {
   PgResource,
   PgResourceParameter,
   PgWhereConditionSpec,
-  sql,
-} from "@dataplan/pg";
-import type { GrafastInputFieldConfigMap, Modifier } from "grafast";
-import type {} from "graphile-build";
+  sql
+} from '@dataplan/pg';
+import type { GrafastInputFieldConfigMap, Modifier } from 'grafast';
+import type {} from 'graphile-build';
+import type {} from 'graphile-connection-filter';
 import type {
   GraphQLInputObjectType,
   GraphQLInputObjectTypeConfig,
-  GraphQLInputType,
-} from "graphql";
-import type {} from "postgraphile-plugin-connection-filter";
+  GraphQLInputType
+} from 'graphql';
 
-import { EXPORTABLE } from "./EXPORTABLE.js";
-import type { AggregateSpec } from "./interfaces.js";
+import { EXPORTABLE } from './EXPORTABLE';
+import type { AggregateSpec } from './interfaces';
 
 type PgSQL = typeof sql;
 type SQL = ReturnType<PgSQL>;
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 declare global {
+  namespace DataplanPg {
+    interface PgConditionExtensions {
+      pgFilterAttribute?: {
+        fieldName?: string;
+        codec: PgCodec;
+        expression?: SQL;
+      };
+    }
+  }
   namespace GraphileBuild {
     interface Build {
       PgAggregateCondition: PgAggregateConditionClass;
       PgAggregateConditionExpression: PgAggregateConditionExpressionClass;
     }
     interface BehaviorStrings {
-      "resource:aggregates:filterBy": true;
-      "aggregates:filterBy": true;
-      "aggregate:filterBy": true;
+      'resource:aggregates:filterBy': true;
+      'aggregates:filterBy': true;
+      'aggregate:filterBy': true;
 
-      "sum:resource:aggregates:filterBy": true;
-      "distinctCount:resource:aggregates:filterBy": true;
-      "min:resource:aggregates:filterBy": true;
-      "max:resource:aggregates:filterBy": true;
-      "average:resource:aggregates:filterBy": true;
-      "stddevSample:resource:aggregates:filterBy": true;
-      "stddevPopulation:resource:aggregates:filterBy": true;
-      "varianceSample:resource:aggregates:filterBy": true;
-      "variancePopulation:resource:aggregates:filterBy": true;
+      'sum:resource:aggregates:filterBy': true;
+      'distinctCount:resource:aggregates:filterBy': true;
+      'min:resource:aggregates:filterBy': true;
+      'max:resource:aggregates:filterBy': true;
+      'average:resource:aggregates:filterBy': true;
+      'stddevSample:resource:aggregates:filterBy': true;
+      'stddevPopulation:resource:aggregates:filterBy': true;
+      'varianceSample:resource:aggregates:filterBy': true;
+      'variancePopulation:resource:aggregates:filterBy': true;
 
-      "sum:attribute:aggregate:filterBy": true;
-      "distinctCount:attribute:aggregate:filterBy": true;
-      "min:attribute:aggregate:filterBy": true;
-      "max:attribute:aggregate:filterBy": true;
-      "average:attribute:aggregate:filterBy": true;
-      "stddevSample:attribute:aggregate:filterBy": true;
-      "stddevPopulation:attribute:aggregate:filterBy": true;
-      "varianceSample:attribute:aggregate:filterBy": true;
-      "variancePopulation:attribute:aggregate:filterBy": true;
+      'sum:attribute:aggregate:filterBy': true;
+      'distinctCount:attribute:aggregate:filterBy': true;
+      'min:attribute:aggregate:filterBy': true;
+      'max:attribute:aggregate:filterBy': true;
+      'average:attribute:aggregate:filterBy': true;
+      'stddevSample:attribute:aggregate:filterBy': true;
+      'stddevPopulation:attribute:aggregate:filterBy': true;
+      'varianceSample:attribute:aggregate:filterBy': true;
+      'variancePopulation:attribute:aggregate:filterBy': true;
     }
   }
 }
@@ -63,8 +72,8 @@ declare global {
 const pgAggregateApplyAttributeOrder = EXPORTABLE(
   () =>
     (
-      PgCondition: GraphileBuild.Build["dataplanPg"]["PgCondition"],
-      sql: GraphileBuild.Build["sql"],
+      PgCondition: GraphileBuild.Build['dataplanPg']['PgCondition'],
+      sql: GraphileBuild.Build['sql'],
       spec: AggregateSpec,
       attributeName: string,
       attrCodec: PgCodec,
@@ -79,20 +88,20 @@ const pgAggregateApplyAttributeOrder = EXPORTABLE(
         expression: spec.sqlAggregateWrap(
           sql`${$col.alias}.${sql.identifier(attributeName)}`,
           rawAttrCodec
-        ),
+        )
       };
 
       return $col;
     },
   [],
-  "pgAggregateApplyAttributeOrder"
+  'pgAggregateApplyAttributeOrder'
 );
 
 const pgAggregateApplyComputedAttributeOrder = EXPORTABLE(
   () =>
     (
-      PgCondition: GraphileBuild.Build["dataplanPg"]["PgCondition"],
-      sql: GraphileBuild.Build["sql"],
+      PgCondition: GraphileBuild.Build['dataplanPg']['PgCondition'],
+      sql: GraphileBuild.Build['sql'],
       spec: AggregateSpec,
       proc: PgResource,
       attrCodec: PgCodec,
@@ -102,66 +111,71 @@ const pgAggregateApplyComputedAttributeOrder = EXPORTABLE(
       if (input == null) return;
       const $col = new PgCondition($parent);
       const sqlComputedAttributeCall = sql.query`${
-        typeof proc.from === "function"
+        typeof proc.from === 'function'
           ? proc.from({ placeholder: $col.alias })
           : proc.from
       }`;
       $col.extensions.pgFilterAttribute = {
         codec: attrCodec,
-        expression: spec.sqlAggregateWrap(sqlComputedAttributeCall, proc.codec),
+        expression: spec.sqlAggregateWrap(sqlComputedAttributeCall, proc.codec)
       };
 
       return $col;
     },
   [],
-  "pgAggregateApplyComputedAttributeOrder"
+  'pgAggregateApplyComputedAttributeOrder'
 );
 
 const pgAggregateApplyForeignCondition = EXPORTABLE(
   () =>
     function (
-      PgCondition: GraphileBuild.Build["dataplanPg"]["PgCondition"],
+      PgCondition: GraphileBuild.Build['dataplanPg']['PgCondition'],
       $subquery: PgAggregateCondition<any>,
       input: unknown
     ) {
       if (input == null) return;
       // Enable all the helpers
-      const $condition = new PgCondition($subquery, false, "AND");
+      const $condition = new PgCondition($subquery, false, 'AND');
       return $condition;
     },
   [],
-  "pgAggregateApplyForeignCondition"
+  'pgAggregateApplyForeignCondition'
 );
 
 const pgAggregatesApply = EXPORTABLE(
   () =>
     (
       PgAggregateCondition: PgAggregateConditionClass,
-      pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"],
-      sql: GraphileBuild.Build["sql"],
+      pgWhereConditionSpecListToSQL: GraphileBuild.Build['dataplanPg']['pgWhereConditionSpecListToSQL'],
+      sql: GraphileBuild.Build['sql'],
       $where: PgCondition<any>,
       input: unknown
     ) => {
       if (input == null) return;
-      // assertAllowed(fieldArgs, "object");
-      if (!$where.extensions.pgFilterRelation) {
-        throw new Error(`Invalid use of filter, 'pgFilterRelation' expected`);
+      // Constructive fork: read from _manyRelation (set by our
+      // ConnectionFilterBackwardRelationsPlugin) instead of upstream's
+      // $where.extensions.pgFilterRelation.
+      const rel = ($where as any)._manyRelation;
+      if (!rel) {
+        throw new Error(
+          `Invalid use of aggregates filter: '_manyRelation' expected on $where. ` +
+          `Ensure graphile-connection-filter backward relations plugin has tagged $where.`
+        );
       }
-      const { localAttributes, remoteAttributes, tableExpression, alias } =
-        $where.extensions.pgFilterRelation;
+      const { localAttributes, remoteAttributes, foreignTableExpression, foreignTable } = rel;
       const $subQuery = new PgAggregateCondition(
         $where,
         {
           sql,
-          tableExpression,
-          alias,
+          tableExpression: foreignTableExpression,
+          alias: foreignTable.name
         },
         pgWhereConditionSpecListToSQL
       );
-      localAttributes.forEach((localAttribute, i) => {
+      localAttributes.forEach((localAttribute: string, i: number) => {
         const remoteAttribute = remoteAttributes[i];
         $subQuery.where(
-          sql`${$where.alias}.${sql.identifier(localAttribute as string)} = ${
+          sql`${$where.alias}.${sql.identifier(localAttribute)} = ${
             $subQuery.alias
           }.${sql.identifier(remoteAttribute as string)}`
         );
@@ -169,23 +183,23 @@ const pgAggregatesApply = EXPORTABLE(
       return $subQuery;
     },
   [],
-  "pgAggregatesApply"
+  'pgAggregatesApply'
 );
 
 export const Plugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesFilterRelationalAggregatesPlugin",
+  name: 'PgAggregatesFilterRelationalAggregatesPlugin',
   description: `\
-Adds the ability to filter a collection by aggregates on relationships if you \
-have postgraphile-plugin-connection-filter, e.g. filtering all players based on \
+Adds the ability to filter a collection by aggregates on relationships via \
+graphile-connection-filter, e.g. filtering all players based on \
 the sum of their points scored.`,
   version,
 
   // This has to run AFTER any plugins that provide `build.pgAggregateSpecs`
   // otherwise we might add codecs to build.allPgCodecs before all the relevant
   // codecs/specs are available.
-  after: ["PgBasicsPlugin", "PgCodecsPlugin", "aggregates"],
-  provides: ["codecs"],
-  before: ["PgConnectionArgFilterPlugin"],
+  after: ['PgBasicsPlugin', 'PgCodecsPlugin', 'aggregates'],
+  provides: ['codecs'],
+  before: ['ConnectionFilterArgPlugin'],
 
   inflection: {
     add: {
@@ -193,47 +207,47 @@ the sum of their points scored.`,
       filterTableAggregateType(_preset, foreignTable, spec) {
         const foreignTableTypeName = this.tableType(foreignTable.codec);
         return this.filterType(
-          foreignTableTypeName + this.upperCamelCase(spec.id) + "Aggregate"
+          foreignTableTypeName + this.upperCamelCase(spec.id) + 'Aggregate'
         );
-      },
-    },
+      }
+    }
   },
 
   schema: {
     behaviorRegistry: {
       add: {
-        "aggregates:filterBy": {
+        'aggregates:filterBy': {
           description:
-            "Can we filter by the details of this resource whilst aggregating the resource?",
-          entities: ["pgResource"],
+            'Can we filter by the details of this resource whilst aggregating the resource?',
+          entities: ['pgResource']
         },
-        "aggregate:filterBy": {
-          description: "Can we filter using the value of this attribute",
-          entities: ["pgCodecAttribute"],
-        },
-      },
+        'aggregate:filterBy': {
+          description: 'Can we filter using the value of this attribute',
+          entities: ['pgCodecAttribute']
+        }
+      }
     },
 
     entityBehavior: {
-      pgResource: ["aggregates:filterBy", "aggregate:filterBy"],
-      pgCodecAttribute: ["aggregate:filterBy"],
+      pgResource: ['aggregates:filterBy', 'aggregate:filterBy'],
+      pgCodecAttribute: ['aggregate:filterBy']
     },
 
     hooks: {
       build(build) {
         const {
           EXPORTABLE,
-          grafast: { Modifier },
+          grafast: { Modifier }
         } = build;
 
         if (!build.allPgCodecs) {
           throw new Error(
-            "PgAggregatesFilterRelationalAggregatesPlugin must run after build.allPgCodecs has been established"
+            'PgAggregatesFilterRelationalAggregatesPlugin must run after build.allPgCodecs has been established'
           );
         }
         if (!build.pgAggregateSpecs) {
           throw new Error(
-            "PgAggregatesFilterRelationalAggregatesPlugin must run after build.pgAggregateSpecs has been established"
+            'PgAggregatesFilterRelationalAggregatesPlugin must run after build.pgAggregateSpecs has been established'
           );
         }
 
@@ -262,7 +276,7 @@ the sum of their points scored.`,
               constructor(
                 parent: PgAggregateCondition<any>,
                 private spec: AggregateSpec,
-                private pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
+                private pgWhereConditionSpecListToSQL: GraphileBuild.Build['dataplanPg']['pgWhereConditionSpecListToSQL']
               ) {
                 super(parent);
                 this.alias = parent.alias;
@@ -301,12 +315,12 @@ the sum of their points scored.`,
                   tableExpression: SQL;
                   alias?: string;
                 },
-                private pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
+                private pgWhereConditionSpecListToSQL: GraphileBuild.Build['dataplanPg']['pgWhereConditionSpecListToSQL']
               ) {
                 super(parent);
                 const { sql, tableExpression, alias } = options;
                 this.sql = sql;
-                this.alias = sql.identifier(Symbol(alias ?? "aggregate"));
+                this.alias = sql.identifier(Symbol(alias ?? 'aggregate'));
                 this.tableExpression = tableExpression;
               }
 
@@ -342,11 +356,11 @@ the sum of their points scored.`,
                   this.expressions.length === 0
                     ? sql.true
                     : sql.parens(
-                        sql.join(
-                          this.expressions.map((expr) => sql.parens(expr)),
-                          "\nand\n"
-                        )
-                      );
+                      sql.join(
+                        this.expressions.map((expr) => sql.parens(expr)),
+                        '\nand\n'
+                      )
+                    );
                 const subquery = sql`(${sql.indent`\
 select ${boolExpr}
 from ${this.tableExpression} as ${this.alias}
@@ -362,9 +376,9 @@ group by ())`;
           build,
           {
             PgAggregateCondition,
-            PgAggregateConditionExpression,
+            PgAggregateConditionExpression
           },
-          "Adding step classes from postgraphile-plugin-connection-filter"
+          'Adding step classes from postgraphile-plugin-connection-filter'
         );
       },
 
@@ -372,7 +386,7 @@ group by ())`;
         const {
           inflection,
           dataplanPg: { PgCondition },
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
 
         if (!inflection.filterType) {
@@ -390,7 +404,7 @@ group by ())`;
           if (
             !build.behavior.pgResourceMatches(
               foreignTable,
-              "resource:aggregates:filterBy"
+              'resource:aggregates:filterBy'
             )
           ) {
             continue;
@@ -400,17 +414,16 @@ group by ())`;
           const foreignTableFilterTypeName =
             inflection.filterType(foreignTableTypeName);
           const foreignTableAggregateFilterTypeName = inflection.filterType(
-            foreignTableTypeName + "Aggregates"
+            foreignTableTypeName + 'Aggregates'
           );
 
           build.recoverable(null, () => {
-            // TODO: inflect
-            const filterFieldName = "filter";
+            const filterFieldName = 'where';
             build.registerInputObjectType(
               foreignTableAggregateFilterTypeName,
               {
                 pgResource: foreignTable,
-                isPgConnectionAggregateFilter: true,
+                isPgConnectionAggregateFilter: true
               },
               () => {
                 return {
@@ -439,14 +452,14 @@ group by ())`;
                               ),
                           [PgCondition, pgAggregateApplyForeignCondition],
                           `${filterFieldName}Apply`
-                        ),
+                        )
                         // No need to auto-apply since we're applied manually via `fieldArgs.apply($subQuery)` below.
-                      },
+                      }
                     };
-                  },
-                } as Omit<GraphQLInputObjectTypeConfig, "name">;
+                  }
+                } as Omit<GraphQLInputObjectTypeConfig, 'name'>;
               },
-              "Adding aggregate filter input type"
+              'Adding aggregate filter input type'
             );
           });
 
@@ -469,7 +482,7 @@ group by ())`;
               {
                 isPgConnectionAggregateAggregateFilter: true,
                 pgConnectionAggregateFilterAggregateSpec: spec,
-                pgTypeResource: foreignTable,
+                pgTypeResource: foreignTable
               },
               () => ({}),
               `Add '${spec.id}' aggregate filter type for '${foreignTableTypeName}'`
@@ -492,7 +505,7 @@ group by ())`;
           pgAggregateSpecs,
           dataplanPg: { PgCondition, pgWhereConditionSpecListToSQL },
           PgAggregateCondition,
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
 
         if (!inflection.filterType) {
@@ -509,8 +522,8 @@ group by ())`;
             pgResource,
             isPgConnectionAggregateAggregateFilter,
             pgConnectionAggregateFilterAggregateSpec: spec,
-            pgTypeResource,
-          },
+            pgTypeResource
+          }
         } = context;
 
         // Add 'aggregates' field to relation filters, next to `every`/`some`/`none`
@@ -519,10 +532,10 @@ group by ())`;
 
           const foreignTableTypeName = inflection.tableType(foreignTable.codec);
           const foreignTableAggregateFilterTypeName = inflection.filterType(
-            foreignTableTypeName + "Aggregates"
+            foreignTableTypeName + 'Aggregates'
           );
 
-          const fieldName = "aggregates";
+          const fieldName = 'aggregates';
 
           const AggregateType = build.getTypeByName(
             foreignTableAggregateFilterTypeName
@@ -537,7 +550,7 @@ group by ())`;
               [fieldName]: fieldWithHooks(
                 {
                   fieldName,
-                  isPgConnectionFilterAggregatesField: true,
+                  isPgConnectionFilterAggregatesField: true
                 },
                 {
                   description: `Aggregates across related \`${foreignTableTypeName}\` match the filter criteria.`,
@@ -562,12 +575,12 @@ group by ())`;
                       PgAggregateCondition,
                       pgAggregatesApply,
                       pgWhereConditionSpecListToSQL,
-                      sql,
+                      sql
                     ]
-                  ),
+                  )
                   // No need to auto-apply, postgraphile-plugin-connection-filter explicitly calls fieldArgs.apply()
                 }
-              ),
+              )
             },
             "Adding 'aggregates' filter field on relation"
           );
@@ -616,8 +629,8 @@ group by ())`;
                         return $subquery.forAggregate(spec);
                       },
                     [spec]
-                  ),
-                })),
+                  )
+                }))
               },
               `Adding aggregate '${spec.id}' filter input for '${pgResource.name}'. `
             );
@@ -655,9 +668,9 @@ group by ())`;
                   if (
                     (spec.shouldApplyToEntity &&
                       !spec.shouldApplyToEntity({
-                        type: "attribute",
+                        type: 'attribute',
                         codec: table.codec,
-                        attributeName: attributeName,
+                        attributeName: attributeName
                       })) ||
                     !spec.isSuitableType(attribute.codec)
                   ) {
@@ -669,7 +682,7 @@ group by ())`;
                     : attribute.codec;
                   const fieldName = inflection.attribute({
                     codec: table.codec,
-                    attributeName,
+                    attributeName
                   });
 
                   const digest =
@@ -722,17 +735,17 @@ group by ())`;
                             pgAggregateApplyAttributeOrder,
                             rawAttrCodec,
                             spec,
-                            sql,
+                            sql
                           ]
-                        ),
+                        )
                         // No need to auto-apply since we're called via `fieldArgs.apply($subquery.forAggregate(spec))` above
-                      },
+                      }
                     },
                     `Add aggregate '${attributeName}' filter for source '${table.name}' for spec '${spec.id}'`
                   );
                 },
                 Object.create(null) as GrafastInputFieldConfigMap<any>
-              ),
+              )
             },
             `Adding per-attribute '${spec.id}' aggregate filters for '${pgTypeResource.name}'`
           );
@@ -761,15 +774,15 @@ group by ())`;
                 if (
                   (spec.shouldApplyToEntity &&
                     !spec.shouldApplyToEntity({
-                      type: "computedAttribute",
-                      resource: proc,
+                      type: 'computedAttribute',
+                      resource: proc
                     })) ||
                   !spec.isSuitableType(proc.codec)
                 ) {
                   return memo;
                 }
                 const fieldName = inflection.computedAttributeField({
-                  resource: proc,
+                  resource: proc
                 });
 
                 const attrCodec = spec.pgTypeCodecModifier
@@ -821,14 +834,14 @@ group by ())`;
                           pgAggregateApplyComputedAttributeOrder,
                           proc,
                           spec,
-                          sql,
+                          sql
                         ]
-                      ),
-                    },
+                      )
+                    }
                   },
                   `Add computed aggregate '${fieldName}' filter for source '${table.name}' for spec '${spec.id}'`
                 );
-              }, Object.create(null) as GrafastInputFieldConfigMap<PgAggregateConditionExpression>),
+              }, Object.create(null) as GrafastInputFieldConfigMap<PgAggregateConditionExpression>)
             },
             `Adding per-computed-column '${spec.id}' aggregate filters for '${pgTypeResource.name}'`
           );
@@ -837,9 +850,9 @@ group by ())`;
         })();
 
         return fields;
-      },
-    },
-  },
+      }
+    }
+  }
 };
 
 export { Plugin as PgAggregatesFilterRelationalAggregatesPlugin };
@@ -865,7 +878,7 @@ interface PgAggregateConditionClass {
       tableExpression: SQL;
       alias?: string;
     },
-    pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
+    pgWhereConditionSpecListToSQL: GraphileBuild.Build['dataplanPg']['pgWhereConditionSpecListToSQL']
   ): PgAggregateCondition<TParentStep>;
 }
 
@@ -883,7 +896,7 @@ interface PgAggregateConditionExpressionClass {
   new (
     $parent: PgAggregateCondition<any>,
     spec: AggregateSpec,
-    pgWhereConditionSpecListToSQL: GraphileBuild.Build["dataplanPg"]["pgWhereConditionSpecListToSQL"]
+    pgWhereConditionSpecListToSQL: GraphileBuild.Build['dataplanPg']['pgWhereConditionSpecListToSQL']
   ): PgAggregateConditionExpression;
 }
 

@@ -3,59 +3,58 @@ import type {
   PgCodecAttribute,
   PgResource,
   PgResourceParameter,
-  PgSelectSingleStep,
-} from "@dataplan/pg";
-import type { FieldArgs } from "grafast";
-import type {} from "graphile-build-pg";
-import type {} from "graphile-config";
-import type { GraphQLFieldConfigMap, GraphQLOutputType } from "graphql";
+  PgSelectSingleStep
+} from '@dataplan/pg';
+import type { FieldArgs } from 'grafast';
+import type {} from 'graphile-build-pg';
+import type {} from 'graphile-config';
+import type { GraphQLFieldConfigMap, GraphQLOutputType } from 'graphql';
 
-import { EXPORTABLE } from "./EXPORTABLE.js";
-import type { AggregateSpec } from "./interfaces.js";
-import { getComputedAttributeResources } from "./utils.js";
+import { EXPORTABLE } from './EXPORTABLE';
+import type { AggregateSpec } from './interfaces';
+import { getComputedAttributeResources } from './utils';
 
 declare global {
   namespace GraphileBuild {
     interface BehaviorStrings {
-      "resource:aggregates": true;
+      'resource:aggregates': true;
       aggregates: true;
       aggregate: true;
 
-      "sum:resource:aggregates": true;
-      "distinctCount:resource:aggregates": true;
-      "min:resource:aggregates": true;
-      "max:resource:aggregates": true;
-      "average:resource:aggregates": true;
-      "stddevSample:resource:aggregates": true;
-      "stddevPopulation:resource:aggregates": true;
-      "varianceSample:resource:aggregates": true;
-      "variancePopulation:resource:aggregates": true;
+      'sum:resource:aggregates': true;
+      'distinctCount:resource:aggregates': true;
+      'min:resource:aggregates': true;
+      'max:resource:aggregates': true;
+      'average:resource:aggregates': true;
+      'stddevSample:resource:aggregates': true;
+      'stddevPopulation:resource:aggregates': true;
+      'varianceSample:resource:aggregates': true;
+      'variancePopulation:resource:aggregates': true;
 
-      "sum:resource:aggregate": true;
-      "distinctCount:resource:aggregate": true;
-      "min:resource:aggregate": true;
-      "max:resource:aggregate": true;
-      "average:resource:aggregate": true;
-      "stddevSample:resource:aggregate": true;
-      "stddevPopulation:resource:aggregate": true;
-      "varianceSample:resource:aggregate": true;
-      "variancePopulation:resource:aggregate": true;
+      'sum:resource:aggregate': true;
+      'distinctCount:resource:aggregate': true;
+      'min:resource:aggregate': true;
+      'max:resource:aggregate': true;
+      'average:resource:aggregate': true;
+      'stddevSample:resource:aggregate': true;
+      'stddevPopulation:resource:aggregate': true;
+      'varianceSample:resource:aggregate': true;
+      'variancePopulation:resource:aggregate': true;
 
-      "sum:attribute:aggregate": true;
-      "distinctCount:attribute:aggregate": true;
-      "min:attribute:aggregate": true;
-      "max:attribute:aggregate": true;
-      "average:attribute:aggregate": true;
-      "stddevSample:attribute:aggregate": true;
-      "stddevPopulation:attribute:aggregate": true;
-      "varianceSample:attribute:aggregate": true;
-      "variancePopulation:attribute:aggregate": true;
+      'sum:attribute:aggregate': true;
+      'distinctCount:attribute:aggregate': true;
+      'min:attribute:aggregate': true;
+      'max:attribute:aggregate': true;
+      'average:attribute:aggregate': true;
+      'stddevSample:attribute:aggregate': true;
+      'stddevPopulation:attribute:aggregate': true;
+      'varianceSample:attribute:aggregate': true;
+      'variancePopulation:attribute:aggregate': true;
     }
   }
 }
 
-// @ts-ignore
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 const isSuitableSource = (
   build: GraphileBuild.Build,
@@ -64,17 +63,17 @@ const isSuitableSource = (
   if (resource.parameters || !resource.codec.attributes) {
     return false;
   }
-  if (!build.behavior.pgResourceMatches(resource, "select")) {
+  if (!build.behavior.pgResourceMatches(resource, 'select')) {
     return false;
   }
 
-  return !!build.behavior.pgResourceMatches(resource, "resource:aggregates");
+  return !!build.behavior.pgResourceMatches(resource, 'resource:aggregates');
 };
 
 const pgAggregatesPlanKeys = EXPORTABLE(
   () =>
     (
-      lambda: GraphileBuild.Build["grafast"]["lambda"],
+      lambda: GraphileBuild.Build['grafast']['lambda'],
       $pgSelectSingle: PgSelectSingleStep<any>
     ) => {
       const $pgSelect = $pgSelectSingle.getClassStep();
@@ -91,7 +90,7 @@ const pgAggregatesPlanKeys = EXPORTABLE(
       );
     },
   [],
-  "pgAggregatesPlanKeys"
+  'pgAggregatesPlanKeys'
 );
 
 const pgAggregatesPlanAggregates = EXPORTABLE(
@@ -100,7 +99,7 @@ const pgAggregatesPlanAggregates = EXPORTABLE(
       return $pgSelectSingle;
     },
   [],
-  "pgAggregatesPlanAggregates"
+  'pgAggregatesPlanAggregates'
 );
 
 const pgAggregatesPlanAggregateAttribute = EXPORTABLE(
@@ -110,7 +109,7 @@ const pgAggregatesPlanAggregateAttribute = EXPORTABLE(
       attributeName: string,
       codec: PgCodec,
       spec: AggregateSpec,
-      sql: GraphileBuild.Build["sql"],
+      sql: GraphileBuild.Build['sql'],
       $pgSelectSingle: PgSelectSingleStep
     ) => {
       // Note this expression is just an sql fragment, so you
@@ -123,7 +122,7 @@ const pgAggregatesPlanAggregateAttribute = EXPORTABLE(
       return $pgSelectSingle.select(sqlAggregate, codec);
     },
   [],
-  "pgAggregatesPlanAggregateAttribute"
+  'pgAggregatesPlanAggregateAttribute'
 );
 
 const pgAggregatesPlanComputedColumnAggregates = EXPORTABLE(
@@ -132,9 +131,9 @@ const pgAggregatesPlanComputedColumnAggregates = EXPORTABLE(
       codec: PgCodec,
       computedAttributeResource: PgResource,
       makeArgs: ReturnType<
-        GraphileBuild.Build["pgGetArgDetailsFromParameters"]
-      >["makeArgs"],
-      pgFromExpression: GraphileBuild.Build["dataplanPg"]["pgFromExpression"],
+        GraphileBuild.Build['pgGetArgDetailsFromParameters']
+      >['makeArgs'],
+      pgFromExpression: GraphileBuild.Build['dataplanPg']['pgFromExpression'],
       spec: AggregateSpec,
       targetCodec: PgCodec,
       $pgSelectSingle: PgSelectSingleStep<any>,
@@ -151,9 +150,9 @@ const pgAggregatesPlanComputedColumnAggregates = EXPORTABLE(
         [
           {
             placeholder: $pgSelectSingle.getClassStep().alias,
-            position: 0,
+            position: 0
           },
-          ...makeArgs(fieldArgs),
+          ...makeArgs(fieldArgs)
         ]
       );
 
@@ -161,17 +160,17 @@ const pgAggregatesPlanComputedColumnAggregates = EXPORTABLE(
       return $pgSelectSingle.select(sqlAggregate, targetCodec);
     },
   [],
-  "pgAggregatesPlanComputedColumnAggregates"
+  'pgAggregatesPlanComputedColumnAggregates'
 );
 
 const Plugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesAddAggregateTypesPlugin",
+  name: 'PgAggregatesAddAggregateTypesPlugin',
   description: `\
 Creates the FooAggregates type for each suitable resource, creates the 'sum' \
 and similar fields on this type, and the entries within these types for \
 attributes and computed columns.`,
   version,
-  provides: ["aggregates"],
+  provides: ['aggregates'],
 
   // Create the aggregates type for each table
   schema: {
@@ -179,22 +178,22 @@ attributes and computed columns.`,
       add: {
         aggregates: {
           description:
-            "For collection resources (e.g. returning a setof records)",
-          entities: ["pgResource"],
+            'For collection resources (e.g. returning a setof records)',
+          entities: ['pgResource']
         },
         aggregate: {
           description:
-            "for computed column resources (e.g. returning a scalar)",
-          entities: ["pgResource"],
-        },
-      },
+            'for computed column resources (e.g. returning a scalar)',
+          entities: ['pgResource']
+        }
+      }
     },
 
     entityBehavior: {
       // `aggregates` - for collection resources (e.g. returning a setof records)
       // `aggregate` - for computed column resources (e.g. returning a scalar)
-      pgResource: ["select", "aggregates", "aggregate"],
-      pgCodecAttribute: "aggregate",
+      pgResource: ['select', 'aggregates', 'aggregate'],
+      pgCodecAttribute: 'aggregate'
     },
 
     hooks: {
@@ -205,9 +204,9 @@ attributes and computed columns.`,
           dataplanPg: { assertPgClassSingleStep },
           inflection,
           input: {
-            pgRegistry: { pgResources },
+            pgRegistry: { pgResources }
           },
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
 
         // TODO: should we be using the codec rather than the source here? What if two sources share the same codec?
@@ -221,7 +220,7 @@ attributes and computed columns.`,
             inflection.aggregateContainerType({ resource: resource }),
             {
               isPgAggregateContainerType: true,
-              pgTypeResource: resource,
+              pgTypeResource: resource
             },
             () => ({
               assertStep: assertPgClassSingleStep,
@@ -234,9 +233,9 @@ attributes and computed columns.`,
                         return pgAggregatesPlanKeys(lambda, $pgSelectSingle);
                       },
                     [lambda, pgAggregatesPlanKeys]
-                  ),
-                },
-              },
+                  )
+                }
+              }
             }),
             `@graphile/pg-aggregates aggregate container type for ${resource.name}`
           );
@@ -244,7 +243,7 @@ attributes and computed columns.`,
           for (const aggregateSpec of build.pgAggregateSpecs) {
             const aggregateTypeName = inflection.aggregateType({
               resource: resource,
-              aggregateSpec,
+              aggregateSpec
             });
             if (
               !build.behavior.pgResourceMatches(
@@ -259,7 +258,7 @@ attributes and computed columns.`,
               {
                 isPgAggregateType: true,
                 pgAggregateSpec: aggregateSpec,
-                pgTypeResource: resource,
+                pgTypeResource: resource
               },
               () => ({}),
               `${aggregateTypeName} aggregate type for '${resource.name}' source`
@@ -277,7 +276,7 @@ attributes and computed columns.`,
           sql,
           graphql: { GraphQLNonNull, isOutputType },
           dataplanPg: { pgFromExpression },
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
         const {
           fieldWithHooks,
@@ -286,8 +285,8 @@ attributes and computed columns.`,
             isPgAggregateContainerType,
             isPgAggregateType,
             pgTypeResource: resource,
-            pgAggregateSpec: spec,
-          },
+            pgAggregateSpec: spec
+          }
         } = context;
         if (!resource || !isSuitableSource(build, resource)) {
           return fields;
@@ -309,7 +308,7 @@ attributes and computed columns.`,
                 }
                 const aggregateTypeName = inflection.aggregateType({
                   resource: resource,
-                  aggregateSpec,
+                  aggregateSpec
                 });
                 const AggregateType = build.getTypeByName(aggregateTypeName);
                 if (!AggregateType || !isOutputType(AggregateType)) {
@@ -324,20 +323,20 @@ attributes and computed columns.`,
                         fieldName,
                         isPgAggregateField: true,
                         pgAggregateSpec: aggregateSpec,
-                        pgFieldResource: resource,
+                        pgFieldResource: resource
                       },
                       () => ({
                         description: `${aggregateSpec.HumanLabel} aggregates across the matching connection (ignoring before/after/first/last/offset)`,
                         type: AggregateType,
-                        plan: pgAggregatesPlanAggregates,
+                        plan: pgAggregatesPlanAggregates
                       })
-                    ),
+                    )
                   },
                   `Adding aggregates field to ${Self.name}`
                 );
               });
             }, Object.create(null) as GraphQLFieldConfigMap<unknown, unknown>),
-            "Adding sum operation to aggregate type"
+            'Adding sum operation to aggregate type'
           );
         }
 
@@ -363,9 +362,9 @@ attributes and computed columns.`,
               if (
                 (spec.shouldApplyToEntity &&
                   !spec.shouldApplyToEntity({
-                    type: "attribute",
+                    type: 'attribute',
                     codec: resource.codec,
-                    attributeName,
+                    attributeName
                   })) ||
                 !spec.isSuitableType(attribute.codec)
               ) {
@@ -376,14 +375,14 @@ attributes and computed columns.`,
                 : attribute.codec;
               const Type = build.getGraphQLTypeByPgCodec(
                 codec,
-                "output"
+                'output'
               ) as GraphQLOutputType | null;
               if (!Type) {
                 return memo;
               }
               const fieldName = inflection.attribute({
                 attributeName,
-                codec: resource.codec,
+                codec: resource.codec
               });
               return build.extend(
                 memo,
@@ -392,7 +391,7 @@ attributes and computed columns.`,
                     {
                       fieldName,
                       // In case anyone wants to hook us, describe ourselves
-                      isPgConnectionAggregateField: true,
+                      isPgConnectionAggregateField: true
                       //pgFieldIntrospection: attr,
                       //TODO: add more details here
                     },
@@ -426,17 +425,17 @@ attributes and computed columns.`,
                             codec,
                             pgAggregatesPlanAggregateAttribute,
                             spec,
-                            sql,
+                            sql
                           ]
-                        ),
+                        )
                       };
                     }
-                  ),
+                  )
                 },
                 `Add attribute '${attributeName}' compatible with this aggregate`
               );
             }, Object.create(null) as GraphQLFieldConfigMap<any, any>),
-            "Add attributes compatible with this aggregate"
+            'Add attributes compatible with this aggregate'
           );
 
           const computedAttributeSources = getComputedAttributeResources(
@@ -459,8 +458,8 @@ attributes and computed columns.`,
                 if (
                   (spec.shouldApplyToEntity &&
                     !spec.shouldApplyToEntity({
-                      type: "computedAttribute",
-                      resource: computedAttributeResource,
+                      type: 'computedAttribute',
+                      resource: computedAttributeResource
                     })) ||
                   !spec.isSuitableType(codec)
                 ) {
@@ -473,12 +472,12 @@ attributes and computed columns.`,
                     any,
                     readonly PgResourceParameter[],
                     any
-                  >,
+                  >
                 });
                 const targetCodec = spec.pgTypeCodecModifier?.(codec) ?? codec;
                 const targetType = build.getGraphQLTypeByPgCodec(
                   targetCodec,
-                  "output"
+                  'output'
                 ) as GraphQLOutputType | undefined;
                 if (!targetType) {
                   return memo;
@@ -489,7 +488,7 @@ attributes and computed columns.`,
                   {
                     [fieldName]: fieldWithHooks(
                       {
-                        fieldName,
+                        fieldName
                       },
                       () => {
                         const { makeFieldArgs, makeArgs } =
@@ -506,7 +505,7 @@ attributes and computed columns.`,
                           } of this field across the matching connection.${
                             computedAttributeResource.description
                               ? `\n\n---\n\n${computedAttributeResource.description}`
-                              : ""
+                              : ''
                           }`,
                           args: makeFieldArgs(),
                           plan: EXPORTABLE(
@@ -541,26 +540,26 @@ attributes and computed columns.`,
                               pgAggregatesPlanComputedColumnAggregates,
                               pgFromExpression,
                               spec,
-                              targetCodec,
+                              targetCodec
                             ]
-                          ),
+                          )
                         };
                       }
-                    ),
+                    )
                   },
-                  ""
+                  ''
                 );
               },
               Object.create(null) as GraphQLFieldConfigMap<any, any>
             ),
-            ""
+            ''
           );
         }
 
         return fields;
-      },
-    },
-  },
+      }
+    }
+  }
 };
 
 export { Plugin as PgAggregatesAddAggregateTypesPlugin };

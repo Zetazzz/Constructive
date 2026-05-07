@@ -2,19 +2,19 @@ import type {
   PgCodecRelation,
   PgCodecWithAttributes,
   PgRegistry,
-  PgResource,
-} from "@dataplan/pg";
-import type {} from "graphile-build";
-import type {} from "graphile-build-pg";
-import type {} from "graphile-config";
+  PgResource
+} from '@dataplan/pg';
+import type {} from 'graphile-build';
+import type {} from 'graphile-build-pg';
+import type {} from 'graphile-config';
 
 import type {
   AggregateGroupBySpec,
   AggregateSpec,
-  CORE_HAVING_FILTER_SPECS,
-} from "./interfaces.js";
+  CORE_HAVING_FILTER_SPECS
+} from './interfaces';
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 declare global {
   namespace GraphileBuild {
@@ -126,10 +126,10 @@ declare global {
 }
 
 export const PgAggregatesInflectorsPlugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesInflectorsPlugin",
-  description: "Adds the inflectors used by the pg-aggregates preset.",
+  name: 'PgAggregatesInflectorsPlugin',
+  description: 'Adds the inflectors used by the pg-aggregates preset.',
   version,
-  provides: ["aggregates"],
+  provides: ['aggregates'],
 
   inflection: {
     add: {
@@ -146,10 +146,10 @@ export const PgAggregatesInflectorsPlugin: GraphileConfig.Plugin = {
         );
       },
       aggregatesContainerField(_preset, _details) {
-        return "aggregates";
+        return 'aggregates';
       },
       groupedAggregatesContainerField(_preset, _details) {
-        return "groupedAggregates";
+        return 'groupedAggregates';
       },
       aggregatesField(_preset, details) {
         return details.aggregateSpec.id;
@@ -163,7 +163,7 @@ export const PgAggregatesInflectorsPlugin: GraphileConfig.Plugin = {
         return this.constantCase(
           `${this._attributeName({
             attributeName: details.attributeName,
-            codec: details.resource.codec,
+            codec: details.resource.codec
           })}`
         );
       },
@@ -197,7 +197,7 @@ export const PgAggregatesInflectorsPlugin: GraphileConfig.Plugin = {
         return this.constantCase(
           `${this._attributeName({
             attributeName: details.attributeName,
-            codec: details.resource.codec,
+            codec: details.resource.codec
           })}-${details.aggregateGroupBySpec.id}`
         );
       },
@@ -213,13 +213,13 @@ export const PgAggregatesInflectorsPlugin: GraphileConfig.Plugin = {
         return this.constantCase(
           `${relationName}-${details.aggregateSpec.id}-${this._attributeName({
             codec: relation.remoteResource.codec,
-            attributeName: details.attributeName,
+            attributeName: details.attributeName
           })}`
         );
       },
       aggregateHavingFilterInputType(_preset, spec) {
         return this.upperCamelCase(`having-${spec}-filter`);
-      },
-    },
-  },
+      }
+    }
+  }
 };

@@ -1,9 +1,8 @@
-import type {} from "graphile-config";
+import type {} from 'graphile-config';
 
-import type { PgSmartTagsDict } from "graphile-build-pg/pg-introspection";
 
-// @ts-ignore
-const { version } = require("../package.json");
+
+const version = '1.0.0';
 
 declare global {
   namespace GraphileConfig {
@@ -16,19 +15,19 @@ declare global {
 const EMPTY_OBJECT = Object.freeze({});
 
 export const PgAggregatesSmartTagsPlugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesSmartTagsPlugin",
+  name: 'PgAggregatesSmartTagsPlugin',
   description:
-    "For compatibility with PostGraphile v4 schemas, this plugin attempts to convert `@aggregates` V4 smart tags to V5 behaviors",
+    'For compatibility with PostGraphile v4 schemas, this plugin attempts to convert `@aggregates` V4 smart tags to V5 behaviors',
   version,
   before: [
-    "PgAggregatesAddAggregateTypesPlugin",
-    "PgAggregatesFilterRelationalAggregatesPlugin",
-    "PgAggregatesOrderByAggregatesPlugin",
+    'PgAggregatesAddAggregateTypesPlugin',
+    'PgAggregatesFilterRelationalAggregatesPlugin',
+    'PgAggregatesOrderByAggregatesPlugin'
   ],
-  provides: ["smart-tags"],
+  provides: ['smart-tags'],
 
   gather: {
-    namespace: "pgV4AggregatesSmartTags",
+    namespace: 'pgV4AggregatesSmartTags',
     initialCache() {
       return EMPTY_OBJECT;
     },
@@ -42,36 +41,36 @@ export const PgAggregatesSmartTagsPlugin: GraphileConfig.Plugin = {
         for (const pgClass of event.introspection.classes) {
           processTags(pgClass.getTags());
         }
-      },
-    },
+      }
+    }
   } satisfies GraphileConfig.PluginGatherConfig<
-    "pgV4AggregatesSmartTags",
+    'pgV4AggregatesSmartTags',
     typeof EMPTY_OBJECT,
     typeof EMPTY_OBJECT
-  >,
+  >
 };
 
 function processTags(
   tags: Partial<GraphileBuild.PgSmartTagsDict> | undefined
 ): void {
   switch (tags?.aggregates) {
-    case "on":
-      addBehaviorToTags(
-        tags,
-        "+aggregates +aggregates:filterBy +aggregates:orderBy +aggregate +aggregate:filterBy +aggregate:orderBy"
-      );
-      break;
-    case "off":
-      addBehaviorToTags(
-        tags,
-        "-aggregates -aggregates:filterBy -aggregates:orderBy -aggregate -aggregate:filterBy -aggregate:orderBy"
-      );
-      break;
+  case 'on':
+    addBehaviorToTags(
+      tags,
+      '+aggregates +aggregates:filterBy +aggregates:orderBy +aggregate +aggregate:filterBy +aggregate:orderBy'
+    );
+    break;
+  case 'off':
+    addBehaviorToTags(
+      tags,
+      '-aggregates -aggregates:filterBy -aggregates:orderBy -aggregate -aggregate:filterBy -aggregate:orderBy'
+    );
+    break;
   }
 }
 
 function addBehaviorToTags(
-  tags: Partial<PgSmartTagsDict>,
+  tags: Partial<GraphileBuild.PgSmartTagsDict>,
   behavior: string,
   prepend = false
 ): void {
@@ -81,7 +80,7 @@ function addBehaviorToTags(
     } else {
       tags.behavior = [...tags.behavior, behavior];
     }
-  } else if (typeof tags.behavior === "string") {
+  } else if (typeof tags.behavior === 'string') {
     tags.behavior = prepend
       ? [behavior, tags.behavior]
       : [tags.behavior, behavior];

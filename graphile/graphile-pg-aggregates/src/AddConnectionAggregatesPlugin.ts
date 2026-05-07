@@ -1,27 +1,27 @@
-import type { PgSelectStep } from "graphile-build-pg/@dataplan/pg";
-import type { GraphQLObjectType } from "graphql";
-import type { ConnectionStep } from "postgraphile/grafast";
+import type { PgSelectStep } from '@dataplan/pg';
+import type { ConnectionStep } from 'grafast';
+import type { GraphQLObjectType } from 'graphql';
 
-import { EXPORTABLE } from "./EXPORTABLE.js";
+import { EXPORTABLE } from './EXPORTABLE';
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 const pgAggregatesCloneSubplanWithoutPaginationSingle = EXPORTABLE(
   () =>
     function plan(
       $connection: ConnectionStep<any, any, any, any, any, PgSelectStep>
     ) {
-      return $connection.cloneSubplanWithoutPagination("aggregate").single();
+      return $connection.cloneSubplanWithoutPagination('aggregate').single();
     },
   [],
-  "pgAggregatesCloneSubplanWithoutPaginationSingle"
+  'pgAggregatesCloneSubplanWithoutPaginationSingle'
 );
 
 const Plugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesAddConnectionAggregatesPlugin",
-  description: "Adds the `aggregates` field to connections.",
+  name: 'PgAggregatesAddConnectionAggregatesPlugin',
+  description: 'Adds the `aggregates` field to connections.',
   version,
-  provides: ["aggregates"],
+  provides: ['aggregates'],
 
   schema: {
     hooks: {
@@ -34,8 +34,8 @@ const Plugin: GraphileConfig.Plugin = {
             pgCodec,
             pgTypeResource,
             isConnectionType,
-            isPgConnectionRelated,
-          },
+            isPgConnectionRelated
+          }
         } = context;
 
         const table =
@@ -72,7 +72,7 @@ const Plugin: GraphileConfig.Plugin = {
         }
 
         const fieldName = inflection.aggregatesContainerField({
-          resource: table,
+          resource: table
         });
         return {
           ...fields,
@@ -80,13 +80,13 @@ const Plugin: GraphileConfig.Plugin = {
             return {
               description: `Aggregates across the matching connection (ignoring before/after/first/last/offset)`,
               type: AggregateContainerType,
-              plan: pgAggregatesCloneSubplanWithoutPaginationSingle,
+              plan: pgAggregatesCloneSubplanWithoutPaginationSingle
             };
-          }),
+          })
         };
-      },
-    },
-  },
+      }
+    }
+  }
 };
 
 export { Plugin as PgAggregatesAddConnectionAggregatesPlugin };

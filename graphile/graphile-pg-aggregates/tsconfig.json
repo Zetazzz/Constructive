@@ -1,14 +1,8 @@
 {
-  "extends": "@tsconfig/node20/tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "declaration": true,
-    "allowJs": true,
-    "sourceMap": true,
-    "pretty": true,
-    "importHelpers": true,
-    "noImplicitAny": true,
-    "noUnusedParameters": false,
-    "noUnusedLocals": false,
-    "preserveWatchOutput": true
-  }
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"]
 }

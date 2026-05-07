@@ -9,45 +9,45 @@ import type {
   PgResource,
   PgResourceParameter,
   PgSelectArgumentDigest,
-  sql,
-} from "@dataplan/pg";
+  sql
+} from '@dataplan/pg';
 import type {
   GrafastInputFieldConfigMap,
-  InputObjectFieldApplyResolver,
-} from "grafast";
+  InputObjectFieldApplyResolver
+} from 'grafast';
 import type {
   GraphQLInputObjectType,
   GraphQLInputType,
-  GraphQLNamedType,
-} from "graphql";
+  GraphQLNamedType
+} from 'graphql';
 
-import { EXPORTABLE } from "./EXPORTABLE.js";
-import type { AggregateSpec } from "./interfaces.js";
-import { CORE_HAVING_FILTER_SPECS } from "./interfaces.js";
-import { getComputedAttributeResources } from "./utils.js";
+import { EXPORTABLE } from './EXPORTABLE';
+import type { AggregateSpec } from './interfaces';
+import { CORE_HAVING_FILTER_SPECS } from './interfaces';
+import { getComputedAttributeResources } from './utils';
 
 type SQL = ReturnType<typeof sql>;
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 declare global {
   namespace GraphileBuild {
     interface BehaviorStrings {
-      "resource:groupedAggregates:having": true;
+      'resource:groupedAggregates:having': true;
       having: true;
-      "resource:havingBy": true;
-      "attribute:havingBy": true;
+      'resource:havingBy': true;
+      'attribute:havingBy': true;
       havingBy: true;
 
-      "sum:resource:groupedAggregates:having": true;
-      "distinctCount:resource:groupedAggregates:having": true;
-      "min:resource:groupedAggregates:having": true;
-      "max:resource:groupedAggregates:having": true;
-      "average:resource:groupedAggregates:having": true;
-      "stddevSample:resource:groupedAggregates:having": true;
-      "stddevPopulation:resource:groupedAggregates:having": true;
-      "varianceSample:resource:groupedAggregates:having": true;
-      "variancePopulation:resource:groupedAggregates:having": true;
+      'sum:resource:groupedAggregates:having': true;
+      'distinctCount:resource:groupedAggregates:having': true;
+      'min:resource:groupedAggregates:having': true;
+      'max:resource:groupedAggregates:having': true;
+      'average:resource:groupedAggregates:having': true;
+      'stddevSample:resource:groupedAggregates:having': true;
+      'stddevPopulation:resource:groupedAggregates:having': true;
+      'varianceSample:resource:groupedAggregates:having': true;
+      'variancePopulation:resource:groupedAggregates:having': true;
     }
   }
 }
@@ -58,7 +58,7 @@ const pgAggregatesApplyAnd = EXPORTABLE(
       return $where;
     },
   [],
-  "pgAggregatesApplyAnd"
+  'pgAggregatesApplyAnd'
 );
 
 const pgAggregatesApplyHaving = EXPORTABLE(
@@ -67,17 +67,17 @@ const pgAggregatesApplyHaving = EXPORTABLE(
       return $filter;
     },
   [],
-  "pgAggregatesApplyHaving"
+  'pgAggregatesApplyHaving'
 );
 
 const pgAggregatesApplyAttributeFilter = EXPORTABLE(
   () =>
     (
-      PgBooleanFilter: GraphileBuild.Build["dataplanPg"]["PgBooleanFilter"],
+      PgBooleanFilter: GraphileBuild.Build['dataplanPg']['PgBooleanFilter'],
       aggregateSpec: AggregateSpec,
       attribute: PgCodecAttribute,
       attributeName: string,
-      sql: GraphileBuild.Build["sql"],
+      sql: GraphileBuild.Build['sql'],
       $having: PgConditionLike
     ) => {
       const attributeExpression = sql.fragment`${
@@ -90,26 +90,26 @@ const pgAggregatesApplyAttributeFilter = EXPORTABLE(
       return new PgBooleanFilter($having, aggregateExpression);
     },
   [],
-  "pgAggregatesApplyAttributeFilter"
+  'pgAggregatesApplyAttributeFilter'
 );
 
 const pgAggregatesApplyComputedColumnFilter = EXPORTABLE(
   () =>
     (
-      PgBooleanFilter: GraphileBuild.Build["dataplanPg"]["PgBooleanFilter"],
+      PgBooleanFilter: GraphileBuild.Build['dataplanPg']['PgBooleanFilter'],
       aggregateSpec: AggregateSpec,
       computedAttributeResource: PgResource,
       from: (...args: PgSelectArgumentDigest[]) => SQL,
-      getNullableType: GraphileBuild.Build["graphql"]["getNullableType"],
-      isInputObjectType: GraphileBuild.Build["graphql"]["isInputObjectType"],
+      getNullableType: GraphileBuild.Build['graphql']['getNullableType'],
+      isInputObjectType: GraphileBuild.Build['graphql']['isInputObjectType'],
       makeArgsRuntime: ReturnType<
-        GraphileBuild.Build["pgGetArgDetailsFromParameters"]
-      >["makeArgsRuntime"],
+        GraphileBuild.Build['pgGetArgDetailsFromParameters']
+      >['makeArgsRuntime'],
       parameterAnalysis: ReturnType<
-        GraphileBuild.Build["dataplanPg"]["generatePgParameterAnalysis"]
+        GraphileBuild.Build['dataplanPg']['generatePgParameterAnalysis']
       >,
       parameters: readonly PgResourceParameter[] | undefined,
-      pgFromExpressionRuntime: GraphileBuild.Build["dataplanPg"]["pgFromExpressionRuntime"],
+      pgFromExpressionRuntime: GraphileBuild.Build['dataplanPg']['pgFromExpressionRuntime'],
       $having: PgCondition,
       input: Record<string, unknown> | null,
       { field, schema }: Parameters<InputObjectFieldApplyResolver>[2]
@@ -124,7 +124,7 @@ const pgAggregatesApplyComputedColumnFilter = EXPORTABLE(
       const argsField = fieldType.getFields().args;
       const firstArg = {
         placeholder: $having.alias,
-        position: 0,
+        position: 0
       };
       let src: SQL;
       if (argsField && input.args != null) {
@@ -161,7 +161,7 @@ const pgAggregatesApplyComputedColumnFilter = EXPORTABLE(
       return $filter;
     },
   [],
-  "pgAggregatesApplyComputedColumnFilter"
+  'pgAggregatesApplyComputedColumnFilter'
 );
 
 const pgAggregatesPlanAggregatesField = EXPORTABLE(
@@ -170,21 +170,21 @@ const pgAggregatesPlanAggregatesField = EXPORTABLE(
       return $having;
     },
   [],
-  "pgAggregatesPlanAggregatesField"
+  'pgAggregatesPlanAggregatesField'
 );
 
 const pgAggregatesApplyHavingBinaryOperation = EXPORTABLE(
   () =>
     (
       codec:
-        | GraphileBuild.Build["dataplanPg"]["TYPES"]["int"]
-        | GraphileBuild.Build["dataplanPg"]["TYPES"]["bigint"]
-        | GraphileBuild.Build["dataplanPg"]["TYPES"]["float"]
-        | GraphileBuild.Build["dataplanPg"]["TYPES"]["numeric"]
-        | GraphileBuild.Build["dataplanPg"]["TYPES"]["timestamptz"],
+        | GraphileBuild.Build['dataplanPg']['TYPES']['int']
+        | GraphileBuild.Build['dataplanPg']['TYPES']['bigint']
+        | GraphileBuild.Build['dataplanPg']['TYPES']['float']
+        | GraphileBuild.Build['dataplanPg']['TYPES']['numeric']
+        | GraphileBuild.Build['dataplanPg']['TYPES']['timestamptz'],
       infix: () => SQL,
-      sql: GraphileBuild.Build["sql"],
-      sqlValueWithCodec: GraphileBuild.Build["dataplanPg"]["sqlValueWithCodec"],
+      sql: GraphileBuild.Build['sql'],
+      sqlValueWithCodec: GraphileBuild.Build['dataplanPg']['sqlValueWithCodec'],
       $booleanFilter: PgBooleanFilter,
       input: unknown
     ) => {
@@ -196,18 +196,18 @@ const pgAggregatesApplyHavingBinaryOperation = EXPORTABLE(
       );
     },
   [],
-  "pgAggregatesApplyHavingBinaryOperation"
+  'pgAggregatesApplyHavingBinaryOperation'
 );
 
 const Plugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesAddHavingAggregateTypesPlugin",
+  name: 'PgAggregatesAddHavingAggregateTypesPlugin',
   description: `\
 Creates the types for the 'having' clause in groupedAggregates, the fields \
 below that for each aggregate spec, and adds fields for attributes and computed \
 columns.`,
   version,
-  provides: ["aggregates"],
-  after: ["PgBasicsPlugin"],
+  provides: ['aggregates'],
+  after: ['PgBasicsPlugin'],
 
   schema: {
     behaviorRegistry: {
@@ -215,21 +215,21 @@ columns.`,
         having: {
           description:
             "Should we add a 'having' option to aggregates on this resource?",
-          entities: ["pgResource"],
+          entities: ['pgResource']
         },
         havingBy: {
           description:
             "Should this function-like resource, or attribute, be usable in the 'having' clause when aggregating?",
-          entities: ["pgResource", "pgCodecAttribute"],
-        },
-      },
+          entities: ['pgResource', 'pgCodecAttribute']
+        }
+      }
     },
 
     entityBehavior: {
       // having - for connections' groupedAggregates field
       // havingBy - for computed column functions acting like attributes
-      pgResource: ["order", "having", "havingBy"],
-      pgCodecAttribute: ["havingBy"],
+      pgResource: ['order', 'having', 'havingBy'],
+      pgCodecAttribute: ['havingBy']
     },
 
     hooks: {
@@ -238,55 +238,55 @@ columns.`,
           throw new Error(`PgBasicsPlugin must be loaded first`);
         }
         const {
-          dataplanPg: { TYPES },
+          dataplanPg: { TYPES }
         } = build;
         return build.extend(
           build,
           {
             pgHavingFilterTypeNameForCodec(codec: PgCodec<any, any, any, any>) {
               switch (codec) {
-                case TYPES.int2:
-                case TYPES.int: {
-                  return build.inflection.aggregateHavingFilterInputType("int");
-                }
-                case TYPES.bigint: {
-                  return build.inflection.aggregateHavingFilterInputType(
-                    "bigint"
-                  );
-                }
-                case TYPES.float4:
-                case TYPES.float: {
-                  return build.inflection.aggregateHavingFilterInputType(
-                    "float"
-                  );
-                }
-                case TYPES.money:
-                case TYPES.numeric: {
-                  return build.inflection.aggregateHavingFilterInputType(
-                    "bigfloat"
-                  );
-                }
-                case TYPES.date:
-                case TYPES.timestamp:
-                case TYPES.timestamptz: {
-                  return build.inflection.aggregateHavingFilterInputType(
-                    "datetime"
-                  );
-                }
-                case TYPES.char:
-                case TYPES.text:
-                case TYPES.varchar: {
-                  return build.inflection.aggregateHavingFilterInputType(
-                    "string"
-                  );
-                }
-                default: {
-                  return null;
-                }
+              case TYPES.int2:
+              case TYPES.int: {
+                return build.inflection.aggregateHavingFilterInputType('int');
               }
-            },
+              case TYPES.bigint: {
+                return build.inflection.aggregateHavingFilterInputType(
+                  'bigint'
+                );
+              }
+              case TYPES.float4:
+              case TYPES.float: {
+                return build.inflection.aggregateHavingFilterInputType(
+                  'float'
+                );
+              }
+              case TYPES.money:
+              case TYPES.numeric: {
+                return build.inflection.aggregateHavingFilterInputType(
+                  'bigfloat'
+                );
+              }
+              case TYPES.date:
+              case TYPES.timestamp:
+              case TYPES.timestamptz: {
+                return build.inflection.aggregateHavingFilterInputType(
+                  'datetime'
+                );
+              }
+              case TYPES.char:
+              case TYPES.text:
+              case TYPES.varchar: {
+                return build.inflection.aggregateHavingFilterInputType(
+                  'string'
+                );
+              }
+              default: {
+                return null;
+              }
+              }
+            }
           },
-          "adding pgHavingFilterTypeForTypeAndModifier"
+          'adding pgHavingFilterTypeForTypeAndModifier'
         );
       },
 
@@ -296,7 +296,7 @@ columns.`,
             GraphQLList,
             GraphQLNonNull,
             getNullableType,
-            isInputObjectType,
+            isInputObjectType
           },
           inflection,
           sql,
@@ -304,9 +304,9 @@ columns.`,
             PgOrFilter,
             PgBooleanFilter,
             pgFromExpressionRuntime,
-            generatePgParameterAnalysis,
+            generatePgParameterAnalysis
           },
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
 
         for (const spec of CORE_HAVING_FILTER_SPECS) {
@@ -315,13 +315,13 @@ columns.`,
             name,
             {
               isPgHavingFilterInputType: true,
-              pgHavingFilterSpec: spec,
+              pgHavingFilterSpec: spec
             },
             () => ({
               name,
-              fields: Object.create(null),
+              fields: Object.create(null)
             }),
-            ""
+            ''
           );
         }
 
@@ -335,13 +335,13 @@ columns.`,
           ) {
             continue;
           }
-          if (!build.behavior.pgResourceMatches(resource, "order")) {
+          if (!build.behavior.pgResourceMatches(resource, 'order')) {
             continue;
           }
           if (
             !build.behavior.pgResourceMatches(
               resource,
-              "resource:groupedAggregates:having"
+              'resource:groupedAggregates:having'
             )
           ) {
             continue;
@@ -350,18 +350,18 @@ columns.`,
           const tableTypeName = inflection.tableType(resource.codec);
 
           const tableHavingInputTypeName = inflection.aggregateHavingInputType({
-            resource: resource,
+            resource: resource
           });
           build.registerInputObjectType(
             tableHavingInputTypeName,
             {
               pgTypeResource: resource,
-              isPgAggregateHavingInputType: true,
+              isPgAggregateHavingInputType: true
             },
-            (): Omit<GraphileBuild.GrafastInputObjectTypeConfig, "name"> => ({
+            (): Omit<GraphileBuild.GrafastInputObjectTypeConfig, 'name'> => ({
               description: build.wrapDescription(
                 `Conditions for \`${tableTypeName}\` aggregates.`,
-                "type"
+                'type'
               ),
               fields: (): GrafastInputFieldConfigMap<any> => {
                 return {
@@ -371,7 +371,7 @@ columns.`,
                         build.getInputTypeByName(tableHavingInputTypeName)
                       )
                     ),
-                    apply: pgAggregatesApplyAnd,
+                    apply: pgAggregatesApplyAnd
                     // No need to auto-apply, the having field calls `fieldArgs.apply(...)`
                   },
                   OR: {
@@ -383,11 +383,11 @@ columns.`,
                     apply: EXPORTABLE(
                       (PgOrFilter) => ($where) => new PgOrFilter($where),
                       [PgOrFilter]
-                    ),
+                    )
                     // No need to auto-apply, the having field calls `fieldArgs.apply(...)`
-                  },
+                  }
                 };
-              },
+              }
             }),
             `Adding connection "groupBy" having input type for ${resource.name}.`
           );
@@ -404,7 +404,7 @@ columns.`,
                   {
                     resource: resource,
                     aggregateSpec,
-                    computedAttributeResource: computedAttributeResource,
+                    computedAttributeResource: computedAttributeResource
                   }
                 );
               build.registerInputObjectType(
@@ -422,23 +422,23 @@ columns.`,
                       return argDetails.reduce(
                         (memo, { inputType, graphqlArgName }) => {
                           memo[graphqlArgName] = {
-                            type: inputType,
+                            type: inputType
                             // NO PLAN NEEDED!
                           };
                           return memo;
                         },
                         Object.create(null) as GrafastInputFieldConfigMap<any>
                       );
-                    },
+                    }
                   };
                 },
-                ""
+                ''
               );
               const computedHavingInputName =
                 inflection.aggregateHavingAggregateComputedAttributeInputType({
                   resource: resource,
                   aggregateSpec,
-                  computedAttributeResource: computedAttributeResource,
+                  computedAttributeResource: computedAttributeResource
                 });
               /*const ComputedHavingInput =*/
               build.registerInputObjectType(
@@ -470,31 +470,31 @@ columns.`,
                       return {
                         ...(ArgsType
                           ? {
-                              args: {
-                                type: build.nullableIf(
-                                  !requiresAtLeastOneArg,
-                                  ArgsType
-                                ),
-                                // NO PLAN NEEDED
-                              },
+                            args: {
+                              type: build.nullableIf(
+                                !requiresAtLeastOneArg,
+                                ArgsType
+                              )
+                              // NO PLAN NEEDED
                             }
+                          }
                           : null),
                         filter: {
                           type: new GraphQLNonNull(HavingFilterType),
-                          apply: pgAggregatesApplyHaving,
+                          apply: pgAggregatesApplyHaving
                           // No need to auto-apply, parent calls `fieldArgs.apply($filter, "filter")` below
-                        },
+                        }
                       } as GrafastInputFieldConfigMap<any>;
-                    },
+                    }
                   };
                 },
-                ""
+                ''
               );
             }
 
             const typeName = inflection.aggregateHavingAggregateInputType({
               resource: resource,
-              aggregateSpec,
+              aggregateSpec
             });
             build.registerInputObjectType(
               typeName,
@@ -502,7 +502,7 @@ columns.`,
               () => ({
                 name: typeName,
                 fields: ({
-                  fieldWithHooks,
+                  fieldWithHooks
                 }: GraphileBuild.ContextInputObjectFields) => {
                   let fields = Object.create(
                     null
@@ -518,21 +518,21 @@ columns.`,
                         if (
                           !build.behavior.pgCodecAttributeMatches(
                             [resource.codec, attributeName],
-                            "attribute:havingBy"
+                            'attribute:havingBy'
                           )
                         ) {
                           return newFields;
                         }
                         const fieldName = inflection.attribute({
                           codec: resource.codec as PgCodecWithAttributes,
-                          attributeName: attributeName,
+                          attributeName: attributeName
                         });
                         const havingFilterTypeName =
                           build.pgHavingFilterTypeNameForCodec(attribute.codec);
                         const HavingFilterType = havingFilterTypeName
                           ? (build.getTypeByName(
-                              havingFilterTypeName
-                            ) as GraphQLInputType & GraphQLNamedType)
+                            havingFilterTypeName
+                          ) as GraphQLInputType & GraphQLNamedType)
                           : undefined;
                         if (!HavingFilterType) {
                           return newFields;
@@ -541,13 +541,13 @@ columns.`,
                           type: HavingFilterType,
                           apply: EXPORTABLE(
                             (
-                                PgBooleanFilter,
-                                aggregateSpec,
-                                attribute,
-                                attributeName,
-                                pgAggregatesApplyAttributeFilter,
-                                sql
-                              ) =>
+                              PgBooleanFilter,
+                              aggregateSpec,
+                              attribute,
+                              attributeName,
+                              pgAggregatesApplyAttributeFilter,
+                              sql
+                            ) =>
                               ($having: PgConditionLike) => {
                                 return pgAggregatesApplyAttributeFilter(
                                   PgBooleanFilter,
@@ -564,9 +564,9 @@ columns.`,
                               attribute,
                               attributeName,
                               pgAggregatesApplyAttributeFilter,
-                              sql,
+                              sql
                             ]
-                          ),
+                          )
                         }));
                         return build.extend(
                           newFields,
@@ -576,7 +576,7 @@ columns.`,
                       },
                       Object.create(null) as GrafastInputFieldConfigMap<any>
                     ),
-                    ""
+                    ''
                   );
 
                   fields = build.extend(
@@ -586,7 +586,7 @@ columns.`,
                         if (
                           !build.behavior.pgResourceMatches(
                             computedAttributeResource,
-                            "resource:havingBy"
+                            'resource:havingBy'
                           )
                         ) {
                           return memo;
@@ -595,8 +595,8 @@ columns.`,
                         if (
                           (aggregateSpec.shouldApplyToEntity &&
                             !aggregateSpec.shouldApplyToEntity({
-                              type: "computedAttribute",
-                              resource: computedAttributeResource,
+                              type: 'computedAttribute',
+                              resource: computedAttributeResource
                             })) ||
                           !aggregateSpec.isSuitableType(codec)
                         ) {
@@ -608,7 +608,7 @@ columns.`,
                               resource: resource,
                               aggregateSpec,
                               computedAttributeResource:
-                                computedAttributeResource,
+                                computedAttributeResource
                             }
                           );
                         const havingFilterTypeName =
@@ -629,7 +629,7 @@ columns.`,
                               resource: resource,
                               aggregateSpec,
                               computedAttributeResource:
-                                computedAttributeResource,
+                                computedAttributeResource
                             }
                           );
                         const ComputedHavingInput = build.getTypeByName(
@@ -649,7 +649,7 @@ columns.`,
                             any,
                             PgResourceParameter[],
                             any
-                          >,
+                          >
                         });
                         const { from: rawFrom, parameters } =
                           computedAttributeResource;
@@ -666,7 +666,7 @@ columns.`,
                           `${computedAttributeResource.name}ParameterAnalysis`
                         );
                         const from =
-                          typeof rawFrom === "function"
+                          typeof rawFrom === 'function'
                             ? rawFrom
                             : () => rawFrom;
 
@@ -676,18 +676,18 @@ columns.`,
                             type: ComputedHavingInput,
                             apply: EXPORTABLE(
                               (
-                                  PgBooleanFilter,
-                                  aggregateSpec,
-                                  computedAttributeResource,
-                                  from,
-                                  getNullableType,
-                                  isInputObjectType,
-                                  makeArgsRuntime,
-                                  parameterAnalysis,
-                                  parameters,
-                                  pgAggregatesApplyComputedColumnFilter,
-                                  pgFromExpressionRuntime
-                                ) =>
+                                PgBooleanFilter,
+                                aggregateSpec,
+                                computedAttributeResource,
+                                from,
+                                getNullableType,
+                                isInputObjectType,
+                                makeArgsRuntime,
+                                parameterAnalysis,
+                                parameters,
+                                pgAggregatesApplyComputedColumnFilter,
+                                pgFromExpressionRuntime
+                              ) =>
                                 (
                                   $having: PgCondition,
                                   input: Record<string, unknown> | null,
@@ -720,9 +720,9 @@ columns.`,
                                 parameterAnalysis,
                                 parameters,
                                 pgAggregatesApplyComputedColumnFilter,
-                                pgFromExpressionRuntime,
+                                pgFromExpressionRuntime
                               ]
-                            ),
+                            )
                             // No need to auto-apply, parent does `return $having;`
                           }
                         );
@@ -734,13 +734,13 @@ columns.`,
                       },
                       Object.create(null) as GrafastInputFieldConfigMap<any>
                     ),
-                    ""
+                    ''
                   );
 
                   return fields;
-                },
+                }
               }),
-              ""
+              ''
             );
           }
         }
@@ -753,16 +753,16 @@ columns.`,
           sql,
           inflection,
           dataplanPg: { TYPES, sqlValueWithCodec },
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
         const {
           scope: {
             isPgHavingFilterInputType,
             pgHavingFilterSpec,
             isPgAggregateHavingInputType,
-            pgTypeResource: table,
+            pgTypeResource: table
           },
-          fieldWithHooks,
+          fieldWithHooks
         } = context;
         let fields = inFields;
         fields = (() => {
@@ -788,7 +788,7 @@ columns.`,
                 }
                 const typeName = inflection.aggregateHavingAggregateInputType({
                   resource: table,
-                  aggregateSpec,
+                  aggregateSpec
                 });
                 const SpecInput = build.getTypeByName(typeName) as
                   | GraphQLInputObjectType
@@ -804,12 +804,12 @@ columns.`,
                       { fieldName }, // e.g. 'average' or 'stddevPopulation'
                       {
                         type: SpecInput,
-                        apply: pgAggregatesPlanAggregatesField,
+                        apply: pgAggregatesPlanAggregatesField
                         // No need to auto-apply, `filter` field does `return new PgBooleanFilter($having, aggregateExpression)`
                       }
-                    ),
+                    )
                   },
-                  ""
+                  ''
                 );
               },
               Object.create(null)
@@ -824,19 +824,19 @@ columns.`,
           }
           const rawCodec = (() => {
             switch (pgHavingFilterSpec) {
-              case "int":
-                return TYPES.int;
-              case "bigint":
-                return TYPES.bigint;
-              case "float":
-                return TYPES.float;
-              case "bigfloat":
-                return TYPES.numeric;
-              case "datetime":
-                return TYPES.timestamptz;
-              default: {
-                return null;
-              }
+            case 'int':
+              return TYPES.int;
+            case 'bigint':
+              return TYPES.bigint;
+            case 'float':
+              return TYPES.float;
+            case 'bigfloat':
+              return TYPES.numeric;
+            case 'datetime':
+              return TYPES.timestamptz;
+            default: {
+              return null;
+            }
             }
           })();
 
@@ -846,7 +846,7 @@ columns.`,
           const codec = rawCodec;
           const FieldType = build.getGraphQLTypeByPgCodec(
             codec,
-            "input"
+            'input'
           ) as GraphQLInputType;
           if (FieldType == null) {
             return fields;
@@ -862,12 +862,12 @@ columns.`,
                     type: FieldType,
                     apply: EXPORTABLE(
                       (
-                          codec,
-                          infix,
-                          pgAggregatesApplyHavingBinaryOperation,
-                          sql,
-                          sqlValueWithCodec
-                        ) =>
+                        codec,
+                        infix,
+                        pgAggregatesApplyHavingBinaryOperation,
+                        sql,
+                        sqlValueWithCodec
+                      ) =>
                         ($booleanFilter: PgBooleanFilter, input: unknown) => {
                           return pgAggregatesApplyHavingBinaryOperation(
                             codec,
@@ -883,54 +883,54 @@ columns.`,
                         infix,
                         pgAggregatesApplyHavingBinaryOperation,
                         sql,
-                        sqlValueWithCodec,
+                        sqlValueWithCodec
                       ]
-                    ),
+                    )
                     // No need to auto-apply
                   }
-                ),
+                )
               },
-              ""
+              ''
             );
           }
           switch (pgHavingFilterSpec) {
-            case "int":
-            case "bigint":
-            case "float":
-            case "bigfloat":
-            case "datetime": {
-              addBinaryOp(
-                "equalTo",
-                EXPORTABLE((sql) => () => sql.fragment`=`, [sql])
-              );
-              addBinaryOp(
-                "notEqualTo",
-                EXPORTABLE((sql) => () => sql.fragment`<>`, [sql])
-              );
-              addBinaryOp(
-                "greaterThan",
-                EXPORTABLE((sql) => () => sql.fragment`>`, [sql])
-              );
-              addBinaryOp(
-                "greaterThanOrEqualTo",
-                EXPORTABLE((sql) => () => sql.fragment`>=`, [sql])
-              );
-              addBinaryOp(
-                "lessThan",
-                EXPORTABLE((sql) => () => sql.fragment`<`, [sql])
-              );
-              addBinaryOp(
-                "lessThanOrEqualTo",
-                EXPORTABLE((sql) => () => sql.fragment`<=`, [sql])
-              );
-            }
+          case 'int':
+          case 'bigint':
+          case 'float':
+          case 'bigfloat':
+          case 'datetime': {
+            addBinaryOp(
+              'equalTo',
+              EXPORTABLE((sql) => () => sql.fragment`=`, [sql])
+            );
+            addBinaryOp(
+              'notEqualTo',
+              EXPORTABLE((sql) => () => sql.fragment`<>`, [sql])
+            );
+            addBinaryOp(
+              'greaterThan',
+              EXPORTABLE((sql) => () => sql.fragment`>`, [sql])
+            );
+            addBinaryOp(
+              'greaterThanOrEqualTo',
+              EXPORTABLE((sql) => () => sql.fragment`>=`, [sql])
+            );
+            addBinaryOp(
+              'lessThan',
+              EXPORTABLE((sql) => () => sql.fragment`<`, [sql])
+            );
+            addBinaryOp(
+              'lessThanOrEqualTo',
+              EXPORTABLE((sql) => () => sql.fragment`<=`, [sql])
+            );
+          }
           }
           return fields;
         })();
         return fields;
-      },
-    },
-  },
+      }
+    }
+  }
 };
 
 export { Plugin as PgAggregatesAddHavingAggregateTypesPlugin };

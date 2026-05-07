@@ -51,6 +51,7 @@
     "graphile-build-pg": "5.0.0",
     "graphile-config": "1.0.0",
     "graphile-connection-filter": "workspace:^",
+    "graphile-pg-aggregates": "workspace:^",
     "graphile-ltree": "workspace:^",
     "graphile-postgis": "workspace:^",
     "graphile-presigned-url-plugin": "workspace:^",

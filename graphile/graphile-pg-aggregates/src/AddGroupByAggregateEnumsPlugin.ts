@@ -1,14 +1,14 @@
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 const Plugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesAddGroupByAggregateEnumsPlugin",
-  description: "Creates the enum types used for grouping in groupedAggregates.",
+  name: 'PgAggregatesAddGroupByAggregateEnumsPlugin',
+  description: 'Creates the enum types used for grouping in groupedAggregates.',
   version,
-  provides: ["aggregates"],
+  provides: ['aggregates'],
 
   schema: {
     entityBehavior: {
-      pgResource: ["select", "order", "groupedAggregates"],
+      pgResource: ['select', 'order', 'groupedAggregates']
     },
 
     hooks: {
@@ -26,16 +26,16 @@ const Plugin: GraphileConfig.Plugin = {
           ) {
             continue;
           }
-          if (!build.behavior.pgResourceMatches(resource, "select")) {
+          if (!build.behavior.pgResourceMatches(resource, 'select')) {
             continue;
           }
-          if (!build.behavior.pgResourceMatches(resource, "order")) {
+          if (!build.behavior.pgResourceMatches(resource, 'order')) {
             continue;
           }
           if (
             !build.behavior.pgResourceMatches(
               resource,
-              "resource:groupedAggregates"
+              'resource:groupedAggregates'
             )
           ) {
             continue;
@@ -47,25 +47,25 @@ const Plugin: GraphileConfig.Plugin = {
             inflection.aggregateGroupByType({ resource }),
             {
               pgTypeResource: resource,
-              isPgAggregateGroupEnum: true,
+              isPgAggregateGroupEnum: true
             },
             () => ({
               name: inflection.aggregateGroupByType({ resource }),
               description: build.wrapDescription(
                 `Grouping methods for \`${tableTypeName}\` for usage during aggregation.`,
-                "type"
+                'type'
               ),
               values: {
                 /* no default values, these will be added via hooks */
-              },
+              }
             }),
             `Adding connection "groupBy" enum type for ${resource.name}.`
           );
         }
         return _;
-      },
-    },
-  },
+      }
+    }
+  }
 };
 
 export { Plugin as PgAggregatesAddGroupByAggregateEnumsPlugin };

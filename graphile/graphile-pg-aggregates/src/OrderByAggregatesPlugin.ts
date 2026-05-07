@@ -4,46 +4,46 @@ import type {
   PgCodecWithAttributes,
   PgResource,
   PgSelectQueryBuilder,
-  sql,
-} from "@dataplan/pg";
-import type { GraphQLEnumValueConfigMap } from "graphql";
+  sql
+} from '@dataplan/pg';
+import type { GraphQLEnumValueConfigMap } from 'graphql';
 
-import { EXPORTABLE } from "./EXPORTABLE.js";
-import type { AggregateSpec } from "./interfaces.js";
+import { EXPORTABLE } from './EXPORTABLE';
+import type { AggregateSpec } from './interfaces';
 
 type SQL = ReturnType<typeof sql>;
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 declare global {
   namespace GraphileBuild {
     interface BehaviorStrings {
-      "relatedAggregates:orderBy": true;
-      "resource:relatedAggregates:orderBy": true;
-      "aggregates:orderBy": true;
-      "manyRelation:aggregates:orderBy": true;
-      "aggregate:orderBy": true;
-      "attribute:aggregate:orderBy": true;
+      'relatedAggregates:orderBy': true;
+      'resource:relatedAggregates:orderBy': true;
+      'aggregates:orderBy': true;
+      'manyRelation:aggregates:orderBy': true;
+      'aggregate:orderBy': true;
+      'attribute:aggregate:orderBy': true;
 
-      "sum:manyRelation:aggregates:orderBy": true;
-      "distinctCount:manyRelation:aggregates:orderBy": true;
-      "min:manyRelation:aggregates:orderBy": true;
-      "max:manyRelation:aggregates:orderBy": true;
-      "average:manyRelation:aggregates:orderBy": true;
-      "stddevSample:manyRelation:aggregates:orderBy": true;
-      "stddevPopulation:manyRelation:aggregates:orderBy": true;
-      "varianceSample:manyRelation:aggregates:orderBy": true;
-      "variancePopulation:manyRelation:aggregates:orderBy": true;
+      'sum:manyRelation:aggregates:orderBy': true;
+      'distinctCount:manyRelation:aggregates:orderBy': true;
+      'min:manyRelation:aggregates:orderBy': true;
+      'max:manyRelation:aggregates:orderBy': true;
+      'average:manyRelation:aggregates:orderBy': true;
+      'stddevSample:manyRelation:aggregates:orderBy': true;
+      'stddevPopulation:manyRelation:aggregates:orderBy': true;
+      'varianceSample:manyRelation:aggregates:orderBy': true;
+      'variancePopulation:manyRelation:aggregates:orderBy': true;
 
-      "sum:attribute:aggregate:orderBy": true;
-      "distinctCount:attribute:aggregate:orderBy": true;
-      "min:attribute:aggregate:orderBy": true;
-      "max:attribute:aggregate:orderBy": true;
-      "average:attribute:aggregate:orderBy": true;
-      "stddevSample:attribute:aggregate:orderBy": true;
-      "stddevPopulation:attribute:aggregate:orderBy": true;
-      "varianceSample:attribute:aggregate:orderBy": true;
-      "variancePopulation:attribute:aggregate:orderBy": true;
+      'sum:attribute:aggregate:orderBy': true;
+      'distinctCount:attribute:aggregate:orderBy': true;
+      'min:attribute:aggregate:orderBy': true;
+      'max:attribute:aggregate:orderBy': true;
+      'average:attribute:aggregate:orderBy': true;
+      'stddevSample:attribute:aggregate:orderBy': true;
+      'stddevPopulation:attribute:aggregate:orderBy': true;
+      'varianceSample:attribute:aggregate:orderBy': true;
+      'variancePopulation:attribute:aggregate:orderBy': true;
     }
   }
 }
@@ -51,10 +51,10 @@ declare global {
 const pgAggregatesApplyOrderByTotalCount = EXPORTABLE(
   () =>
     (
-      TYPES: GraphileBuild.Build["dataplanPg"]["TYPES"],
-      direction: "ASC" | "DESC",
+      TYPES: GraphileBuild.Build['dataplanPg']['TYPES'],
+      direction: 'ASC' | 'DESC',
       relation: PgCodecRelation,
-      sql: GraphileBuild.Build["sql"],
+      sql: GraphileBuild.Build['sql'],
       table: PgResource,
       $select: PgSelectQueryBuilder
     ) => {
@@ -69,26 +69,26 @@ const pgAggregatesApplyOrderByTotalCount = EXPORTABLE(
           )} = ${foreignTableAlias}.${sql.identifier(localAttribute)}`
         );
       });
-      if (typeof table.from === "function") {
+      if (typeof table.from === 'function') {
         throw new Error(`Function source unsupported`);
       }
       // TODO: refactor this to use joins instead of subqueries
       const fragment = sql`(${sql.indent`select count(*)
 from ${table.from} ${tableAlias}
 where ${sql.parens(
-        sql.join(
-          conditions.map((c) => sql.parens(c)),
-          " AND "
-        )
-      )}`})`;
+    sql.join(
+      conditions.map((c) => sql.parens(c)),
+      ' AND '
+    )
+  )}`})`;
       $select.orderBy({
         fragment,
         codec: TYPES.bigint,
-        direction,
+        direction
       });
     },
   [],
-  "pgAggregatesApplyOrderByTotalCount"
+  'pgAggregatesApplyOrderByTotalCount'
 );
 
 const pgAggregatesApplyOrderByAttribute = EXPORTABLE(
@@ -97,9 +97,9 @@ const pgAggregatesApplyOrderByAttribute = EXPORTABLE(
       aggregateSpec: AggregateSpec,
       attribute: PgCodecAttribute,
       attributeName: string,
-      direction: "ASC" | "DESC",
+      direction: 'ASC' | 'DESC',
       relation: PgCodecRelation,
-      sql: GraphileBuild.Build["sql"],
+      sql: GraphileBuild.Build['sql'],
       table: PgResource,
       $select: PgSelectQueryBuilder
     ) => {
@@ -114,61 +114,61 @@ const pgAggregatesApplyOrderByAttribute = EXPORTABLE(
           )} = ${foreignTableAlias}.${sql.identifier(localAttribute)}`
         );
       });
-      if (typeof table.from === "function") {
+      if (typeof table.from === 'function') {
         throw new Error(`Function source unsupported`);
       }
       // TODO: refactor this to use joins instead of subqueries
       const fragment = sql`(${sql.indent`
 select ${aggregateSpec.sqlAggregateWrap(
-        sql.fragment`${tableAlias}.${sql.identifier(attributeName)}`,
-        attribute.codec
-      )}
+    sql.fragment`${tableAlias}.${sql.identifier(attributeName)}`,
+    attribute.codec
+  )}
 from ${table.from} ${tableAlias}
 where ${sql.join(
-        conditions.map((c) => sql.parens(c)),
-        " AND "
-      )}`})`;
+    conditions.map((c) => sql.parens(c)),
+    ' AND '
+  )}`})`;
       $select.orderBy({
         fragment,
         codec:
           aggregateSpec.pgTypeCodecModifier?.(attribute.codec) ??
           attribute.codec,
-        direction,
+        direction
       });
     },
   [],
-  "pgAggregatesApplyOrderByAttribute"
+  'pgAggregatesApplyOrderByAttribute'
 );
 
 export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesOrderByAggregatesPlugin",
+  name: 'PgAggregatesOrderByAggregatesPlugin',
   description:
-    "Adds enum values to the OrderBy enum to allow ordering by aggregates on relations.",
+    'Adds enum values to the OrderBy enum to allow ordering by aggregates on relations.',
   version,
-  provides: ["aggregates"],
+  provides: ['aggregates'],
 
   schema: {
     behaviorRegistry: {
       add: {
-        "relatedAggregates:orderBy": {
-          description: "",
-          entities: ["pgResource"],
+        'relatedAggregates:orderBy': {
+          description: '',
+          entities: ['pgResource']
         },
-        "aggregates:orderBy": {
-          description: "",
-          entities: ["pgCodecRelation"],
+        'aggregates:orderBy': {
+          description: '',
+          entities: ['pgCodecRelation']
         },
-        "aggregate:orderBy": {
-          description: "",
-          entities: ["pgCodecAttribute"],
-        },
-      },
+        'aggregate:orderBy': {
+          description: '',
+          entities: ['pgCodecAttribute']
+        }
+      }
     },
 
     entityBehavior: {
-      pgResource: "resource:relatedAggregates:orderBy",
-      pgCodecRelation: ["select", "manyRelation:aggregates:orderBy"],
-      pgCodecAttribute: ["attribute:aggregate:orderBy"],
+      pgResource: 'resource:relatedAggregates:orderBy',
+      pgCodecRelation: ['select', 'manyRelation:aggregates:orderBy'],
+      pgCodecAttribute: ['attribute:aggregate:orderBy']
     },
 
     hooks: {
@@ -178,11 +178,11 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
           sql,
           inflection,
           dataplanPg: { TYPES },
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
         const pgAggregateSpecs: AggregateSpec[] = build.pgAggregateSpecs;
         const {
-          scope: { isPgRowSortEnum, pgTypeResource, pgCodec },
+          scope: { isPgRowSortEnum, pgTypeResource, pgCodec }
         } = context;
 
         const foreignTable =
@@ -202,7 +202,7 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
         if (
           !build.behavior.pgResourceMatches(
             foreignTable,
-            "resource:relatedAggregates:orderBy"
+            'resource:relatedAggregates:orderBy'
           )
         ) {
           return values;
@@ -217,13 +217,13 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
 
         const newValues = referenceeRelations.reduce(
           (memo, [relationName, relation]) => {
-            if (!build.behavior.pgCodecRelationMatches(relation, "select")) {
+            if (!build.behavior.pgCodecRelationMatches(relation, 'select')) {
               return memo;
             }
             if (
               !build.behavior.pgCodecRelationMatches(
                 relation,
-                "manyRelation:aggregates:orderBy"
+                'manyRelation:aggregates:orderBy'
               )
             ) {
               return memo;
@@ -243,10 +243,10 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
               inflection.orderByCountOfManyRelationByKeys({
                 registry: foreignTable.registry,
                 codec: foreignTable.codec,
-                relationName,
+                relationName
               });
 
-            const makeTotalCountApply = (direction: "ASC" | "DESC") => {
+            const makeTotalCountApply = (direction: 'ASC' | 'DESC') => {
               return EXPORTABLE(
                 (
                   TYPES,
@@ -272,7 +272,7 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                   pgAggregatesApplyOrderByTotalCount,
                   relation,
                   sql,
-                  table,
+                  table
                 ]
               );
             };
@@ -283,17 +283,17 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                 [`${totalCountBaseName}_ASC`]: {
                   extensions: {
                     grafast: {
-                      apply: makeTotalCountApply("ASC"),
-                    },
-                  },
+                      apply: makeTotalCountApply('ASC')
+                    }
+                  }
                 },
                 [`${totalCountBaseName}_DESC`]: {
                   extensions: {
                     grafast: {
-                      apply: makeTotalCountApply("DESC"),
-                    },
-                  },
-                },
+                      apply: makeTotalCountApply('DESC')
+                    }
+                  }
+                }
               },
               `Adding orderBy count to '${foreignTable.name}' using relation '${relationName}'`
             );
@@ -322,9 +322,9 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                 if (
                   (aggregateSpec.shouldApplyToEntity &&
                     !aggregateSpec.shouldApplyToEntity({
-                      type: "attribute",
+                      type: 'attribute',
                       codec: table.codec,
-                      attributeName: attributeName,
+                      attributeName: attributeName
                     })) ||
                   !aggregateSpec.isSuitableType(attribute.codec)
                 ) {
@@ -336,10 +336,10 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                     codec: foreignTable.codec,
                     relationName,
                     attributeName: attributeName,
-                    aggregateSpec,
+                    aggregateSpec
                   });
 
-                const makeApply = (direction: "ASC" | "DESC") => {
+                const makeApply = (direction: 'ASC' | 'DESC') => {
                   return EXPORTABLE(
                     (
                       aggregateSpec,
@@ -371,7 +371,7 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                       pgAggregatesApplyOrderByAttribute,
                       relation,
                       sql,
-                      table,
+                      table
                     ]
                   );
                 };
@@ -382,17 +382,17 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
                     [`${baseName}_ASC`]: {
                       extensions: {
                         grafast: {
-                          apply: makeApply("ASC"),
-                        },
-                      },
+                          apply: makeApply('ASC')
+                        }
+                      }
                     },
                     [`${baseName}_DESC`]: {
                       extensions: {
                         grafast: {
-                          apply: makeApply("DESC"),
-                        },
-                      },
-                    },
+                          apply: makeApply('DESC')
+                        }
+                      }
+                    }
                   },
 
                   `Adding orderBy ${aggregateSpec.id} of '${attributeName}' to '${foreignTable.name}' using constraint '${relationName}'`
@@ -410,7 +410,7 @@ export const PgAggregatesOrderByAggregatesPlugin: GraphileConfig.Plugin = {
           newValues,
           `Adding aggregate orders to '${foreignTable.name}'`
         );
-      },
-    },
-  },
+      }
+    }
+  }
 };

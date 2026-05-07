@@ -1,4 +1,4 @@
-import type { PgCodec, PgResource, sql } from "@dataplan/pg";
+import type { PgCodec, PgResource, sql } from '@dataplan/pg';
 type SQL = ReturnType<typeof sql>;
 
 declare global {
@@ -61,7 +61,7 @@ declare global {
 
 export type AggregateTargetEntity =
   | {
-      type: "attribute";
+      type: 'attribute';
       /** table codec - NOT attribute codec! */
       codec: PgCodec<any, any, any, any, any, any, any>;
       /** attribute name available on this codec */
@@ -69,7 +69,7 @@ export type AggregateTargetEntity =
       resource?: never;
     }
   | {
-      type: "computedAttribute";
+      type: 'computedAttribute';
       resource: PgResource<any, any, any, any, any>;
       codec?: never;
       attributeName?: never;
@@ -136,48 +136,48 @@ export interface AggregateSpec {
   isNonNull?: boolean;
 }
 
-export const BIGINT_OID = "20";
-export const INT2_OID = "21";
-export const INT4_OID = "23";
-export const FLOAT4_OID = "700";
-export const FLOAT8_OID = "701";
-export const NUMERIC_OID = "1700";
-export const MONEY_OID = "790";
-export const INTERVAL_OID = "1186";
-export const DATE_OID = "1082";
-export const TIMESTAMP_OID = "1114";
-export const TIMESTAMPTZ_OID = "1184";
-export const TIME_OID = "1083";
-export const TIMETZ_OID = "1266";
-export const JSON_OID = "114";
-export const JSONB_OID = "3802";
-export const UUID_OID = "2950";
-export const BIT_OID = "1560";
-export const VARBIT_OID = "1562";
-export const CHAR_OID = "18";
-export const TEXT_OID = "25";
-export const VARCHAR_OID = "1043";
-export const POINT_OID = "600";
-export const INET_OID = "869";
-export const CIDR_OID = "650";
-export const MAC_ADDR_OID = "829";
-export const MAC_ADDR8_OID = "774";
-export const REG_PROC_OID = "24";
-export const REG_PROCEDURE_OID = "2202";
-export const REG_OPER_OID = "2203";
-export const REG_OPERATOR_OID = "2204";
-export const REG_CLASS_OID = "2205";
-export const REG_OID = "2206";
-export const REG_ROLE_OID = "4096";
-export const REG_NAMESPACE_OID = "4089";
-export const REG_CONFIG_OID = "3734";
-export const REG_DICTIONARY_OID = "3769";
+export const BIGINT_OID = '20';
+export const INT2_OID = '21';
+export const INT4_OID = '23';
+export const FLOAT4_OID = '700';
+export const FLOAT8_OID = '701';
+export const NUMERIC_OID = '1700';
+export const MONEY_OID = '790';
+export const INTERVAL_OID = '1186';
+export const DATE_OID = '1082';
+export const TIMESTAMP_OID = '1114';
+export const TIMESTAMPTZ_OID = '1184';
+export const TIME_OID = '1083';
+export const TIMETZ_OID = '1266';
+export const JSON_OID = '114';
+export const JSONB_OID = '3802';
+export const UUID_OID = '2950';
+export const BIT_OID = '1560';
+export const VARBIT_OID = '1562';
+export const CHAR_OID = '18';
+export const TEXT_OID = '25';
+export const VARCHAR_OID = '1043';
+export const POINT_OID = '600';
+export const INET_OID = '869';
+export const CIDR_OID = '650';
+export const MAC_ADDR_OID = '829';
+export const MAC_ADDR8_OID = '774';
+export const REG_PROC_OID = '24';
+export const REG_PROCEDURE_OID = '2202';
+export const REG_OPER_OID = '2203';
+export const REG_OPERATOR_OID = '2204';
+export const REG_CLASS_OID = '2205';
+export const REG_OID = '2206';
+export const REG_ROLE_OID = '4096';
+export const REG_NAMESPACE_OID = '4089';
+export const REG_CONFIG_OID = '3734';
+export const REG_DICTIONARY_OID = '3769';
 
 export const CORE_HAVING_FILTER_SPECS = [
-  "int",
-  "bigint",
-  "float",
-  "bigfloat",
-  "datetime",
-  "string",
+  'int',
+  'bigint',
+  'float',
+  'bigfloat',
+  'datetime',
+  'string'
 ] as const;

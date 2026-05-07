@@ -1,7 +1,7 @@
-import type { PgCodec } from "@dataplan/pg";
+import type { PgCodec } from '@dataplan/pg';
 
-import { EXPORTABLE } from "./EXPORTABLE.js";
-import type { AggregateGroupBySpec, AggregateSpec } from "./interfaces.js";
+import { EXPORTABLE } from './EXPORTABLE';
+import type { AggregateGroupBySpec, AggregateSpec } from './interfaces';
 import {
   BIGINT_OID,
   FLOAT4_OID,
@@ -10,10 +10,10 @@ import {
   INT4_OID,
   INTERVAL_OID,
   MONEY_OID,
-  NUMERIC_OID,
-} from "./interfaces.js";
+  NUMERIC_OID
+} from './interfaces';
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 const isNumberLike = (codec: PgCodec<any, any, any, any>): boolean =>
   !!codec.extensions?.isNumberLike;
@@ -28,21 +28,21 @@ const isIntervalLikeOrNumberLike = EXPORTABLE(
 );
 
 export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesSpecsPlugin",
+  name: 'PgAggregatesSpecsPlugin',
   description:
-    "Created the default (extensible) aggregate specs and group-by specs used throughout this preset.",
+    'Created the default (extensible) aggregate specs and group-by specs used throughout this preset.',
   version,
-  provides: ["aggregates"],
-  after: ["PgBasicsPlugin"],
+  provides: ['aggregates'],
+  after: ['PgBasicsPlugin'],
 
   gather: {
     hooks: {
       pgCodecs_PgCodec(_info, event) {
         const { pgType, pgCodec } = event;
         const isReg =
-          pgType.getNamespace()?.nspname === "pg_catalog" &&
-          pgType.typname.startsWith("reg");
-        const isCatN = !isReg && pgType.typcategory === "N";
+          pgType.getNamespace()?.nspname === 'pg_catalog' &&
+          pgType.typname.startsWith('reg');
+        const isCatN = !isReg && pgType.typcategory === 'N';
         const isInterval = !isReg && pgType._id === INTERVAL_OID;
         if (isCatN || isInterval) {
           if (!pgCodec.extensions) {
@@ -55,8 +55,8 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
         if (isInterval) {
           pgCodec.extensions!.isIntervalLike = true;
         }
-      },
-    },
+      }
+    }
   },
 
   schema: {
@@ -68,7 +68,7 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
         const {
           sql,
           dataplanPg: { TYPES },
-          EXPORTABLE,
+          EXPORTABLE
         } = build;
 
         /** Maps from the data type of the attribute to the data type of the sum aggregate */
@@ -96,9 +96,9 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
 
         const pgAggregateSpecs: AggregateSpec[] = [
           {
-            id: "sum",
-            humanLabel: "sum",
-            HumanLabel: "Sum",
+            id: 'sum',
+            humanLabel: 'sum',
+            HumanLabel: 'Sum',
             isSuitableType: isIntervalLikeOrNumberLike,
             // I've wrapped it in `coalesce` so that it cannot be null
             sqlAggregateWrap: EXPORTABLE(
@@ -120,15 +120,15 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
                 [FLOAT4_OID]: TYPES.float4, // real -> real
                 [FLOAT8_OID]: TYPES.float, // double precision -> double precision
                 [INTERVAL_OID]: TYPES.interval, // interval -> interval
-                [MONEY_OID]: TYPES.money, // money -> money
+                [MONEY_OID]: TYPES.money // money -> money
               },
               TYPES.numeric /* numeric */
-            ),
+            )
           },
           {
-            id: "distinctCount",
-            humanLabel: "distinct count",
-            HumanLabel: "Distinct count",
+            id: 'distinctCount',
+            humanLabel: 'distinct count',
+            HumanLabel: 'Distinct count',
             isSuitableType: () => true,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`count(distinct ${sqlFrag})`,
@@ -137,32 +137,32 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
             pgTypeCodecModifier: convertWithMapAndFallback(
               {},
               TYPES.bigint /* always use bigint */
-            ),
+            )
           },
           {
-            id: "min",
-            humanLabel: "minimum",
-            HumanLabel: "Minimum",
+            id: 'min',
+            humanLabel: 'minimum',
+            HumanLabel: 'Minimum',
             isSuitableType: isIntervalLikeOrNumberLike,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`min(${sqlFrag})`,
               [sql]
-            ),
+            )
           },
           {
-            id: "max",
-            humanLabel: "maximum",
-            HumanLabel: "Maximum",
+            id: 'max',
+            humanLabel: 'maximum',
+            HumanLabel: 'Maximum',
             isSuitableType: isIntervalLikeOrNumberLike,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`max(${sqlFrag})`,
               [sql]
-            ),
+            )
           },
           {
-            id: "average",
-            humanLabel: "mean average",
-            HumanLabel: "Mean average",
+            id: 'average',
+            humanLabel: 'mean average',
+            HumanLabel: 'Mean average',
             isSuitableType: isIntervalLikeOrNumberLike,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`avg(${sqlFrag})`,
@@ -180,15 +180,15 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
                 [NUMERIC_OID]: TYPES.numeric, // numeric -> numeric
                 [FLOAT4_OID]: TYPES.float, // real -> double precision
                 [FLOAT8_OID]: TYPES.float, // double precision -> double precision
-                [INTERVAL_OID]: TYPES.interval, // interval -> interval
+                [INTERVAL_OID]: TYPES.interval // interval -> interval
               },
               TYPES.numeric /* numeric */
-            ),
+            )
           },
           {
-            id: "stddevSample",
-            humanLabel: "sample standard deviation",
-            HumanLabel: "Sample standard deviation",
+            id: 'stddevSample',
+            humanLabel: 'sample standard deviation',
+            HumanLabel: 'Sample standard deviation',
             isSuitableType: isNumberLike,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`stddev_samp(${sqlFrag})`,
@@ -200,15 +200,15 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
             pgTypeCodecModifier: convertWithMapAndFallback(
               {
                 [FLOAT4_OID]: TYPES.float, // real -> double precision
-                [FLOAT8_OID]: TYPES.float, // double precision -> double precision
+                [FLOAT8_OID]: TYPES.float // double precision -> double precision
               },
               TYPES.numeric /* numeric */
-            ),
+            )
           },
           {
-            id: "stddevPopulation",
-            humanLabel: "population standard deviation",
-            HumanLabel: "Population standard deviation",
+            id: 'stddevPopulation',
+            humanLabel: 'population standard deviation',
+            HumanLabel: 'Population standard deviation',
             isSuitableType: isNumberLike,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`stddev_pop(${sqlFrag})`,
@@ -220,15 +220,15 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
             pgTypeCodecModifier: convertWithMapAndFallback(
               {
                 [FLOAT4_OID]: TYPES.float, // real -> double precision
-                [FLOAT8_OID]: TYPES.float, // double precision -> double precision
+                [FLOAT8_OID]: TYPES.float // double precision -> double precision
               },
               TYPES.numeric /* numeric */
-            ),
+            )
           },
           {
-            id: "varianceSample",
-            humanLabel: "sample variance",
-            HumanLabel: "Sample variance",
+            id: 'varianceSample',
+            humanLabel: 'sample variance',
+            HumanLabel: 'Sample variance',
             isSuitableType: isNumberLike,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`var_samp(${sqlFrag})`,
@@ -240,15 +240,15 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
             pgTypeCodecModifier: convertWithMapAndFallback(
               {
                 [FLOAT4_OID]: TYPES.float, // real -> double precision
-                [FLOAT8_OID]: TYPES.float, // double precision -> double precision
+                [FLOAT8_OID]: TYPES.float // double precision -> double precision
               },
               TYPES.numeric /* numeric */
-            ),
+            )
           },
           {
-            id: "variancePopulation",
-            humanLabel: "population variance",
-            HumanLabel: "Population variance",
+            id: 'variancePopulation',
+            humanLabel: 'population variance',
+            HumanLabel: 'Population variance',
             isSuitableType: isNumberLike,
             sqlAggregateWrap: EXPORTABLE(
               (sql) => (sqlFrag) => sql`var_pop(${sqlFrag})`,
@@ -260,16 +260,16 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
             pgTypeCodecModifier: convertWithMapAndFallback(
               {
                 [FLOAT4_OID]: TYPES.float, // real -> double precision
-                [FLOAT8_OID]: TYPES.float, // double precision -> double precision
+                [FLOAT8_OID]: TYPES.float // double precision -> double precision
               },
               TYPES.numeric /* numeric */
-            ),
-          },
+            )
+          }
         ];
 
         const pgAggregateGroupBySpecs: AggregateGroupBySpec[] = [
           {
-            id: "truncated-to-hour",
+            id: 'truncated-to-hour',
             isSuitableType: EXPORTABLE(
               (TYPES) => (codec) =>
                 codec === TYPES.timestamp || codec === TYPES.timestamptz,
@@ -281,10 +281,10 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
             ),
             sqlWrapCodec(codec) {
               return codec;
-            },
+            }
           },
           {
-            id: "truncated-to-day",
+            id: 'truncated-to-day',
             isSuitableType: EXPORTABLE(
               (TYPES) => (codec) =>
                 codec === TYPES.timestamp || codec === TYPES.timestamptz,
@@ -296,34 +296,34 @@ export const PgAggregatesSpecsPlugin: GraphileConfig.Plugin = {
             ),
             sqlWrapCodec(codec) {
               return codec;
-            },
-          },
+            }
+          }
         ];
 
         return build.extend(
           build,
           {
             pgAggregateSpecs,
-            pgAggregateGroupBySpecs,
+            pgAggregateGroupBySpecs
           },
-          "Adding aggregate specs to build"
+          'Adding aggregate specs to build'
         );
       },
       finalize(schema, build) {
         build.pgAggregateSpecs.forEach((spec) => {
           build.exportNameHint(
             spec,
-            `pgAggregateSpec_${spec.id.replace(/-/g, "_")}`
+            `pgAggregateSpec_${spec.id.replace(/-/g, '_')}`
           );
         });
         build.pgAggregateGroupBySpecs.forEach((spec) => {
           build.exportNameHint(
             spec,
-            `pgAggregateGroupBySpec_${spec.id.replace(/-/g, "_")}`
+            `pgAggregateGroupBySpec_${spec.id.replace(/-/g, '_')}`
           );
         });
         return schema;
-      },
-    },
-  },
+      }
+    }
+  }
 };

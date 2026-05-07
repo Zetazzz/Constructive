@@ -1,14 +1,14 @@
-import type { PgSelectStep } from "@dataplan/pg";
+import type { PgSelectStep } from '@dataplan/pg';
+import type { ConnectionStep, FieldArg } from 'grafast';
 import type {
   GraphQLEnumType,
   GraphQLInputType,
-  GraphQLObjectType,
-} from "graphql";
-import type { ConnectionStep, FieldArg } from "postgraphile/grafast";
+  GraphQLObjectType
+} from 'graphql';
 
-import { EXPORTABLE } from "./EXPORTABLE";
+import { EXPORTABLE } from './EXPORTABLE';
 
-const { version } = require("../package.json");
+const version = '1.0.0';
 
 function isValidEnum(
   build: GraphileBuild.Build,
@@ -33,7 +33,7 @@ function isValidEnum(
 declare global {
   namespace GraphileBuild {
     interface BehaviorStrings {
-      "resource:groupedAggregates": true;
+      'resource:groupedAggregates': true;
       groupedAggregates: true;
     }
   }
@@ -41,10 +41,10 @@ declare global {
 const pgAggregateCloneSubplanWithoutPaginationAsAggregate = EXPORTABLE(
   () =>
     function plan($connection: ConnectionStep<any>) {
-      return $connection.cloneSubplanWithoutPagination("aggregate");
+      return $connection.cloneSubplanWithoutPagination('aggregate');
     },
   [],
-  "pgAggregateCloneSubplanWithoutPaginationAsAggregate"
+  'pgAggregateCloneSubplanWithoutPaginationAsAggregate'
 );
 
 const pgAggregatesApplyGroupedAggregate = EXPORTABLE(
@@ -53,7 +53,7 @@ const pgAggregatesApplyGroupedAggregate = EXPORTABLE(
       return input.apply($pgSelect);
     },
   [],
-  "pgAggregatesApplyGroupedAggregate"
+  'pgAggregatesApplyGroupedAggregate'
 );
 
 const pgAggregatesApplyConditionsToGroupedAggregates = EXPORTABLE(
@@ -68,40 +68,40 @@ const pgAggregatesApplyConditionsToGroupedAggregates = EXPORTABLE(
       );
     },
   [],
-  "pgAggregatesApplyConditionsToGroupedAggregates"
+  'pgAggregatesApplyConditionsToGroupedAggregates'
 );
 
 const Plugin: GraphileConfig.Plugin = {
-  name: "PgAggregatesAddConnectionGroupedAggregatesPlugin",
-  description: "Adds the groupedAggregates field to connections.",
+  name: 'PgAggregatesAddConnectionGroupedAggregatesPlugin',
+  description: 'Adds the groupedAggregates field to connections.',
   version,
-  provides: ["aggregates"],
+  provides: ['aggregates'],
 
   schema: {
     behaviorRegistry: {
       add: {
-        "resource:groupedAggregates": {
-          description: "Should we enable grouped aggregates on this resource?",
-          entities: ["pgResource"],
+        'resource:groupedAggregates': {
+          description: 'Should we enable grouped aggregates on this resource?',
+          entities: ['pgResource']
         },
         groupedAggregates: {
-          description: "Should we enable grouped aggregates on this resource?",
-          entities: ["pgResource"],
-        },
-      },
+          description: 'Should we enable grouped aggregates on this resource?',
+          entities: ['pgResource']
+        }
+      }
     },
     entityBehavior: {
       pgResource: [
-        "resource:groupedAggregates",
-        "resource:groupedAggregates:having",
-      ],
+        'resource:groupedAggregates',
+        'resource:groupedAggregates:having'
+      ]
     },
 
     hooks: {
       GraphQLObjectType_fields(fields, build, context) {
         const {
           graphql: { GraphQLList, GraphQLNonNull },
-          inflection,
+          inflection
         } = build;
         const {
           fieldWithHooks,
@@ -109,8 +109,8 @@ const Plugin: GraphileConfig.Plugin = {
             pgCodec,
             pgTypeResource,
             isConnectionType,
-            isPgConnectionRelated,
-          },
+            isPgConnectionRelated
+          }
         } = context;
 
         const table =
@@ -149,7 +149,7 @@ const Plugin: GraphileConfig.Plugin = {
         }
 
         const fieldName = inflection.groupedAggregatesContainerField({
-          resource: table,
+          resource: table
         });
         const TableGroupByType = build.getTypeByName(
           inflection.aggregateGroupByType({ resource: table })
@@ -175,30 +175,30 @@ const Plugin: GraphileConfig.Plugin = {
                   ),
                   description: build.wrapDescription(
                     `The method to use when grouping \`${tableTypeName}\` for these aggregates.`,
-                    "arg"
+                    'arg'
                   ),
-                  applyPlan: pgAggregatesApplyGroupedAggregate,
+                  applyPlan: pgAggregatesApplyGroupedAggregate
                 },
                 ...(TableHavingInputType
                   ? {
-                      having: {
-                        type: TableHavingInputType,
-                        description: build.wrapDescription(
-                          `Conditions on the grouped aggregates.`,
-                          "arg"
-                        ),
-                        applyPlan:
-                          pgAggregatesApplyConditionsToGroupedAggregates,
-                      },
+                    having: {
+                      type: TableHavingInputType,
+                      description: build.wrapDescription(
+                        `Conditions on the grouped aggregates.`,
+                        'arg'
+                      ),
+                      applyPlan:
+                          pgAggregatesApplyConditionsToGroupedAggregates
                     }
-                  : null),
+                  }
+                  : null)
               },
-              plan: pgAggregateCloneSubplanWithoutPaginationAsAggregate,
+              plan: pgAggregateCloneSubplanWithoutPaginationAsAggregate
             };
-          }),
+          })
         };
-      },
-    },
-  },
+      }
+    }
+  }
 };
 export { Plugin as PgAggregatesAddConnectionGroupedAggregatesPlugin };
