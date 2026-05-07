@@ -1,6 +1,7 @@
 export { DataCompositeField } from './data-composite-field';
 export { DataDirectOwner } from './data-direct-owner';
 export { DataEntityMembership } from './data-entity-membership';
+export { DataFileEmbedding } from './data-file-embedding';
 export { DataFeatureFlag } from './data-feature-flag';
 export { DataForceCurrentUser } from './data-force-current-user';
 export { DataId } from './data-id';
