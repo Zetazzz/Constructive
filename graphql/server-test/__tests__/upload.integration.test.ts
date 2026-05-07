@@ -43,19 +43,21 @@ const seedFiles = [
 
 const REQUEST_UPLOAD_URL = `
   query RequestUploadUrl($key: String!, $contentHash: String!, $contentType: String!, $size: Int!, $filename: String) {
-    bucketByKey(key: $key) {
-      id
-      requestUploadUrl(
-        contentHash: $contentHash
-        contentType: $contentType
-        size: $size
-        filename: $filename
-      ) {
-        uploadUrl
-        fileId
-        key
-        deduplicated
-        expiresAt
+    buckets(condition: { key: $key }) {
+      nodes {
+        id
+        requestUploadUrl(
+          contentHash: $contentHash
+          contentType: $contentType
+          size: $size
+          filename: $filename
+        ) {
+          uploadUrl
+          fileId
+          key
+          deduplicated
+          expiresAt
+        }
       }
     }
   }
@@ -142,7 +144,7 @@ describe('Upload integration (per-table presigned URL flow)', () => {
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const bucket = res.body.data.bucketByKey;
+      const bucket = res.body.data.buckets.nodes[0];
       expect(bucket).toBeTruthy();
       expect(bucket.id).toBeTruthy();
 
@@ -185,7 +187,7 @@ describe('Upload integration (per-table presigned URL flow)', () => {
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const bucket = res.body.data.bucketByKey;
+      const bucket = res.body.data.buckets.nodes[0];
       expect(bucket).toBeTruthy();
 
       const payload = bucket.requestUploadUrl;
@@ -224,7 +226,7 @@ describe('Upload integration (per-table presigned URL flow)', () => {
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const payload = res.body.data.bucketByKey.requestUploadUrl;
+      const payload = res.body.data.buckets.nodes[0].requestUploadUrl;
       expect(payload.deduplicated).toBe(true);
       expect(payload.uploadUrl).toBeNull();
       expect(payload.expiresAt).toBeNull();
