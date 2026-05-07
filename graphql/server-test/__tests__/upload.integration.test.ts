@@ -43,7 +43,7 @@ const seedFiles = [
 
 const REQUEST_UPLOAD_URL = `
   query RequestUploadUrl($key: String!, $contentHash: String!, $contentType: String!, $size: Int!, $filename: String) {
-    buckets(condition: { key: $key }) {
+    buckets(where: { key: { equalTo: $key } }) {
       nodes {
         id
         requestUploadUrl(
