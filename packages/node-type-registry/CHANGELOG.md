@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.26.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.25.0...node-type-registry@0.26.0) (2026-05-07)
+
+### Features
+
+- add AuthzFilePath to node_type_registry ([5e3fd59](https://github.com/constructive-io/constructive/commit/5e3fd599c8e79a244196e6a66f49dbd008f5804e))
+
 # [0.25.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.24.0...node-type-registry@0.25.0) (2026-05-07)
 
 ### Features
