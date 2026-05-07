@@ -7,6 +7,14 @@
  * This plugin:
  * 1. Falls back to registering codecs if PostGraphile's native handling misses them
  * 2. Re-enables ltree columns for select/filterBy (overrides rc.8 HIDE_BY_DEFAULT)
+ * 3. Converts between slash-delimited file paths (external API) and dot-delimited
+ *    ltree (internal storage) at the GraphQL boundary via the codec's fromPg/toPg.
+ *
+ * External API: "/projects/alpha/docs" (slash-delimited file paths)
+ * Internal DB:  "projects.alpha.docs" (ltree native format)
+ *
+ * The conversion happens at the codec level (fromPg/toPg) so it works regardless
+ * of whether PostGraphile registers its own LTree scalar or we register ours.
  *
  * The native scalar name is "LTree" (capital T). All operators and downstream
  * plugins should reference LTREE_SCALAR_NAME for consistency.
@@ -18,10 +26,32 @@ import sql from 'pg-sql2';
 
 export const LTREE_SCALAR_NAME = 'LTree';
 
+/**
+ * Convert a slash-delimited file path to ltree format.
+ * Idempotent on ltree values (no slashes → no change).
+ *
+ * "/projects/alpha/docs" → "projects.alpha.docs"
+ * "projects.alpha.docs"  → "projects.alpha.docs" (no-op)
+ */
+export function slashToLtree(value: string): string {
+  return value.replace(/^\//, '').replace(/\//g, '.');
+}
+
+/**
+ * Convert an ltree value to a slash-delimited file path.
+ *
+ * "projects.alpha.docs" → "/projects/alpha/docs"
+ * ""                     → "/"
+ */
+export function ltreeToSlash(value: string): string {
+  if (value === '') return '/';
+  return '/' + value.replace(/\./g, '/');
+}
+
 export const LtreeCodecPlugin: GraphileConfig.Plugin = {
   name: 'LtreeCodecPlugin',
-  version: '1.0.0',
-  description: 'Ensures ltree/lquery codecs are properly registered and enabled',
+  version: '2.0.0',
+  description: 'Ensures ltree/lquery codecs are registered; converts between file paths and ltree at the GraphQL boundary',
 
   gather: {
     hooks: {
@@ -64,6 +94,36 @@ export const LtreeCodecPlugin: GraphileConfig.Plugin = {
 
   schema: {
     hooks: {
+      /**
+       * Patch the ltree codec's fromPg/toPg to convert between file paths
+       * and ltree. This runs in the `build` hook (before type registration)
+       * so it works regardless of whether PostGraphile registers its own
+       * LTree scalar or we register ours.
+       *
+       * fromPg: "projects.alpha.docs" → "/projects/alpha/docs"
+       * toPg:   "/projects/alpha/docs" → "projects.alpha.docs"
+       */
+      build(build) {
+        for (const codec of Object.values(build.input.pgRegistry.pgCodecs)) {
+          if (codec.name === 'ltree') {
+            const c = codec as any;
+            const origFromPg = c.fromPg;
+            c.fromPg = (value: string) => {
+              const raw = origFromPg ? origFromPg(value) : value;
+              if (raw == null) return raw;
+              return ltreeToSlash(String(raw));
+            };
+            const origToPg = c.toPg;
+            c.toPg = (value: string) => {
+              if (value == null) return origToPg ? origToPg(value) : value;
+              const converted = slashToLtree(String(value));
+              return origToPg ? origToPg(converted) : converted;
+            };
+          }
+        }
+        return build;
+      },
+
       init: {
         before: ['PgCodecs', 'PgConnectionArgFilterPlugin'],
         callback(_, build) {
@@ -77,13 +137,17 @@ export const LtreeCodecPlugin: GraphileConfig.Plugin = {
                   {},
                   () => ({
                     description:
-                      'A PostgreSQL ltree hierarchical label path, represented as a dot-delimited string (e.g. "projects.alpha.docs").',
+                      'A hierarchical file path. Accepts slash-delimited paths (e.g. "/projects/alpha/docs"). ' +
+                      'Stored internally as PostgreSQL ltree.',
                     serialize(value: unknown) {
+                      if (value == null) return null;
                       return String(value);
                     },
                     parseValue(value: unknown) {
-                      if (typeof value === 'string') return value;
-                      throw new Error(`${LTREE_SCALAR_NAME} must be a string`);
+                      if (typeof value !== 'string') {
+                        throw new Error(`${LTREE_SCALAR_NAME} must be a string`);
+                      }
+                      return value;
                     },
                     parseLiteral(lit: any) {
                       if (lit.kind === 'NullValue') return null;

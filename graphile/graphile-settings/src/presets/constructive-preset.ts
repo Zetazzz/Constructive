@@ -1,7 +1,7 @@
 import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
 import type { GraphileConfig } from 'graphile-config';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
-import { createFolderOperatorFactory,createLtreeOperatorFactory, GraphileFolderPreset } from 'graphile-ltree';
+import { createFolderOperatorFactory, GraphileLtreePreset } from 'graphile-ltree';
 import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-postgis';
 import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
 import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearchPreset } from 'graphile-search';
@@ -53,8 +53,8 @@ import { constructiveUploadFieldDefinitions } from '../upload-resolver';
  *   orderBy score — zero config)
  * - pg_trgm fuzzy matching (similarTo/wordSimilarTo on text columns, similarity score fields,
  *   orderBy similarity — zero config, typo-tolerant)
- * - ltree support (auto-detects ltree columns, LTree scalar, folder fields, containment/glob filters)
- * - Folder operators (within, ancestorOf, glob — slash-delimited path interface)
+ * - ltree support (auto-detects ltree columns, LTree scalar with file-path syntax,
+ *   containment/glob filters — within, ancestorOf, glob)
  *
  * RELATION FILTERS:
  * - Enabled via connectionFilterRelations: true
@@ -90,7 +90,7 @@ export const ConstructivePreset: GraphileConfig.Preset = {
     MetaSchemaPreset,
     UnifiedSearchPreset({ fullTextScalarName: 'FullText', tsConfig: 'english' }),
     GraphilePostgisPreset,
-    GraphileFolderPreset,
+    GraphileLtreePreset,
     UploadPreset({
       uploadFieldDefinitions: constructiveUploadFieldDefinitions,
       maxFileSize: 10 * 1024 * 1024 // 10MB
@@ -172,7 +172,6 @@ export const ConstructivePreset: GraphileConfig.Preset = {
       createMatchesOperatorFactory('FullText', 'english'),
       createTrgmOperatorFactories(),
       createPostgisOperatorFactory(),
-      createLtreeOperatorFactory(),
       createFolderOperatorFactory()
     ]
     // NOTE: The UnifiedSearchPreset also registers matches + trgm operator factories.

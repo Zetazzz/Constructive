@@ -1,18 +1,24 @@
 import type { GraphileConfig } from 'graphile-config';
 
-import { createLtreeOperatorFactory } from './plugins/connection-filter-operators';
 import { LtreeExtensionDetectionPlugin } from './plugins/detect-ltree';
-import { LtreeFolderFieldPlugin } from './plugins/folder-field';
 import { createFolderOperatorFactory } from './plugins/folder-filter-operators';
 import { LtreeCodecPlugin } from './plugins/ltree-codec';
 
 /**
  * GraphileLtreePreset
  *
- * Base preset: ltree codec, detection, and raw ltree operators.
+ * Full ltree support with file-path syntax.
  *
- * Operators on LTree fields: isAncestorOf, isDescendantOf, matchesGlob
- * (accept dot-delimited or slash-delimited paths)
+ * - LTree scalar auto-converts between slash-delimited file paths (API) and
+ *   dot-delimited ltree (DB). External API always uses "/projects/alpha/docs".
+ * - Filter operators: within, ancestorOf, glob (all accept slash-delimited paths)
+ *
+ * @example
+ * ```graphql
+ * allFiles(where: { path: { within: "/projects/alpha" } }) {
+ *   nodes { path filename }
+ * }
+ * ```
  */
 export const GraphileLtreePreset: GraphileConfig.Preset = {
   plugins: [
@@ -21,37 +27,15 @@ export const GraphileLtreePreset: GraphileConfig.Preset = {
   ],
   schema: {
     connectionFilterOperatorFactories: [
-      createLtreeOperatorFactory()
-    ]
-  } as GraphileConfig.Preset['schema'] & Record<string, unknown>
-};
-
-/**
- * GraphileFolderPreset
- *
- * Folder-oriented layer on top of the base ltree preset.
- *
- * Adds:
- * - Virtual `{column}Folder` fields with slash-delimited paths
- * - Folder operators: within, ancestorOf, glob (always slash-delimited)
- *
- * @example
- * ```graphql
- * allFiles(where: { path: { within: "/projects/alpha" } }) {
- *   nodes { pathFolder filename }
- * }
- * ```
- */
-export const GraphileFolderPreset: GraphileConfig.Preset = {
-  extends: [GraphileLtreePreset],
-  plugins: [
-    LtreeFolderFieldPlugin
-  ],
-  schema: {
-    connectionFilterOperatorFactories: [
       createFolderOperatorFactory()
     ]
   } as GraphileConfig.Preset['schema'] & Record<string, unknown>
 };
 
-export default GraphileFolderPreset;
+/**
+ * @deprecated Use GraphileLtreePreset instead. The folder field plugin is no
+ * longer needed — the LTree scalar now handles slash↔ltree conversion directly.
+ */
+export const GraphileFolderPreset: GraphileConfig.Preset = GraphileLtreePreset;
+
+export default GraphileLtreePreset;
