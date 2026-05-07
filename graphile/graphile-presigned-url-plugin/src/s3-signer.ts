@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Logger } from '@pgpmjs/logger';
@@ -78,9 +79,28 @@ export async function generatePresignedGetUrl(
 }
 
 /**
- * Check if an object exists in S3 and optionally verify its content-type.
+ * Delete an object from S3.
  *
- * Checks whether an object exists in S3 and retrieves its content-type.
+ * Idempotent — deleting a non-existent key is a no-op (S3 returns 204).
+ *
+ * @param s3Config - S3 client and bucket configuration
+ * @param key - S3 object key to delete
+ */
+export async function deleteS3Object(
+  s3Config: S3Config,
+  key: string,
+): Promise<void> {
+  await s3Config.client.send(
+    new DeleteObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: key,
+    }),
+  );
+  log.debug(`Deleted S3 object: bucket=${s3Config.bucket}, key=${key}`);
+}
+
+/**
+ * Check if an object exists in S3 and optionally verify its content-type.
  *
  * @param s3Config - S3 client and bucket configuration
  * @param key - S3 object key

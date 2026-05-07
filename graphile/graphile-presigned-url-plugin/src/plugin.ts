@@ -1,26 +1,29 @@
 /**
- * Presigned URL Plugin for PostGraphile v5
+ * Per-Table Storage Middleware Plugin for PostGraphile v5
  *
- * Adds presigned URL upload support to PostGraphile v5:
+ * Hooks into PostGraphile's auto-generated CRUD mutations to add S3 operations:
  *
- * 1. `requestUploadUrl` mutation — generates a presigned PUT URL for direct
- *    client-to-S3 upload. Checks bucket access via RLS, deduplicates by
- *    content hash via UNIQUE(bucket_id, key) constraint.
+ * 1. Delete middleware — wraps `delete*` mutations on `@storageFiles`-tagged tables
+ *    with S3 object cleanup (sync + async GC fallback via AFTER DELETE trigger).
  *
- * 2. `downloadUrl` computed field on File types — generates presigned GET URLs
- *    for private files, returns public URL prefix + key for public files.
+ * 2. Upload fields — adds `requestUploadUrl` and `requestBulkUploadUrls` fields
+ *    on `@storageBuckets`-tagged types, so clients upload via the typed bucket API.
  *
- * Uses the extendSchema + grafast plan pattern (same as PublicKeySignature).
+ * 3. downloadUrl — handled by download-url-field.ts (separate plugin).
+ *
+ * No global mutations — all S3 operations are scoped to the per-table types that
+ * PostGraphile already generates. Scope resolution uses the codec's schema/table
+ * name matched against cached storage module configs.
  */
 
 import { context as grafastContext, lambda, object } from 'grafast';
 import type { GraphileConfig } from 'graphile-config';
-import { extendSchema, gql } from 'graphile-utils';
+import 'graphile-build';
 import { Logger } from '@pgpmjs/logger';
 
 import type { PresignedUrlPluginOptions, S3Config, StorageModuleConfig, BucketConfig } from './types';
-import { getStorageModuleConfig, getStorageModuleConfigForOwner, getBucketConfig, isS3BucketProvisioned, markS3BucketProvisioned } from './storage-module-cache';
-import { generatePresignedPutUrl } from './s3-signer';
+import { loadAllStorageModules, resolveStorageConfigFromCodec, isS3BucketProvisioned, markS3BucketProvisioned } from './storage-module-cache';
+import { generatePresignedPutUrl, deleteS3Object } from './s3-signer';
 
 const log = new Logger('graphile-presigned-url:plugin');
 
@@ -28,32 +31,20 @@ const log = new Logger('graphile-presigned-url:plugin');
 
 const MAX_CONTENT_HASH_LENGTH = 128;
 const MAX_CONTENT_TYPE_LENGTH = 255;
-const MAX_BUCKET_KEY_LENGTH = 255;
 const MAX_CUSTOM_KEY_LENGTH = 1024;
 const SHA256_HEX_REGEX = /^[a-f0-9]{64}$/;
 const CUSTOM_KEY_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9_.\-\/]*$/;
 
 // --- Helpers ---
 
-/**
- * Validate a SHA-256 hex string.
- */
 function isValidSha256(hash: string): boolean {
   return SHA256_HEX_REGEX.test(hash);
 }
 
-/**
- * Build the S3 key from content hash.
- * Format: {contentHash} (flat namespace, content-addressed)
- */
 function buildS3Key(contentHash: string): string {
   return contentHash;
 }
 
-/**
- * Validate a custom S3 key.
- * Must be 1-1024 chars, no path traversal, no leading slash, no null bytes.
- */
 function validateCustomKey(key: string): string | null {
   if (key.length === 0 || key.length > MAX_CUSTOM_KEY_LENGTH) {
     return 'INVALID_KEY_LENGTH: must be 1-1024 characters';
@@ -73,11 +64,6 @@ function validateCustomKey(key: string): string | null {
   return null;
 }
 
-/**
- * Derive an ltree path from a custom S3 key's directory portion.
- * e.g., "reports/2024/Q1/revenue.pdf" → "reports.2024.Q1"
- * Returns null if the key has no directory component.
- */
 function derivePathFromKey(key: string): string | null {
   const lastSlash = key.lastIndexOf('/');
   if (lastSlash <= 0) return null;
@@ -85,12 +71,6 @@ function derivePathFromKey(key: string): string | null {
   return dir.replace(/\//g, '.');
 }
 
-/**
- * Resolve the database_id from the JWT context.
- * The server middleware sets jwt.claims.database_id, which is accessible
- * via jwt_private.current_database_id() — a simple function call, no
- * metaschema query needed.
- */
 async function resolveDatabaseId(pgClient: any): Promise<string | null> {
   const result = await pgClient.query({
     text: `SELECT jwt_private.current_database_id() AS id`,
@@ -98,31 +78,15 @@ async function resolveDatabaseId(pgClient: any): Promise<string | null> {
   return result.rows[0]?.id ?? null;
 }
 
-// --- Plugin factory ---
-
-/**
- * Resolve the S3 config from the options. If the option is a lazy getter
- * function, call it (and cache the result). This avoids reading env vars
- * or constructing an S3Client at module-import time.
- */
 function resolveS3(options: PresignedUrlPluginOptions): S3Config {
   if (typeof options.s3 === 'function') {
     const resolved = options.s3();
-    // Cache so subsequent calls don't re-evaluate
     options.s3 = resolved;
     return resolved;
   }
   return options.s3;
 }
 
-/**
- * Build a per-database S3Config by overlaying storage_module overrides
- * onto the global S3Config.
- *
- * - Bucket name: from resolveBucketName(databaseId) if provided, else global
- * - publicUrlPrefix: from storageConfig.publicUrlPrefix if set, else global
- * - S3 client (credentials, endpoint): always global (shared IAM key)
- */
 function resolveS3ForDatabase(
   options: PresignedUrlPluginOptions,
   storageConfig: StorageModuleConfig,
@@ -145,16 +109,6 @@ function resolveS3ForDatabase(
   };
 }
 
-/**
- * Ensure the S3 bucket for a database exists, provisioning it lazily if needed.
- *
- * Checks an in-memory Set of known-provisioned bucket names. On the first
- * request for an unseen bucket, calls the `ensureBucketProvisioned` callback
- * (which creates the bucket with correct CORS, policies, etc.), then marks
- * it as provisioned so subsequent requests skip the check entirely.
- *
- * If no `ensureBucketProvisioned` callback is configured, this is a no-op.
- */
 async function ensureS3BucketExists(
   options: PresignedUrlPluginOptions,
   s3BucketName: string,
@@ -171,288 +125,414 @@ async function ensureS3BucketExists(
   log.info(`Lazy-provisioned S3 bucket "${s3BucketName}" successfully`);
 }
 
+// --- Plugin factory ---
+
 export function createPresignedUrlPlugin(
   options: PresignedUrlPluginOptions,
 ): GraphileConfig.Plugin {
 
-  return extendSchema(() => ({
-    typeDefs: gql`
-      input RequestUploadUrlInput {
-        """Bucket key (e.g., "public", "private")"""
-        bucketKey: String!
-        """
-        Owner entity ID for entity-scoped uploads.
-        Omit for app-level (database-wide) storage.
-        When provided, resolves the storage module for the entity type
-        that owns this entity instance (e.g., a data room ID, team ID).
-        """
-        ownerId: UUID
-        """SHA-256 content hash computed by the client (hex-encoded, 64 chars)"""
-        contentHash: String!
-        """MIME type of the file (e.g., "image/png")"""
-        contentType: String!
-        """File size in bytes"""
-        size: Int!
-        """Original filename (optional, for display and Content-Disposition)"""
-        filename: String
-        """
-        Custom S3 key (e.g., "reports/2024/Q1.pdf").
-        Only allowed when the bucket has allow_custom_keys=true.
-        When omitted, key defaults to contentHash (content-addressed dedup).
-        When provided, the file is stored at this key.
-        Re-uploading to an existing key auto-creates a new version.
-        """
-        key: String
-      }
+  return {
+    name: 'PresignedUrlPlugin',
+    version: '1.0.0',
+    description: 'Per-table S3 storage middleware: upload fields on @storageBuckets, delete middleware on @storageFiles',
 
-      type RequestUploadUrlPayload {
-        """Presigned PUT URL (null if file was deduplicated)"""
-        uploadUrl: String
-        """The file ID (existing if deduplicated, new if fresh upload)"""
-        fileId: UUID!
-        """The S3 object key"""
-        key: String!
-        """Whether this file was deduplicated (already exists with same hash)"""
-        deduplicated: Boolean!
-        """Presigned URL expiry time (null if deduplicated)"""
-        expiresAt: Datetime
-        """ID of the previous version (set when re-uploading to an existing custom key)"""
-        previousVersionId: UUID
-      }
+    after: ['PgAttributesPlugin', 'PgMutationCreatePlugin', 'PgMutationUpdateDeletePlugin'],
 
-      input BulkUploadFileInput {
-        """SHA-256 content hash computed by the client (hex-encoded, 64 chars)"""
-        contentHash: String!
-        """MIME type of the file (e.g., "image/png")"""
-        contentType: String!
-        """File size in bytes"""
-        size: Int!
-        """Original filename (optional, for display and Content-Disposition)"""
-        filename: String
-        """Custom S3 key (only when bucket has allow_custom_keys=true)"""
-        key: String
-      }
+    schema: {
+      hooks: {
+        /**
+         * Add requestUploadUrl and requestBulkUploadUrls fields on @storageBuckets types.
+         */
+        GraphQLObjectType_fields(fields, build, context) {
+          const {
+            scope: { pgCodec, isPgClassType },
+          } = context as any;
 
-      input RequestBulkUploadUrlsInput {
-        """Bucket key (e.g., "public", "private")"""
-        bucketKey: String!
-        """Owner entity ID for entity-scoped uploads"""
-        ownerId: UUID
-        """Array of files to upload"""
-        files: [BulkUploadFileInput!]!
-      }
+          if (!isPgClassType || !pgCodec || !pgCodec.attributes) {
+            return fields;
+          }
 
-      type BulkUploadFilePayload {
-        """Presigned PUT URL (null if file was deduplicated)"""
-        uploadUrl: String
-        """The file ID"""
-        fileId: UUID!
-        """The S3 object key"""
-        key: String!
-        """Whether this file was deduplicated"""
-        deduplicated: Boolean!
-        """Presigned URL expiry time (null if deduplicated)"""
-        expiresAt: Datetime
-        """ID of the previous version (set when re-uploading to an existing custom key)"""
-        previousVersionId: UUID
-        """Index of this file in the input array (for client correlation)"""
-        index: Int!
-      }
+          const tags = (pgCodec.extensions as any)?.tags;
+          if (!tags?.storageBuckets) {
+            return fields;
+          }
 
-      type RequestBulkUploadUrlsPayload {
-        """Array of results, one per input file"""
-        files: [BulkUploadFilePayload!]!
-      }
+          log.debug(`Adding upload fields to bucket type: ${pgCodec.name} (has @storageBuckets tag)`);
 
-      extend type Mutation {
-        """
-        Request a presigned URL for uploading a file directly to S3.
-        Client computes SHA-256 of the file content and provides it here.
-        If a file with the same hash already exists (dedup), returns the
-        existing file ID and deduplicated=true with no uploadUrl.
-        """
-        requestUploadUrl(
-          input: RequestUploadUrlInput!
-        ): RequestUploadUrlPayload
+          const {
+            graphql: {
+              GraphQLString,
+              GraphQLNonNull,
+              GraphQLInt,
+              GraphQLBoolean,
+              GraphQLObjectType,
+              GraphQLList,
+              GraphQLInputObjectType,
+            },
+          } = build;
 
-        """
-        Request presigned URLs for uploading multiple files in a single batch.
-        Subject to per-storage-module limits (max_bulk_files, max_bulk_total_size).
-        Each file is processed independently — some may dedup while others get fresh URLs.
-        """
-        requestBulkUploadUrls(
-          input: RequestBulkUploadUrlsInput!
-        ): RequestBulkUploadUrlsPayload
-      }
-    `,
-    plans: {
-      Mutation: {
-        requestUploadUrl(_$mutation: any, fieldArgs: any) {
-          const $input = fieldArgs.getRaw('input');
-          const $withPgClient = (grafastContext() as any).get('withPgClient');
-          const $pgSettings = (grafastContext() as any).get('pgSettings');
-          const $combined = object({
-            input: $input,
-            withPgClient: $withPgClient,
-            pgSettings: $pgSettings,
+          // --- Shared output types ---
+
+          const UploadUrlPayloadType = new GraphQLObjectType({
+            name: `${build.inflection.upperCamelCase(pgCodec.name)}RequestUploadUrlPayload`,
+            fields: {
+              uploadUrl: { type: GraphQLString, description: 'Presigned PUT URL (null if deduplicated)' },
+              fileId: { type: new GraphQLNonNull(GraphQLString), description: 'The file ID' },
+              key: { type: new GraphQLNonNull(GraphQLString), description: 'The S3 object key' },
+              deduplicated: { type: new GraphQLNonNull(GraphQLBoolean), description: 'Whether this file was deduplicated' },
+              expiresAt: { type: GraphQLString, description: 'Presigned URL expiry time (null if deduplicated)' },
+              previousVersionId: { type: GraphQLString, description: 'ID of the previous version' },
+            },
           });
 
-          return lambda($combined, async ({ input, withPgClient, pgSettings }: any) => {
-            const result = await processUpload(options, input, withPgClient, pgSettings);
-            return result;
+          const BulkUploadFilePayloadType = new GraphQLObjectType({
+            name: `${build.inflection.upperCamelCase(pgCodec.name)}BulkUploadFilePayload`,
+            fields: {
+              uploadUrl: { type: GraphQLString },
+              fileId: { type: new GraphQLNonNull(GraphQLString) },
+              key: { type: new GraphQLNonNull(GraphQLString) },
+              deduplicated: { type: new GraphQLNonNull(GraphQLBoolean) },
+              expiresAt: { type: GraphQLString },
+              previousVersionId: { type: GraphQLString },
+              index: { type: new GraphQLNonNull(GraphQLInt), description: 'Index in the input array' },
+            },
           });
+
+          const BulkUploadUrlsPayloadType = new GraphQLObjectType({
+            name: `${build.inflection.upperCamelCase(pgCodec.name)}RequestBulkUploadUrlsPayload`,
+            fields: {
+              files: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(BulkUploadFilePayloadType))) },
+            },
+          });
+
+          const BulkUploadFileInputType = new GraphQLInputObjectType({
+            name: `${build.inflection.upperCamelCase(pgCodec.name)}BulkUploadFileInput`,
+            fields: {
+              contentHash: { type: new GraphQLNonNull(GraphQLString) },
+              contentType: { type: new GraphQLNonNull(GraphQLString) },
+              size: { type: new GraphQLNonNull(GraphQLInt) },
+              filename: { type: GraphQLString },
+              key: { type: GraphQLString },
+            },
+          });
+
+          // Capture codec for closure
+          const capturedCodec = pgCodec;
+
+          return build.extend(
+            fields,
+            {
+              requestUploadUrl: context.fieldWithHooks(
+                { fieldName: 'requestUploadUrl' } as any,
+                {
+                  description: 'Request a presigned URL for uploading a file to this bucket.',
+                  type: UploadUrlPayloadType,
+                  args: {
+                    contentHash: { type: new GraphQLNonNull(GraphQLString), description: 'SHA-256 content hash (hex-encoded, 64 chars)' },
+                    contentType: { type: new GraphQLNonNull(GraphQLString), description: 'MIME type of the file' },
+                    size: { type: new GraphQLNonNull(GraphQLInt), description: 'File size in bytes' },
+                    filename: { type: GraphQLString, description: 'Original filename (optional)' },
+                    key: { type: GraphQLString, description: 'Custom S3 key (only when bucket has allow_custom_keys=true)' },
+                  },
+                  plan($parent: any, fieldArgs: any) {
+                    const $bucketId = $parent.get('id');
+                    const $bucketKey = $parent.get('key');
+                    const $bucketType = $parent.get('type');
+                    const $bucketIsPublic = $parent.get('is_public');
+                    const $bucketAllowCustomKeys = $parent.get('allow_custom_keys');
+                    const $bucketAllowedMimeTypes = $parent.get('allowed_mime_types');
+                    const $bucketMaxFileSize = $parent.get('max_file_size');
+                    const $bucketOwnerId = capturedCodec.attributes.owner_id ? $parent.get('owner_id') : lambda(null, (): null => null);
+
+                    const $contentHash = fieldArgs.getRaw('contentHash');
+                    const $contentType = fieldArgs.getRaw('contentType');
+                    const $size = fieldArgs.getRaw('size');
+                    const $filename = fieldArgs.getRaw('filename');
+                    const $customKey = fieldArgs.getRaw('key');
+
+                    const $withPgClient = (grafastContext() as any).get('withPgClient');
+                    const $pgSettings = (grafastContext() as any).get('pgSettings');
+
+                    const $combined = object({
+                      bucketId: $bucketId,
+                      bucketKey: $bucketKey,
+                      bucketType: $bucketType,
+                      bucketIsPublic: $bucketIsPublic,
+                      bucketAllowCustomKeys: $bucketAllowCustomKeys,
+                      bucketAllowedMimeTypes: $bucketAllowedMimeTypes,
+                      bucketMaxFileSize: $bucketMaxFileSize,
+                      bucketOwnerId: $bucketOwnerId,
+                      contentHash: $contentHash,
+                      contentType: $contentType,
+                      size: $size,
+                      filename: $filename,
+                      customKey: $customKey,
+                      withPgClient: $withPgClient,
+                      pgSettings: $pgSettings,
+                    });
+
+                    return lambda($combined, async (vals: any) => {
+                      return vals.withPgClient(vals.pgSettings, async (pgClient: any) => {
+                        return pgClient.withTransaction(async (txClient: any) => {
+                          const databaseId = await resolveDatabaseId(txClient);
+                          if (!databaseId) throw new Error('DATABASE_NOT_FOUND');
+
+                          const allConfigs = await loadAllStorageModules(txClient, databaseId);
+                          const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
+                          if (!storageConfig) throw new Error('STORAGE_MODULE_NOT_FOUND');
+
+                          const bucket: BucketConfig = {
+                            id: vals.bucketId,
+                            key: vals.bucketKey,
+                            type: vals.bucketType,
+                            is_public: vals.bucketIsPublic,
+                            owner_id: vals.bucketOwnerId,
+                            allowed_mime_types: vals.bucketAllowedMimeTypes,
+                            max_file_size: vals.bucketMaxFileSize,
+                            allow_custom_keys: vals.bucketAllowCustomKeys ?? false,
+                          };
+
+                          const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
+                          await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
+
+                          return processSingleFile(
+                            options, txClient, storageConfig, databaseId, bucket, s3ForDb, {
+                              contentHash: vals.contentHash,
+                              contentType: vals.contentType,
+                              size: vals.size,
+                              filename: vals.filename,
+                              key: vals.customKey,
+                            },
+                          );
+                        });
+                      });
+                    });
+                  },
+                },
+              ),
+              requestBulkUploadUrls: context.fieldWithHooks(
+                { fieldName: 'requestBulkUploadUrls' } as any,
+                {
+                  description: 'Request presigned URLs for uploading multiple files to this bucket.',
+                  type: BulkUploadUrlsPayloadType,
+                  args: {
+                    files: {
+                      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(BulkUploadFileInputType))),
+                      description: 'Array of files to upload',
+                    },
+                  },
+                  plan($parent: any, fieldArgs: any) {
+                    const $bucketId = $parent.get('id');
+                    const $bucketKey = $parent.get('key');
+                    const $bucketType = $parent.get('type');
+                    const $bucketIsPublic = $parent.get('is_public');
+                    const $bucketAllowCustomKeys = $parent.get('allow_custom_keys');
+                    const $bucketAllowedMimeTypes = $parent.get('allowed_mime_types');
+                    const $bucketMaxFileSize = $parent.get('max_file_size');
+                    const $bucketOwnerId = capturedCodec.attributes.owner_id ? $parent.get('owner_id') : lambda(null, (): null => null);
+
+                    const $files = fieldArgs.getRaw('files');
+                    const $withPgClient = (grafastContext() as any).get('withPgClient');
+                    const $pgSettings = (grafastContext() as any).get('pgSettings');
+
+                    const $combined = object({
+                      bucketId: $bucketId,
+                      bucketKey: $bucketKey,
+                      bucketType: $bucketType,
+                      bucketIsPublic: $bucketIsPublic,
+                      bucketAllowCustomKeys: $bucketAllowCustomKeys,
+                      bucketAllowedMimeTypes: $bucketAllowedMimeTypes,
+                      bucketMaxFileSize: $bucketMaxFileSize,
+                      bucketOwnerId: $bucketOwnerId,
+                      files: $files,
+                      withPgClient: $withPgClient,
+                      pgSettings: $pgSettings,
+                    });
+
+                    return lambda($combined, async (vals: any) => {
+                      const { files } = vals;
+                      if (!Array.isArray(files) || files.length === 0) {
+                        throw new Error('INVALID_FILES: must provide at least one file');
+                      }
+
+                      return vals.withPgClient(vals.pgSettings, async (pgClient: any) => {
+                        return pgClient.withTransaction(async (txClient: any) => {
+                          const databaseId = await resolveDatabaseId(txClient);
+                          if (!databaseId) throw new Error('DATABASE_NOT_FOUND');
+
+                          const allConfigs = await loadAllStorageModules(txClient, databaseId);
+                          const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
+                          if (!storageConfig) throw new Error('STORAGE_MODULE_NOT_FOUND');
+
+                          if (files.length > storageConfig.maxBulkFiles) {
+                            throw new Error(`BULK_LIMIT_EXCEEDED: max ${storageConfig.maxBulkFiles} files per batch`);
+                          }
+                          const totalSize = files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
+                          if (totalSize > storageConfig.maxBulkTotalSize) {
+                            throw new Error(`BULK_SIZE_EXCEEDED: total size ${totalSize} exceeds max ${storageConfig.maxBulkTotalSize} bytes`);
+                          }
+
+                          const bucket: BucketConfig = {
+                            id: vals.bucketId,
+                            key: vals.bucketKey,
+                            type: vals.bucketType,
+                            is_public: vals.bucketIsPublic,
+                            owner_id: vals.bucketOwnerId,
+                            allowed_mime_types: vals.bucketAllowedMimeTypes,
+                            max_file_size: vals.bucketMaxFileSize,
+                            allow_custom_keys: vals.bucketAllowCustomKeys ?? false,
+                          };
+
+                          const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
+                          await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
+
+                          const results = [];
+                          for (let i = 0; i < files.length; i++) {
+                            const result = await processSingleFile(
+                              options, txClient, storageConfig, databaseId, bucket, s3ForDb, files[i],
+                            );
+                            results.push({ ...result, index: i });
+                          }
+
+                          return { files: results };
+                        });
+                      });
+                    });
+                  },
+                },
+              ),
+            },
+            `PresignedUrlPlugin adding upload fields to ${pgCodec.name}`,
+          );
         },
-        requestBulkUploadUrls(_$mutation: any, fieldArgs: any) {
-          const $input = fieldArgs.getRaw('input');
-          const $withPgClient = (grafastContext() as any).get('withPgClient');
-          const $pgSettings = (grafastContext() as any).get('pgSettings');
-          const $combined = object({
-            input: $input,
-            withPgClient: $withPgClient,
-            pgSettings: $pgSettings,
-          });
 
-          return lambda($combined, async ({ input, withPgClient, pgSettings }: any) => {
-            const { bucketKey, ownerId, files } = input;
+        /**
+         * Wrap delete* mutations on @storageFiles-tagged tables with S3 cleanup.
+         *
+         * Pattern: identical to graphile-bucket-provisioner-plugin's create/update hooks.
+         * 1. Read the file row BEFORE delete (need key + bucket_id for S3 cleanup)
+         * 2. Call PostGraphile's generated delete (RLS enforced)
+         * 3. If delete succeeded, check refcount and attempt sync S3 delete
+         * 4. AFTER DELETE trigger (constructive-db) enqueues async GC job as fallback
+         */
+        GraphQLObjectType_fields_field(field: any, build: any, context: any) {
+          const {
+            scope: { isRootMutation, fieldName, pgCodec },
+          } = context;
 
-            if (!bucketKey || typeof bucketKey !== 'string' || bucketKey.length > MAX_BUCKET_KEY_LENGTH) {
-              throw new Error('INVALID_BUCKET_KEY');
-            }
-            if (!Array.isArray(files) || files.length === 0) {
-              throw new Error('INVALID_FILES: must provide at least one file');
-            }
+          if (!isRootMutation || !pgCodec || !pgCodec.attributes) {
+            return field;
+          }
 
-            return withPgClient(pgSettings, async (pgClient: any) => {
-              return pgClient.withTransaction(async (txClient: any) => {
-                const databaseId = await resolveDatabaseId(txClient);
-                if (!databaseId) {
-                  throw new Error('DATABASE_NOT_FOUND');
+          const tags = pgCodec.extensions?.tags;
+          if (!tags?.storageFiles) {
+            return field;
+          }
+
+          if (!fieldName.startsWith('delete')) {
+            return field;
+          }
+
+          log.debug(`Wrapping delete mutation "${fieldName}" with S3 cleanup (codec: ${pgCodec.name})`);
+
+          const defaultResolver = (obj: any) => obj[fieldName];
+          const { resolve: oldResolve = defaultResolver, ...rest } = field;
+          const capturedCodec = pgCodec;
+
+          return {
+            ...rest,
+            async resolve(source: any, args: any, graphqlContext: any, info: any) {
+              // Extract the file ID from the mutation input
+              const inputKey = Object.keys(args.input || {}).find(
+                (k) => k !== 'clientMutationId',
+              );
+              const fileInput = inputKey ? args.input[inputKey] : null;
+
+              let fileRow: { key: string; bucket_id: string } | null = null;
+
+              if (fileInput) {
+                // Read the file row BEFORE delete to get the S3 key + bucket_id
+                const withPgClient = graphqlContext.withPgClient;
+                const pgSettings = graphqlContext.pgSettings;
+
+                if (withPgClient) {
+                  try {
+                    await withPgClient(pgSettings, async (pgClient: any) => {
+                      const databaseId = await resolveDatabaseId(pgClient);
+                      if (!databaseId) return;
+
+                      const allConfigs = await loadAllStorageModules(pgClient, databaseId);
+                      const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
+                      if (!storageConfig) return;
+
+                      // Read the file row (RLS enforced)
+                      const result = await pgClient.query({
+                        text: `SELECT key, bucket_id FROM ${storageConfig.filesQualifiedName} WHERE id = $1 LIMIT 1`,
+                        values: [fileInput],
+                      });
+                      if (result.rows.length > 0) {
+                        fileRow = result.rows[0] as { key: string; bucket_id: string };
+                      }
+                    });
+                  } catch (err: any) {
+                    log.warn(`Pre-delete file lookup failed: ${err.message}`);
+                  }
                 }
+              }
 
-                const storageConfig = ownerId
-                  ? await getStorageModuleConfigForOwner(txClient, databaseId, ownerId)
-                  : await getStorageModuleConfig(txClient, databaseId);
-                if (!storageConfig) {
-                  throw new Error(
-                    ownerId
-                      ? 'STORAGE_MODULE_NOT_FOUND_FOR_OWNER: no storage module found for the given ownerId'
-                      : 'STORAGE_MODULE_NOT_PROVISIONED',
-                  );
+              // Call PostGraphile's generated delete (RLS enforced)
+              const result = await oldResolve(source, args, graphqlContext, info);
+
+              // Attempt sync S3 cleanup if we have the file row
+              if (fileRow) {
+                const withPgClient = graphqlContext.withPgClient;
+                const pgSettings = graphqlContext.pgSettings;
+
+                if (withPgClient) {
+                  try {
+                    await withPgClient(pgSettings, async (pgClient: any) => {
+                      const databaseId = await resolveDatabaseId(pgClient);
+                      if (!databaseId) return;
+
+                      const allConfigs = await loadAllStorageModules(pgClient, databaseId);
+                      const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
+                      if (!storageConfig) return;
+
+                      // Check refcount: any other file with the same key in this bucket?
+                      const refResult = await pgClient.query({
+                        text: `SELECT COUNT(*)::int AS ref_count FROM ${storageConfig.filesQualifiedName} WHERE key = $1 AND bucket_id = $2`,
+                        values: [fileRow!.key, fileRow!.bucket_id],
+                      });
+                      const refCount = refResult.rows[0]?.ref_count ?? 0;
+
+                      if (refCount > 0) {
+                        log.info(`File deleted from DB; S3 key ${fileRow!.key} still referenced by ${refCount} file(s)`);
+                        return;
+                      }
+
+                      // No other references — attempt sync S3 delete
+                      const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
+                      await deleteS3Object(s3ForDb, fileRow!.key);
+                      log.info(`Sync S3 delete succeeded for key=${fileRow!.key}`);
+                    });
+                  } catch (err: any) {
+                    // Sync S3 delete failed — the AFTER DELETE trigger has enqueued an async GC job
+                    log.warn(`Sync S3 delete failed for key=${fileRow.key}; async GC job will retry: ${err.message}`);
+                  }
                 }
+              }
 
-                // --- Validate bulk limits ---
-                if (files.length > storageConfig.maxBulkFiles) {
-                  throw new Error(`BULK_LIMIT_EXCEEDED: max ${storageConfig.maxBulkFiles} files per batch`);
-                }
-                const totalSize = files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
-                if (totalSize > storageConfig.maxBulkTotalSize) {
-                  throw new Error(`BULK_SIZE_EXCEEDED: total size ${totalSize} exceeds max ${storageConfig.maxBulkTotalSize} bytes`);
-                }
-
-                const bucket = await getBucketConfig(txClient, storageConfig, databaseId, bucketKey, ownerId);
-                if (!bucket) {
-                  throw new Error('BUCKET_NOT_FOUND');
-                }
-
-                // --- Ensure S3 bucket exists once for the batch ---
-                const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
-                await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
-
-                // --- Process each file ---
-                const results = [];
-                for (let i = 0; i < files.length; i++) {
-                  const fileInput = files[i];
-                  const singleInput = {
-                    ...fileInput,
-                    bucketKey,
-                    ownerId,
-                  };
-                  const result = await processSingleFile(
-                    options, txClient, storageConfig, databaseId, bucket, s3ForDb, singleInput,
-                  );
-                  results.push({ ...result, index: i });
-                }
-
-                return { files: results };
-              });
-            });
-          });
+              return result;
+            },
+          };
         },
       },
     },
-  }));
+  };
 }
 
 // --- Shared upload logic ---
 
-/**
- * Process a single upload request (used by both requestUploadUrl and requestBulkUploadUrls).
- */
-async function processUpload(
-  options: PresignedUrlPluginOptions,
-  input: any,
-  withPgClient: any,
-  pgSettings: any,
-) {
-  const { bucketKey, ownerId, contentHash, contentType, size, filename, key: customKey } = input;
-
-  if (!bucketKey || typeof bucketKey !== 'string' || bucketKey.length > MAX_BUCKET_KEY_LENGTH) {
-    throw new Error('INVALID_BUCKET_KEY');
-  }
-  if (!contentHash || typeof contentHash !== 'string' || contentHash.length > MAX_CONTENT_HASH_LENGTH) {
-    throw new Error('INVALID_CONTENT_HASH');
-  }
-  if (!isValidSha256(contentHash)) {
-    throw new Error('INVALID_CONTENT_HASH_FORMAT: must be a 64-char lowercase hex SHA-256');
-  }
-  if (!contentType || typeof contentType !== 'string' || contentType.length > MAX_CONTENT_TYPE_LENGTH) {
-    throw new Error('INVALID_CONTENT_TYPE');
-  }
-
-  return withPgClient(pgSettings, async (pgClient: any) => {
-    return pgClient.withTransaction(async (txClient: any) => {
-      const databaseId = await resolveDatabaseId(txClient);
-      if (!databaseId) {
-        throw new Error('DATABASE_NOT_FOUND');
-      }
-
-      const storageConfig = ownerId
-        ? await getStorageModuleConfigForOwner(txClient, databaseId, ownerId)
-        : await getStorageModuleConfig(txClient, databaseId);
-      if (!storageConfig) {
-        throw new Error(
-          ownerId
-            ? 'STORAGE_MODULE_NOT_FOUND_FOR_OWNER: no storage module found for the given ownerId'
-            : 'STORAGE_MODULE_NOT_PROVISIONED',
-        );
-      }
-
-      if (typeof size !== 'number' || size <= 0 || size > storageConfig.defaultMaxFileSize) {
-        throw new Error(`INVALID_FILE_SIZE: must be between 1 and ${storageConfig.defaultMaxFileSize} bytes`);
-      }
-      if (filename !== undefined && filename !== null) {
-        if (typeof filename !== 'string' || filename.length > storageConfig.maxFilenameLength) {
-          throw new Error('INVALID_FILENAME');
-        }
-      }
-
-      const bucket = await getBucketConfig(txClient, storageConfig, databaseId, bucketKey, ownerId);
-      if (!bucket) {
-        throw new Error('BUCKET_NOT_FOUND');
-      }
-
-      const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
-      await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
-
-      return processSingleFile(options, txClient, storageConfig, databaseId, bucket, s3ForDb, input);
-    });
-  });
-}
-
-/**
- * Process a single file upload within an already-resolved context.
- * Handles dedup, custom keys, versioning, and auto-path derivation.
- */
 async function processSingleFile(
   options: PresignedUrlPluginOptions,
   txClient: any,
@@ -464,8 +544,10 @@ async function processSingleFile(
 ) {
   const { contentHash, contentType, size, filename, key: customKey } = input;
 
-  // --- Validate inputs ---
-  if (!contentHash || !isValidSha256(contentHash)) {
+  if (!contentHash || typeof contentHash !== 'string' || contentHash.length > MAX_CONTENT_HASH_LENGTH) {
+    throw new Error('INVALID_CONTENT_HASH');
+  }
+  if (!isValidSha256(contentHash)) {
     throw new Error('INVALID_CONTENT_HASH_FORMAT: must be a 64-char lowercase hex SHA-256');
   }
   if (!contentType || typeof contentType !== 'string' || contentType.length > MAX_CONTENT_TYPE_LENGTH) {
@@ -480,7 +562,7 @@ async function processSingleFile(
     }
   }
 
-  // --- Validate content type against bucket's allowed_mime_types ---
+  // Validate content type against bucket's allowed_mime_types
   if (bucket.allowed_mime_types && bucket.allowed_mime_types.length > 0) {
     const allowed = bucket.allowed_mime_types as string[];
     const isAllowed = allowed.some((pattern: string) => {
@@ -496,12 +578,12 @@ async function processSingleFile(
     }
   }
 
-  // --- Validate size against bucket's max_file_size ---
+  // Validate size against bucket's max_file_size
   if (bucket.max_file_size && size > bucket.max_file_size) {
     throw new Error(`FILE_TOO_LARGE: exceeds bucket max of ${bucket.max_file_size} bytes`);
   }
 
-  // --- Determine S3 key ---
+  // Determine S3 key
   let s3Key: string;
   let isCustomKey = false;
   if (customKey) {
@@ -518,12 +600,10 @@ async function processSingleFile(
     s3Key = buildS3Key(contentHash);
   }
 
-  // --- Dedup / versioning check ---
+  // Dedup / versioning check
   let previousVersionId: string | null = null;
 
   if (isCustomKey) {
-    // Custom key mode: check if a file with this key already exists in this bucket.
-    // If so, auto-version by linking via previous_version_id.
     const existingResult = await txClient.query({
       text: `SELECT id, content_hash
        FROM ${storageConfig.filesQualifiedName}
@@ -536,7 +616,6 @@ async function processSingleFile(
 
     if (existingResult.rows.length > 0) {
       const existing = existingResult.rows[0];
-      // Same content hash = true dedup (no new upload needed)
       if (existing.content_hash === contentHash) {
         log.info(`Dedup hit (custom key): file ${existing.id} for key ${s3Key}`);
         return {
@@ -548,12 +627,10 @@ async function processSingleFile(
           previousVersionId: null as string | null,
         };
       }
-      // Different content = new version
       previousVersionId = existing.id;
       log.info(`Versioning: new version of key ${s3Key}, previous=${previousVersionId}`);
     }
   } else {
-    // Hash-based mode: dedup by content_hash in this bucket
     const dedupResult = await txClient.query({
       text: `SELECT id
        FROM ${storageConfig.filesQualifiedName}
@@ -578,29 +655,25 @@ async function processSingleFile(
     }
   }
 
-  // --- Auto-derive ltree path from custom key directory (only when has_path_shares) ---
+  // Auto-derive ltree path from custom key directory (only when has_path_shares)
   const derivedPath = isCustomKey && storageConfig.hasPathShares ? derivePathFromKey(s3Key) : null;
 
-  // --- Create file record ---
+  // Create file record
   const hasOwnerColumn = storageConfig.membershipType !== null;
   const columns = ['bucket_id', 'key', 'content_hash', 'mime_type', 'size', 'filename', 'is_public'];
   const values: any[] = [bucket.id, s3Key, contentHash, contentType, size, filename || null, bucket.is_public];
-  let paramIdx = values.length;
 
   if (hasOwnerColumn) {
     columns.push('owner_id');
     values.push(bucket.owner_id);
-    paramIdx = values.length;
   }
   if (previousVersionId) {
     columns.push('previous_version_id');
     values.push(previousVersionId);
-    paramIdx = values.length;
   }
   if (derivedPath) {
     columns.push('path');
     values.push(derivedPath);
-    paramIdx = values.length;
   }
 
   const placeholders = values.map((_: any, i: number) => `$${i + 1}`).join(', ');
@@ -614,7 +687,7 @@ async function processSingleFile(
 
   const fileId = fileResult.rows[0].id;
 
-  // --- Generate presigned PUT URL ---
+  // Generate presigned PUT URL
   const uploadUrl = await generatePresignedPutUrl(
     s3ForDb,
     s3Key,

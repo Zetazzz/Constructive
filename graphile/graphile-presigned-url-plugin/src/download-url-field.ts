@@ -20,12 +20,13 @@
  */
 
 import type { GraphileConfig } from 'graphile-config';
+import 'graphile-build';
 import { context as grafastContext, lambda, object } from 'grafast';
 import { Logger } from '@pgpmjs/logger';
 
 import type { PresignedUrlPluginOptions, S3Config, StorageModuleConfig } from './types';
 import { generatePresignedGetUrl } from './s3-signer';
-import { getStorageModuleConfig } from './storage-module-cache';
+import { loadAllStorageModules, resolveStorageConfigFromCodec } from './storage-module-cache';
 
 const log = new Logger('graphile-presigned-url:download-url');
 
@@ -110,6 +111,8 @@ export function createDownloadUrlPlugin(
             graphql: { GraphQLString },
           } = build;
 
+          const capturedCodec = pgCodec;
+
           return build.extend(
             fields,
             {
@@ -121,12 +124,10 @@ export function createDownloadUrlPlugin(
                     'For private files, returns a time-limited presigned URL.',
                   type: GraphQLString,
                   plan($parent: any) {
-                    // Access file attributes from the parent PgSelectSingleStep
                     const $key = $parent.get('key');
                     const $isPublic = $parent.get('is_public');
                     const $filename = $parent.get('filename');
 
-                    // Access GraphQL context for per-database config resolution
                     const $withPgClient = (grafastContext() as any).get('withPgClient');
                     const $pgSettings = (grafastContext() as any).get('pgSettings');
 
@@ -141,9 +142,8 @@ export function createDownloadUrlPlugin(
                     return lambda($combined, async ({ key, isPublic, filename, withPgClient, pgSettings }: any) => {
                       if (!key) return null;
 
-                      // Resolve per-database config (bucket, publicUrlPrefix, expiry)
-                      let s3ForDb = resolveS3(options); // fallback to global
-                      let downloadUrlExpirySeconds = 3600; // fallback default
+                      let s3ForDb = resolveS3(options);
+                      let downloadUrlExpirySeconds = 3600;
                       try {
                         if (withPgClient && pgSettings) {
                           const resolved = await withPgClient(null, async (pgClient: any) => {
@@ -152,7 +152,8 @@ export function createDownloadUrlPlugin(
                             });
                             const databaseId = dbResult.rows[0]?.id;
                             if (!databaseId) return null;
-                            const config = await getStorageModuleConfig(pgClient, databaseId);
+                            const allConfigs = await loadAllStorageModules(pgClient, databaseId);
+                            const config = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
                             if (!config) return null;
                             return { config, databaseId };
                           });
@@ -166,11 +167,9 @@ export function createDownloadUrlPlugin(
                       }
 
                       if (isPublic && s3ForDb.publicUrlPrefix) {
-                        // Public file: return direct CDN URL (per-database prefix)
                         return `${s3ForDb.publicUrlPrefix}/${key}`;
                       }
 
-                      // Private file: generate presigned GET URL (per-database bucket)
                       return generatePresignedGetUrl(
                         s3ForDb,
                         key,

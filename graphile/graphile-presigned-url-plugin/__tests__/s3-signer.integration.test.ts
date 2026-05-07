@@ -16,6 +16,7 @@ import {
   generatePresignedPutUrl,
   generatePresignedGetUrl,
   headObject,
+  deleteS3Object,
 } from '../src/s3-signer';
 import type { S3Config } from '../src/types';
 
@@ -226,6 +227,41 @@ describe('s3-signer integration (MinIO)', () => {
     it('should respect custom expiry', async () => {
       const url = await generatePresignedGetUrl(s3Config, GET_KEY, 120);
       expect(url).toContain('X-Amz-Expires=120');
+    });
+  });
+
+  describe('deleteS3Object', () => {
+    it('should delete an existing object from S3', async () => {
+      const key = 'test-delete-' + Date.now() + '.txt';
+      const content = 'file to delete';
+      const contentType = 'text/plain';
+
+      // Upload a file first
+      const putUrl = await generatePresignedPutUrl(
+        s3Config,
+        key,
+        contentType,
+        Buffer.byteLength(content),
+      );
+      const putRes = await uploadToPresignedUrl(putUrl, content, contentType);
+      expect(putRes.status).toBe(200);
+
+      // Verify it exists
+      const beforeHead = await headObject(s3Config, key);
+      expect(beforeHead).not.toBeNull();
+
+      // Delete it
+      await deleteS3Object(s3Config, key);
+
+      // Verify it's gone
+      const afterHead = await headObject(s3Config, key);
+      expect(afterHead).toBeNull();
+    });
+
+    it('should be idempotent (no error deleting non-existent key)', async () => {
+      await expect(
+        deleteS3Object(s3Config, 'non-existent-key-' + Date.now()),
+      ).resolves.toBeUndefined();
     });
   });
 
