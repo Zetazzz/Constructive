@@ -2,6 +2,7 @@ export { AuthzAllowAll } from './authz-allow-all';
 export { AuthzAppMembership } from './authz-app-membership';
 export { AuthzComposite } from './authz-composite';
 export { AuthzDenyAll } from './authz-deny-all';
+export { AuthzFilePath } from './authz-file-path';
 export { AuthzDirectOwner } from './authz-direct-owner';
 export { AuthzDirectOwnerAny } from './authz-direct-owner-any';
 export { AuthzEntityMembership } from './authz-entity-membership';
