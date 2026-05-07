@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.17.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.16.0...graphql-server-test@2.17.0) (2026-05-07)
+
+### Bug Fixes
+
+- use collection query in upload test, regenerate snapshots ([9d5b071](https://github.com/constructive-io/constructive/commit/9d5b07174e59d8caa0b11992bfaefdbdc18b05e1))
+- use where filter in upload test, regenerate snapshots ([ab4a772](https://github.com/constructive-io/constructive/commit/ab4a772a1c7d8b9141a53fdc084c24d9cf28b7b9))
+
+### Features
+
+- per-table storage middleware — upload fields on bucket types, delete middleware on file tables ([5003dc5](https://github.com/constructive-io/constructive/commit/5003dc5d85d21d5042572071b22fad1654f36881))
+
 # [2.16.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.4...graphql-server-test@2.16.0) (2026-05-06)
 
 **Note:** Version bump only for package graphql-server-test

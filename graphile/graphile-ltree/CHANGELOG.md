@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.3.0](https://github.com/constructive-io/constructive/compare/graphile-ltree@1.2.0...graphile-ltree@1.3.0) (2026-05-07)
+
+### Features
+
+- unified file-path syntax for ltree — codec auto-converts between slash paths and ltree ([c00202b](https://github.com/constructive-io/constructive/commit/c00202bbf524f37a2fb7d4a71122d07feed14768))
+
 # [1.2.0](https://github.com/constructive-io/constructive/compare/graphile-ltree@1.1.0...graphile-ltree@1.2.0) (2026-05-06)
 
 **Note:** Version bump only for package graphile-ltree

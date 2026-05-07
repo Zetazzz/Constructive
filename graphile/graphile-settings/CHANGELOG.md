@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.27.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.26.0...graphile-settings@4.27.0) (2026-05-07)
+
+### Features
+
+- unified file-path syntax for ltree — codec auto-converts between slash paths and ltree ([c00202b](https://github.com/constructive-io/constructive/commit/c00202bbf524f37a2fb7d4a71122d07feed14768))
+
 # [4.26.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.25.2...graphile-settings@4.26.0) (2026-05-06)
 
 **Note:** Version bump only for package graphile-settings

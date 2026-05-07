@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/migrate-client@0.9.0...@pgpmjs/migrate-client@0.9.1) (2026-05-07)
+
+**Note:** Version bump only for package @pgpmjs/migrate-client
+
 # [0.9.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/migrate-client@0.8.4...@pgpmjs/migrate-client@0.9.0) (2026-05-06)
 
 **Note:** Version bump only for package @pgpmjs/migrate-client

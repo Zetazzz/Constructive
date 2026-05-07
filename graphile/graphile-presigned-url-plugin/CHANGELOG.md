@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.11.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.10.0...graphile-presigned-url-plugin@0.11.0) (2026-05-07)
+
+### Features
+
+- per-table storage middleware — upload fields on bucket types, delete middleware on file tables ([5003dc5](https://github.com/constructive-io/constructive/commit/5003dc5d85d21d5042572071b22fad1654f36881))
+
 # [0.10.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.9.0...graphile-presigned-url-plugin@0.10.0) (2026-05-06)
 
 **Note:** Version bump only for package graphile-presigned-url-plugin
