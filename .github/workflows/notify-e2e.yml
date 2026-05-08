@@ -9,7 +9,7 @@ on:
 
 jobs:
   trigger-tests:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Trigger submodule update in constructive-hub
         uses: actions/github-script@v7
