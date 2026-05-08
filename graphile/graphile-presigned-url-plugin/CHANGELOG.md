@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.14.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.13.0...graphile-presigned-url-plugin@0.14.0) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** rename createFile -> uploadFile to avoid CRUD naming conflict ([9b8fb0a](https://github.com/constructive-io/constructive/commit/9b8fb0ad3c9971c2a71527f4e9f78a8bf232fdee))
+
+### Features
+
+- **presigned-url:** add createFile mutations alongside bucket entry points ([b22fc31](https://github.com/constructive-io/constructive/commit/b22fc3138b5dbb01b737adf319fafa8535364763))
+
 # [0.13.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.2...graphile-presigned-url-plugin@0.13.0) (2026-05-08)
 
 **Note:** Version bump only for package graphile-presigned-url-plugin
