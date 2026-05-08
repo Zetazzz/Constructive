@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.28.0...node-type-registry@0.29.0) (2026-05-08)
+
+### Features
+
+- add DataChunks node type, update DataFileEmbedding to compose it ([35a8aa3](https://github.com/constructive-io/constructive/commit/35a8aa3fb7f677161d8b3c542b6547a2af1f25e5))
+
 # [0.28.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.27.0...node-type-registry@0.28.0) (2026-05-08)
 
 **Note:** Version bump only for package node-type-registry
