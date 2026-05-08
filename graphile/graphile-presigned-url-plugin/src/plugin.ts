@@ -13,10 +13,10 @@
  *    type (e.g., `appBucket(key: "public"): AppBucket`), so upload operations
  *    can be accessed as proper GraphQL mutations instead of queries.
  *
- * 4. File creation mutations — adds `create<FileType>(input: {...})` mutations
+ * 4. File upload mutations — adds `upload<FileType>(input: {...})` mutations
  *    on root Mutation for each @storageFiles/@storageBuckets pair. These combine
  *    bucket resolution + file INSERT + presigned URL generation in one step.
- *    E.g., `createAppFile(input: { bucketKey: "public", contentHash: "...", ... })`
+ *    E.g., `uploadAppFile(input: { bucketKey: "public", contentHash: "...", ... })`
  *
  * 5. downloadUrl — handled by download-url-field.ts (separate plugin).
  *
@@ -228,7 +228,7 @@ export function createPresignedUrlPlugin(
               );
             }
 
-            // --- 1b: File creation mutations (createAppFile, createDataRoomFile, etc.) ---
+            // --- 1b: File upload mutations (uploadAppFile, uploadDataRoomFile, etc.) ---
             const fileCodecs = Object.values((build.input as any).pgRegistry.pgCodecs).filter(
               (codec: any) => codec.attributes && (codec.extensions as any)?.tags?.storageFiles,
             );
@@ -247,14 +247,14 @@ export function createPresignedUrlPlugin(
               }
 
               const hasOwnerId = !!matchingBucketCodec.attributes.owner_id;
-              const mutationName = `create${filesTypeName}`;
+              const mutationName = `upload${filesTypeName}`;
 
               const ownerIdGqlType = hasOwnerId
                 ? (build as any).getGraphQLTypeByPgCodec(matchingBucketCodec.attributes.owner_id.codec, 'input')
                 : null;
 
               const InputType = new GraphQLInputObjectType({
-                name: `Create${filesTypeName}Input`,
+                name: `Upload${filesTypeName}Input`,
                 fields: {
                   bucketKey: { type: new GraphQLNonNull(GraphQLString), description: 'Bucket key (e.g., "public", "private")' },
                   ...(hasOwnerId
@@ -269,7 +269,7 @@ export function createPresignedUrlPlugin(
               });
 
               const PayloadType = new GraphQLObjectType({
-                name: `Create${filesTypeName}Payload`,
+                name: `Upload${filesTypeName}Payload`,
                 fields: {
                   uploadUrl: { type: GraphQLString, description: 'Presigned PUT URL (null if deduplicated)' },
                   fileId: { type: new GraphQLNonNull(GraphQLString), description: 'The file ID (UUID)' },
@@ -282,12 +282,12 @@ export function createPresignedUrlPlugin(
 
               const capturedFilesCodec = filesCodec;
 
-              log.debug(`Adding file creation mutation "${mutationName}" for ${filesTypeName} (entity-scoped=${hasOwnerId})`);
+              log.debug(`Adding file upload mutation "${mutationName}" for ${filesTypeName} (entity-scoped=${hasOwnerId})`);
 
               newFields[mutationName] = context.fieldWithHooks(
                 { fieldName: mutationName } as any,
                 {
-                  description: `Create a file record and return a presigned upload URL. Resolves the bucket by key, validates the upload, creates the file row, and generates a presigned PUT URL.`,
+                  description: `Upload a file: resolves the bucket by key, creates the file row, and returns a presigned PUT URL.`,
                   type: PayloadType,
                   args: {
                     input: { type: new GraphQLNonNull(InputType) },
@@ -348,9 +348,9 @@ export function createPresignedUrlPlugin(
                 },
               );
 
-              // --- Bulk file creation mutation ---
+              // --- Bulk file upload mutation ---
               const BulkFileInputType = new GraphQLInputObjectType({
-                name: `Create${filesTypeName}BulkFileInput`,
+                name: `Upload${filesTypeName}BulkFileInput`,
                 fields: {
                   contentHash: { type: new GraphQLNonNull(GraphQLString), description: 'SHA-256 content hash (hex-encoded, 64 chars)' },
                   contentType: { type: new GraphQLNonNull(GraphQLString), description: 'MIME type of the file' },
@@ -361,7 +361,7 @@ export function createPresignedUrlPlugin(
               });
 
               const BulkFilePayloadType = new GraphQLObjectType({
-                name: `Create${filesTypeName}BulkFilePayload`,
+                name: `Upload${filesTypeName}BulkFilePayload`,
                 fields: {
                   uploadUrl: { type: GraphQLString },
                   fileId: { type: new GraphQLNonNull(GraphQLString) },
@@ -373,7 +373,7 @@ export function createPresignedUrlPlugin(
               });
 
               const BulkInputType = new GraphQLInputObjectType({
-                name: `Create${filesTypeName}BulkInput`,
+                name: `Upload${filesTypeName}BulkInput`,
                 fields: {
                   bucketKey: { type: new GraphQLNonNull(GraphQLString), description: 'Bucket key (e.g., "public", "private")' },
                   ...(hasOwnerId
@@ -384,19 +384,19 @@ export function createPresignedUrlPlugin(
               });
 
               const BulkPayloadType = new GraphQLObjectType({
-                name: `Create${filesTypeName}BulkPayload`,
+                name: `Upload${filesTypeName}BulkPayload`,
                 fields: {
                   files: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(BulkFilePayloadType))) },
                 },
               });
 
-              const bulkMutationName = `create${filesTypeName}s`;
-              log.debug(`Adding bulk file creation mutation "${bulkMutationName}" for ${filesTypeName}`);
+              const bulkMutationName = `upload${filesTypeName}s`;
+              log.debug(`Adding bulk file upload mutation "${bulkMutationName}" for ${filesTypeName}`);
 
               newFields[bulkMutationName] = context.fieldWithHooks(
                 { fieldName: bulkMutationName } as any,
                 {
-                  description: `Create multiple file records and return presigned upload URLs for each.`,
+                  description: `Upload multiple files: resolves the bucket by key, creates file rows, and returns presigned PUT URLs for each.`,
                   type: BulkPayloadType,
                   args: {
                     input: { type: new GraphQLNonNull(BulkInputType) },
@@ -459,7 +459,7 @@ export function createPresignedUrlPlugin(
             return build.extend(
               fields,
               newFields,
-              'PresignedUrlPlugin adding per-bucket mutation entry points and file creation mutations',
+              'PresignedUrlPlugin adding per-bucket mutation entry points and file upload mutations',
             );
           }
 
