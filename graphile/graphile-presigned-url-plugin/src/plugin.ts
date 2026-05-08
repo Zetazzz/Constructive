@@ -383,11 +383,25 @@ export function createPresignedUrlPlugin(
                           );
                           if (!bucket) throw new Error('BUCKET_NOT_FOUND');
 
+                          // Enforce bulk upload limits
+                          const filesArray = vals.files as any[];
+                          if (filesArray.length > storageConfig.maxBulkFiles) {
+                            throw new Error(
+                              `BULK_UPLOAD_FILES_EXCEEDED: ${filesArray.length} files exceeds maximum of ${storageConfig.maxBulkFiles} per batch`,
+                            );
+                          }
+                          const totalSize = filesArray.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
+                          if (totalSize > storageConfig.maxBulkTotalSize) {
+                            throw new Error(
+                              `BULK_UPLOAD_SIZE_EXCEEDED: ${totalSize} bytes exceeds maximum of ${storageConfig.maxBulkTotalSize} bytes per batch`,
+                            );
+                          }
+
                           const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
                           await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
 
                           const results = [];
-                          for (const file of vals.files) {
+                          for (const file of filesArray) {
                             results.push(
                               await processSingleFile(options, txClient, storageConfig, databaseId, bucket, s3ForDb, {
                                 contentHash: file.contentHash,
