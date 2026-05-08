@@ -174,7 +174,15 @@ export function createPresignedUrlPlugin(
 
               const fieldName = typeName.charAt(0).toLowerCase() + typeName.slice(1);
               const hasOwnerId = !!codec.attributes.owner_id;
-              const capturedCodec = codec;
+
+              // Find the PgResource for this codec so we can return a proper PgSelectSingleStep
+              const bucketResource = Object.values((build.input as any).pgRegistry.pgResources).find(
+                (r: any) => r.codec === codec && !r.isUnique && !r.isVirtual && !r.parameters,
+              ) as any;
+              if (!bucketResource) {
+                log.debug(`Skipping mutation entry point for ${codec.name}: no PgResource found`);
+                continue;
+              }
 
               log.debug(`Adding mutation entry point "${fieldName}" for bucket type ${typeName} (entity-scoped=${hasOwnerId})`);
 
@@ -190,41 +198,13 @@ export function createPresignedUrlPlugin(
                       : {}),
                   },
                   plan(_$mutation: any, fieldArgs: any) {
-                    const $key = fieldArgs.getRaw('key');
-                    const $ownerId = hasOwnerId ? fieldArgs.getRaw('ownerId') : lambda(null, (): null => null);
-                    const $withPgClient = (grafastContext() as any).get('withPgClient');
-                    const $pgSettings = (grafastContext() as any).get('pgSettings');
-
-                    const $combined = object({
-                      key: $key,
-                      ownerId: $ownerId,
-                      withPgClient: $withPgClient,
-                      pgSettings: $pgSettings,
-                    });
-
-                    const $row = lambda($combined, async (vals: any) => {
-                      return vals.withPgClient(vals.pgSettings, async (pgClient: any) => {
-                        const databaseId = await resolveDatabaseId(pgClient);
-                        if (!databaseId) throw new Error('DATABASE_NOT_FOUND');
-
-                        const allConfigs = await loadAllStorageModules(pgClient, databaseId);
-                        const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
-                        if (!storageConfig) throw new Error('STORAGE_MODULE_NOT_FOUND');
-
-                        const bucket = await getBucketConfig(
-                          pgClient, storageConfig, databaseId, vals.key, vals.ownerId ?? undefined,
-                        );
-                        if (!bucket) throw new Error('BUCKET_NOT_FOUND');
-
-                        return bucket;
-                      });
-                    });
-
-                    const columnEntries: Record<string, any> = {};
-                    for (const col of Object.keys(capturedCodec.attributes)) {
-                      columnEntries[col] = access($row, col);
+                    const spec: Record<string, any> = {
+                      key: fieldArgs.getRaw('key'),
+                    };
+                    if (hasOwnerId) {
+                      spec.owner_id = fieldArgs.getRaw('ownerId');
                     }
-                    return object(columnEntries);
+                    return bucketResource.find(spec).single();
                   },
                 },
               );
