@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.12.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.11.0...graphile-presigned-url-plugin@0.12.0) (2026-05-08)
+
+### Features
+
+- **presigned-url:** add per-bucket mutation entry points on root Mutation type ([a8811be](https://github.com/constructive-io/constructive/commit/a8811be6c48ba7008d78d2e3724df5000226db35))
+
 # [0.11.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.10.0...graphile-presigned-url-plugin@0.11.0) (2026-05-07)
 
 ### Features
