@@ -124,6 +124,16 @@ jobs:
             env: {}
 
     steps:
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Download workspace
         uses: actions/download-artifact@v4
         with:
@@ -204,6 +214,16 @@ jobs:
         run: |
           git config --global user.name "CI Test User"
           git config --global user.email "ci@example.com"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Download workspace
         uses: actions/download-artifact@v4
@@ -294,6 +314,16 @@ jobs:
         run: |
           git config --global user.name "CI Test User"
           git config --global user.email "ci@example.com"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Download workspace
         uses: actions/download-artifact@v4
