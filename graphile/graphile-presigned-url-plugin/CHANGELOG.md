@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.0...graphile-presigned-url-plugin@0.12.1) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** return PgSelectSingleStep from mutation entry points ([c924768](https://github.com/constructive-io/constructive/commit/c924768d99fc413e8fcfbe9ae1a43a9aac60c4ff))
+
 # [0.12.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.11.0...graphile-presigned-url-plugin@0.12.0) (2026-05-08)
 
 ### Features
