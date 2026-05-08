@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.2](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.1...graphile-presigned-url-plugin@0.12.2) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** use correct GraphQL type for ownerId argument ([22e5252](https://github.com/constructive-io/constructive/commit/22e52529a7c8d19d84f6b72866cafa09b7288fa5))
+- **presigned-url:** use extensions.pg.name for codec table name matching ([b60a855](https://github.com/constructive-io/constructive/commit/b60a855c784809c564c62bc26823767cbeb792d2))
+
 ## [0.12.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.0...graphile-presigned-url-plugin@0.12.1) (2026-05-08)
 
 ### Bug Fixes
