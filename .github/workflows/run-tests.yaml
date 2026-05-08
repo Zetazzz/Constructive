@@ -15,87 +15,74 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-tests
   cancel-in-progress: true
 
-jobs:
-  constructive-tests:
-    runs-on: ubuntu-latest
+# ---------------------------------------------------------------------------
+# Build-once, test-many architecture with tiered service containers.
+#
+# Phase 1 – build: single job installs deps + builds the monorepo once.
+# Phase 2 – fan-out: test jobs download the build artifact and run tests.
+#
+# Service tiers (avoids spinning up unneeded containers):
+#   unit-tests        → no services (pure JS/TS)
+#   pg-tests          → PostgreSQL only
+#   integration-tests → PostgreSQL + MinIO
+# ---------------------------------------------------------------------------
 
+jobs:
+  # =========================================================================
+  # BUILD (single job – runs once, shared by all test jobs)
+  # =========================================================================
+  build:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Configure Git (for tests)
+        run: |
+          git config --global user.name "CI Test User"
+          git config --global user.email "ci@example.com"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Upload workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-build
+          path: |
+            .
+            !.git
+          retention-days: 1
+
+  # =========================================================================
+  # TIER 1 – Unit tests (no services needed)
+  # =========================================================================
+  unit-tests:
+    needs: build
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
         include:
           - package: uploads/mime-bytes
             env: {}
-          - package: pgpm/core
-            env: {}
-          - package: pgpm/env
-            env: {}
-          - package: pgpm/cli
-            env: {}
-          - package: packages/cli
-            env: {}
-          - package: jobs/knative-job-service
-            env: {}
-          - package: packages/client
-            env:
-              TEST_DATABASE_URL: postgres://postgres:password@localhost:5432/postgres
-          - package: postgres/pgsql-client
-            env: {}
-          - package: postgres/pgsql-test
-            env: {}
-          - package: packages/orm
-            env: {}
-          - package: packages/url-domains
-            env: {}
           - package: uploads/uuid-hash
             env: {}
           - package: uploads/uuid-stream
-            env: {}
-          - package: postgres/introspectron
-            env: {}
-          - package: packages/query-builder
-            env: {}
-          - package: graphql/query
-            env: {}
-          - package: graphql/codegen
-            env: {}
-          - package: postgres/pg-ast
-            env: {}
-          - package: postgres/pg-codegen
-            env: {}
-          - package: uploads/content-type-stream
-            env: {}
-          - package: uploads/s3-streamer
-            env:
-              BUCKET_NAME: test-bucket
-          - package: uploads/upload-names
-            env: {}
-          - package: graphile/graphile-test
-            env: {}
-          - package: graphile/graphile-connection-filter
-            env: {}
-          - package: graphile/graphile-postgis
-            env: {}
-          - package: graphql/orm-test
-            env: {}
-          - package: graphql/server-test
-            env: {}
-          - package: graphql/env
-            env: {}
-          - package: graphql/server
-            env: {}
-          - package: graphql/test
-            env: {}
-          - package: graphql/playwright-test
-            env: {}
-          - package: packages/safegres
-            env: {}
-          # - package: jobs/knative-job-worker
-          #   env: {}
-          - package: packages/csv-to-pg
-            env: {}
-          - package: packages/smtppostmaster
-            env: {}
-          - package: postgres/drizzle-orm-test
             env: {}
           - package: uploads/etag-hash
             env: {}
@@ -103,27 +90,165 @@ jobs:
             env: {}
           - package: uploads/stream-to-etag
             env: {}
-          - package: packages/oauth
+          - package: uploads/content-type-stream
+            env: {}
+          - package: uploads/upload-names
+            env: {}
+          - package: packages/url-domains
+            env: {}
+          - package: packages/query-builder
             env: {}
           - package: packages/csrf
             env: {}
+          - package: packages/oauth
+            env: {}
           - package: packages/12factor-env
+            env: {}
+          - package: packages/orm
             env: {}
           - package: packages/postmaster
             env: {}
+          - package: packages/smtppostmaster
+            env: {}
+          - package: packages/csv-to-pg
+            env: {}
+          - package: postgres/pgsql-client
+            env: {}
+          - package: postgres/pg-ast
+            env: {}
+          - package: graphql/query
+            env: {}
+          - package: graphql/codegen
+            env: {}
+          - package: packages/cli
+            env: {}
+
+    steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace-build
+
+      - name: Test ${{ matrix.package }}
+        run: cd ./${{ matrix.package }} && pnpm test
+        env: ${{ matrix.env }}
+
+  # =========================================================================
+  # TIER 2 – PostgreSQL-only tests
+  # =========================================================================
+  pg-tests:
+    needs: build
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: pgpm/core
+            env: {}
+          - package: pgpm/cli
+            env: {}
+          - package: packages/client
+            env:
+              TEST_DATABASE_URL: postgres://postgres:password@localhost:5432/postgres
+          - package: packages/safegres
+            env: {}
+          - package: postgres/pg-codegen
+            env: {}
+          - package: postgres/pgsql-test
+            env: {}
+          - package: postgres/drizzle-orm-test
+            env: {}
+          - package: postgres/introspectron
+            env: {}
+          - package: graphile/graphile-test
+            env: {}
+          - package: graphile/graphile-connection-filter
+            env: {}
+          - package: graphile/graphile-postgis
+            env: {}
           - package: graphile/graphile-search
+            env: {}
+          - package: graphile/graphile-ltree
+            env: {}
+          - package: graphql/orm-test
+            env: {}
+          - package: graphql/test
+            env: {}
+          - package: graphql/playwright-test
+            env: {}
+          - package: jobs/knative-job-service
+            env: {}
+
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: password
+
+    services:
+      pg_db:
+        image: ghcr.io/constructive-io/docker/postgres-plus:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Configure Git (for tests)
+        run: |
+          git config --global user.name "CI Test User"
+          git config --global user.email "ci@example.com"
+
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace-build
+
+      - name: Seed app_user
+        run: |
+          pnpm --filter pgpm exec node dist/index.js admin-users bootstrap --yes
+          pnpm --filter pgpm exec node dist/index.js admin-users add --test --yes
+
+      - name: Test ${{ matrix.package }}
+        run: cd ./${{ matrix.package }} && pnpm test
+        env: ${{ matrix.env }}
+
+  # =========================================================================
+  # TIER 3 – Integration tests (PostgreSQL + MinIO)
+  # =========================================================================
+  integration-tests:
+    needs: build
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: pgpm/env
+            env: {}
+          - package: uploads/s3-streamer
+            env:
+              BUCKET_NAME: test-bucket
+          - package: packages/upload-client
+            env: {}
+          - package: packages/bucket-provisioner
             env: {}
           - package: graphile/graphile-settings
             env: {}
           - package: graphile/graphile-presigned-url-plugin
             env: {}
-          - package: packages/bucket-provisioner
-            env: {}
-          - package: packages/upload-client
-            env: {}
           - package: graphile/graphile-bucket-provisioner-plugin
             env: {}
-          - package: graphile/graphile-ltree
+          - package: graphql/server-test
+            env: {}
+          - package: graphql/env
+            env: {}
+          - package: graphql/server
             env: {}
 
     env:
@@ -170,26 +295,12 @@ jobs:
           git config --global user.name "CI Test User"
           git config --global user.email "ci@example.com"
 
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Download workspace
+        uses: actions/download-artifact@v4
         with:
-          node-version: '22'
+          name: workspace-build
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10
-
-      - name: install
-        run: pnpm install
-
-      - name: build
-        run: pnpm run build
-
-      - name: seed app_user
+      - name: Seed app_user
         run: |
           pnpm --filter pgpm exec node dist/index.js admin-users bootstrap --yes
           pnpm --filter pgpm exec node dist/index.js admin-users add --test --yes
