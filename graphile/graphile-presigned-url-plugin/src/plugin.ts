@@ -3,22 +3,15 @@
  *
  * Hooks into PostGraphile's auto-generated CRUD mutations to add S3 operations:
  *
- * 1. Delete middleware — wraps `delete*` mutations on `@storageFiles`-tagged tables
- *    with S3 object cleanup (sync + async GC fallback via AFTER DELETE trigger).
- *
- * 2. Upload fields — adds `requestUploadUrl` and `requestBulkUploadUrls` fields
- *    on `@storageBuckets`-tagged types, so clients upload via the typed bucket API.
- *
- * 3. Mutation entry points — adds per-bucket mutation fields on the root Mutation
- *    type (e.g., `appBucket(key: "public"): AppBucket`), so upload operations
- *    can be accessed as proper GraphQL mutations instead of queries.
- *
- * 4. File upload mutations — adds `upload<FileType>(input: {...})` mutations
+ * 1. File upload mutations — adds `upload<FileType>(input: {...})` mutations
  *    on root Mutation for each @storageFiles/@storageBuckets pair. These combine
  *    bucket resolution + file INSERT + presigned URL generation in one step.
  *    E.g., `uploadAppFile(input: { bucketKey: "public", contentHash: "...", ... })`
  *
- * 5. downloadUrl — handled by download-url-field.ts (separate plugin).
+ * 2. Delete middleware — wraps `delete*` mutations on `@storageFiles`-tagged tables
+ *    with S3 object cleanup (sync + async GC fallback via AFTER DELETE trigger).
+ *
+ * 3. downloadUrl — handled by download-url-field.ts (separate plugin).
  *
  * Scope resolution uses the codec's schema/table name matched against
  * cached storage module configs.
@@ -149,16 +142,16 @@ export function createPresignedUrlPlugin(
     schema: {
       hooks: {
         /**
-         * Add requestUploadUrl and requestBulkUploadUrls fields on @storageBuckets types.
+         * Add file upload mutations (uploadAppFile, uploadDataRoomFile, etc.) on root Mutation.
          */
         GraphQLObjectType_fields(fields, build, context) {
           const {
-            scope: { pgCodec, isPgClassType, isRootMutation },
+            scope: { isRootMutation },
           } = context as any;
 
-          // --- Path 1: Add per-bucket mutation entry points + file creation mutations on root Mutation ---
-          if (isRootMutation) {
-            const {
+          if (!isRootMutation) return fields;
+
+          const {
               graphql: {
                 GraphQLString,
                 GraphQLNonNull,
@@ -178,64 +171,13 @@ export function createPresignedUrlPlugin(
 
             const newFields: Record<string, any> = {};
 
-            // --- 1a: Per-bucket entry points (appBucket, dataRoomBucket, etc.) ---
-            for (const codec of bucketCodecs as any[]) {
-              const typeName = (build.inflection as any).tableType(codec);
-              const bucketType = build.getTypeByName(typeName);
-              if (!bucketType) {
-                log.debug(`Skipping mutation entry point for ${codec.name}: type ${typeName} not found`);
-                continue;
-              }
-
-              const fieldName = typeName.charAt(0).toLowerCase() + typeName.slice(1);
-              const hasOwnerId = !!codec.attributes.owner_id;
-
-              const bucketResource = Object.values((build.input as any).pgRegistry.pgResources).find(
-                (r: any) => r.codec === codec && !r.isUnique && !r.isVirtual && !r.parameters,
-              ) as any;
-              if (!bucketResource) {
-                log.debug(`Skipping mutation entry point for ${codec.name}: no PgResource found`);
-                continue;
-              }
-
-              const ownerIdType = hasOwnerId
-                ? (build as any).getGraphQLTypeByPgCodec(codec.attributes.owner_id.codec, 'input')
-                : null;
-
-              log.debug(`Adding mutation entry point "${fieldName}" for bucket type ${typeName} (entity-scoped=${hasOwnerId})`);
-
-              newFields[fieldName] = context.fieldWithHooks(
-                { fieldName } as any,
-                {
-                  description: `Look up a ${typeName} by key for mutation operations (upload, etc.).`,
-                  type: bucketType,
-                  args: {
-                    key: { type: new GraphQLNonNull(GraphQLString), description: 'Bucket key (e.g., "public", "private")' },
-                    ...(hasOwnerId
-                      ? { ownerId: { type: new GraphQLNonNull(ownerIdType || GraphQLString), description: 'Owner entity ID (required for entity-scoped buckets)' } }
-                      : {}),
-                  },
-                  plan(_$mutation: any, fieldArgs: any) {
-                    const spec: Record<string, any> = {
-                      key: fieldArgs.getRaw('key'),
-                    };
-                    if (hasOwnerId) {
-                      spec.owner_id = fieldArgs.getRaw('ownerId');
-                    }
-                    return bucketResource.find(spec).single();
-                  },
-                },
-              );
-            }
-
-            // --- 1b: File upload mutations (uploadAppFile, uploadDataRoomFile, etc.) ---
+            // --- File upload mutations (uploadAppFile, uploadDataRoomFile, etc.) ---
             const fileCodecs = Object.values((build.input as any).pgRegistry.pgCodecs).filter(
               (codec: any) => codec.attributes && (codec.extensions as any)?.tags?.storageFiles,
             );
 
             for (const filesCodec of fileCodecs as any[]) {
               const filesTypeName = (build.inflection as any).tableType(filesCodec);
-              const filesSchemaName = filesCodec.extensions?.pg?.schemaName;
 
               // Find the matching bucket codec by table name prefix.
               // Schema-name matching is ambiguous when multiple storage modules share
@@ -465,269 +407,10 @@ export function createPresignedUrlPlugin(
               );
             }
 
-            return build.extend(
-              fields,
-              newFields,
-              'PresignedUrlPlugin adding per-bucket mutation entry points and file upload mutations',
-            );
-          }
-
-          // --- Path 2: Add upload fields on @storageBuckets types ---
-          if (!isPgClassType || !pgCodec || !pgCodec.attributes) {
-            return fields;
-          }
-
-          const tags = (pgCodec.extensions as any)?.tags;
-          if (!tags?.storageBuckets) {
-            return fields;
-          }
-
-          log.debug(`Adding upload fields to bucket type: ${pgCodec.name} (has @storageBuckets tag)`);
-
-          const {
-            graphql: {
-              GraphQLString,
-              GraphQLNonNull,
-              GraphQLInt,
-              GraphQLBoolean,
-              GraphQLObjectType,
-              GraphQLList,
-              GraphQLInputObjectType,
-            },
-          } = build;
-
-          // --- Shared output types ---
-
-          const UploadUrlPayloadType = new GraphQLObjectType({
-            name: `${build.inflection.upperCamelCase(pgCodec.name)}RequestUploadUrlPayload`,
-            fields: {
-              uploadUrl: { type: GraphQLString, description: 'Presigned PUT URL (null if deduplicated)' },
-              fileId: { type: new GraphQLNonNull(GraphQLString), description: 'The file ID' },
-              key: { type: new GraphQLNonNull(GraphQLString), description: 'The S3 object key' },
-              deduplicated: { type: new GraphQLNonNull(GraphQLBoolean), description: 'Whether this file was deduplicated' },
-              expiresAt: { type: GraphQLString, description: 'Presigned URL expiry time (null if deduplicated)' },
-              previousVersionId: { type: GraphQLString, description: 'ID of the previous version' },
-            },
-          });
-
-          const BulkUploadFilePayloadType = new GraphQLObjectType({
-            name: `${build.inflection.upperCamelCase(pgCodec.name)}BulkUploadFilePayload`,
-            fields: {
-              uploadUrl: { type: GraphQLString },
-              fileId: { type: new GraphQLNonNull(GraphQLString) },
-              key: { type: new GraphQLNonNull(GraphQLString) },
-              deduplicated: { type: new GraphQLNonNull(GraphQLBoolean) },
-              expiresAt: { type: GraphQLString },
-              previousVersionId: { type: GraphQLString },
-              index: { type: new GraphQLNonNull(GraphQLInt), description: 'Index in the input array' },
-            },
-          });
-
-          const BulkUploadUrlsPayloadType = new GraphQLObjectType({
-            name: `${build.inflection.upperCamelCase(pgCodec.name)}RequestBulkUploadUrlsPayload`,
-            fields: {
-              files: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(BulkUploadFilePayloadType))) },
-            },
-          });
-
-          const BulkUploadFileInputType = new GraphQLInputObjectType({
-            name: `${build.inflection.upperCamelCase(pgCodec.name)}BulkUploadFileInput`,
-            fields: {
-              contentHash: { type: new GraphQLNonNull(GraphQLString) },
-              contentType: { type: new GraphQLNonNull(GraphQLString) },
-              size: { type: new GraphQLNonNull(GraphQLInt) },
-              filename: { type: GraphQLString },
-              key: { type: GraphQLString },
-            },
-          });
-
-          // Capture codec for closure
-          const capturedCodec = pgCodec;
-
           return build.extend(
             fields,
-            {
-              requestUploadUrl: context.fieldWithHooks(
-                { fieldName: 'requestUploadUrl' } as any,
-                {
-                  description: 'Request a presigned URL for uploading a file to this bucket.',
-                  type: UploadUrlPayloadType,
-                  args: {
-                    contentHash: { type: new GraphQLNonNull(GraphQLString), description: 'SHA-256 content hash (hex-encoded, 64 chars)' },
-                    contentType: { type: new GraphQLNonNull(GraphQLString), description: 'MIME type of the file' },
-                    size: { type: new GraphQLNonNull(GraphQLInt), description: 'File size in bytes' },
-                    filename: { type: GraphQLString, description: 'Original filename (optional)' },
-                    key: { type: GraphQLString, description: 'Custom S3 key (only when bucket has allow_custom_keys=true)' },
-                  },
-                  plan($parent: any, fieldArgs: any) {
-                    const $bucketId = $parent.get('id');
-                    const $bucketKey = $parent.get('key');
-                    const $bucketType = $parent.get('type');
-                    const $bucketIsPublic = $parent.get('is_public');
-                    const $bucketAllowCustomKeys = $parent.get('allow_custom_keys');
-                    const $bucketAllowedMimeTypes = $parent.get('allowed_mime_types');
-                    const $bucketMaxFileSize = $parent.get('max_file_size');
-                    const $bucketOwnerId = capturedCodec.attributes.owner_id ? $parent.get('owner_id') : lambda(null, (): null => null);
-
-                    const $contentHash = fieldArgs.getRaw('contentHash');
-                    const $contentType = fieldArgs.getRaw('contentType');
-                    const $size = fieldArgs.getRaw('size');
-                    const $filename = fieldArgs.getRaw('filename');
-                    const $customKey = fieldArgs.getRaw('key');
-
-                    const $withPgClient = (grafastContext() as any).get('withPgClient');
-                    const $pgSettings = (grafastContext() as any).get('pgSettings');
-
-                    const $combined = object({
-                      bucketId: $bucketId,
-                      bucketKey: $bucketKey,
-                      bucketType: $bucketType,
-                      bucketIsPublic: $bucketIsPublic,
-                      bucketAllowCustomKeys: $bucketAllowCustomKeys,
-                      bucketAllowedMimeTypes: $bucketAllowedMimeTypes,
-                      bucketMaxFileSize: $bucketMaxFileSize,
-                      bucketOwnerId: $bucketOwnerId,
-                      contentHash: $contentHash,
-                      contentType: $contentType,
-                      size: $size,
-                      filename: $filename,
-                      customKey: $customKey,
-                      withPgClient: $withPgClient,
-                      pgSettings: $pgSettings,
-                    });
-
-                    return lambda($combined, async (vals: any) => {
-                      return vals.withPgClient(vals.pgSettings, async (pgClient: any) => {
-                        return pgClient.withTransaction(async (txClient: any) => {
-                          const databaseId = await resolveDatabaseId(txClient);
-                          if (!databaseId) throw new Error('DATABASE_NOT_FOUND');
-
-                          const allConfigs = await loadAllStorageModules(txClient, databaseId);
-                          const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
-                          if (!storageConfig) throw new Error('STORAGE_MODULE_NOT_FOUND');
-
-                          const bucket: BucketConfig = {
-                            id: vals.bucketId,
-                            key: vals.bucketKey,
-                            type: vals.bucketType,
-                            is_public: vals.bucketIsPublic,
-                            owner_id: vals.bucketOwnerId,
-                            allowed_mime_types: vals.bucketAllowedMimeTypes,
-                            max_file_size: vals.bucketMaxFileSize,
-                            allow_custom_keys: vals.bucketAllowCustomKeys ?? false,
-                          };
-
-                          const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
-                          await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
-
-                          return processSingleFile(
-                            options, txClient, storageConfig, databaseId, bucket, s3ForDb, {
-                              contentHash: vals.contentHash,
-                              contentType: vals.contentType,
-                              size: vals.size,
-                              filename: vals.filename,
-                              key: vals.customKey,
-                            },
-                          );
-                        });
-                      });
-                    });
-                  },
-                },
-              ),
-              requestBulkUploadUrls: context.fieldWithHooks(
-                { fieldName: 'requestBulkUploadUrls' } as any,
-                {
-                  description: 'Request presigned URLs for uploading multiple files to this bucket.',
-                  type: BulkUploadUrlsPayloadType,
-                  args: {
-                    files: {
-                      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(BulkUploadFileInputType))),
-                      description: 'Array of files to upload',
-                    },
-                  },
-                  plan($parent: any, fieldArgs: any) {
-                    const $bucketId = $parent.get('id');
-                    const $bucketKey = $parent.get('key');
-                    const $bucketType = $parent.get('type');
-                    const $bucketIsPublic = $parent.get('is_public');
-                    const $bucketAllowCustomKeys = $parent.get('allow_custom_keys');
-                    const $bucketAllowedMimeTypes = $parent.get('allowed_mime_types');
-                    const $bucketMaxFileSize = $parent.get('max_file_size');
-                    const $bucketOwnerId = capturedCodec.attributes.owner_id ? $parent.get('owner_id') : lambda(null, (): null => null);
-
-                    const $files = fieldArgs.getRaw('files');
-                    const $withPgClient = (grafastContext() as any).get('withPgClient');
-                    const $pgSettings = (grafastContext() as any).get('pgSettings');
-
-                    const $combined = object({
-                      bucketId: $bucketId,
-                      bucketKey: $bucketKey,
-                      bucketType: $bucketType,
-                      bucketIsPublic: $bucketIsPublic,
-                      bucketAllowCustomKeys: $bucketAllowCustomKeys,
-                      bucketAllowedMimeTypes: $bucketAllowedMimeTypes,
-                      bucketMaxFileSize: $bucketMaxFileSize,
-                      bucketOwnerId: $bucketOwnerId,
-                      files: $files,
-                      withPgClient: $withPgClient,
-                      pgSettings: $pgSettings,
-                    });
-
-                    return lambda($combined, async (vals: any) => {
-                      const { files } = vals;
-                      if (!Array.isArray(files) || files.length === 0) {
-                        throw new Error('INVALID_FILES: must provide at least one file');
-                      }
-
-                      return vals.withPgClient(vals.pgSettings, async (pgClient: any) => {
-                        return pgClient.withTransaction(async (txClient: any) => {
-                          const databaseId = await resolveDatabaseId(txClient);
-                          if (!databaseId) throw new Error('DATABASE_NOT_FOUND');
-
-                          const allConfigs = await loadAllStorageModules(txClient, databaseId);
-                          const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
-                          if (!storageConfig) throw new Error('STORAGE_MODULE_NOT_FOUND');
-
-                          if (files.length > storageConfig.maxBulkFiles) {
-                            throw new Error(`BULK_LIMIT_EXCEEDED: max ${storageConfig.maxBulkFiles} files per batch`);
-                          }
-                          const totalSize = files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
-                          if (totalSize > storageConfig.maxBulkTotalSize) {
-                            throw new Error(`BULK_SIZE_EXCEEDED: total size ${totalSize} exceeds max ${storageConfig.maxBulkTotalSize} bytes`);
-                          }
-
-                          const bucket: BucketConfig = {
-                            id: vals.bucketId,
-                            key: vals.bucketKey,
-                            type: vals.bucketType,
-                            is_public: vals.bucketIsPublic,
-                            owner_id: vals.bucketOwnerId,
-                            allowed_mime_types: vals.bucketAllowedMimeTypes,
-                            max_file_size: vals.bucketMaxFileSize,
-                            allow_custom_keys: vals.bucketAllowCustomKeys ?? false,
-                          };
-
-                          const s3ForDb = resolveS3ForDatabase(options, storageConfig, databaseId);
-                          await ensureS3BucketExists(options, s3ForDb.bucket, bucket, databaseId, storageConfig.allowedOrigins);
-
-                          const results = [];
-                          for (let i = 0; i < files.length; i++) {
-                            const result = await processSingleFile(
-                              options, txClient, storageConfig, databaseId, bucket, s3ForDb, files[i],
-                            );
-                            results.push({ ...result, index: i });
-                          }
-
-                          return { files: results };
-                        });
-                      });
-                    });
-                  },
-                },
-              ),
-            },
-            `PresignedUrlPlugin adding upload fields to ${pgCodec.name}`,
+            newFields,
+            'PresignedUrlPlugin adding file upload mutations',
           );
         },
 

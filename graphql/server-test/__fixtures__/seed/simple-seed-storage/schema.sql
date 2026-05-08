@@ -20,12 +20,11 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA "simple-storage-public"
 -- =====================================================
 
 -- Buckets table
-CREATE TABLE IF NOT EXISTS "simple-storage-public".buckets (
+CREATE TABLE IF NOT EXISTS "simple-storage-public".app_buckets (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   key text NOT NULL,
   type text NOT NULL DEFAULT 'private',
   is_public boolean NOT NULL DEFAULT false,
-  owner_id uuid,
   allowed_mime_types text[] NULL,
   max_file_size bigint NULL,
   allow_custom_keys boolean NOT NULL DEFAULT false,
@@ -34,12 +33,12 @@ CREATE TABLE IF NOT EXISTS "simple-storage-public".buckets (
   UNIQUE (key)
 );
 
-COMMENT ON TABLE "simple-storage-public".buckets IS E'@storageBuckets\nStorage buckets table';
+COMMENT ON TABLE "simple-storage-public".app_buckets IS E'@storageBuckets\nStorage buckets table';
 
 -- Files table
-CREATE TABLE IF NOT EXISTS "simple-storage-public".files (
+CREATE TABLE IF NOT EXISTS "simple-storage-public".app_files (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  bucket_id uuid NOT NULL REFERENCES "simple-storage-public".buckets(id),
+  bucket_id uuid NOT NULL REFERENCES "simple-storage-public".app_buckets(id),
   key text NOT NULL,
   content_hash text NOT NULL,
   mime_type text NOT NULL,
@@ -47,14 +46,14 @@ CREATE TABLE IF NOT EXISTS "simple-storage-public".files (
   filename text,
   owner_id uuid,
   is_public boolean NOT NULL DEFAULT false,
-  previous_version_id uuid REFERENCES "simple-storage-public".files(id),
+  previous_version_id uuid REFERENCES "simple-storage-public".app_files(id),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   UNIQUE (bucket_id, key)
 );
 
-COMMENT ON TABLE "simple-storage-public".files IS E'@storageFiles\nStorage files table';
+COMMENT ON TABLE "simple-storage-public".app_files IS E'@storageFiles\nStorage files table';
 
 -- Grant table permissions (allow anonymous to do CRUD for tests — no RLS)
-GRANT SELECT, INSERT, UPDATE, DELETE ON "simple-storage-public".buckets TO administrator, authenticated, anonymous;
-GRANT SELECT, INSERT, UPDATE, DELETE ON "simple-storage-public".files TO administrator, authenticated, anonymous;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "simple-storage-public".app_buckets TO administrator, authenticated, anonymous;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "simple-storage-public".app_files TO administrator, authenticated, anonymous;

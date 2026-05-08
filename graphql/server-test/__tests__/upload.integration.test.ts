@@ -1,8 +1,8 @@
 /**
  * Upload Integration Tests — end-to-end presigned URL flow
  *
- * Exercises the per-table upload pipeline:
- *   query bucket → requestUploadUrl field → PUT to presigned URL → downloadUrl
+ * Exercises the file-centric upload pipeline:
+ *   uploadAppFile mutation → presigned PUT URL → PUT to S3
  *
  * Uses real MinIO (available in CI as minio_cdn service) and lazy bucket
  * provisioning. No RLS — that will be tested in constructive-db.
@@ -41,24 +41,14 @@ const seedFiles = [
 
 // --- GraphQL operations ---
 
-const REQUEST_UPLOAD_URL = `
-  query RequestUploadUrl($key: String!, $contentHash: String!, $contentType: String!, $size: Int!, $filename: String) {
-    buckets(where: { key: { equalTo: $key } }) {
-      nodes {
-        id
-        requestUploadUrl(
-          contentHash: $contentHash
-          contentType: $contentType
-          size: $size
-          filename: $filename
-        ) {
-          uploadUrl
-          fileId
-          key
-          deduplicated
-          expiresAt
-        }
-      }
+const UPLOAD_APP_FILE = `
+  mutation UploadAppFile($input: UploadAppFileInput!) {
+    uploadAppFile(input: $input) {
+      uploadUrl
+      fileId
+      key
+      deduplicated
+      expiresAt
     }
   }
 `;
@@ -86,7 +76,7 @@ async function putToPresignedUrl(
 
 // --- Tests ---
 
-describe('Upload integration (per-table presigned URL flow)', () => {
+describe('Upload integration (file-centric upload mutations)', () => {
   let request: supertest.Agent;
   let teardown: () => Promise<void>;
 
@@ -122,33 +112,30 @@ describe('Upload integration (per-table presigned URL flow)', () => {
     if (teardown) await teardown();
   });
 
-  describe('Public file upload via bucket field', () => {
+  describe('Public file upload via uploadAppFile mutation', () => {
     const fileContent = 'Hello, public world!';
     const contentType = 'text/plain';
     const contentHash = sha256(fileContent);
     let uploadUrl: string;
-    let fileId: string;
 
-    it('should return a presigned PUT URL via bucket.requestUploadUrl', async () => {
+    it('should return a presigned PUT URL via uploadAppFile', async () => {
       const res = await postGraphQL({
-        query: REQUEST_UPLOAD_URL,
+        query: UPLOAD_APP_FILE,
         variables: {
-          key: 'public',
-          contentHash,
-          contentType,
-          size: Buffer.byteLength(fileContent),
-          filename: 'hello-public.txt',
+          input: {
+            bucketKey: 'public',
+            contentHash,
+            contentType,
+            size: Buffer.byteLength(fileContent),
+            filename: 'hello-public.txt',
+          },
         },
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const bucket = res.body.data.buckets.nodes[0];
-      expect(bucket).toBeTruthy();
-      expect(bucket.id).toBeTruthy();
-
-      const payload = bucket.requestUploadUrl;
+      const payload = res.body.data.uploadAppFile;
       expect(payload.uploadUrl).toBeTruthy();
       expect(payload.fileId).toBeTruthy();
       expect(payload.key).toBe(contentHash);
@@ -156,7 +143,6 @@ describe('Upload integration (per-table presigned URL flow)', () => {
       expect(payload.expiresAt).toBeTruthy();
 
       uploadUrl = payload.uploadUrl;
-      fileId = payload.fileId;
     });
 
     it('should accept a PUT to the presigned URL', async () => {
@@ -165,32 +151,30 @@ describe('Upload integration (per-table presigned URL flow)', () => {
     });
   });
 
-  describe('Private file upload via bucket field', () => {
+  describe('Private file upload via uploadAppFile mutation', () => {
     const fileContent = 'Hello, private world!';
     const contentType = 'text/plain';
     const contentHash = sha256(fileContent);
     let uploadUrl: string;
-    let fileId: string;
 
-    it('should return a presigned PUT URL via bucket.requestUploadUrl', async () => {
+    it('should return a presigned PUT URL via uploadAppFile', async () => {
       const res = await postGraphQL({
-        query: REQUEST_UPLOAD_URL,
+        query: UPLOAD_APP_FILE,
         variables: {
-          key: 'private',
-          contentHash,
-          contentType,
-          size: Buffer.byteLength(fileContent),
-          filename: 'hello-private.txt',
+          input: {
+            bucketKey: 'private',
+            contentHash,
+            contentType,
+            size: Buffer.byteLength(fileContent),
+            filename: 'hello-private.txt',
+          },
         },
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const bucket = res.body.data.buckets.nodes[0];
-      expect(bucket).toBeTruthy();
-
-      const payload = bucket.requestUploadUrl;
+      const payload = res.body.data.uploadAppFile;
       expect(payload.uploadUrl).toBeTruthy();
       expect(payload.fileId).toBeTruthy();
       expect(payload.key).toBe(contentHash);
@@ -198,7 +182,6 @@ describe('Upload integration (per-table presigned URL flow)', () => {
       expect(payload.expiresAt).toBeTruthy();
 
       uploadUrl = payload.uploadUrl;
-      fileId = payload.fileId;
     });
 
     it('should accept a PUT to the presigned URL', async () => {
@@ -213,20 +196,22 @@ describe('Upload integration (per-table presigned URL flow)', () => {
       const contentHash = sha256(fileContent);
 
       const res = await postGraphQL({
-        query: REQUEST_UPLOAD_URL,
+        query: UPLOAD_APP_FILE,
         variables: {
-          key: 'public',
-          contentHash,
-          contentType: 'text/plain',
-          size: Buffer.byteLength(fileContent),
-          filename: 'hello-public-copy.txt',
+          input: {
+            bucketKey: 'public',
+            contentHash,
+            contentType: 'text/plain',
+            size: Buffer.byteLength(fileContent),
+            filename: 'hello-public-copy.txt',
+          },
         },
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const payload = res.body.data.buckets.nodes[0].requestUploadUrl;
+      const payload = res.body.data.uploadAppFile;
       expect(payload.deduplicated).toBe(true);
       expect(payload.uploadUrl).toBeNull();
       expect(payload.expiresAt).toBeNull();
@@ -234,3 +219,4 @@ describe('Upload integration (per-table presigned URL flow)', () => {
     });
   });
 });
+
