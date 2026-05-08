@@ -119,6 +119,23 @@ export interface Field {
   isNotNull?: boolean | null;
   /** Whether the column has a DEFAULT value (inferred by comparing entity vs CreateInput field nullability) */
   hasDefault?: boolean | null;
+  /** Arguments for computed fields (e.g. requestUploadUrl on bucket types) */
+  args?: FieldArgument[];
+}
+
+/**
+ * Argument on a computed field (not a root operation)
+ */
+export interface FieldArgument {
+  name: string;
+  /** GraphQL type reference */
+  type: TypeRef;
+  /** Whether this argument is required (NON_NULL) */
+  isRequired: boolean;
+  /** Description from schema */
+  description?: string;
+  /** Default value (as string) */
+  defaultValue?: string;
 }
 
 /**

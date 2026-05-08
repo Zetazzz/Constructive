@@ -842,15 +842,62 @@ function buildSelectTypeLiteral(
 ): t.TSTypeLiteral {
   const members: t.TSTypeElement[] = [];
 
-  // Add scalar fields
+  // Add scalar fields (and fields with arguments)
   for (const field of table.fields) {
     if (!isRelationField(field.name, table)) {
-      const prop = t.tsPropertySignature(
-        t.identifier(field.name),
-        t.tsTypeAnnotation(t.tsBooleanKeyword()),
-      );
-      prop.optional = true;
-      members.push(prop);
+      if (field.args && field.args.length > 0) {
+        // Field with arguments (e.g. requestUploadUrl on bucket types)
+        const argMembers: t.TSTypeElement[] = field.args.map((arg) => {
+          const tsType = typeRefToTs(arg.type);
+          const argProp = t.tsPropertySignature(
+            t.identifier(arg.name),
+            t.tsTypeAnnotation(parseTypeString(tsType)),
+          );
+          argProp.optional = !arg.isRequired;
+          return argProp;
+        });
+
+        const prop = t.tsPropertySignature(
+          t.identifier(field.name),
+          t.tsTypeAnnotation(
+            t.tsTypeLiteral([
+              (() => {
+                const argsProp = t.tsPropertySignature(
+                  t.identifier('args'),
+                  t.tsTypeAnnotation(t.tsTypeLiteral(argMembers)),
+                );
+                argsProp.optional = false;
+                return argsProp;
+              })(),
+              (() => {
+                const selectProp = t.tsPropertySignature(
+                  t.identifier('select'),
+                  t.tsTypeAnnotation(
+                    t.tsTypeReference(
+                      t.identifier('Record'),
+                      t.tsTypeParameterInstantiation([
+                        t.tsStringKeyword(),
+                        t.tsBooleanKeyword(),
+                      ]),
+                    ),
+                  ),
+                );
+                selectProp.optional = true;
+                return selectProp;
+              })(),
+            ]),
+          ),
+        );
+        prop.optional = true;
+        members.push(prop);
+      } else {
+        const prop = t.tsPropertySignature(
+          t.identifier(field.name),
+          t.tsTypeAnnotation(t.tsBooleanKeyword()),
+        );
+        prop.optional = true;
+        members.push(prop);
+      }
     }
   }
 

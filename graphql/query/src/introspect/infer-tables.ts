@@ -27,6 +27,7 @@ import { getBaseTypeName, isList, isNonNull, unwrapType } from '../types/introsp
 import type {
   BelongsToRelation,
   Field,
+  FieldArgument,
   FieldType,
   HasManyRelation,
   ManyToManyRelation,
@@ -36,6 +37,7 @@ import type {
   TableConstraints,
   TableInflection,
   TableQueryNames,
+  TypeRef,
 } from '../types/schema';
 
 // ============================================================================
@@ -395,12 +397,14 @@ function extractEntityFields(
 
     // Include scalar, enum, and other non-relation fields
     const fieldDescription = commentsEnabled ? stripSmartComments(field.description) : undefined;
+    const fieldArgs = extractFieldArguments(field);
     fields.push({
       name: field.name,
       ...(fieldDescription ? { description: fieldDescription } : {}),
       type: convertToCleanFieldType(field.type),
       isNotNull: fieldIsNotNull,
       hasDefault: fieldHasDefault,
+      ...(fieldArgs.length > 0 ? { args: fieldArgs } : {}),
     });
   }
 
@@ -459,6 +463,44 @@ function convertToCleanFieldType(
     // PostgreSQL-specific fields are not available from introspection
     // They were optional anyway and not used by generators
   };
+}
+
+/**
+ * Convert an IntrospectionTypeRef to a clean TypeRef
+ */
+function introspectionTypeRefToTypeRef(typeRef: IntrospectionTypeRef): TypeRef {
+  if (typeRef.kind === 'NON_NULL' && typeRef.ofType) {
+    return {
+      kind: 'NON_NULL',
+      name: null,
+      ofType: introspectionTypeRefToTypeRef(typeRef.ofType),
+    };
+  }
+  if (typeRef.kind === 'LIST' && typeRef.ofType) {
+    return {
+      kind: 'LIST',
+      name: null,
+      ofType: introspectionTypeRefToTypeRef(typeRef.ofType),
+    };
+  }
+  return {
+    kind: typeRef.kind as TypeRef['kind'],
+    name: typeRef.name ?? null,
+  };
+}
+
+/**
+ * Extract arguments from a field that has them (computed fields with args)
+ */
+function extractFieldArguments(field: IntrospectionField): FieldArgument[] {
+  if (!field.args || field.args.length === 0) return [];
+  return field.args.map((arg) => ({
+    name: arg.name,
+    type: introspectionTypeRefToTypeRef(arg.type),
+    isRequired: isNonNull(arg.type),
+    ...(arg.description ? { description: arg.description } : {}),
+    ...(arg.defaultValue != null ? { defaultValue: arg.defaultValue } : {}),
+  }));
 }
 
 // ============================================================================
