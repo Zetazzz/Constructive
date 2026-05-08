@@ -6,6 +6,7 @@ import { PresetAuthHardened } from './auth-hardened';
 import { PresetAuthPasskey } from './auth-passkey';
 import { PresetAuthSso } from './auth-sso';
 import { PresetB2b } from './b2b';
+import { PresetB2bStorage } from './b2b-storage';
 import { PresetFull } from './full';
 import { PresetMinimal } from './minimal';
 import type { ModulePreset } from './types';
@@ -17,6 +18,7 @@ export {
   PresetAuthPasskey,
   PresetAuthSso,
   PresetB2b,
+  PresetB2bStorage,
   PresetFull,
   PresetMinimal};
 
@@ -32,6 +34,7 @@ export const allModulePresets: ModulePreset[] = [
   PresetAuthPasskey,
   PresetAuthHardened,
   PresetB2b,
+  PresetB2bStorage,
   PresetFull
 ];
 

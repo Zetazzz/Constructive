@@ -10,25 +10,29 @@ import type { ModulePreset } from './types';
  * `set_password`, `reset_password`, `forgot_password`, `verify_email`,
  * `delete_account`, `my_sessions`, API-key CRUD. Nothing more.
  *
+ * Includes `permissions_module:app`, `limits_module:app`, and
+ * `levels_module:app` because `memberships_module:app` has NOT NULL
+ * foreign keys to the tables they create (grants, caps, levels).
+ *
  * It deliberately excludes rate limits, connected accounts / identity
  * providers (OAuth), WebAuthn (passkeys), phone numbers (SMS), invites,
- * permissions, and org-scoped memberships. Bolt those on by moving to a
- * richer preset (`auth:hardened`, `b2b`) when you actually need them.
+ * and org-scoped memberships. Bolt those on by moving to a richer preset
+ * (`auth:hardened`, `b2b`) when you actually need them.
  */
 export const PresetAuthEmail: ModulePreset = {
   name: 'auth:email',
   display_name: 'Email + Password',
-  summary: 'Standard email/password auth flow. No orgs, no SSO, no MFA, no rate limits.',
+  summary: 'Standard email/password auth flow with app-level permissions. No orgs, no SSO, no MFA.',
   description:
     'Installs `user_auth_module` with exactly the table dependencies its insert trigger ' +
-    'hard-requires: users, app-scoped memberships, emails, secrets, encrypted secrets, ' +
-    'sessions, plus RLS. You get the standard password-based auth procedures (sign_up, ' +
-    "sign_in, reset_password, verify_email, delete_account, ...) and that's it. " +
-    'Everything else in the module catalog — SSO, passkeys, SMS, rate limits, orgs, ' +
-    'invites, permissions — is deliberately omitted. This is the right shape for single-tenant ' +
-    'consumer apps in the first weeks, internal tools that need a real login, or anything ' +
-    'where you want the lightest possible working auth and will add complexity only when ' +
-    'forced to.',
+    'hard-requires: users, app-scoped memberships (plus their permissions/limits/levels ' +
+    'dependencies), emails, secrets, encrypted secrets, sessions, plus RLS. You get the ' +
+    'standard password-based auth procedures (sign_up, sign_in, reset_password, ' +
+    "verify_email, delete_account, ...) and that's it. Everything else in the module " +
+    'catalog — SSO, passkeys, SMS, rate limits, orgs, invites — is deliberately omitted. ' +
+    'This is the right shape for single-tenant consumer apps in the first weeks, internal ' +
+    'tools that need a real login, or anything where you want the lightest possible working ' +
+    'auth and will add complexity only when forced to.',
   good_for: [
     'Single-tenant consumer apps in the first week of development',
     'Internal tools where one simple login is enough',
@@ -43,6 +47,9 @@ export const PresetAuthEmail: ModulePreset = {
   modules: [
     'users_module',
     'membership_types_module',
+    'permissions_module:app',
+    'limits_module:app',
+    'levels_module:app',
     'memberships_module:app',
     'sessions_module',
     'secrets_module',
@@ -54,6 +61,9 @@ export const PresetAuthEmail: ModulePreset = {
   includes_notes: {
     'memberships_module:app': 'Required by `user_auth_module`: every user gets an app-level membership row at sign-up.',
     membership_types_module: "Required by `memberships_module:app`; defines the 'app' scope.",
+    'permissions_module:app': 'Required by `memberships_module:app`: NOT NULL FK to grants table.',
+    'limits_module:app': 'Required by `memberships_module:app`: NOT NULL FK to caps table.',
+    'levels_module:app': 'Required by `memberships_module:app`: NOT NULL FK to levels table.',
     emails_module: 'Required by the `user_auth_module` insert trigger (`RAISE EXCEPTION REQUIRES emails_module`).',
     encrypted_secrets_module: 'Required for password hashing; referenced by `set_password`, `verify_password`, and reset flows.',
     secrets_module: 'API-key storage (`create_api_key`, `revoke_api_key`, `my_api_keys`).'
@@ -65,7 +75,6 @@ export const PresetAuthEmail: ModulePreset = {
     webauthn_credentials_module: 'No passkeys — add `auth:passkey`.',
     phone_numbers_module: 'No SMS login — add `auth:hardened` or the SMS-only refactor path.',
     'memberships_module:org': 'No org/team structure — move to `b2b` when you need one.',
-    'permissions_module:app': 'No fine-grained RBAC; the `is_admin` flag on users is the only gate.',
     invites_module: 'Self-serve signup only.',
     session_secrets_module: 'No magic-link / email-OTP nonces; add `auth:email+magic`.'
   }
