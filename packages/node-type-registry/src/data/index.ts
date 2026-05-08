@@ -1,3 +1,4 @@
+export { DataChunks } from './data-chunks';
 export { DataCompositeField } from './data-composite-field';
 export { DataDirectOwner } from './data-direct-owner';
 export { DataEntityMembership } from './data-entity-membership';

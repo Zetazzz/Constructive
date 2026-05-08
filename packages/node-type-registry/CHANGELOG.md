@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.28.0...node-type-registry@0.29.0) (2026-05-08)
+
+### Features
+
+- add DataChunks node type, update DataFileEmbedding to compose it ([35a8aa3](https://github.com/constructive-io/constructive/commit/35a8aa3fb7f677161d8b3c542b6547a2af1f25e5))
+
+# [0.28.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.27.0...node-type-registry@0.28.0) (2026-05-08)
+
+**Note:** Version bump only for package node-type-registry
+
+# [0.27.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.26.0...node-type-registry@0.27.0) (2026-05-08)
+
+**Note:** Version bump only for package node-type-registry
+
+# [0.26.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.25.0...node-type-registry@0.26.0) (2026-05-07)
+
+### Features
+
+- add AuthzFilePath to node_type_registry ([5e3fd59](https://github.com/constructive-io/constructive/commit/5e3fd599c8e79a244196e6a66f49dbd008f5804e))
+
+# [0.25.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.24.0...node-type-registry@0.25.0) (2026-05-07)
+
+### Features
+
+- add DataFileEmbedding node type definition ([81b5321](https://github.com/constructive-io/constructive/commit/81b5321c89dbb20718334beff7abc65210fc320a))
+
 # [0.24.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.23.0...node-type-registry@0.24.0) (2026-05-06)
 
 ### Features

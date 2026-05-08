@@ -29,7 +29,7 @@ VALUES (
   'b0000001-0000-0000-0000-000000000001',
   '80a2eaaf-f77e-4bfe-8506-df929ef1b8d9',
   '6dbae92a-5450-401b-1ed5-d69e7754940d',
-  'buckets',
+  'app_buckets',
   NULL
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -39,7 +39,7 @@ VALUES (
   'b0000001-0000-0000-0000-000000000002',
   '80a2eaaf-f77e-4bfe-8506-df929ef1b8d9',
   '6dbae92a-5450-401b-1ed5-d69e7754940d',
-  'files',
+  'app_files',
   NULL
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -88,10 +88,10 @@ VALUES (
 -- BUCKET SEED DATA
 -- =====================================================
 
-INSERT INTO "simple-storage-public".buckets (id, key, type, is_public, owner_id)
+INSERT INTO "simple-storage-public".app_buckets (id, key, type, is_public)
 VALUES
-  ('d0000001-0000-0000-0000-000000000001', 'public', 'public', true, NULL),
-  ('d0000001-0000-0000-0000-000000000002', 'private', 'private', false, NULL)
+  ('d0000001-0000-0000-0000-000000000001', 'public', 'public', true),
+  ('d0000001-0000-0000-0000-000000000002', 'private', 'private', false)
 ON CONFLICT (id) DO NOTHING;
 
 SET session_replication_role TO DEFAULT;

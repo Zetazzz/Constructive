@@ -3,6 +3,59 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.15.0...graphile-presigned-url-plugin@0.15.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+# [0.15.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.14.1...graphile-presigned-url-plugin@0.15.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+## [0.14.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.14.0...graphile-presigned-url-plugin@0.14.1) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** match files→buckets by table name prefix instead of schema name ([7fd3cca](https://github.com/constructive-io/constructive/commit/7fd3ccac49f313a98e9fbe98850426888f658869))
+
+# [0.14.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.13.0...graphile-presigned-url-plugin@0.14.0) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** rename createFile -> uploadFile to avoid CRUD naming conflict ([9b8fb0a](https://github.com/constructive-io/constructive/commit/9b8fb0ad3c9971c2a71527f4e9f78a8bf232fdee))
+
+### Features
+
+- **presigned-url:** add createFile mutations alongside bucket entry points ([b22fc31](https://github.com/constructive-io/constructive/commit/b22fc3138b5dbb01b737adf319fafa8535364763))
+
+# [0.13.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.2...graphile-presigned-url-plugin@0.13.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+## [0.12.2](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.1...graphile-presigned-url-plugin@0.12.2) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** use correct GraphQL type for ownerId argument ([22e5252](https://github.com/constructive-io/constructive/commit/22e52529a7c8d19d84f6b72866cafa09b7288fa5))
+- **presigned-url:** use extensions.pg.name for codec table name matching ([b60a855](https://github.com/constructive-io/constructive/commit/b60a855c784809c564c62bc26823767cbeb792d2))
+
+## [0.12.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.0...graphile-presigned-url-plugin@0.12.1) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** return PgSelectSingleStep from mutation entry points ([c924768](https://github.com/constructive-io/constructive/commit/c924768d99fc413e8fcfbe9ae1a43a9aac60c4ff))
+
+# [0.12.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.11.0...graphile-presigned-url-plugin@0.12.0) (2026-05-08)
+
+### Features
+
+- **presigned-url:** add per-bucket mutation entry points on root Mutation type ([a8811be](https://github.com/constructive-io/constructive/commit/a8811be6c48ba7008d78d2e3724df5000226db35))
+
+# [0.11.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.10.0...graphile-presigned-url-plugin@0.11.0) (2026-05-07)
+
+### Features
+
+- per-table storage middleware — upload fields on bucket types, delete middleware on file tables ([5003dc5](https://github.com/constructive-io/constructive/commit/5003dc5d85d21d5042572071b22fad1654f36881))
+
 # [0.10.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.9.0...graphile-presigned-url-plugin@0.10.0) (2026-05-06)
 
 **Note:** Version bump only for package graphile-presigned-url-plugin

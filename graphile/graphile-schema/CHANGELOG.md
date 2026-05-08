@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.18.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.0...graphile-schema@1.18.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.18.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.17.2...graphile-schema@1.18.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.17.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.17.1...graphile-schema@1.17.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.17.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.17.0...graphile-schema@1.17.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.17.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.4...graphile-schema@1.17.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.3...graphile-schema@1.16.4) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.2...graphile-schema@1.16.3) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.1...graphile-schema@1.16.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.0...graphile-schema@1.16.1) (2026-05-07)
+
+**Note:** Version bump only for package graphile-schema
+
 # [1.16.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.15.4...graphile-schema@1.16.0) (2026-05-06)
 
 **Note:** Version bump only for package graphile-schema

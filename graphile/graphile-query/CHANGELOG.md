@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.16.1](https://github.com/constructive-io/constructive/compare/graphile-query@4.16.0...graphile-query@4.16.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+# [4.16.0](https://github.com/constructive-io/constructive/compare/graphile-query@4.15.2...graphile-query@4.16.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+## [4.15.2](https://github.com/constructive-io/constructive/compare/graphile-query@4.15.1...graphile-query@4.15.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+## [4.15.1](https://github.com/constructive-io/constructive/compare/graphile-query@4.15.0...graphile-query@4.15.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+# [4.15.0](https://github.com/constructive-io/constructive/compare/graphile-query@4.14.4...graphile-query@4.15.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+## [4.14.4](https://github.com/constructive-io/constructive/compare/graphile-query@4.14.3...graphile-query@4.14.4) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+## [4.14.3](https://github.com/constructive-io/constructive/compare/graphile-query@4.14.2...graphile-query@4.14.3) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+## [4.14.2](https://github.com/constructive-io/constructive/compare/graphile-query@4.14.1...graphile-query@4.14.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-query
+
+## [4.14.1](https://github.com/constructive-io/constructive/compare/graphile-query@4.14.0...graphile-query@4.14.1) (2026-05-07)
+
+**Note:** Version bump only for package graphile-query
+
 # [4.14.0](https://github.com/constructive-io/constructive/compare/graphile-query@4.13.4...graphile-query@4.14.0) (2026-05-06)
 
 **Note:** Version bump only for package graphile-query

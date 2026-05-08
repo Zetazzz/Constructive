@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.17.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.17.0...@constructive-io/graphql-test@4.17.1) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+# [4.17.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.16.2...@constructive-io/graphql-test@4.17.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+## [4.16.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.16.1...@constructive-io/graphql-test@4.16.2) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+## [4.16.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.16.0...@constructive-io/graphql-test@4.16.1) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+# [4.16.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.15.4...@constructive-io/graphql-test@4.16.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+## [4.15.4](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.15.3...@constructive-io/graphql-test@4.15.4) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+## [4.15.3](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.15.2...@constructive-io/graphql-test@4.15.3) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+## [4.15.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.15.1...@constructive-io/graphql-test@4.15.2) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-test
+
+## [4.15.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.15.0...@constructive-io/graphql-test@4.15.1) (2026-05-07)
+
+### Bug Fixes
+
+- use collection query in upload test, regenerate snapshots ([9d5b071](https://github.com/constructive-io/constructive/commit/9d5b07174e59d8caa0b11992bfaefdbdc18b05e1))
+- use where filter in upload test, regenerate snapshots ([ab4a772](https://github.com/constructive-io/constructive/commit/ab4a772a1c7d8b9141a53fdc084c24d9cf28b7b9))
+
 # [4.15.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-test@4.14.4...@constructive-io/graphql-test@4.15.0) (2026-05-06)
 
 **Note:** Version bump only for package @constructive-io/graphql-test

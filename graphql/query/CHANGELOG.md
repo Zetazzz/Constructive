@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.20.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.20.0...@constructive-io/graphql-query@3.20.1) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+# [3.20.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.19.2...@constructive-io/graphql-query@3.20.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+## [3.19.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.19.1...@constructive-io/graphql-query@3.19.2) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+## [3.19.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.19.0...@constructive-io/graphql-query@3.19.1) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+# [3.19.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.18.4...@constructive-io/graphql-query@3.19.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+## [3.18.4](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.18.3...@constructive-io/graphql-query@3.18.4) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+## [3.18.3](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.18.2...@constructive-io/graphql-query@3.18.3) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+## [3.18.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.18.1...@constructive-io/graphql-query@3.18.2) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
+## [3.18.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.18.0...@constructive-io/graphql-query@3.18.1) (2026-05-07)
+
+**Note:** Version bump only for package @constructive-io/graphql-query
+
 # [3.18.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.17.4...@constructive-io/graphql-query@3.18.0) (2026-05-06)
 
 **Note:** Version bump only for package @constructive-io/graphql-query

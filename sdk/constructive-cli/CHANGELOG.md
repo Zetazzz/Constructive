@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.1](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.20.0...@constructive-sdk/cli@0.20.1) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+# [0.20.0](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.19.2...@constructive-sdk/cli@0.20.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.19.2](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.19.1...@constructive-sdk/cli@0.19.2) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.19.1](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.19.0...@constructive-sdk/cli@0.19.1) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+# [0.19.0](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.18.4...@constructive-sdk/cli@0.19.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.18.4](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.18.3...@constructive-sdk/cli@0.18.4) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.18.3](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.18.2...@constructive-sdk/cli@0.18.3) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.18.2](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.18.1...@constructive-sdk/cli@0.18.2) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.18.1](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.18.0...@constructive-sdk/cli@0.18.1) (2026-05-07)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
 # [0.18.0](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.17.4...@constructive-sdk/cli@0.18.0) (2026-05-06)
 
 **Note:** Version bump only for package @constructive-sdk/cli
