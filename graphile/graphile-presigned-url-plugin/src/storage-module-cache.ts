@@ -367,11 +367,11 @@ export async function loadAllStorageModules(
  * @returns The matching StorageModuleConfig or null
  */
 export function resolveStorageConfigFromCodec(
-  pgCodec: { name: string; extensions?: { pg?: { schemaName?: string } }; sqlType?: string },
+  pgCodec: { name: string; extensions?: { pg?: { schemaName?: string; name?: string } }; sqlType?: string },
   allConfigs: StorageModuleConfig[],
 ): StorageModuleConfig | null {
   const schemaName = pgCodec.extensions?.pg?.schemaName;
-  const tableName = pgCodec.name;
+  const tableName = pgCodec.extensions?.pg?.name ?? pgCodec.name;
 
   if (!schemaName || !tableName) return null;
 

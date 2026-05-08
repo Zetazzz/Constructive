@@ -184,6 +184,12 @@ export function createPresignedUrlPlugin(
                 continue;
               }
 
+              // Resolve the GraphQL type for ownerId from the codec's attribute codec
+              // (e.g. UUID scalar instead of String) so Grafast's type matching works.
+              const ownerIdType = hasOwnerId
+                ? (build as any).getGraphQLTypeByPgCodec(codec.attributes.owner_id.codec, 'input')
+                : null;
+
               log.debug(`Adding mutation entry point "${fieldName}" for bucket type ${typeName} (entity-scoped=${hasOwnerId})`);
 
               newFields[fieldName] = context.fieldWithHooks(
@@ -194,7 +200,7 @@ export function createPresignedUrlPlugin(
                   args: {
                     key: { type: new GraphQLNonNull(GraphQLString), description: 'Bucket key (e.g., "public", "private")' },
                     ...(hasOwnerId
-                      ? { ownerId: { type: new GraphQLNonNull(GraphQLString), description: 'Owner entity ID (required for entity-scoped buckets)' } }
+                      ? { ownerId: { type: new GraphQLNonNull(ownerIdType || GraphQLString), description: 'Owner entity ID (required for entity-scoped buckets)' } }
                       : {}),
                   },
                   plan(_$mutation: any, fieldArgs: any) {
