@@ -9,20 +9,23 @@
  * 2. Upload fields — adds `requestUploadUrl` and `requestBulkUploadUrls` fields
  *    on `@storageBuckets`-tagged types, so clients upload via the typed bucket API.
  *
- * 3. downloadUrl — handled by download-url-field.ts (separate plugin).
+ * 3. Mutation entry points — adds per-bucket mutation fields on the root Mutation
+ *    type (e.g., `appBucket(key: "public"): AppBucket`), so upload operations
+ *    can be accessed as proper GraphQL mutations instead of queries.
  *
- * No global mutations — all S3 operations are scoped to the per-table types that
- * PostGraphile already generates. Scope resolution uses the codec's schema/table
- * name matched against cached storage module configs.
+ * 4. downloadUrl — handled by download-url-field.ts (separate plugin).
+ *
+ * Scope resolution uses the codec's schema/table name matched against
+ * cached storage module configs.
  */
 
-import { context as grafastContext, lambda, object } from 'grafast';
+import { access, context as grafastContext, lambda, object } from 'grafast';
 import type { GraphileConfig } from 'graphile-config';
 import 'graphile-build';
 import { Logger } from '@pgpmjs/logger';
 
 import type { PresignedUrlPluginOptions, S3Config, StorageModuleConfig, BucketConfig } from './types';
-import { loadAllStorageModules, resolveStorageConfigFromCodec, isS3BucketProvisioned, markS3BucketProvisioned } from './storage-module-cache';
+import { loadAllStorageModules, resolveStorageConfigFromCodec, getBucketConfig, isS3BucketProvisioned, markS3BucketProvisioned } from './storage-module-cache';
 import { generatePresignedPutUrl, deleteS3Object } from './s3-signer';
 
 const log = new Logger('graphile-presigned-url:plugin');
@@ -145,9 +148,96 @@ export function createPresignedUrlPlugin(
          */
         GraphQLObjectType_fields(fields, build, context) {
           const {
-            scope: { pgCodec, isPgClassType },
+            scope: { pgCodec, isPgClassType, isRootMutation },
           } = context as any;
 
+          // --- Path 1: Add per-bucket mutation entry points on root Mutation ---
+          if (isRootMutation) {
+            const {
+              graphql: { GraphQLString, GraphQLNonNull },
+            } = build;
+
+            const bucketCodecs = Object.values((build.input as any).pgRegistry.pgCodecs).filter(
+              (codec: any) => codec.attributes && (codec.extensions as any)?.tags?.storageBuckets,
+            );
+
+            if (bucketCodecs.length === 0) return fields;
+
+            const newFields: Record<string, any> = {};
+            for (const codec of bucketCodecs as any[]) {
+              const typeName = (build.inflection as any).tableType(codec);
+              const bucketType = build.getTypeByName(typeName);
+              if (!bucketType) {
+                log.debug(`Skipping mutation entry point for ${codec.name}: type ${typeName} not found`);
+                continue;
+              }
+
+              const fieldName = typeName.charAt(0).toLowerCase() + typeName.slice(1);
+              const hasOwnerId = !!codec.attributes.owner_id;
+              const capturedCodec = codec;
+
+              log.debug(`Adding mutation entry point "${fieldName}" for bucket type ${typeName} (entity-scoped=${hasOwnerId})`);
+
+              newFields[fieldName] = context.fieldWithHooks(
+                { fieldName } as any,
+                {
+                  description: `Look up a ${typeName} by key for mutation operations (upload, etc.).`,
+                  type: bucketType,
+                  args: {
+                    key: { type: new GraphQLNonNull(GraphQLString), description: 'Bucket key (e.g., "public", "private")' },
+                    ...(hasOwnerId
+                      ? { ownerId: { type: new GraphQLNonNull(GraphQLString), description: 'Owner entity ID (required for entity-scoped buckets)' } }
+                      : {}),
+                  },
+                  plan(_$mutation: any, fieldArgs: any) {
+                    const $key = fieldArgs.getRaw('key');
+                    const $ownerId = hasOwnerId ? fieldArgs.getRaw('ownerId') : lambda(null, (): null => null);
+                    const $withPgClient = (grafastContext() as any).get('withPgClient');
+                    const $pgSettings = (grafastContext() as any).get('pgSettings');
+
+                    const $combined = object({
+                      key: $key,
+                      ownerId: $ownerId,
+                      withPgClient: $withPgClient,
+                      pgSettings: $pgSettings,
+                    });
+
+                    const $row = lambda($combined, async (vals: any) => {
+                      return vals.withPgClient(vals.pgSettings, async (pgClient: any) => {
+                        const databaseId = await resolveDatabaseId(pgClient);
+                        if (!databaseId) throw new Error('DATABASE_NOT_FOUND');
+
+                        const allConfigs = await loadAllStorageModules(pgClient, databaseId);
+                        const storageConfig = resolveStorageConfigFromCodec(capturedCodec, allConfigs);
+                        if (!storageConfig) throw new Error('STORAGE_MODULE_NOT_FOUND');
+
+                        const bucket = await getBucketConfig(
+                          pgClient, storageConfig, databaseId, vals.key, vals.ownerId ?? undefined,
+                        );
+                        if (!bucket) throw new Error('BUCKET_NOT_FOUND');
+
+                        return bucket;
+                      });
+                    });
+
+                    const columnEntries: Record<string, any> = {};
+                    for (const col of Object.keys(capturedCodec.attributes)) {
+                      columnEntries[col] = access($row, col);
+                    }
+                    return object(columnEntries);
+                  },
+                },
+              );
+            }
+
+            return build.extend(
+              fields,
+              newFields,
+              'PresignedUrlPlugin adding per-bucket mutation entry points',
+            );
+          }
+
+          // --- Path 2: Add upload fields on @storageBuckets types ---
           if (!isPgClassType || !pgCodec || !pgCodec.attributes) {
             return fields;
           }
