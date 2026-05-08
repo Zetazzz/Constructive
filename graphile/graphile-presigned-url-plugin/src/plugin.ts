@@ -237,12 +237,21 @@ export function createPresignedUrlPlugin(
               const filesTypeName = (build.inflection as any).tableType(filesCodec);
               const filesSchemaName = filesCodec.extensions?.pg?.schemaName;
 
-              // Find the matching bucket codec by schema name
-              const matchingBucketCodec = (bucketCodecs as any[]).find(
-                (bc: any) => bc.extensions?.pg?.schemaName === filesSchemaName,
-              );
+              // Find the matching bucket codec by table name prefix.
+              // Schema-name matching is ambiguous when multiple storage modules share
+              // the same PG schema (e.g. app_files + data_room_files both in storage_public).
+              // Instead, derive the prefix from the raw SQL table name:
+              //   "data_room_files" → prefix "data_room" → matches "data_room_buckets"
+              //   "app_files"       → prefix "app"       → matches "app_buckets"
+              const filesRawName = filesCodec.extensions?.pg?.name as string | undefined;
+              const filesPrefix = filesRawName?.replace(/_files$/, '');
+              const matchingBucketCodec = (bucketCodecs as any[]).find((bc: any) => {
+                const bucketRawName = bc.extensions?.pg?.name as string | undefined;
+                const bucketPrefix = bucketRawName?.replace(/_buckets$/, '');
+                return bucketPrefix === filesPrefix;
+              });
               if (!matchingBucketCodec) {
-                log.debug(`Skipping create mutation for ${filesCodec.name}: no matching bucket codec in schema ${filesSchemaName}`);
+                log.debug(`Skipping upload mutation for ${filesCodec.name}: no matching bucket codec with prefix "${filesPrefix}"`);
                 continue;
               }
 
