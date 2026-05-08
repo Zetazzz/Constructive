@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.14.0...graphile-presigned-url-plugin@0.14.1) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** match files→buckets by table name prefix instead of schema name ([7fd3cca](https://github.com/constructive-io/constructive/commit/7fd3ccac49f313a98e9fbe98850426888f658869))
+
 # [0.14.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.13.0...graphile-presigned-url-plugin@0.14.0) (2026-05-08)
 
 ### Bug Fixes
