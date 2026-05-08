@@ -128,6 +128,14 @@ jobs:
             env: {}
 
     steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace-build
+
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -138,14 +146,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-
-      - name: Download workspace
-        uses: actions/download-artifact@v4
-        with:
-          name: workspace-build
-
-      - name: Extract workspace
-        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -221,6 +221,14 @@ jobs:
           - 5432:5432
 
     steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace-build
+
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
+
       - name: Configure Git (for tests)
         run: |
           git config --global user.name "CI Test User"
@@ -236,14 +244,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-
-      - name: Download workspace
-        uses: actions/download-artifact@v4
-        with:
-          name: workspace-build
-
-      - name: Extract workspace
-        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -328,6 +328,14 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace-build
+
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
+
       - name: Configure Git (for tests)
         run: |
           git config --global user.name "CI Test User"
@@ -343,14 +351,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-
-      - name: Download workspace
-        uses: actions/download-artifact@v4
-        with:
-          name: workspace-build
-
-      - name: Extract workspace
-        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
