@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.15.0](https://github.com/constructive-io/constructive/compare/@constructive-io/client@2.14.0...@constructive-io/client@2.15.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/client
+
 # [2.14.0](https://github.com/constructive-io/constructive/compare/@constructive-io/client@2.13.0...@constructive-io/client@2.14.0) (2026-05-06)
 
 **Note:** Version bump only for package @constructive-io/client
