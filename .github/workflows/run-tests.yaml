@@ -139,6 +139,9 @@ jobs:
         with:
           name: workspace-build
 
+      - name: Restore symlinks
+        run: pnpm install --frozen-lockfile
+
       - name: Test ${{ matrix.package }}
         run: cd ./${{ matrix.package }} && pnpm test
         env: ${{ matrix.env }}
@@ -229,6 +232,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: workspace-build
+
+      - name: Restore symlinks
+        run: pnpm install --frozen-lockfile
 
       - name: Seed app_user
         run: |
@@ -329,6 +335,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: workspace-build
+
+      - name: Restore symlinks
+        run: pnpm install --frozen-lockfile
 
       - name: Seed app_user
         run: |
