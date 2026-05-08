@@ -21,6 +21,9 @@ concurrency:
 # Phase 1 – build: single job installs deps + builds the monorepo once.
 # Phase 2 – fan-out: test jobs download the build artifact and run tests.
 #
+# The build artifact is a tar archive to preserve symlinks and all files.
+# Test jobs extract the tar and run pnpm install to restore node_modules.
+#
 # Service tiers (avoids spinning up unneeded containers):
 #   unit-tests        → no services (pure JS/TS)
 #   pg-tests          → PostgreSQL only
@@ -59,13 +62,14 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Create build archive
+        run: tar -czf /tmp/workspace.tar.gz --exclude='.git' --exclude='node_modules' .
+
       - name: Upload workspace
         uses: actions/upload-artifact@v4
         with:
           name: workspace-build
-          path: |
-            .
-            !.git
+          path: /tmp/workspace.tar.gz
           retention-days: 1
 
   # =========================================================================
@@ -133,13 +137,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'pnpm'
 
       - name: Download workspace
         uses: actions/download-artifact@v4
         with:
           name: workspace-build
 
-      - name: Restore symlinks
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
+
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Test ${{ matrix.package }}
@@ -227,13 +235,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'pnpm'
 
       - name: Download workspace
         uses: actions/download-artifact@v4
         with:
           name: workspace-build
 
-      - name: Restore symlinks
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
+
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Seed app_user
@@ -330,13 +342,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'pnpm'
 
       - name: Download workspace
         uses: actions/download-artifact@v4
         with:
           name: workspace-build
 
-      - name: Restore symlinks
+      - name: Extract workspace
+        run: tar -xzf workspace.tar.gz && rm workspace.tar.gz
+
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Seed app_user
