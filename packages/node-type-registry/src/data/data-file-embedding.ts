@@ -9,9 +9,10 @@ export const DataFileEmbedding: NodeTypeDefinition = {
     'Generic, MIME-scoped embedding node for file tables. Supports two modes: ' +
     'direct (whole-file to single vector, e.g. CLIP for images) when extraction ' +
     'is omitted, or extract (file to text to chunks to per-chunk vectors) when ' +
-    'extraction config is provided. Composes SearchVector + DataJobTrigger ' +
-    'internally. Multiple instances can coexist on the same table with different ' +
-    'MIME scopes, field names, and embedding strategies.',
+    'extraction config is provided. Composes SearchVector + DataJobTrigger + ' +
+    'DataChunks (enabled by default in extract mode) internally. Multiple ' +
+    'instances can coexist on the same table with different MIME scopes, field ' +
+    'names, and embedding strategies.',
   parameter_schema: {
     type: 'object',
     properties: {
@@ -123,13 +124,20 @@ export const DataFileEmbedding: NodeTypeDefinition = {
         }
       },
 
-      // ── Chunking config (optional — creates embedding_chunks) ──────
+      // ── Chunking (enabled by default in extract mode) ──────────────
+      include_chunks: {
+        type: 'boolean',
+        description:
+          'Whether to create a chunks table via DataChunks. Defaults to true ' +
+          'when extraction is provided, false in direct mode. Set explicitly ' +
+          'to override.',
+      },
       chunks: {
         type: 'object',
         description:
-          'Chunking configuration. Creates an embedding_chunks record that drives ' +
-          'automatic text splitting and per-chunk embedding. Only meaningful when ' +
-          'extraction is also provided.',
+          'Chunking configuration passed through to DataChunks. When ' +
+          'include_chunks is true (or defaults to true in extract mode), these ' +
+          'params configure the chunks table, embedding dimensions, strategy, etc.',
         properties: {
           content_field_name: {
             type: 'string',
@@ -154,8 +162,9 @@ export const DataFileEmbedding: NodeTypeDefinition = {
             default: 'paragraph'
           },
           metadata_fields: {
-            type: 'object',
-            description: 'Metadata fields from parent to copy into chunks'
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Field names from parent to copy into chunk metadata'
           },
           enqueue_chunking_job: {
             type: 'boolean',
