@@ -436,9 +436,12 @@ const getCoercionFunc = (type: string, from: string[], opts: FieldOptions, field
     case 'text':
       return (record: Record<string, unknown>): Node => {
         const rawValue = record[from[0]];
-        const value = parseFn(cleanseEmptyStrings(rawValue));
-        if (isEmpty(value)) {
-          return makeNullOrThrow(fieldName, rawValue, type, required, 'value is empty or null');
+        if (rawValue === null || rawValue === undefined) {
+          return makeNullOrThrow(fieldName, rawValue, type, required, 'value is null');
+        }
+        const value = parseFn(rawValue);
+        if (value === null || value === undefined) {
+          return makeNullOrThrow(fieldName, rawValue, type, required, 'value is null');
         }
         const val = nodes.aConst({
           sval: ast.string({ sval: String(value) })

@@ -276,6 +276,60 @@ it('empty array fields emit empty array literal', async () => {
   expect(sql).toMatchSnapshot();
 });
 
+it('text fields preserve empty strings instead of converting to NULL', async () => {
+  const parser = new Parser({
+    schema: 'services_public',
+    singleStmts: true,
+    table: 'webauthn_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      rp_id: 'text',
+      rp_name: 'text'
+    }
+  });
+
+  const sql = await parser.parse([
+    {
+      id: '450e3b3b-b68d-4abc-990c-65cb8a1dcdb4',
+      database_id: '550e8400-e29b-41d4-a716-446655440000',
+      rp_id: '',
+      rp_name: ''
+    }
+  ]);
+
+  // Empty strings should be preserved as '' not converted to NULL
+  expect(sql).not.toContain('NULL');
+  expect(sql).toMatchSnapshot();
+});
+
+it('text fields with null values produce NULL', async () => {
+  const parser = new Parser({
+    schema: 'services_public',
+    singleStmts: true,
+    table: 'webauthn_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      rp_id: 'text',
+      rp_name: 'text'
+    }
+  });
+
+  const sql = await parser.parse([
+    {
+      id: '450e3b3b-b68d-4abc-990c-65cb8a1dcdb4',
+      database_id: '550e8400-e29b-41d4-a716-446655440000',
+      rp_id: null,
+      rp_name: null
+    }
+  ]);
+
+  // Actual null values should still produce NULL
+  expect(sql).toContain('NULL');
+  expect(sql).toMatchSnapshot();
+});
+
 it('interval type with string value', async () => {
   const parser = new Parser({
     schema: 'metaschema_modules_public',
