@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.38.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.37.2...@constructive-io/graphql-codegen@4.38.0) (2026-05-09)
+
+### Bug Fixes
+
+- **codegen:** sanitize \*/ in JSDoc comments to prevent syntax errors ([c25a5e1](https://github.com/constructive-io/constructive/commit/c25a5e1f309e5593e5f73a86d8add655f0724100)), closes [constructive-io/constructive-planning#820](https://github.com/constructive-io/constructive-planning/issues/820)
+
+### Features
+
+- **codegen:** add fields-with-arguments support for ORM select types ([8ce5584](https://github.com/constructive-io/constructive/commit/8ce5584b9c7027a24d5b182bb2e73e3ac4bee80e))
+
 ## [4.37.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.37.1...@constructive-io/graphql-codegen@4.37.2) (2026-05-09)
 
 **Note:** Version bump only for package @constructive-io/graphql-codegen

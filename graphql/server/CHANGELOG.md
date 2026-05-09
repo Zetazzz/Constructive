@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.26.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.25.2...@constructive-io/graphql-server@4.26.0) (2026-05-09)
+
+### Bug Fixes
+
+- update upload tests to account for typed rls_settings query calls ([cb5e3a0](https://github.com/constructive-io/constructive/commit/cb5e3a0e756a5f9304e35629f1ec56fd4391a27e))
+- use apis.dbname join for RLS_SETTINGS_BY_DBNAME_SQL ([383dc94](https://github.com/constructive-io/constructive/commit/383dc945baa4873e3ce2e2160e247e65f508a6cd))
+
+### Features
+
+- read RLS config from typed rls_settings table with api_modules fallback ([9baaad5](https://github.com/constructive-io/constructive/commit/9baaad57c105ba0bb2d4f341fe027384ba229b07)), closes [constructive-planning#812](https://github.com/constructive-planning/issues/812)
+
 ## [4.25.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.25.1...@constructive-io/graphql-server@4.25.2) (2026-05-09)
 
 **Note:** Version bump only for package @constructive-io/graphql-server

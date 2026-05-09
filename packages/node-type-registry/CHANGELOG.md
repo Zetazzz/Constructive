@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.29.1](https://github.com/constructive-io/constructive/compare/node-type-registry@0.29.0...node-type-registry@0.29.1) (2026-05-09)
+
+### Bug Fixes
+
+- add missing memberships_module:app dependencies to auth presets + add b2b:storage ([84ffd61](https://github.com/constructive-io/constructive/commit/84ffd61ea0df1e3e05e8228545feb4cef7f90883)), closes [#1067](https://github.com/constructive-io/constructive/issues/1067)
+
 # [0.29.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.28.0...node-type-registry@0.29.0) (2026-05-08)
 
 ### Features

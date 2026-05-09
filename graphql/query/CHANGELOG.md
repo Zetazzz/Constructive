@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.21.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.20.2...@constructive-io/graphql-query@3.21.0) (2026-05-09)
+
+### Features
+
+- **codegen:** add fields-with-arguments support for ORM select types ([8ce5584](https://github.com/constructive-io/constructive/commit/8ce5584b9c7027a24d5b182bb2e73e3ac4bee80e))
+
 ## [3.20.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.20.1...@constructive-io/graphql-query@3.20.2) (2026-05-09)
 
 **Note:** Version bump only for package @constructive-io/graphql-query

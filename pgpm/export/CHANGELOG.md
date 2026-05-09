@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.11.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.10.2...@pgpmjs/export@0.11.0) (2026-05-09)
+
+### Features
+
+- **export:** add 6 new services_public settings tables to export ([e5017e3](https://github.com/constructive-io/constructive/commit/e5017e3449c5e17045498dd116047421b50bf398)), closes [constructive-db#1060](https://github.com/constructive-db/issues/1060) [constructive-planning#812](https://github.com/constructive-planning/issues/812)
+- **export:** update settings table configs to use UUID FK fields ([7d7b759](https://github.com/constructive-io/constructive/commit/7d7b75926d89088640bc98989b76544a0b7c1495)), closes [#1060](https://github.com/constructive-io/constructive/issues/1060) [#816](https://github.com/constructive-io/constructive/issues/816) [#817](https://github.com/constructive-io/constructive/issues/817)
+
 ## [0.10.2](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.10.1...@pgpmjs/export@0.10.2) (2026-05-09)
 
 **Note:** Version bump only for package @pgpmjs/export
