@@ -55,6 +55,10 @@ import { constructiveUploadFieldDefinitions } from '../upload-resolver';
  *   orderBy similarity — zero config, typo-tolerant)
  * - ltree support (auto-detects ltree columns, LTree scalar with file-path syntax,
  *   containment/glob filters — within, ancestorOf, glob)
+ * - Aggregates (OPTIONAL — not included by default; add PgAggregatesPreset to extends to enable.
+ *   Provides sum, avg, min, max, stddev, variance, distinctCount on connections,
+ *   groupedAggregates with groupBy + having, orderBy relational aggregates,
+ *   filter by relational aggregates — per-table opt-out via @behavior -aggregates)
  *
  * RELATION FILTERS:
  * - Enabled via connectionFilterRelations: true
