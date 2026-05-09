@@ -149,6 +149,12 @@ export const META_TABLE_ORDER = [
   'api_modules',
   'api_extensions',
   'api_schemas',
+  'database_settings',
+  'api_settings',
+  'rls_settings',
+  'cors_settings',
+  'pubkey_settings',
+  'webauthn_settings',
   'rls_module',
   'user_auth_module',
   'memberships_module',
@@ -557,6 +563,107 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       database_id: 'uuid',
       schema_id: 'uuid',
       api_id: 'uuid'
+    }
+  },
+  database_settings: {
+    schema: 'services_public',
+    table: 'database_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      enable_aggregates: 'boolean',
+      enable_postgis: 'boolean',
+      enable_search: 'boolean',
+      enable_direct_uploads: 'boolean',
+      enable_presigned_uploads: 'boolean',
+      enable_many_to_many: 'boolean',
+      enable_connection_filter: 'boolean',
+      enable_ltree: 'boolean',
+      enable_llm: 'boolean',
+      options: 'jsonb'
+    }
+  },
+  api_settings: {
+    schema: 'services_public',
+    table: 'api_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      api_id: 'uuid',
+      enable_aggregates: 'boolean',
+      enable_postgis: 'boolean',
+      enable_search: 'boolean',
+      enable_direct_uploads: 'boolean',
+      enable_presigned_uploads: 'boolean',
+      enable_many_to_many: 'boolean',
+      enable_connection_filter: 'boolean',
+      enable_ltree: 'boolean',
+      enable_llm: 'boolean',
+      options: 'jsonb'
+    }
+  },
+  rls_settings: {
+    schema: 'services_public',
+    table: 'rls_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      authenticate: 'text',
+      authenticate_strict: 'text',
+      authenticate_schema: 'text',
+      role_schema: 'text',
+      current_role_fn: 'text',
+      current_role_id_fn: 'text',
+      current_user_agent_fn: 'text',
+      current_ip_address_fn: 'text'
+    }
+  },
+  cors_settings: {
+    schema: 'services_public',
+    table: 'cors_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      api_id: 'uuid',
+      allowed_origins: 'text[]'
+    }
+  },
+  pubkey_settings: {
+    schema: 'services_public',
+    table: 'pubkey_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema: 'text',
+      crypto_network: 'text',
+      user_field: 'text',
+      sign_up_with_key: 'text',
+      sign_in_request_challenge: 'text',
+      sign_in_record_failure: 'text',
+      sign_in_with_challenge: 'text'
+    }
+  },
+  webauthn_settings: {
+    schema: 'services_public',
+    table: 'webauthn_settings',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema: 'text',
+      credentials_schema: 'text',
+      credentials_table: 'text',
+      sessions_schema: 'text',
+      sessions_table: 'text',
+      session_credentials_table: 'text',
+      session_secrets_schema: 'text',
+      session_secrets_table: 'text',
+      rp_id: 'text',
+      rp_name: 'text',
+      origin_allowlist: 'text[]',
+      attestation_type: 'text',
+      require_user_verification: 'boolean',
+      resident_key: 'text',
+      challenge_expiry_seconds: 'int'
     }
   },
   // =============================================================================

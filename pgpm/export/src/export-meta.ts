@@ -161,6 +161,12 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('api_modules', `SELECT * FROM services_public.api_modules WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('api_extensions', `SELECT * FROM services_public.api_extensions WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('api_schemas', `SELECT * FROM services_public.api_schemas WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('database_settings', `SELECT * FROM services_public.database_settings WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('api_settings', `SELECT * FROM services_public.api_settings WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('rls_settings', `SELECT * FROM services_public.rls_settings WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('cors_settings', `SELECT * FROM services_public.cors_settings WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('pubkey_settings', `SELECT * FROM services_public.pubkey_settings WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('webauthn_settings', `SELECT * FROM services_public.webauthn_settings WHERE database_id = $1 ORDER BY id`);
 
   // =============================================================================
   // metaschema_modules_public tables

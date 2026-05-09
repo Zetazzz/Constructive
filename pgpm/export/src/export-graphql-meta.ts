@@ -152,7 +152,13 @@ export const exportGraphQLMeta = async ({
     queryAndParse('site_metadata'),
     queryAndParse('api_modules'),
     queryAndParse('api_extensions'),
-    queryAndParse('api_schemas')
+    queryAndParse('api_schemas'),
+    queryAndParse('database_settings'),
+    queryAndParse('api_settings'),
+    queryAndParse('rls_settings'),
+    queryAndParse('cors_settings'),
+    queryAndParse('pubkey_settings'),
+    queryAndParse('webauthn_settings')
   ]);
 
   // metaschema_modules_public tables
