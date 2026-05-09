@@ -52,7 +52,7 @@
     "gql-ast": "workspace:^",
     "graphql": "16.13.0",
     "inquirerer": "^4.7.0",
-    "nested-obj": "^0.2.1",
+    "nested-obj": "^0.2.2",
     "yanse": "^0.2.1"
   },
   "devDependencies": {
