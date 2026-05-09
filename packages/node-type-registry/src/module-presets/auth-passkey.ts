@@ -34,6 +34,9 @@ export const PresetAuthPasskey: ModulePreset = {
   modules: [
     'users_module',
     'membership_types_module',
+    'permissions_module:app',
+    'limits_module:app',
+    'levels_module:app',
     'memberships_module:app',
     'sessions_module',
     'secrets_module',

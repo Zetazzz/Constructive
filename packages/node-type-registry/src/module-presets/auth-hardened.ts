@@ -33,6 +33,9 @@ export const PresetAuthHardened: ModulePreset = {
   modules: [
     'users_module',
     'membership_types_module',
+    'permissions_module:app',
+    'limits_module:app',
+    'levels_module:app',
     'memberships_module:app',
     'sessions_module',
     'secrets_module',
@@ -59,7 +62,6 @@ export const PresetAuthHardened: ModulePreset = {
   },
   omits_notes: {
     'memberships_module:org': 'No orgs / teams — use `b2b` when you need multi-tenancy.',
-    'permissions_module:app': 'No RBAC beyond the `is_admin` flag — add via `b2b`.',
     invites_module: 'No invite flow — add via `b2b`.',
     storage_module: 'Add separately if you need file uploads.',
     crypto_addresses_module: 'Not a web3 preset; omit unless doing wallet sign-in.'
