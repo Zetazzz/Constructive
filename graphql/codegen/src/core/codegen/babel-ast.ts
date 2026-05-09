@@ -50,10 +50,11 @@ export const commentLine = (value: string): t.CommentLine => {
  * Add a leading JSDoc comment to a node
  */
 export function addJSDocComment<T extends t.Node>(node: T, lines: string[]): T {
+  const sanitized = lines.map((line) => line.replace(/\*\//g, '*\\/'));
   const commentText =
-    lines.length === 1
-      ? `* ${lines[0]} `
-      : `*\n${lines.map((line) => ` * ${line}`).join('\n')}\n `;
+    sanitized.length === 1
+      ? `* ${sanitized[0]} `
+      : `*\n${sanitized.map((line) => ` * ${line}`).join('\n')}\n `;
 
   if (!node.leadingComments) {
     node.leadingComments = [];
