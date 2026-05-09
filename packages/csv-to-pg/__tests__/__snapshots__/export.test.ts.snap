@@ -94,7 +94,7 @@ exports[`test case test case parser 1`] = `
   ('450e3b3b-b68d-4abc-990c-65cb8a1dcdb4', '450e3b3b-b68d-4abc-990c-65cb8a1dcdb4', '450e3b3b-b68d-4abc-990c-65cb8a1dcdb4', 'name here', 'description');"
 `;
 
-exports[`test case text fields convert empty strings to NULL by default 1`] = `
+exports[`test case text fields convert empty strings to NULL when preserveEmptyStrings is false 1`] = `
 "INSERT INTO services_public.webauthn_settings (
   id,
   database_id,
@@ -104,7 +104,7 @@ exports[`test case text fields convert empty strings to NULL by default 1`] = `
   ('450e3b3b-b68d-4abc-990c-65cb8a1dcdb4', '550e8400-e29b-41d4-a716-446655440000', NULL, NULL);"
 `;
 
-exports[`test case text fields preserve empty strings when preserveEmptyStrings is true 1`] = `
+exports[`test case text fields preserve empty strings by default 1`] = `
 "INSERT INTO services_public.webauthn_settings (
   id,
   database_id,
@@ -114,7 +114,7 @@ exports[`test case text fields preserve empty strings when preserveEmptyStrings 
   ('450e3b3b-b68d-4abc-990c-65cb8a1dcdb4', '550e8400-e29b-41d4-a716-446655440000', '', '');"
 `;
 
-exports[`test case text fields with null values produce NULL even with preserveEmptyStrings 1`] = `
+exports[`test case text fields with null values produce NULL 1`] = `
 "INSERT INTO services_public.webauthn_settings (
   id,
   database_id,

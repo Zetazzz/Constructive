@@ -276,7 +276,7 @@ it('empty array fields emit empty array literal', async () => {
   expect(sql).toMatchSnapshot();
 });
 
-it('text fields convert empty strings to NULL by default', async () => {
+it('text fields preserve empty strings by default', async () => {
   const parser = new Parser({
     schema: 'services_public',
     singleStmts: true,
@@ -298,45 +298,44 @@ it('text fields convert empty strings to NULL by default', async () => {
     }
   ]);
 
-  // Default behavior: empty strings are treated as NULL (CSV convention)
-  expect(sql).toContain('NULL');
-  expect(sql).toMatchSnapshot();
-});
-
-it('text fields preserve empty strings when preserveEmptyStrings is true', async () => {
-  const parser = new Parser({
-    schema: 'services_public',
-    singleStmts: true,
-    table: 'webauthn_settings',
-    preserveEmptyStrings: true,
-    fields: {
-      id: 'uuid',
-      database_id: 'uuid',
-      rp_id: 'text',
-      rp_name: 'text'
-    }
-  });
-
-  const sql = await parser.parse([
-    {
-      id: '450e3b3b-b68d-4abc-990c-65cb8a1dcdb4',
-      database_id: '550e8400-e29b-41d4-a716-446655440000',
-      rp_id: '',
-      rp_name: ''
-    }
-  ]);
-
-  // With preserveEmptyStrings, empty strings are kept as '' not NULL
+  // Default: empty strings are preserved as ''
   expect(sql).not.toContain('NULL');
   expect(sql).toMatchSnapshot();
 });
 
-it('text fields with null values produce NULL even with preserveEmptyStrings', async () => {
+it('text fields convert empty strings to NULL when preserveEmptyStrings is false', async () => {
   const parser = new Parser({
     schema: 'services_public',
     singleStmts: true,
     table: 'webauthn_settings',
-    preserveEmptyStrings: true,
+    preserveEmptyStrings: false,
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      rp_id: 'text',
+      rp_name: 'text'
+    }
+  });
+
+  const sql = await parser.parse([
+    {
+      id: '450e3b3b-b68d-4abc-990c-65cb8a1dcdb4',
+      database_id: '550e8400-e29b-41d4-a716-446655440000',
+      rp_id: '',
+      rp_name: ''
+    }
+  ]);
+
+  // Opt-in: empty strings treated as NULL (CSV convention)
+  expect(sql).toContain('NULL');
+  expect(sql).toMatchSnapshot();
+});
+
+it('text fields with null values produce NULL', async () => {
+  const parser = new Parser({
+    schema: 'services_public',
+    singleStmts: true,
+    table: 'webauthn_settings',
     fields: {
       id: 'uuid',
       database_id: 'uuid',

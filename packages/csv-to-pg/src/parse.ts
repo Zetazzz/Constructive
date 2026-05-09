@@ -436,7 +436,8 @@ const getCoercionFunc = (type: string, from: string[], opts: FieldOptions, field
     case 'text':
       return (record: Record<string, unknown>): Node => {
         const rawValue = record[from[0]];
-        const cleansed = globalOpts?.preserveEmptyStrings ? rawValue : cleanseEmptyStrings(rawValue);
+        const preserve = globalOpts?.preserveEmptyStrings !== false;
+        const cleansed = preserve ? rawValue : cleanseEmptyStrings(rawValue);
         const value = parseFn(cleansed);
         if (isEmpty(value)) {
           return makeNullOrThrow(fieldName, rawValue, type, required, 'value is empty or null');

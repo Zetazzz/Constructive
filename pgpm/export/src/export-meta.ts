@@ -96,8 +96,7 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
       schema: tableConfig.schema,
       table: tableConfig.table,
       conflictDoNothing: tableConfig.conflictDoNothing,
-      fields: dynamicFields,
-      preserveEmptyStrings: true
+      fields: dynamicFields
     });
 
     parsers[key] = parser;
