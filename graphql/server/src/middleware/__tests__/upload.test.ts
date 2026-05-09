@@ -184,6 +184,9 @@ describe('createUploadAuthenticateMiddleware', () => {
     const res = makeRes();
     const next = makeNext();
 
+    // typed rls_settings query returns no rows (table may not exist yet)
+    rootPool.query.mockResolvedValueOnce({ rows: [] });
+    // legacy api_modules fallback
     rootPool.query.mockResolvedValueOnce({
       rows: [
         {
@@ -282,6 +285,9 @@ describe('createUploadAuthenticateMiddleware', () => {
     const res = makeRes();
     const next = makeNext();
 
+    // typed rls_settings query returns no rows (table may not exist yet)
+    rootPool.query.mockResolvedValueOnce({ rows: [] });
+    // legacy api_modules fallback
     rootPool.query.mockResolvedValueOnce({
       rows: [
         {
@@ -330,7 +336,13 @@ describe('createUploadAuthenticateMiddleware', () => {
     const res = makeRes();
     const next = makeNext();
 
+    // typed rls_settings query returns no rows
     rootPool.query.mockResolvedValueOnce({ rows: [] });
+    // legacy api_modules by database_id returns no rows
+    rootPool.query.mockResolvedValueOnce({ rows: [] });
+    // typed rls_settings by dbname returns no rows
+    rootPool.query.mockResolvedValueOnce({ rows: [] });
+    // legacy api_modules by dbname returns no rows
     rootPool.query.mockResolvedValueOnce({ rows: [] });
 
     await middleware(req, res, next);
