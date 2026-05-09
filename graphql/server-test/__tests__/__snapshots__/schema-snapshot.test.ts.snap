@@ -169,22 +169,6 @@ type PostTagConnection {
 
   """The count of *all* \`PostTag\` you could get from the connection."""
   totalCount: Int!
-
-  """
-  Aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  aggregates: PostTagAggregates
-
-  """
-  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  groupedAggregates(
-    """The method to use when grouping \`PostTag\` for these aggregates."""
-    groupBy: [PostTagGroupBy!]!
-
-    """Conditions on the grouped aggregates."""
-    having: PostTagHavingInput
-  ): [PostTagAggregates!]
 }
 
 type PostTag {
@@ -333,22 +317,6 @@ type PostTagsManyToManyConnection {
 
   """The count of *all* \`Tag\` you could get from the connection."""
   totalCount: Int!
-
-  """
-  Aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  aggregates: TagAggregates
-
-  """
-  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  groupedAggregates(
-    """The method to use when grouping \`Tag\` for these aggregates."""
-    groupBy: [TagGroupBy!]!
-
-    """Conditions on the grouped aggregates."""
-    having: TagHavingInput
-  ): [TagAggregates!]
 }
 
 type Tag {
@@ -433,22 +401,6 @@ type TagPostsManyToManyConnection {
 
   """The count of *all* \`Post\` you could get from the connection."""
   totalCount: Int!
-
-  """
-  Aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  aggregates: PostAggregates
-
-  """
-  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  groupedAggregates(
-    """The method to use when grouping \`Post\` for these aggregates."""
-    groupBy: [PostGroupBy!]!
-
-    """Conditions on the grouped aggregates."""
-    having: PostHavingInput
-  ): [PostAggregates!]
 }
 
 """A \`Post\` edge in the connection, with data from \`PostTag\`."""
@@ -478,259 +430,6 @@ type PageInfo {
 
   """When paginating forwards, the cursor to continue."""
   endCursor: Cursor
-}
-
-type PostAggregates {
-  keys: [String]
-
-  """
-  Sum aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  sum: PostSumAggregates
-
-  """
-  Distinct count aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  distinctCount: PostDistinctCountAggregates
-
-  """
-  Minimum aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  min: PostMinAggregates
-
-  """
-  Maximum aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  max: PostMaxAggregates
-
-  """
-  Mean average aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  average: PostAverageAggregates
-
-  """
-  Sample standard deviation aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  stddevSample: PostStddevSampleAggregates
-
-  """
-  Population standard deviation aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  stddevPopulation: PostStddevPopulationAggregates
-
-  """
-  Sample variance aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  varianceSample: PostVarianceSampleAggregates
-
-  """
-  Population variance aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  variancePopulation: PostVariancePopulationAggregates
-}
-
-type PostSumAggregates {
-  """Sum of viewCount across the matching connection"""
-  viewCount: BigInt!
-}
-
-"""
-A signed eight-byte integer. The upper big integer values are greater than the
-max value for a JavaScript number. Therefore all big integers will be output as
-strings and not numbers.
-"""
-scalar BigInt
-
-type PostDistinctCountAggregates {
-  """Distinct count of id across the matching connection"""
-  id: BigInt
-
-  """Distinct count of authorId across the matching connection"""
-  authorId: BigInt
-
-  """Distinct count of title across the matching connection"""
-  title: BigInt
-
-  """Distinct count of slug across the matching connection"""
-  slug: BigInt
-
-  """Distinct count of content across the matching connection"""
-  content: BigInt
-
-  """Distinct count of excerpt across the matching connection"""
-  excerpt: BigInt
-
-  """Distinct count of isPublished across the matching connection"""
-  isPublished: BigInt
-
-  """Distinct count of publishedAt across the matching connection"""
-  publishedAt: BigInt
-
-  """Distinct count of viewCount across the matching connection"""
-  viewCount: BigInt
-
-  """Distinct count of createdAt across the matching connection"""
-  createdAt: BigInt
-
-  """Distinct count of updatedAt across the matching connection"""
-  updatedAt: BigInt
-}
-
-type PostMinAggregates {
-  """Minimum of viewCount across the matching connection"""
-  viewCount: Int
-}
-
-type PostMaxAggregates {
-  """Maximum of viewCount across the matching connection"""
-  viewCount: Int
-}
-
-type PostAverageAggregates {
-  """Mean average of viewCount across the matching connection"""
-  viewCount: BigFloat
-}
-
-"""
-A floating point number that requires more precision than IEEE 754 binary 64
-"""
-scalar BigFloat
-
-type PostStddevSampleAggregates {
-  """Sample standard deviation of viewCount across the matching connection"""
-  viewCount: BigFloat
-}
-
-type PostStddevPopulationAggregates {
-  """
-  Population standard deviation of viewCount across the matching connection
-  """
-  viewCount: BigFloat
-}
-
-type PostVarianceSampleAggregates {
-  """Sample variance of viewCount across the matching connection"""
-  viewCount: BigFloat
-}
-
-type PostVariancePopulationAggregates {
-  """Population variance of viewCount across the matching connection"""
-  viewCount: BigFloat
-}
-
-"""Grouping methods for \`Post\` for usage during aggregation."""
-enum PostGroupBy {
-  AUTHOR_ID
-  TITLE
-  CONTENT
-  EXCERPT
-  IS_PUBLISHED
-  PUBLISHED_AT
-  PUBLISHED_AT_TRUNCATED_TO_HOUR
-  PUBLISHED_AT_TRUNCATED_TO_DAY
-  VIEW_COUNT
-  CREATED_AT
-  CREATED_AT_TRUNCATED_TO_HOUR
-  CREATED_AT_TRUNCATED_TO_DAY
-  UPDATED_AT
-  UPDATED_AT_TRUNCATED_TO_HOUR
-  UPDATED_AT_TRUNCATED_TO_DAY
-}
-
-"""Conditions for \`Post\` aggregates."""
-input PostHavingInput {
-  AND: [PostHavingInput!]
-  OR: [PostHavingInput!]
-  sum: PostHavingSumInput
-  distinctCount: PostHavingDistinctCountInput
-  min: PostHavingMinInput
-  max: PostHavingMaxInput
-  average: PostHavingAverageInput
-  stddevSample: PostHavingStddevSampleInput
-  stddevPopulation: PostHavingStddevPopulationInput
-  varianceSample: PostHavingVarianceSampleInput
-  variancePopulation: PostHavingVariancePopulationInput
-}
-
-input PostHavingSumInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input HavingDatetimeFilter {
-  equalTo: Datetime
-  notEqualTo: Datetime
-  greaterThan: Datetime
-  greaterThanOrEqualTo: Datetime
-  lessThan: Datetime
-  lessThanOrEqualTo: Datetime
-}
-
-input HavingIntFilter {
-  equalTo: Int
-  notEqualTo: Int
-  greaterThan: Int
-  greaterThanOrEqualTo: Int
-  lessThan: Int
-  lessThanOrEqualTo: Int
-}
-
-input PostHavingDistinctCountInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input PostHavingMinInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input PostHavingMaxInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input PostHavingAverageInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input PostHavingStddevSampleInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input PostHavingStddevPopulationInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input PostHavingVarianceSampleInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input PostHavingVariancePopulationInput {
-  publishedAt: HavingDatetimeFilter
-  viewCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
 }
 
 """
@@ -1160,174 +859,6 @@ input UserToManyPostFilter {
 
   """Filters to entities where no related entity matches."""
   none: PostFilter
-
-  """Aggregates across related \`Post\` match the filter criteria."""
-  aggregates: PostAggregatesFilter
-}
-
-"""A filter to be used against aggregates of \`Post\` object types."""
-input PostAggregatesFilter {
-  """
-  A filter that must pass for the relevant \`Post\` object to be included within the aggregate.
-  """
-  where: PostFilter
-
-  """Sum aggregate over matching \`Post\` objects."""
-  sum: PostSumAggregateFilter
-
-  """Distinct count aggregate over matching \`Post\` objects."""
-  distinctCount: PostDistinctCountAggregateFilter
-
-  """Minimum aggregate over matching \`Post\` objects."""
-  min: PostMinAggregateFilter
-
-  """Maximum aggregate over matching \`Post\` objects."""
-  max: PostMaxAggregateFilter
-
-  """Mean average aggregate over matching \`Post\` objects."""
-  average: PostAverageAggregateFilter
-
-  """Sample standard deviation aggregate over matching \`Post\` objects."""
-  stddevSample: PostStddevSampleAggregateFilter
-
-  """Population standard deviation aggregate over matching \`Post\` objects."""
-  stddevPopulation: PostStddevPopulationAggregateFilter
-
-  """Sample variance aggregate over matching \`Post\` objects."""
-  varianceSample: PostVarianceSampleAggregateFilter
-
-  """Population variance aggregate over matching \`Post\` objects."""
-  variancePopulation: PostVariancePopulationAggregateFilter
-}
-
-input PostSumAggregateFilter {
-  viewCount: BigIntFilter
-}
-
-"""
-A filter to be used against BigInt fields. All fields are combined with a logical ‘and.’
-"""
-input BigIntFilter {
-  """
-  Is null (if \`true\` is specified) or is not null (if \`false\` is specified).
-  """
-  isNull: Boolean
-
-  """Equal to the specified value."""
-  equalTo: BigInt
-
-  """Not equal to the specified value."""
-  notEqualTo: BigInt
-
-  """
-  Not equal to the specified value, treating null like an ordinary value.
-  """
-  distinctFrom: BigInt
-
-  """Equal to the specified value, treating null like an ordinary value."""
-  notDistinctFrom: BigInt
-
-  """Included in the specified list."""
-  in: [BigInt!]
-
-  """Not included in the specified list."""
-  notIn: [BigInt!]
-
-  """Less than the specified value."""
-  lessThan: BigInt
-
-  """Less than or equal to the specified value."""
-  lessThanOrEqualTo: BigInt
-
-  """Greater than the specified value."""
-  greaterThan: BigInt
-
-  """Greater than or equal to the specified value."""
-  greaterThanOrEqualTo: BigInt
-}
-
-input PostDistinctCountAggregateFilter {
-  id: BigIntFilter
-  authorId: BigIntFilter
-  title: BigIntFilter
-  slug: BigIntFilter
-  content: BigIntFilter
-  excerpt: BigIntFilter
-  isPublished: BigIntFilter
-  publishedAt: BigIntFilter
-  viewCount: BigIntFilter
-  createdAt: BigIntFilter
-  updatedAt: BigIntFilter
-}
-
-input PostMinAggregateFilter {
-  viewCount: IntFilter
-}
-
-input PostMaxAggregateFilter {
-  viewCount: IntFilter
-}
-
-input PostAverageAggregateFilter {
-  viewCount: BigFloatFilter
-}
-
-"""
-A filter to be used against BigFloat fields. All fields are combined with a logical ‘and.’
-"""
-input BigFloatFilter {
-  """
-  Is null (if \`true\` is specified) or is not null (if \`false\` is specified).
-  """
-  isNull: Boolean
-
-  """Equal to the specified value."""
-  equalTo: BigFloat
-
-  """Not equal to the specified value."""
-  notEqualTo: BigFloat
-
-  """
-  Not equal to the specified value, treating null like an ordinary value.
-  """
-  distinctFrom: BigFloat
-
-  """Equal to the specified value, treating null like an ordinary value."""
-  notDistinctFrom: BigFloat
-
-  """Included in the specified list."""
-  in: [BigFloat!]
-
-  """Not included in the specified list."""
-  notIn: [BigFloat!]
-
-  """Less than the specified value."""
-  lessThan: BigFloat
-
-  """Less than or equal to the specified value."""
-  lessThanOrEqualTo: BigFloat
-
-  """Greater than the specified value."""
-  greaterThan: BigFloat
-
-  """Greater than or equal to the specified value."""
-  greaterThanOrEqualTo: BigFloat
-}
-
-input PostStddevSampleAggregateFilter {
-  viewCount: BigFloatFilter
-}
-
-input PostStddevPopulationAggregateFilter {
-  viewCount: BigFloatFilter
-}
-
-input PostVarianceSampleAggregateFilter {
-  viewCount: BigFloatFilter
-}
-
-input PostVariancePopulationAggregateFilter {
-  viewCount: BigFloatFilter
 }
 
 """
@@ -1342,9 +873,6 @@ input UserToManyCommentFilter {
 
   """Filters to entities where no related entity matches."""
   none: CommentFilter
-
-  """Aggregates across related \`Comment\` match the filter criteria."""
-  aggregates: CommentAggregatesFilter
 }
 
 """
@@ -1418,90 +946,6 @@ input CommentToManyCommentFilter {
 
   """Filters to entities where no related entity matches."""
   none: CommentFilter
-
-  """Aggregates across related \`Comment\` match the filter criteria."""
-  aggregates: CommentAggregatesFilter
-}
-
-"""A filter to be used against aggregates of \`Comment\` object types."""
-input CommentAggregatesFilter {
-  """
-  A filter that must pass for the relevant \`Comment\` object to be included within the aggregate.
-  """
-  where: CommentFilter
-
-  """Sum aggregate over matching \`Comment\` objects."""
-  sum: CommentSumAggregateFilter
-
-  """Distinct count aggregate over matching \`Comment\` objects."""
-  distinctCount: CommentDistinctCountAggregateFilter
-
-  """Minimum aggregate over matching \`Comment\` objects."""
-  min: CommentMinAggregateFilter
-
-  """Maximum aggregate over matching \`Comment\` objects."""
-  max: CommentMaxAggregateFilter
-
-  """Mean average aggregate over matching \`Comment\` objects."""
-  average: CommentAverageAggregateFilter
-
-  """Sample standard deviation aggregate over matching \`Comment\` objects."""
-  stddevSample: CommentStddevSampleAggregateFilter
-
-  """
-  Population standard deviation aggregate over matching \`Comment\` objects.
-  """
-  stddevPopulation: CommentStddevPopulationAggregateFilter
-
-  """Sample variance aggregate over matching \`Comment\` objects."""
-  varianceSample: CommentVarianceSampleAggregateFilter
-
-  """Population variance aggregate over matching \`Comment\` objects."""
-  variancePopulation: CommentVariancePopulationAggregateFilter
-}
-
-input CommentSumAggregateFilter {
-  likesCount: BigIntFilter
-}
-
-input CommentDistinctCountAggregateFilter {
-  id: BigIntFilter
-  postId: BigIntFilter
-  authorId: BigIntFilter
-  parentId: BigIntFilter
-  content: BigIntFilter
-  isApproved: BigIntFilter
-  likesCount: BigIntFilter
-  createdAt: BigIntFilter
-  updatedAt: BigIntFilter
-}
-
-input CommentMinAggregateFilter {
-  likesCount: IntFilter
-}
-
-input CommentMaxAggregateFilter {
-  likesCount: IntFilter
-}
-
-input CommentAverageAggregateFilter {
-  likesCount: BigFloatFilter
-}
-
-input CommentStddevSampleAggregateFilter {
-  likesCount: BigFloatFilter
-}
-
-input CommentStddevPopulationAggregateFilter {
-  likesCount: BigFloatFilter
-}
-
-input CommentVarianceSampleAggregateFilter {
-  likesCount: BigFloatFilter
-}
-
-input CommentVariancePopulationAggregateFilter {
-  likesCount: BigFloatFilter
 }
 
 """
@@ -1516,9 +960,6 @@ input PostToManyPostTagFilter {
 
   """Filters to entities where no related entity matches."""
   none: PostTagFilter
-
-  """Aggregates across related \`PostTag\` match the filter criteria."""
-  aggregates: PostTagAggregatesFilter
 }
 
 """
@@ -1603,27 +1044,6 @@ input TagToManyPostTagFilter {
 
   """Filters to entities where no related entity matches."""
   none: PostTagFilter
-
-  """Aggregates across related \`PostTag\` match the filter criteria."""
-  aggregates: PostTagAggregatesFilter
-}
-
-"""A filter to be used against aggregates of \`PostTag\` object types."""
-input PostTagAggregatesFilter {
-  """
-  A filter that must pass for the relevant \`PostTag\` object to be included within the aggregate.
-  """
-  where: PostTagFilter
-
-  """Distinct count aggregate over matching \`PostTag\` objects."""
-  distinctCount: PostTagDistinctCountAggregateFilter
-}
-
-input PostTagDistinctCountAggregateFilter {
-  id: BigIntFilter
-  postId: BigIntFilter
-  tagId: BigIntFilter
-  createdAt: BigIntFilter
 }
 
 """
@@ -1638,9 +1058,6 @@ input PostToManyCommentFilter {
 
   """Filters to entities where no related entity matches."""
   none: CommentFilter
-
-  """Aggregates across related \`Comment\` match the filter criteria."""
-  aggregates: CommentAggregatesFilter
 }
 
 """Methods to use when ordering \`Post\`."""
@@ -1670,52 +1087,6 @@ enum PostOrderBy {
   CREATED_AT_DESC
   UPDATED_AT_ASC
   UPDATED_AT_DESC
-  POST_TAGS_COUNT_ASC
-  POST_TAGS_COUNT_DESC
-  POST_TAGS_DISTINCT_COUNT_ID_ASC
-  POST_TAGS_DISTINCT_COUNT_ID_DESC
-  POST_TAGS_DISTINCT_COUNT_POST_ID_ASC
-  POST_TAGS_DISTINCT_COUNT_POST_ID_DESC
-  POST_TAGS_DISTINCT_COUNT_TAG_ID_ASC
-  POST_TAGS_DISTINCT_COUNT_TAG_ID_DESC
-  POST_TAGS_DISTINCT_COUNT_CREATED_AT_ASC
-  POST_TAGS_DISTINCT_COUNT_CREATED_AT_DESC
-  COMMENTS_COUNT_ASC
-  COMMENTS_COUNT_DESC
-  COMMENTS_SUM_LIKES_COUNT_ASC
-  COMMENTS_SUM_LIKES_COUNT_DESC
-  COMMENTS_DISTINCT_COUNT_ID_ASC
-  COMMENTS_DISTINCT_COUNT_ID_DESC
-  COMMENTS_DISTINCT_COUNT_POST_ID_ASC
-  COMMENTS_DISTINCT_COUNT_POST_ID_DESC
-  COMMENTS_DISTINCT_COUNT_AUTHOR_ID_ASC
-  COMMENTS_DISTINCT_COUNT_AUTHOR_ID_DESC
-  COMMENTS_DISTINCT_COUNT_PARENT_ID_ASC
-  COMMENTS_DISTINCT_COUNT_PARENT_ID_DESC
-  COMMENTS_DISTINCT_COUNT_CONTENT_ASC
-  COMMENTS_DISTINCT_COUNT_CONTENT_DESC
-  COMMENTS_DISTINCT_COUNT_IS_APPROVED_ASC
-  COMMENTS_DISTINCT_COUNT_IS_APPROVED_DESC
-  COMMENTS_DISTINCT_COUNT_LIKES_COUNT_ASC
-  COMMENTS_DISTINCT_COUNT_LIKES_COUNT_DESC
-  COMMENTS_DISTINCT_COUNT_CREATED_AT_ASC
-  COMMENTS_DISTINCT_COUNT_CREATED_AT_DESC
-  COMMENTS_DISTINCT_COUNT_UPDATED_AT_ASC
-  COMMENTS_DISTINCT_COUNT_UPDATED_AT_DESC
-  COMMENTS_MIN_LIKES_COUNT_ASC
-  COMMENTS_MIN_LIKES_COUNT_DESC
-  COMMENTS_MAX_LIKES_COUNT_ASC
-  COMMENTS_MAX_LIKES_COUNT_DESC
-  COMMENTS_AVERAGE_LIKES_COUNT_ASC
-  COMMENTS_AVERAGE_LIKES_COUNT_DESC
-  COMMENTS_STDDEV_SAMPLE_LIKES_COUNT_ASC
-  COMMENTS_STDDEV_SAMPLE_LIKES_COUNT_DESC
-  COMMENTS_STDDEV_POPULATION_LIKES_COUNT_ASC
-  COMMENTS_STDDEV_POPULATION_LIKES_COUNT_DESC
-  COMMENTS_VARIANCE_SAMPLE_LIKES_COUNT_ASC
-  COMMENTS_VARIANCE_SAMPLE_LIKES_COUNT_DESC
-  COMMENTS_VARIANCE_POPULATION_LIKES_COUNT_ASC
-  COMMENTS_VARIANCE_POPULATION_LIKES_COUNT_DESC
 }
 
 """Methods to use when ordering \`PostTag\`."""
@@ -1744,95 +1115,6 @@ type PostTagsManyToManyEdge {
   createdAt: Datetime
 }
 
-type TagAggregates {
-  keys: [String]
-
-  """
-  Distinct count aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  distinctCount: TagDistinctCountAggregates
-}
-
-type TagDistinctCountAggregates {
-  """Distinct count of id across the matching connection"""
-  id: BigInt
-
-  """Distinct count of name across the matching connection"""
-  name: BigInt
-
-  """Distinct count of slug across the matching connection"""
-  slug: BigInt
-
-  """Distinct count of description across the matching connection"""
-  description: BigInt
-
-  """Distinct count of color across the matching connection"""
-  color: BigInt
-
-  """Distinct count of createdAt across the matching connection"""
-  createdAt: BigInt
-}
-
-"""Grouping methods for \`Tag\` for usage during aggregation."""
-enum TagGroupBy {
-  DESCRIPTION
-  COLOR
-  CREATED_AT
-  CREATED_AT_TRUNCATED_TO_HOUR
-  CREATED_AT_TRUNCATED_TO_DAY
-}
-
-"""Conditions for \`Tag\` aggregates."""
-input TagHavingInput {
-  AND: [TagHavingInput!]
-  OR: [TagHavingInput!]
-  sum: TagHavingSumInput
-  distinctCount: TagHavingDistinctCountInput
-  min: TagHavingMinInput
-  max: TagHavingMaxInput
-  average: TagHavingAverageInput
-  stddevSample: TagHavingStddevSampleInput
-  stddevPopulation: TagHavingStddevPopulationInput
-  varianceSample: TagHavingVarianceSampleInput
-  variancePopulation: TagHavingVariancePopulationInput
-}
-
-input TagHavingSumInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingDistinctCountInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingMinInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingMaxInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingAverageInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingStddevSampleInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingStddevPopulationInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingVarianceSampleInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input TagHavingVariancePopulationInput {
-  createdAt: HavingDatetimeFilter
-}
-
 """Methods to use when ordering \`Tag\`."""
 enum TagOrderBy {
   NATURAL
@@ -1850,16 +1132,6 @@ enum TagOrderBy {
   COLOR_DESC
   CREATED_AT_ASC
   CREATED_AT_DESC
-  POST_TAGS_COUNT_ASC
-  POST_TAGS_COUNT_DESC
-  POST_TAGS_DISTINCT_COUNT_ID_ASC
-  POST_TAGS_DISTINCT_COUNT_ID_DESC
-  POST_TAGS_DISTINCT_COUNT_POST_ID_ASC
-  POST_TAGS_DISTINCT_COUNT_POST_ID_DESC
-  POST_TAGS_DISTINCT_COUNT_TAG_ID_ASC
-  POST_TAGS_DISTINCT_COUNT_TAG_ID_DESC
-  POST_TAGS_DISTINCT_COUNT_CREATED_AT_ASC
-  POST_TAGS_DISTINCT_COUNT_CREATED_AT_DESC
 }
 
 type User {
@@ -1947,22 +1219,6 @@ type PostConnection {
 
   """The count of *all* \`Post\` you could get from the connection."""
   totalCount: Int!
-
-  """
-  Aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  aggregates: PostAggregates
-
-  """
-  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  groupedAggregates(
-    """The method to use when grouping \`Post\` for these aggregates."""
-    groupBy: [PostGroupBy!]!
-
-    """Conditions on the grouped aggregates."""
-    having: PostHavingInput
-  ): [PostAggregates!]
 }
 
 """A \`Post\` edge in the connection."""
@@ -1989,22 +1245,6 @@ type CommentConnection {
 
   """The count of *all* \`Comment\` you could get from the connection."""
   totalCount: Int!
-
-  """
-  Aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  aggregates: CommentAggregates
-
-  """
-  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  groupedAggregates(
-    """The method to use when grouping \`Comment\` for these aggregates."""
-    groupBy: [CommentGroupBy!]!
-
-    """Conditions on the grouped aggregates."""
-    having: CommentHavingInput
-  ): [CommentAggregates!]
 }
 
 type Comment {
@@ -2080,42 +1320,6 @@ enum CommentOrderBy {
   CREATED_AT_DESC
   UPDATED_AT_ASC
   UPDATED_AT_DESC
-  CHILD_COMMENTS_COUNT_ASC
-  CHILD_COMMENTS_COUNT_DESC
-  CHILD_COMMENTS_SUM_LIKES_COUNT_ASC
-  CHILD_COMMENTS_SUM_LIKES_COUNT_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_ID_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_ID_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_POST_ID_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_POST_ID_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_AUTHOR_ID_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_AUTHOR_ID_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_PARENT_ID_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_PARENT_ID_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_CONTENT_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_CONTENT_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_IS_APPROVED_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_IS_APPROVED_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_LIKES_COUNT_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_LIKES_COUNT_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_CREATED_AT_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_CREATED_AT_DESC
-  CHILD_COMMENTS_DISTINCT_COUNT_UPDATED_AT_ASC
-  CHILD_COMMENTS_DISTINCT_COUNT_UPDATED_AT_DESC
-  CHILD_COMMENTS_MIN_LIKES_COUNT_ASC
-  CHILD_COMMENTS_MIN_LIKES_COUNT_DESC
-  CHILD_COMMENTS_MAX_LIKES_COUNT_ASC
-  CHILD_COMMENTS_MAX_LIKES_COUNT_DESC
-  CHILD_COMMENTS_AVERAGE_LIKES_COUNT_ASC
-  CHILD_COMMENTS_AVERAGE_LIKES_COUNT_DESC
-  CHILD_COMMENTS_STDDEV_SAMPLE_LIKES_COUNT_ASC
-  CHILD_COMMENTS_STDDEV_SAMPLE_LIKES_COUNT_DESC
-  CHILD_COMMENTS_STDDEV_POPULATION_LIKES_COUNT_ASC
-  CHILD_COMMENTS_STDDEV_POPULATION_LIKES_COUNT_DESC
-  CHILD_COMMENTS_VARIANCE_SAMPLE_LIKES_COUNT_ASC
-  CHILD_COMMENTS_VARIANCE_SAMPLE_LIKES_COUNT_DESC
-  CHILD_COMMENTS_VARIANCE_POPULATION_LIKES_COUNT_ASC
-  CHILD_COMMENTS_VARIANCE_POPULATION_LIKES_COUNT_DESC
 }
 
 """A \`Comment\` edge in the connection."""
@@ -2127,211 +1331,6 @@ type CommentEdge {
   node: Comment
 }
 
-type CommentAggregates {
-  keys: [String]
-
-  """
-  Sum aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  sum: CommentSumAggregates
-
-  """
-  Distinct count aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  distinctCount: CommentDistinctCountAggregates
-
-  """
-  Minimum aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  min: CommentMinAggregates
-
-  """
-  Maximum aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  max: CommentMaxAggregates
-
-  """
-  Mean average aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  average: CommentAverageAggregates
-
-  """
-  Sample standard deviation aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  stddevSample: CommentStddevSampleAggregates
-
-  """
-  Population standard deviation aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  stddevPopulation: CommentStddevPopulationAggregates
-
-  """
-  Sample variance aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  varianceSample: CommentVarianceSampleAggregates
-
-  """
-  Population variance aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  variancePopulation: CommentVariancePopulationAggregates
-}
-
-type CommentSumAggregates {
-  """Sum of likesCount across the matching connection"""
-  likesCount: BigInt!
-}
-
-type CommentDistinctCountAggregates {
-  """Distinct count of id across the matching connection"""
-  id: BigInt
-
-  """Distinct count of postId across the matching connection"""
-  postId: BigInt
-
-  """Distinct count of authorId across the matching connection"""
-  authorId: BigInt
-
-  """Distinct count of parentId across the matching connection"""
-  parentId: BigInt
-
-  """Distinct count of content across the matching connection"""
-  content: BigInt
-
-  """Distinct count of isApproved across the matching connection"""
-  isApproved: BigInt
-
-  """Distinct count of likesCount across the matching connection"""
-  likesCount: BigInt
-
-  """Distinct count of createdAt across the matching connection"""
-  createdAt: BigInt
-
-  """Distinct count of updatedAt across the matching connection"""
-  updatedAt: BigInt
-}
-
-type CommentMinAggregates {
-  """Minimum of likesCount across the matching connection"""
-  likesCount: Int
-}
-
-type CommentMaxAggregates {
-  """Maximum of likesCount across the matching connection"""
-  likesCount: Int
-}
-
-type CommentAverageAggregates {
-  """Mean average of likesCount across the matching connection"""
-  likesCount: BigFloat
-}
-
-type CommentStddevSampleAggregates {
-  """Sample standard deviation of likesCount across the matching connection"""
-  likesCount: BigFloat
-}
-
-type CommentStddevPopulationAggregates {
-  """
-  Population standard deviation of likesCount across the matching connection
-  """
-  likesCount: BigFloat
-}
-
-type CommentVarianceSampleAggregates {
-  """Sample variance of likesCount across the matching connection"""
-  likesCount: BigFloat
-}
-
-type CommentVariancePopulationAggregates {
-  """Population variance of likesCount across the matching connection"""
-  likesCount: BigFloat
-}
-
-"""Grouping methods for \`Comment\` for usage during aggregation."""
-enum CommentGroupBy {
-  POST_ID
-  AUTHOR_ID
-  PARENT_ID
-  CONTENT
-  IS_APPROVED
-  LIKES_COUNT
-  CREATED_AT
-  CREATED_AT_TRUNCATED_TO_HOUR
-  CREATED_AT_TRUNCATED_TO_DAY
-  UPDATED_AT
-  UPDATED_AT_TRUNCATED_TO_HOUR
-  UPDATED_AT_TRUNCATED_TO_DAY
-}
-
-"""Conditions for \`Comment\` aggregates."""
-input CommentHavingInput {
-  AND: [CommentHavingInput!]
-  OR: [CommentHavingInput!]
-  sum: CommentHavingSumInput
-  distinctCount: CommentHavingDistinctCountInput
-  min: CommentHavingMinInput
-  max: CommentHavingMaxInput
-  average: CommentHavingAverageInput
-  stddevSample: CommentHavingStddevSampleInput
-  stddevPopulation: CommentHavingStddevPopulationInput
-  varianceSample: CommentHavingVarianceSampleInput
-  variancePopulation: CommentHavingVariancePopulationInput
-}
-
-input CommentHavingSumInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingDistinctCountInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingMinInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingMaxInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingAverageInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingStddevSampleInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingStddevPopulationInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingVarianceSampleInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input CommentHavingVariancePopulationInput {
-  likesCount: HavingIntFilter
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
 """A \`PostTag\` edge in the connection."""
 type PostTagEdge {
   """A cursor for use in pagination."""
@@ -2339,89 +1338,6 @@ type PostTagEdge {
 
   """The \`PostTag\` at the end of the edge."""
   node: PostTag
-}
-
-type PostTagAggregates {
-  keys: [String]
-
-  """
-  Distinct count aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  distinctCount: PostTagDistinctCountAggregates
-}
-
-type PostTagDistinctCountAggregates {
-  """Distinct count of id across the matching connection"""
-  id: BigInt
-
-  """Distinct count of postId across the matching connection"""
-  postId: BigInt
-
-  """Distinct count of tagId across the matching connection"""
-  tagId: BigInt
-
-  """Distinct count of createdAt across the matching connection"""
-  createdAt: BigInt
-}
-
-"""Grouping methods for \`PostTag\` for usage during aggregation."""
-enum PostTagGroupBy {
-  POST_ID
-  TAG_ID
-  CREATED_AT
-  CREATED_AT_TRUNCATED_TO_HOUR
-  CREATED_AT_TRUNCATED_TO_DAY
-}
-
-"""Conditions for \`PostTag\` aggregates."""
-input PostTagHavingInput {
-  AND: [PostTagHavingInput!]
-  OR: [PostTagHavingInput!]
-  sum: PostTagHavingSumInput
-  distinctCount: PostTagHavingDistinctCountInput
-  min: PostTagHavingMinInput
-  max: PostTagHavingMaxInput
-  average: PostTagHavingAverageInput
-  stddevSample: PostTagHavingStddevSampleInput
-  stddevPopulation: PostTagHavingStddevPopulationInput
-  varianceSample: PostTagHavingVarianceSampleInput
-  variancePopulation: PostTagHavingVariancePopulationInput
-}
-
-input PostTagHavingSumInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingDistinctCountInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingMinInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingMaxInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingAverageInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingStddevSampleInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingStddevPopulationInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingVarianceSampleInput {
-  createdAt: HavingDatetimeFilter
-}
-
-input PostTagHavingVariancePopulationInput {
-  createdAt: HavingDatetimeFilter
 }
 
 """A connection to a list of \`Tag\` values."""
@@ -2439,22 +1355,6 @@ type TagConnection {
 
   """The count of *all* \`Tag\` you could get from the connection."""
   totalCount: Int!
-
-  """
-  Aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  aggregates: TagAggregates
-
-  """
-  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  groupedAggregates(
-    """The method to use when grouping \`Tag\` for these aggregates."""
-    groupBy: [TagGroupBy!]!
-
-    """Conditions on the grouped aggregates."""
-    having: TagHavingInput
-  ): [TagAggregates!]
 }
 
 """A \`Tag\` edge in the connection."""
@@ -2481,22 +1381,6 @@ type UserConnection {
 
   """The count of *all* \`User\` you could get from the connection."""
   totalCount: Int!
-
-  """
-  Aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  aggregates: UserAggregates
-
-  """
-  Grouped aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  groupedAggregates(
-    """The method to use when grouping \`User\` for these aggregates."""
-    groupBy: [UserGroupBy!]!
-
-    """Conditions on the grouped aggregates."""
-    having: UserHavingInput
-  ): [UserAggregates!]
 }
 
 """A \`User\` edge in the connection."""
@@ -2506,118 +1390,6 @@ type UserEdge {
 
   """The \`User\` at the end of the edge."""
   node: User
-}
-
-type UserAggregates {
-  keys: [String]
-
-  """
-  Distinct count aggregates across the matching connection (ignoring before/after/first/last/offset)
-  """
-  distinctCount: UserDistinctCountAggregates
-}
-
-type UserDistinctCountAggregates {
-  """Distinct count of id across the matching connection"""
-  id: BigInt
-
-  """Distinct count of email across the matching connection"""
-  email: BigInt
-
-  """Distinct count of username across the matching connection"""
-  username: BigInt
-
-  """Distinct count of displayName across the matching connection"""
-  displayName: BigInt
-
-  """Distinct count of bio across the matching connection"""
-  bio: BigInt
-
-  """Distinct count of isActive across the matching connection"""
-  isActive: BigInt
-
-  """Distinct count of role across the matching connection"""
-  role: BigInt
-
-  """Distinct count of createdAt across the matching connection"""
-  createdAt: BigInt
-
-  """Distinct count of updatedAt across the matching connection"""
-  updatedAt: BigInt
-}
-
-"""Grouping methods for \`User\` for usage during aggregation."""
-enum UserGroupBy {
-  DISPLAY_NAME
-  BIO
-  IS_ACTIVE
-  ROLE
-  CREATED_AT
-  CREATED_AT_TRUNCATED_TO_HOUR
-  CREATED_AT_TRUNCATED_TO_DAY
-  UPDATED_AT
-  UPDATED_AT_TRUNCATED_TO_HOUR
-  UPDATED_AT_TRUNCATED_TO_DAY
-}
-
-"""Conditions for \`User\` aggregates."""
-input UserHavingInput {
-  AND: [UserHavingInput!]
-  OR: [UserHavingInput!]
-  sum: UserHavingSumInput
-  distinctCount: UserHavingDistinctCountInput
-  min: UserHavingMinInput
-  max: UserHavingMaxInput
-  average: UserHavingAverageInput
-  stddevSample: UserHavingStddevSampleInput
-  stddevPopulation: UserHavingStddevPopulationInput
-  varianceSample: UserHavingVarianceSampleInput
-  variancePopulation: UserHavingVariancePopulationInput
-}
-
-input UserHavingSumInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingDistinctCountInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingMinInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingMaxInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingAverageInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingStddevSampleInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingStddevPopulationInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingVarianceSampleInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
-}
-
-input UserHavingVariancePopulationInput {
-  createdAt: HavingDatetimeFilter
-  updatedAt: HavingDatetimeFilter
 }
 
 """Methods to use when ordering \`User\`."""
@@ -2643,82 +1415,6 @@ enum UserOrderBy {
   CREATED_AT_DESC
   UPDATED_AT_ASC
   UPDATED_AT_DESC
-  AUTHORED_POSTS_COUNT_ASC
-  AUTHORED_POSTS_COUNT_DESC
-  AUTHORED_POSTS_SUM_VIEW_COUNT_ASC
-  AUTHORED_POSTS_SUM_VIEW_COUNT_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_ID_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_ID_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_AUTHOR_ID_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_AUTHOR_ID_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_TITLE_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_TITLE_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_SLUG_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_SLUG_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_CONTENT_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_CONTENT_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_EXCERPT_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_EXCERPT_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_IS_PUBLISHED_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_IS_PUBLISHED_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_PUBLISHED_AT_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_PUBLISHED_AT_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_VIEW_COUNT_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_VIEW_COUNT_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_CREATED_AT_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_CREATED_AT_DESC
-  AUTHORED_POSTS_DISTINCT_COUNT_UPDATED_AT_ASC
-  AUTHORED_POSTS_DISTINCT_COUNT_UPDATED_AT_DESC
-  AUTHORED_POSTS_MIN_VIEW_COUNT_ASC
-  AUTHORED_POSTS_MIN_VIEW_COUNT_DESC
-  AUTHORED_POSTS_MAX_VIEW_COUNT_ASC
-  AUTHORED_POSTS_MAX_VIEW_COUNT_DESC
-  AUTHORED_POSTS_AVERAGE_VIEW_COUNT_ASC
-  AUTHORED_POSTS_AVERAGE_VIEW_COUNT_DESC
-  AUTHORED_POSTS_STDDEV_SAMPLE_VIEW_COUNT_ASC
-  AUTHORED_POSTS_STDDEV_SAMPLE_VIEW_COUNT_DESC
-  AUTHORED_POSTS_STDDEV_POPULATION_VIEW_COUNT_ASC
-  AUTHORED_POSTS_STDDEV_POPULATION_VIEW_COUNT_DESC
-  AUTHORED_POSTS_VARIANCE_SAMPLE_VIEW_COUNT_ASC
-  AUTHORED_POSTS_VARIANCE_SAMPLE_VIEW_COUNT_DESC
-  AUTHORED_POSTS_VARIANCE_POPULATION_VIEW_COUNT_ASC
-  AUTHORED_POSTS_VARIANCE_POPULATION_VIEW_COUNT_DESC
-  AUTHORED_COMMENTS_COUNT_ASC
-  AUTHORED_COMMENTS_COUNT_DESC
-  AUTHORED_COMMENTS_SUM_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_SUM_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_ID_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_ID_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_POST_ID_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_POST_ID_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_AUTHOR_ID_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_AUTHOR_ID_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_PARENT_ID_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_PARENT_ID_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_CONTENT_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_CONTENT_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_IS_APPROVED_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_IS_APPROVED_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_CREATED_AT_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_CREATED_AT_DESC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_UPDATED_AT_ASC
-  AUTHORED_COMMENTS_DISTINCT_COUNT_UPDATED_AT_DESC
-  AUTHORED_COMMENTS_MIN_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_MIN_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_MAX_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_MAX_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_AVERAGE_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_AVERAGE_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_STDDEV_SAMPLE_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_STDDEV_SAMPLE_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_STDDEV_POPULATION_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_STDDEV_POPULATION_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_VARIANCE_SAMPLE_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_VARIANCE_SAMPLE_LIKES_COUNT_DESC
-  AUTHORED_COMMENTS_VARIANCE_POPULATION_LIKES_COUNT_ASC
-  AUTHORED_COMMENTS_VARIANCE_POPULATION_LIKES_COUNT_DESC
 }
 
 """Root meta schema type"""
