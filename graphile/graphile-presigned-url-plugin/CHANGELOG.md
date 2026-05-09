@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.16.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.15.1...graphile-presigned-url-plugin@0.16.0) (2026-05-09)
+
+### Features
+
+- **presigned-url:** enforce bulk upload limits (maxBulkFiles + maxBulkTotalSize) ([8c0be4a](https://github.com/constructive-io/constructive/commit/8c0be4a0651793eb119e7770fc5942a3bdd00dc9))
+
 ## [0.15.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.15.0...graphile-presigned-url-plugin@0.15.1) (2026-05-08)
 
 **Note:** Version bump only for package graphile-presigned-url-plugin

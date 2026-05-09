@@ -1,6 +1,6 @@
 {
   "name": "graphile-settings",
-  "version": "4.29.1",
+  "version": "4.30.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "graphile settings",
   "main": "index.js",
@@ -51,8 +51,8 @@
     "graphile-build-pg": "5.0.0",
     "graphile-config": "1.0.0",
     "graphile-connection-filter": "workspace:^",
-    "graphile-pg-aggregates": "workspace:^",
     "graphile-ltree": "workspace:^",
+    "graphile-pg-aggregates": "workspace:^",
     "graphile-postgis": "workspace:^",
     "graphile-presigned-url-plugin": "workspace:^",
     "graphile-search": "workspace:^",
