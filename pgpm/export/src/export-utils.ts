@@ -608,14 +608,14 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
     fields: {
       id: 'uuid',
       database_id: 'uuid',
-      authenticate: 'text',
-      authenticate_strict: 'text',
-      authenticate_schema: 'text',
-      role_schema: 'text',
-      current_role_fn: 'text',
-      current_role_id_fn: 'text',
-      current_user_agent_fn: 'text',
-      current_ip_address_fn: 'text'
+      authenticate_schema_id: 'uuid',
+      role_schema_id: 'uuid',
+      authenticate_function_id: 'uuid',
+      authenticate_strict_function_id: 'uuid',
+      current_role_function_id: 'uuid',
+      current_role_id_function_id: 'uuid',
+      current_user_agent_function_id: 'uuid',
+      current_ip_address_function_id: 'uuid'
     }
   },
   cors_settings: {
@@ -634,13 +634,13 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
     fields: {
       id: 'uuid',
       database_id: 'uuid',
-      schema: 'text',
+      schema_id: 'uuid',
       crypto_network: 'text',
       user_field: 'text',
-      sign_up_with_key: 'text',
-      sign_in_request_challenge: 'text',
-      sign_in_record_failure: 'text',
-      sign_in_with_challenge: 'text'
+      sign_up_with_key_function_id: 'uuid',
+      sign_in_request_challenge_function_id: 'uuid',
+      sign_in_record_failure_function_id: 'uuid',
+      sign_in_with_challenge_function_id: 'uuid'
     }
   },
   webauthn_settings: {
@@ -649,14 +649,15 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
     fields: {
       id: 'uuid',
       database_id: 'uuid',
-      schema: 'text',
-      credentials_schema: 'text',
-      credentials_table: 'text',
-      sessions_schema: 'text',
-      sessions_table: 'text',
-      session_credentials_table: 'text',
-      session_secrets_schema: 'text',
-      session_secrets_table: 'text',
+      schema_id: 'uuid',
+      credentials_schema_id: 'uuid',
+      sessions_schema_id: 'uuid',
+      session_secrets_schema_id: 'uuid',
+      credentials_table_id: 'uuid',
+      sessions_table_id: 'uuid',
+      session_credentials_table_id: 'uuid',
+      session_secrets_table_id: 'uuid',
+      user_field_id: 'uuid',
       rp_id: 'text',
       rp_name: 'text',
       origin_allowlist: 'text[]',
