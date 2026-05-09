@@ -115,7 +115,7 @@ const RLS_SETTINGS_BY_DBNAME_SQL = `
     ua_fn.name AS current_user_agent,
     ip_fn.name AS current_ip_address
   FROM services_public.rls_settings rs
-  JOIN metaschema_public.database db ON rs.database_id = db.id
+  JOIN services_public.apis a ON rs.database_id = a.database_id
   LEFT JOIN metaschema_public.schema auth_schema ON rs.authenticate_schema_id = auth_schema.id
   LEFT JOIN metaschema_public.schema role_schema ON rs.role_schema_id = role_schema.id
   LEFT JOIN metaschema_public.function auth_fn ON rs.authenticate_function_id = auth_fn.id
@@ -124,7 +124,7 @@ const RLS_SETTINGS_BY_DBNAME_SQL = `
   LEFT JOIN metaschema_public.function role_id_fn ON rs.current_role_id_function_id = role_id_fn.id
   LEFT JOIN metaschema_public.function ua_fn ON rs.current_user_agent_function_id = ua_fn.id
   LEFT JOIN metaschema_public.function ip_fn ON rs.current_ip_address_function_id = ip_fn.id
-  WHERE db.database_name = $1
+  WHERE a.dbname = $1
   LIMIT 1
 `;
 
