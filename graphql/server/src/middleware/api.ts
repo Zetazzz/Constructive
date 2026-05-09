@@ -8,7 +8,7 @@ import { getPgPool } from 'pg-cache';
 
 import errorPage50x from '../errors/50x';
 import errorPage404Message from '../errors/404-message';
-import { ApiConfigResult, ApiError, ApiOptions, ApiStructure, AuthSettings, RlsModule } from '../types';
+import { ApiConfigResult, ApiError, ApiOptions, ApiStructure, AuthSettings, DatabaseSettings, PubkeyChallengeSettings, RlsModule, WebauthnSettings } from '../types';
 import './types';
 
 const log = new Logger('api');
@@ -139,6 +139,100 @@ const AUTH_SETTINGS_SQL = (schemaName: string, tableName: string) => `
   LIMIT 1
 `;
 
+const CORS_SETTINGS_SQL = `
+  SELECT allowed_origins
+  FROM services_public.cors_settings
+  WHERE database_id = $1 AND api_id = $2
+  LIMIT 1
+`;
+
+const CORS_SETTINGS_DB_DEFAULT_SQL = `
+  SELECT allowed_origins
+  FROM services_public.cors_settings
+  WHERE database_id = $1 AND api_id IS NULL
+  LIMIT 1
+`;
+
+const CORS_MODULE_SQL = `
+  SELECT data
+  FROM services_public.api_modules
+  WHERE api_id = $1 AND name = 'cors'
+  LIMIT 1
+`;
+
+const PUBKEY_SETTINGS_SQL = `
+  SELECT
+    s.schema_name AS schema,
+    ps.crypto_network,
+    sign_up_fn.name AS sign_up_with_key,
+    sign_in_req_fn.name AS sign_in_request_challenge,
+    sign_in_fail_fn.name AS sign_in_record_failure,
+    sign_in_fn.name AS sign_in_with_challenge
+  FROM services_public.pubkey_settings ps
+  LEFT JOIN metaschema_public.schema s ON ps.schema_id = s.id
+  LEFT JOIN metaschema_public.function sign_up_fn ON ps.sign_up_with_key_function_id = sign_up_fn.id
+  LEFT JOIN metaschema_public.function sign_in_req_fn ON ps.sign_in_request_challenge_function_id = sign_in_req_fn.id
+  LEFT JOIN metaschema_public.function sign_in_fail_fn ON ps.sign_in_record_failure_function_id = sign_in_fail_fn.id
+  LEFT JOIN metaschema_public.function sign_in_fn ON ps.sign_in_with_challenge_function_id = sign_in_fn.id
+  WHERE ps.database_id = $1
+  LIMIT 1
+`;
+
+const PUBKEY_MODULE_SQL = `
+  SELECT data
+  FROM services_public.api_modules
+  WHERE api_id = $1 AND name = 'pubkey_challenge'
+  LIMIT 1
+`;
+
+const WEBAUTHN_SETTINGS_SQL = `
+  SELECT
+    s.schema_name AS schema,
+    cred_s.schema_name AS credentials_schema,
+    sess_s.schema_name AS sessions_schema,
+    sec_s.schema_name AS session_secrets_schema,
+    ws.rp_id,
+    ws.rp_name,
+    ws.origin_allowlist,
+    ws.attestation_type,
+    ws.require_user_verification,
+    ws.resident_key,
+    ws.challenge_expiry_seconds
+  FROM services_public.webauthn_settings ws
+  LEFT JOIN metaschema_public.schema s ON ws.schema_id = s.id
+  LEFT JOIN metaschema_public.schema cred_s ON ws.credentials_schema_id = cred_s.id
+  LEFT JOIN metaschema_public.schema sess_s ON ws.sessions_schema_id = sess_s.id
+  LEFT JOIN metaschema_public.schema sec_s ON ws.session_secrets_schema_id = sec_s.id
+  WHERE ws.database_id = $1
+  LIMIT 1
+`;
+
+const DATABASE_SETTINGS_SQL = `
+  SELECT
+    ds.enable_aggregates,
+    ds.enable_postgis,
+    ds.enable_search,
+    ds.enable_direct_uploads,
+    ds.enable_presigned_uploads,
+    ds.enable_many_to_many,
+    ds.enable_connection_filter,
+    ds.enable_ltree,
+    ds.enable_llm,
+    COALESCE(aps.enable_aggregates, ds.enable_aggregates) AS resolved_enable_aggregates,
+    COALESCE(aps.enable_postgis, ds.enable_postgis) AS resolved_enable_postgis,
+    COALESCE(aps.enable_search, ds.enable_search) AS resolved_enable_search,
+    COALESCE(aps.enable_direct_uploads, ds.enable_direct_uploads) AS resolved_enable_direct_uploads,
+    COALESCE(aps.enable_presigned_uploads, ds.enable_presigned_uploads) AS resolved_enable_presigned_uploads,
+    COALESCE(aps.enable_many_to_many, ds.enable_many_to_many) AS resolved_enable_many_to_many,
+    COALESCE(aps.enable_connection_filter, ds.enable_connection_filter) AS resolved_enable_connection_filter,
+    COALESCE(aps.enable_ltree, ds.enable_ltree) AS resolved_enable_ltree,
+    COALESCE(aps.enable_llm, ds.enable_llm) AS resolved_enable_llm
+  FROM services_public.database_settings ds
+  LEFT JOIN services_public.api_settings aps ON ds.database_id = aps.database_id AND aps.api_id = $2
+  WHERE ds.database_id = $1
+  LIMIT 1
+`;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -177,6 +271,60 @@ interface AuthSettingsRow {
 
 interface RlsModuleRow {
   data: RlsModuleData | null;
+}
+
+interface CorsSettingsRow {
+  allowed_origins: string[];
+}
+
+interface CorsModuleRow {
+  data: { urls: string[] } | null;
+}
+
+interface PubkeySettingsRow {
+  schema: string;
+  crypto_network: string;
+  sign_up_with_key: string;
+  sign_in_request_challenge: string;
+  sign_in_record_failure: string;
+  sign_in_with_challenge: string;
+}
+
+interface PubkeyModuleRow {
+  data: {
+    schema: string;
+    crypto_network: string;
+    sign_up_with_key: string;
+    sign_in_request_challenge: string;
+    sign_in_record_failure: string;
+    sign_in_with_challenge: string;
+  } | null;
+}
+
+interface WebauthnSettingsRow {
+  schema: string;
+  credentials_schema: string;
+  sessions_schema: string;
+  session_secrets_schema: string;
+  rp_id: string;
+  rp_name: string;
+  origin_allowlist: string[];
+  attestation_type: string;
+  require_user_verification: boolean;
+  resident_key: string;
+  challenge_expiry_seconds: number;
+}
+
+interface DatabaseSettingsRow {
+  resolved_enable_aggregates: boolean;
+  resolved_enable_postgis: boolean;
+  resolved_enable_search: boolean;
+  resolved_enable_direct_uploads: boolean;
+  resolved_enable_presigned_uploads: boolean;
+  resolved_enable_many_to_many: boolean;
+  resolved_enable_connection_filter: boolean;
+  resolved_enable_ltree: boolean;
+  resolved_enable_llm: boolean;
 }
 
 interface ApiListRow {
@@ -304,18 +452,31 @@ const toAuthSettings = (row: AuthSettingsRow | null): AuthSettings | undefined =
   };
 };
 
-const toApiStructure = (row: ApiRow, opts: ApiOptions, rlsModule?: RlsModule, authSettingsRow?: AuthSettingsRow | null): ApiStructure => ({
+interface ResolvedSettings {
+  rlsModule?: RlsModule;
+  authSettingsRow?: AuthSettingsRow | null;
+  corsOrigins?: string[];
+  databaseSettings?: DatabaseSettings;
+  pubkeyChallengeSettings?: PubkeyChallengeSettings;
+  webauthnSettings?: WebauthnSettings;
+}
+
+const toApiStructure = (row: ApiRow, opts: ApiOptions, settings: ResolvedSettings = {}): ApiStructure => ({
   apiId: row.api_id,
   dbname: row.dbname || opts.pg?.database || '',
   anonRole: row.anon_role || 'anon',
   roleName: row.role_name || 'authenticated',
   schema: row.schemas || [],
   apiModules: [],
-  rlsModule,
+  rlsModule: settings.rlsModule,
   domains: [],
   databaseId: row.database_id,
   isPublic: row.is_public,
-  authSettings: toAuthSettings(authSettingsRow ?? null),
+  authSettings: toAuthSettings(settings.authSettingsRow ?? null),
+  corsOrigins: settings.corsOrigins,
+  databaseSettings: settings.databaseSettings,
+  pubkeyChallengeSettings: settings.pubkeyChallengeSettings,
+  webauthnSettings: settings.webauthnSettings,
 });
 
 const createAdminStructure = (
@@ -388,6 +549,135 @@ const queryRlsModule = async (pool: Pool, databaseId: string, apiId: string): Pr
   const fromSettings = await queryRlsSettings(pool, databaseId);
   if (fromSettings) return fromSettings;
   return queryRlsModuleLegacy(pool, apiId);
+};
+
+// -- CORS --
+
+const queryCorsSettings = async (pool: Pool, databaseId: string, apiId?: string): Promise<string[] | undefined> => {
+  try {
+    if (apiId) {
+      const perApi = await pool.query<CorsSettingsRow>(CORS_SETTINGS_SQL, [databaseId, apiId]);
+      if (perApi.rows[0]) return perApi.rows[0].allowed_origins;
+    }
+    const dbDefault = await pool.query<CorsSettingsRow>(CORS_SETTINGS_DB_DEFAULT_SQL, [databaseId]);
+    return dbDefault.rows[0]?.allowed_origins;
+  } catch {
+    return undefined;
+  }
+};
+
+const queryCorsModuleLegacy = async (pool: Pool, apiId: string): Promise<string[] | undefined> => {
+  const result = await pool.query<CorsModuleRow>(CORS_MODULE_SQL, [apiId]);
+  return result.rows[0]?.data?.urls;
+};
+
+const queryCorsOrigins = async (pool: Pool, databaseId: string, apiId?: string): Promise<string[] | undefined> => {
+  const fromSettings = await queryCorsSettings(pool, databaseId, apiId);
+  if (fromSettings) return fromSettings;
+  if (apiId) return queryCorsModuleLegacy(pool, apiId);
+  return undefined;
+};
+
+// -- Pubkey --
+
+const toPubkeyChallengeSettings = (row: PubkeySettingsRow | null): PubkeyChallengeSettings | undefined => {
+  if (!row?.schema || !row?.sign_up_with_key) return undefined;
+  return {
+    schema: row.schema,
+    cryptoNetwork: row.crypto_network,
+    signUpWithKey: row.sign_up_with_key,
+    signInRequestChallenge: row.sign_in_request_challenge,
+    signInRecordFailure: row.sign_in_record_failure,
+    signInWithChallenge: row.sign_in_with_challenge,
+  };
+};
+
+const toPubkeyChallengeFromModule = (row: PubkeyModuleRow | null): PubkeyChallengeSettings | undefined => {
+  if (!row?.data?.schema) return undefined;
+  const d = row.data;
+  return {
+    schema: d.schema,
+    cryptoNetwork: d.crypto_network,
+    signUpWithKey: d.sign_up_with_key,
+    signInRequestChallenge: d.sign_in_request_challenge,
+    signInRecordFailure: d.sign_in_record_failure,
+    signInWithChallenge: d.sign_in_with_challenge,
+  };
+};
+
+const queryPubkeySettings = async (pool: Pool, databaseId: string): Promise<PubkeyChallengeSettings | undefined> => {
+  try {
+    const result = await pool.query<PubkeySettingsRow>(PUBKEY_SETTINGS_SQL, [databaseId]);
+    return toPubkeyChallengeSettings(result.rows[0] ?? null);
+  } catch {
+    return undefined;
+  }
+};
+
+const queryPubkeyModuleLegacy = async (pool: Pool, apiId: string): Promise<PubkeyChallengeSettings | undefined> => {
+  const result = await pool.query<PubkeyModuleRow>(PUBKEY_MODULE_SQL, [apiId]);
+  return toPubkeyChallengeFromModule(result.rows[0] ?? null);
+};
+
+const queryPubkeyChallenge = async (pool: Pool, databaseId: string, apiId?: string): Promise<PubkeyChallengeSettings | undefined> => {
+  const fromSettings = await queryPubkeySettings(pool, databaseId);
+  if (fromSettings) return fromSettings;
+  if (apiId) return queryPubkeyModuleLegacy(pool, apiId);
+  return undefined;
+};
+
+// -- WebAuthn --
+
+const toWebauthnSettings = (row: WebauthnSettingsRow | null): WebauthnSettings | undefined => {
+  if (!row?.schema) return undefined;
+  return {
+    schema: row.schema,
+    credentialsSchema: row.credentials_schema,
+    sessionsSchema: row.sessions_schema,
+    sessionSecretsSchema: row.session_secrets_schema,
+    rpId: row.rp_id,
+    rpName: row.rp_name,
+    originAllowlist: row.origin_allowlist,
+    attestationType: row.attestation_type,
+    requireUserVerification: row.require_user_verification,
+    residentKey: row.resident_key,
+    challengeExpirySeconds: row.challenge_expiry_seconds,
+  };
+};
+
+const queryWebauthnSettings = async (pool: Pool, databaseId: string): Promise<WebauthnSettings | undefined> => {
+  try {
+    const result = await pool.query<WebauthnSettingsRow>(WEBAUTHN_SETTINGS_SQL, [databaseId]);
+    return toWebauthnSettings(result.rows[0] ?? null);
+  } catch {
+    return undefined;
+  }
+};
+
+// -- Database Settings (feature flags) --
+
+const toDatabaseSettings = (row: DatabaseSettingsRow | null): DatabaseSettings | undefined => {
+  if (!row) return undefined;
+  return {
+    enableAggregates: row.resolved_enable_aggregates,
+    enablePostgis: row.resolved_enable_postgis,
+    enableSearch: row.resolved_enable_search,
+    enableDirectUploads: row.resolved_enable_direct_uploads,
+    enablePresignedUploads: row.resolved_enable_presigned_uploads,
+    enableManyToMany: row.resolved_enable_many_to_many,
+    enableConnectionFilter: row.resolved_enable_connection_filter,
+    enableLtree: row.resolved_enable_ltree,
+    enableLlm: row.resolved_enable_llm,
+  };
+};
+
+const queryDatabaseSettings = async (pool: Pool, databaseId: string, apiId?: string): Promise<DatabaseSettings | undefined> => {
+  try {
+    const result = await pool.query<DatabaseSettingsRow>(DATABASE_SETTINGS_SQL, [databaseId, apiId ?? null]);
+    return toDatabaseSettings(result.rows[0] ?? null);
+  } catch {
+    return undefined;
+  }
 };
 
 /**
@@ -479,10 +769,16 @@ const resolveApiNameHeader = async (ctx: ResolveContext): Promise<ApiStructure |
     return null;
   }
 
-  const rlsModule = await queryRlsModule(pool, row.database_id, row.api_id);
-  const authSettings = await queryAuthSettings(opts, row.dbname);
-  log.debug(`[api-name-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${rlsModule ? 'found' : 'none'}, authSettings: ${authSettings ? 'found' : 'none'}`);
-  return toApiStructure(row, opts, rlsModule, authSettings);
+  const [rlsModule, authSettingsRow, corsOrigins, databaseSettings, pubkeyChallengeSettings, webauthnSettings] = await Promise.all([
+    queryRlsModule(pool, row.database_id, row.api_id),
+    queryAuthSettings(opts, row.dbname),
+    queryCorsOrigins(pool, row.database_id, row.api_id),
+    queryDatabaseSettings(pool, row.database_id, row.api_id),
+    queryPubkeyChallenge(pool, row.database_id, row.api_id),
+    queryWebauthnSettings(pool, row.database_id),
+  ]);
+  log.debug(`[api-name-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${rlsModule ? 'found' : 'none'}, authSettings: ${authSettingsRow ? 'found' : 'none'}`);
+  return toApiStructure(row, opts, { rlsModule, authSettingsRow, corsOrigins, databaseSettings, pubkeyChallengeSettings, webauthnSettings });
 };
 
 const resolveMetaSchemaHeader = (
@@ -505,10 +801,16 @@ const resolveDomainLookup = async (ctx: ResolveContext): Promise<ApiStructure | 
     return null;
   }
 
-  const rlsModule = await queryRlsModule(pool, row.database_id, row.api_id);
-  const authSettings = await queryAuthSettings(opts, row.dbname);
-  log.debug(`[domain-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${rlsModule ? 'found' : 'none'}, authSettings: ${authSettings ? 'found' : 'none'}`);
-  return toApiStructure(row, opts, rlsModule, authSettings);
+  const [rlsModule, authSettingsRow, corsOrigins, databaseSettings, pubkeyChallengeSettings, webauthnSettings] = await Promise.all([
+    queryRlsModule(pool, row.database_id, row.api_id),
+    queryAuthSettings(opts, row.dbname),
+    queryCorsOrigins(pool, row.database_id, row.api_id),
+    queryDatabaseSettings(pool, row.database_id, row.api_id),
+    queryPubkeyChallenge(pool, row.database_id, row.api_id),
+    queryWebauthnSettings(pool, row.database_id),
+  ]);
+  log.debug(`[domain-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${rlsModule ? 'found' : 'none'}, authSettings: ${authSettingsRow ? 'found' : 'none'}`);
+  return toApiStructure(row, opts, { rlsModule, authSettingsRow, corsOrigins, databaseSettings, pubkeyChallengeSettings, webauthnSettings });
 };
 
 const buildDevFallbackError = async (
