@@ -239,7 +239,7 @@ const makeNullOrThrow = (fieldName: string, rawValue: unknown, type: string, req
 
 // type (int, text, etc)
 // from Array of keys that map to records found (e.g., ['lon', 'lat'])
-const getCoercionFunc = (type: string, from: string[], opts: FieldOptions, fieldName: string): CoercionFunc => {
+const getCoercionFunc = (type: string, from: string[], opts: FieldOptions, fieldName: string, globalOpts?: GlobalParseOptions): CoercionFunc => {
   const parseFn = opts.parse || identity;
   const required = opts.required || false;
 
@@ -436,12 +436,10 @@ const getCoercionFunc = (type: string, from: string[], opts: FieldOptions, field
     case 'text':
       return (record: Record<string, unknown>): Node => {
         const rawValue = record[from[0]];
-        if (rawValue === null || rawValue === undefined) {
-          return makeNullOrThrow(fieldName, rawValue, type, required, 'value is null');
-        }
-        const value = parseFn(rawValue);
-        if (value === null || value === undefined) {
-          return makeNullOrThrow(fieldName, rawValue, type, required, 'value is null');
+        const cleansed = globalOpts?.preserveEmptyStrings ? rawValue : cleanseEmptyStrings(rawValue);
+        const value = parseFn(cleansed);
+        if (isEmpty(value)) {
+          return makeNullOrThrow(fieldName, rawValue, type, required, 'value is empty or null');
         }
         const val = nodes.aConst({
           sval: ast.string({ sval: String(value) })
@@ -528,8 +526,13 @@ interface ConfigFields {
   [key: string]: string | FieldOptions;
 }
 
+export interface GlobalParseOptions {
+  preserveEmptyStrings?: boolean;
+}
+
 interface Config {
   fields: ConfigFields;
+  preserveEmptyStrings?: boolean;
 }
 
 interface TypesMap {
@@ -537,6 +540,9 @@ interface TypesMap {
 }
 
 export const parseTypes = (config: Config): TypesMap => {
+  const globalOpts: GlobalParseOptions = {
+    preserveEmptyStrings: config.preserveEmptyStrings
+  };
   return Object.entries(config.fields).reduce<TypesMap>((m, v) => {
     let [key, value] = v;
     let type: string;
@@ -555,7 +561,7 @@ export const parseTypes = (config: Config): TypesMap => {
       type = value.type!;
       from = getFromValue(value.from || key);
     }
-    m[key] = getCoercionFunc(type, from, value, key);
+    m[key] = getCoercionFunc(type, from, value, key, globalOpts);
     return m;
   }, {});
 };
