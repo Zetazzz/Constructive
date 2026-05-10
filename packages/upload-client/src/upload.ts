@@ -8,6 +8,7 @@
  */
 
 import { hashFile } from './hash';
+import { putToPresignedUrl } from './put';
 import { buildRequestUploadUrlQuery, DEFAULT_BUCKET_QUERY_FIELD } from './queries';
 import { UploadError } from './types';
 import type {
@@ -88,13 +89,7 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
     );
   }
 
-  await putToS3(
-    requestPayload.uploadUrl,
-    file,
-    file.type || 'application/octet-stream',
-    onProgress,
-    signal,
-  );
+  await putToS3(requestPayload.uploadUrl, file, file.type || 'application/octet-stream', onProgress, signal);
 
   return {
     fileId: requestPayload.fileId,
@@ -154,7 +149,7 @@ async function requestUploadUrl(
  * PUT file bytes to the presigned S3 URL.
  *
  * Uses XMLHttpRequest when available (for progress tracking),
- * falls back to fetch otherwise.
+ * falls back to putToPresignedUrl (fetch) otherwise.
  */
 async function putToS3(
   url: string,
@@ -168,46 +163,8 @@ async function putToS3(
     return putWithXHR(url, file, contentType, onProgress, signal);
   }
 
-  // Fallback to fetch
-  return putWithFetch(url, file, contentType, signal);
-}
-
-/**
- * PUT using fetch API.
- */
-async function putWithFetch(
-  url: string,
-  file: UploadFileOptions['file'],
-  contentType: string,
-  signal?: AbortSignal,
-): Promise<void> {
-  try {
-    const body = await file.arrayBuffer();
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': contentType },
-      body,
-      signal,
-    });
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new UploadError(
-        'PUT_UPLOAD_FAILED',
-        `S3 PUT failed with status ${response.status}: ${text}`,
-      );
-    }
-  } catch (err) {
-    if (err instanceof UploadError) throw err;
-    if (signal?.aborted) {
-      throw new UploadError('ABORTED', 'Upload was cancelled');
-    }
-    throw new UploadError(
-      'PUT_UPLOAD_FAILED',
-      `S3 PUT failed: ${err instanceof Error ? err.message : String(err)}`,
-      err,
-    );
-  }
+  const body = await file.arrayBuffer();
+  await putToPresignedUrl(url, body, contentType, signal);
 }
 
 /**
