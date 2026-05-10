@@ -1,13 +1,13 @@
 ---
 name: cli-public
-description: CLI tool (csdk) for the public API — provides CRUD commands for 147 tables and 71 custom operations
+description: CLI tool (csdk) for the public API — provides CRUD commands for 148 tables and 71 custom operations
 ---
 
 # cli-public
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-CLI tool (csdk) for the public API — provides CRUD commands for 147 tables and 71 custom operations
+CLI tool (csdk) for the public API — provides CRUD commands for 148 tables and 71 custom operations
 
 ## Usage
 
@@ -87,6 +87,7 @@ See the `references/` directory for detailed per-entity API documentation:
 - [relation-provision](references/relation-provision.md)
 - [session-secrets-module](references/session-secrets-module.md)
 - [identity-providers-module](references/identity-providers-module.md)
+- [realtime-module](references/realtime-module.md)
 - [schema-grant](references/schema-grant.md)
 - [default-privilege](references/default-privilege.md)
 - [enum](references/enum.md)

@@ -289,6 +289,15 @@ export const identityProvidersModuleMutationKeys = {
   /** Delete identityProvidersModule mutation key */ delete: (id: string | number) =>
     ['mutation', 'identityprovidersmodule', 'delete', id] as const,
 } as const;
+export const realtimeModuleMutationKeys = {
+  /** All realtimeModule mutation keys */ all: ['mutation', 'realtimemodule'] as const,
+  /** Create realtimeModule mutation key */ create: () =>
+    ['mutation', 'realtimemodule', 'create'] as const,
+  /** Update realtimeModule mutation key */ update: (id: string | number) =>
+    ['mutation', 'realtimemodule', 'update', id] as const,
+  /** Delete realtimeModule mutation key */ delete: (id: string | number) =>
+    ['mutation', 'realtimemodule', 'delete', id] as const,
+} as const;
 export const schemaGrantMutationKeys = {
   /** All schemaGrant mutation keys */ all: ['mutation', 'schemagrant'] as const,
   /** Create schemaGrant mutation key */ create: () =>
@@ -1595,6 +1604,7 @@ export const mutationKeys = {
   relationProvision: relationProvisionMutationKeys,
   sessionSecretsModule: sessionSecretsModuleMutationKeys,
   identityProvidersModule: identityProvidersModuleMutationKeys,
+  realtimeModule: realtimeModuleMutationKeys,
   schemaGrant: schemaGrantMutationKeys,
   defaultPrivilege: defaultPrivilegeMutationKeys,
   enum: enumMutationKeys,

@@ -36,6 +36,7 @@ import { SecureTableProvisionModel } from './models/secureTableProvision';
 import { RelationProvisionModel } from './models/relationProvision';
 import { SessionSecretsModuleModel } from './models/sessionSecretsModule';
 import { IdentityProvidersModuleModel } from './models/identityProvidersModule';
+import { RealtimeModuleModel } from './models/realtimeModule';
 import { SchemaGrantModel } from './models/schemaGrant';
 import { DefaultPrivilegeModel } from './models/defaultPrivilege';
 import { EnumModel } from './models/enum';
@@ -219,6 +220,7 @@ export function createClient(config: OrmClientConfig) {
     relationProvision: new RelationProvisionModel(client),
     sessionSecretsModule: new SessionSecretsModuleModel(client),
     identityProvidersModule: new IdentityProvidersModuleModel(client),
+    realtimeModule: new RealtimeModuleModel(client),
     schemaGrant: new SchemaGrantModel(client),
     defaultPrivilege: new DefaultPrivilegeModel(client),
     enum: new EnumModel(client),

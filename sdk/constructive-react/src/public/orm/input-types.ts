@@ -794,6 +794,20 @@ export interface IdentityProvidersModule {
   tableId?: string | null;
   tableName?: string | null;
 }
+export interface RealtimeModule {
+  id: string;
+  databaseId?: string | null;
+  schemaId?: string | null;
+  privateSchemaId?: string | null;
+  subscriptionsSchemaId?: string | null;
+  changeLogTableId?: string | null;
+  listenerNodeTableId?: string | null;
+  sourceRegistryTableId?: string | null;
+  retentionHours?: number | null;
+  lookaheadHours?: number | null;
+  partitionInterval?: string | null;
+  notifyChannel?: string | null;
+}
 export interface SchemaGrant {
   id: string;
   databaseId?: string | null;
@@ -2953,6 +2967,7 @@ export interface DatabaseRelations {
   webauthnAuthModules?: ConnectionResult<WebauthnAuthModule>;
   identityProvidersModules?: ConnectionResult<IdentityProvidersModule>;
   notificationsModules?: ConnectionResult<NotificationsModule>;
+  realtimeModules?: ConnectionResult<RealtimeModule>;
   databaseProvisionModules?: ConnectionResult<DatabaseProvisionModule>;
 }
 export interface SchemaRelations {
@@ -2967,6 +2982,9 @@ export interface SchemaRelations {
   sessionSecretsModules?: ConnectionResult<SessionSecretsModule>;
   identityProvidersModulesByPrivateSchemaId?: ConnectionResult<IdentityProvidersModule>;
   identityProvidersModules?: ConnectionResult<IdentityProvidersModule>;
+  realtimeModulesByPrivateSchemaId?: ConnectionResult<RealtimeModule>;
+  realtimeModules?: ConnectionResult<RealtimeModule>;
+  realtimeModulesBySubscriptionsSchemaId?: ConnectionResult<RealtimeModule>;
 }
 export interface TableRelations {
   database?: Database | null;
@@ -2995,6 +3013,9 @@ export interface TableRelations {
   sessionSecretsModulesBySessionsTableId?: ConnectionResult<SessionSecretsModule>;
   sessionSecretsModules?: ConnectionResult<SessionSecretsModule>;
   identityProvidersModules?: ConnectionResult<IdentityProvidersModule>;
+  realtimeModulesByChangeLogTableId?: ConnectionResult<RealtimeModule>;
+  realtimeModulesByListenerNodeTableId?: ConnectionResult<RealtimeModule>;
+  realtimeModulesBySourceRegistryTableId?: ConnectionResult<RealtimeModule>;
 }
 export interface CheckConstraintRelations {
   database?: Database | null;
@@ -3100,6 +3121,15 @@ export interface IdentityProvidersModuleRelations {
   privateSchema?: Schema | null;
   schema?: Schema | null;
   table?: Table | null;
+}
+export interface RealtimeModuleRelations {
+  changeLogTable?: Table | null;
+  database?: Database | null;
+  listenerNodeTable?: Table | null;
+  privateSchema?: Schema | null;
+  schema?: Schema | null;
+  sourceRegistryTable?: Table | null;
+  subscriptionsSchema?: Schema | null;
 }
 export interface SchemaGrantRelations {
   database?: Database | null;
@@ -3775,6 +3805,7 @@ export type SessionSecretsModuleWithRelations = SessionSecretsModule &
   SessionSecretsModuleRelations;
 export type IdentityProvidersModuleWithRelations = IdentityProvidersModule &
   IdentityProvidersModuleRelations;
+export type RealtimeModuleWithRelations = RealtimeModule & RealtimeModuleRelations;
 export type SchemaGrantWithRelations = SchemaGrant & SchemaGrantRelations;
 export type DefaultPrivilegeWithRelations = DefaultPrivilege & DefaultPrivilegeRelations;
 export type EnumWithRelations = Enum & EnumRelations;
@@ -4390,6 +4421,12 @@ export type DatabaseSelect = {
     filter?: NotificationsModuleFilter;
     orderBy?: NotificationsModuleOrderBy[];
   };
+  realtimeModules?: {
+    select: RealtimeModuleSelect;
+    first?: number;
+    filter?: RealtimeModuleFilter;
+    orderBy?: RealtimeModuleOrderBy[];
+  };
   databaseProvisionModules?: {
     select: DatabaseProvisionModuleSelect;
     first?: number;
@@ -4474,6 +4511,24 @@ export type SchemaSelect = {
     first?: number;
     filter?: IdentityProvidersModuleFilter;
     orderBy?: IdentityProvidersModuleOrderBy[];
+  };
+  realtimeModulesByPrivateSchemaId?: {
+    select: RealtimeModuleSelect;
+    first?: number;
+    filter?: RealtimeModuleFilter;
+    orderBy?: RealtimeModuleOrderBy[];
+  };
+  realtimeModules?: {
+    select: RealtimeModuleSelect;
+    first?: number;
+    filter?: RealtimeModuleFilter;
+    orderBy?: RealtimeModuleOrderBy[];
+  };
+  realtimeModulesBySubscriptionsSchemaId?: {
+    select: RealtimeModuleSelect;
+    first?: number;
+    filter?: RealtimeModuleFilter;
+    orderBy?: RealtimeModuleOrderBy[];
   };
 };
 export type TableSelect = {
@@ -4639,6 +4694,24 @@ export type TableSelect = {
     first?: number;
     filter?: IdentityProvidersModuleFilter;
     orderBy?: IdentityProvidersModuleOrderBy[];
+  };
+  realtimeModulesByChangeLogTableId?: {
+    select: RealtimeModuleSelect;
+    first?: number;
+    filter?: RealtimeModuleFilter;
+    orderBy?: RealtimeModuleOrderBy[];
+  };
+  realtimeModulesByListenerNodeTableId?: {
+    select: RealtimeModuleSelect;
+    first?: number;
+    filter?: RealtimeModuleFilter;
+    orderBy?: RealtimeModuleOrderBy[];
+  };
+  realtimeModulesBySourceRegistryTableId?: {
+    select: RealtimeModuleSelect;
+    first?: number;
+    filter?: RealtimeModuleFilter;
+    orderBy?: RealtimeModuleOrderBy[];
   };
 };
 export type CheckConstraintSelect = {
@@ -5162,6 +5235,41 @@ export type IdentityProvidersModuleSelect = {
   };
   table?: {
     select: TableSelect;
+  };
+};
+export type RealtimeModuleSelect = {
+  id?: boolean;
+  databaseId?: boolean;
+  schemaId?: boolean;
+  privateSchemaId?: boolean;
+  subscriptionsSchemaId?: boolean;
+  changeLogTableId?: boolean;
+  listenerNodeTableId?: boolean;
+  sourceRegistryTableId?: boolean;
+  retentionHours?: boolean;
+  lookaheadHours?: boolean;
+  partitionInterval?: boolean;
+  notifyChannel?: boolean;
+  changeLogTable?: {
+    select: TableSelect;
+  };
+  database?: {
+    select: DatabaseSelect;
+  };
+  listenerNodeTable?: {
+    select: TableSelect;
+  };
+  privateSchema?: {
+    select: SchemaSelect;
+  };
+  schema?: {
+    select: SchemaSelect;
+  };
+  sourceRegistryTable?: {
+    select: TableSelect;
+  };
+  subscriptionsSchema?: {
+    select: SchemaSelect;
   };
 };
 export type SchemaGrantSelect = {
@@ -8460,6 +8568,10 @@ export interface DatabaseFilter {
   billingProviderModule?: BillingProviderModuleFilter;
   /** A related `billingProviderModule` exists. */
   billingProviderModuleExists?: boolean;
+  /** Filter by the object’s `realtimeModules` relation. */
+  realtimeModules?: DatabaseToManyRealtimeModuleFilter;
+  /** `realtimeModules` exist. */
+  realtimeModulesExist?: boolean;
   /** Filter by the object’s `databaseProvisionModules` relation. */
   databaseProvisionModules?: DatabaseToManyDatabaseProvisionModuleFilter;
   /** `databaseProvisionModules` exist. */
@@ -8542,6 +8654,18 @@ export interface SchemaFilter {
   identityProvidersModules?: SchemaToManyIdentityProvidersModuleFilter;
   /** `identityProvidersModules` exist. */
   identityProvidersModulesExist?: boolean;
+  /** Filter by the object’s `realtimeModulesByPrivateSchemaId` relation. */
+  realtimeModulesByPrivateSchemaId?: SchemaToManyRealtimeModuleFilter;
+  /** `realtimeModulesByPrivateSchemaId` exist. */
+  realtimeModulesByPrivateSchemaIdExist?: boolean;
+  /** Filter by the object’s `realtimeModules` relation. */
+  realtimeModules?: SchemaToManyRealtimeModuleFilter;
+  /** `realtimeModules` exist. */
+  realtimeModulesExist?: boolean;
+  /** Filter by the object’s `realtimeModulesBySubscriptionsSchemaId` relation. */
+  realtimeModulesBySubscriptionsSchemaId?: SchemaToManyRealtimeModuleFilter;
+  /** `realtimeModulesBySubscriptionsSchemaId` exist. */
+  realtimeModulesBySubscriptionsSchemaIdExist?: boolean;
 }
 export interface TableFilter {
   /** Filter by the object’s `id` field. */
@@ -8688,6 +8812,18 @@ export interface TableFilter {
   identityProvidersModules?: TableToManyIdentityProvidersModuleFilter;
   /** `identityProvidersModules` exist. */
   identityProvidersModulesExist?: boolean;
+  /** Filter by the object’s `realtimeModulesByChangeLogTableId` relation. */
+  realtimeModulesByChangeLogTableId?: TableToManyRealtimeModuleFilter;
+  /** `realtimeModulesByChangeLogTableId` exist. */
+  realtimeModulesByChangeLogTableIdExist?: boolean;
+  /** Filter by the object’s `realtimeModulesByListenerNodeTableId` relation. */
+  realtimeModulesByListenerNodeTableId?: TableToManyRealtimeModuleFilter;
+  /** `realtimeModulesByListenerNodeTableId` exist. */
+  realtimeModulesByListenerNodeTableIdExist?: boolean;
+  /** Filter by the object’s `realtimeModulesBySourceRegistryTableId` relation. */
+  realtimeModulesBySourceRegistryTableId?: TableToManyRealtimeModuleFilter;
+  /** `realtimeModulesBySourceRegistryTableId` exist. */
+  realtimeModulesBySourceRegistryTableIdExist?: boolean;
 }
 export interface CheckConstraintFilter {
   /** Filter by the object’s `id` field. */
@@ -9550,6 +9686,52 @@ export interface IdentityProvidersModuleFilter {
   schema?: SchemaFilter;
   /** Filter by the object’s `table` relation. */
   table?: TableFilter;
+}
+export interface RealtimeModuleFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `databaseId` field. */
+  databaseId?: UUIDFilter;
+  /** Filter by the object’s `schemaId` field. */
+  schemaId?: UUIDFilter;
+  /** Filter by the object’s `privateSchemaId` field. */
+  privateSchemaId?: UUIDFilter;
+  /** Filter by the object’s `subscriptionsSchemaId` field. */
+  subscriptionsSchemaId?: UUIDFilter;
+  /** Filter by the object’s `changeLogTableId` field. */
+  changeLogTableId?: UUIDFilter;
+  /** Filter by the object’s `listenerNodeTableId` field. */
+  listenerNodeTableId?: UUIDFilter;
+  /** Filter by the object’s `sourceRegistryTableId` field. */
+  sourceRegistryTableId?: UUIDFilter;
+  /** Filter by the object’s `retentionHours` field. */
+  retentionHours?: IntFilter;
+  /** Filter by the object’s `lookaheadHours` field. */
+  lookaheadHours?: IntFilter;
+  /** Filter by the object’s `partitionInterval` field. */
+  partitionInterval?: StringFilter;
+  /** Filter by the object’s `notifyChannel` field. */
+  notifyChannel?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: RealtimeModuleFilter[];
+  /** Checks for any expressions in this list. */
+  or?: RealtimeModuleFilter[];
+  /** Negates the expression. */
+  not?: RealtimeModuleFilter;
+  /** Filter by the object’s `changeLogTable` relation. */
+  changeLogTable?: TableFilter;
+  /** Filter by the object’s `database` relation. */
+  database?: DatabaseFilter;
+  /** Filter by the object’s `listenerNodeTable` relation. */
+  listenerNodeTable?: TableFilter;
+  /** Filter by the object’s `privateSchema` relation. */
+  privateSchema?: SchemaFilter;
+  /** Filter by the object’s `schema` relation. */
+  schema?: SchemaFilter;
+  /** Filter by the object’s `sourceRegistryTable` relation. */
+  sourceRegistryTable?: TableFilter;
+  /** Filter by the object’s `subscriptionsSchema` relation. */
+  subscriptionsSchema?: SchemaFilter;
 }
 export interface SchemaGrantFilter {
   /** Filter by the object’s `id` field. */
@@ -14717,6 +14899,34 @@ export type IdentityProvidersModuleOrderBy =
   | 'TABLE_ID_DESC'
   | 'TABLE_NAME_ASC'
   | 'TABLE_NAME_DESC';
+export type RealtimeModuleOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'DATABASE_ID_ASC'
+  | 'DATABASE_ID_DESC'
+  | 'SCHEMA_ID_ASC'
+  | 'SCHEMA_ID_DESC'
+  | 'PRIVATE_SCHEMA_ID_ASC'
+  | 'PRIVATE_SCHEMA_ID_DESC'
+  | 'SUBSCRIPTIONS_SCHEMA_ID_ASC'
+  | 'SUBSCRIPTIONS_SCHEMA_ID_DESC'
+  | 'CHANGE_LOG_TABLE_ID_ASC'
+  | 'CHANGE_LOG_TABLE_ID_DESC'
+  | 'LISTENER_NODE_TABLE_ID_ASC'
+  | 'LISTENER_NODE_TABLE_ID_DESC'
+  | 'SOURCE_REGISTRY_TABLE_ID_ASC'
+  | 'SOURCE_REGISTRY_TABLE_ID_DESC'
+  | 'RETENTION_HOURS_ASC'
+  | 'RETENTION_HOURS_DESC'
+  | 'LOOKAHEAD_HOURS_ASC'
+  | 'LOOKAHEAD_HOURS_DESC'
+  | 'PARTITION_INTERVAL_ASC'
+  | 'PARTITION_INTERVAL_DESC'
+  | 'NOTIFY_CHANNEL_ASC'
+  | 'NOTIFY_CHANNEL_DESC';
 export type SchemaGrantOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -18497,6 +18707,44 @@ export interface UpdateIdentityProvidersModuleInput {
   identityProvidersModulePatch: IdentityProvidersModulePatch;
 }
 export interface DeleteIdentityProvidersModuleInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface CreateRealtimeModuleInput {
+  clientMutationId?: string;
+  realtimeModule: {
+    databaseId: string;
+    schemaId?: string;
+    privateSchemaId?: string;
+    subscriptionsSchemaId?: string;
+    changeLogTableId?: string;
+    listenerNodeTableId?: string;
+    sourceRegistryTableId?: string;
+    retentionHours?: number;
+    lookaheadHours?: number;
+    partitionInterval?: string;
+    notifyChannel?: string;
+  };
+}
+export interface RealtimeModulePatch {
+  databaseId?: string | null;
+  schemaId?: string | null;
+  privateSchemaId?: string | null;
+  subscriptionsSchemaId?: string | null;
+  changeLogTableId?: string | null;
+  listenerNodeTableId?: string | null;
+  sourceRegistryTableId?: string | null;
+  retentionHours?: number | null;
+  lookaheadHours?: number | null;
+  partitionInterval?: string | null;
+  notifyChannel?: string | null;
+}
+export interface UpdateRealtimeModuleInput {
+  clientMutationId?: string;
+  id: string;
+  realtimeModulePatch: RealtimeModulePatch;
+}
+export interface DeleteRealtimeModuleInput {
   clientMutationId?: string;
   id: string;
 }
@@ -22315,6 +22563,7 @@ export const connectionFieldsMap = {
     webauthnAuthModules: 'WebauthnAuthModule',
     identityProvidersModules: 'IdentityProvidersModule',
     notificationsModules: 'NotificationsModule',
+    realtimeModules: 'RealtimeModule',
     databaseProvisionModules: 'DatabaseProvisionModule',
   },
   Schema: {
@@ -22328,6 +22577,9 @@ export const connectionFieldsMap = {
     sessionSecretsModules: 'SessionSecretsModule',
     identityProvidersModulesByPrivateSchemaId: 'IdentityProvidersModule',
     identityProvidersModules: 'IdentityProvidersModule',
+    realtimeModulesByPrivateSchemaId: 'RealtimeModule',
+    realtimeModules: 'RealtimeModule',
+    realtimeModulesBySubscriptionsSchemaId: 'RealtimeModule',
   },
   Table: {
     checkConstraints: 'CheckConstraint',
@@ -22352,6 +22604,9 @@ export const connectionFieldsMap = {
     sessionSecretsModulesBySessionsTableId: 'SessionSecretsModule',
     sessionSecretsModules: 'SessionSecretsModule',
     identityProvidersModules: 'IdentityProvidersModule',
+    realtimeModulesByChangeLogTableId: 'RealtimeModule',
+    realtimeModulesByListenerNodeTableId: 'RealtimeModule',
+    realtimeModulesBySourceRegistryTableId: 'RealtimeModule',
   },
   Field: {
     spatialRelations: 'SpatialRelation',
@@ -23363,6 +23618,15 @@ export interface DatabaseToManyNotificationsModuleFilter {
   /** Filters to entities where no related entity matches. */
   none?: NotificationsModuleFilter;
 }
+/** A filter to be used against many `RealtimeModule` object types. All fields are combined with a logical ‘and.’ */
+export interface DatabaseToManyRealtimeModuleFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: RealtimeModuleFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: RealtimeModuleFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: RealtimeModuleFilter;
+}
 /** A filter to be used against many `DatabaseProvisionModule` object types. All fields are combined with a logical ‘and.’ */
 export interface DatabaseToManyDatabaseProvisionModuleFilter {
   /** Filters to entities where at least one related entity matches. */
@@ -23477,6 +23741,15 @@ export interface SchemaToManyIdentityProvidersModuleFilter {
   every?: IdentityProvidersModuleFilter;
   /** Filters to entities where no related entity matches. */
   none?: IdentityProvidersModuleFilter;
+}
+/** A filter to be used against many `RealtimeModule` object types. All fields are combined with a logical ‘and.’ */
+export interface SchemaToManyRealtimeModuleFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: RealtimeModuleFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: RealtimeModuleFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: RealtimeModuleFilter;
 }
 /** A filter to be used against many `CheckConstraint` object types. All fields are combined with a logical ‘and.’ */
 export interface TableToManyCheckConstraintFilter {
@@ -23639,6 +23912,15 @@ export interface TableToManyIdentityProvidersModuleFilter {
   every?: IdentityProvidersModuleFilter;
   /** Filters to entities where no related entity matches. */
   none?: IdentityProvidersModuleFilter;
+}
+/** A filter to be used against many `RealtimeModule` object types. All fields are combined with a logical ‘and.’ */
+export interface TableToManyRealtimeModuleFilter {
+  /** Filters to entities where at least one related entity matches. */
+  some?: RealtimeModuleFilter;
+  /** Filters to entities where every related entity matches. */
+  every?: RealtimeModuleFilter;
+  /** Filters to entities where no related entity matches. */
+  none?: RealtimeModuleFilter;
 }
 /** A filter to be used against many `SpatialRelation` object types. All fields are combined with a logical ‘and.’ */
 export interface FieldToManySpatialRelationFilter {
@@ -24865,6 +25147,18 @@ export interface SchemaFilter {
   identityProvidersModules?: SchemaToManyIdentityProvidersModuleFilter;
   /** `identityProvidersModules` exist. */
   identityProvidersModulesExist?: boolean;
+  /** Filter by the object’s `realtimeModulesByPrivateSchemaId` relation. */
+  realtimeModulesByPrivateSchemaId?: SchemaToManyRealtimeModuleFilter;
+  /** `realtimeModulesByPrivateSchemaId` exist. */
+  realtimeModulesByPrivateSchemaIdExist?: boolean;
+  /** Filter by the object’s `realtimeModules` relation. */
+  realtimeModules?: SchemaToManyRealtimeModuleFilter;
+  /** `realtimeModules` exist. */
+  realtimeModulesExist?: boolean;
+  /** Filter by the object’s `realtimeModulesBySubscriptionsSchemaId` relation. */
+  realtimeModulesBySubscriptionsSchemaId?: SchemaToManyRealtimeModuleFilter;
+  /** `realtimeModulesBySubscriptionsSchemaId` exist. */
+  realtimeModulesBySubscriptionsSchemaIdExist?: boolean;
 }
 /** A filter to be used against `Table` object types. All fields are combined with a logical ‘and.’ */
 export interface TableFilter {
@@ -25012,6 +25306,18 @@ export interface TableFilter {
   identityProvidersModules?: TableToManyIdentityProvidersModuleFilter;
   /** `identityProvidersModules` exist. */
   identityProvidersModulesExist?: boolean;
+  /** Filter by the object’s `realtimeModulesByChangeLogTableId` relation. */
+  realtimeModulesByChangeLogTableId?: TableToManyRealtimeModuleFilter;
+  /** `realtimeModulesByChangeLogTableId` exist. */
+  realtimeModulesByChangeLogTableIdExist?: boolean;
+  /** Filter by the object’s `realtimeModulesByListenerNodeTableId` relation. */
+  realtimeModulesByListenerNodeTableId?: TableToManyRealtimeModuleFilter;
+  /** `realtimeModulesByListenerNodeTableId` exist. */
+  realtimeModulesByListenerNodeTableIdExist?: boolean;
+  /** Filter by the object’s `realtimeModulesBySourceRegistryTableId` relation. */
+  realtimeModulesBySourceRegistryTableId?: TableToManyRealtimeModuleFilter;
+  /** `realtimeModulesBySourceRegistryTableId` exist. */
+  realtimeModulesBySourceRegistryTableIdExist?: boolean;
 }
 /** A filter to be used against `CheckConstraint` object types. All fields are combined with a logical ‘and.’ */
 export interface CheckConstraintFilter {
@@ -27738,6 +28044,53 @@ export interface NotificationsModuleFilter {
   /** A related `userSettingsTableByUserSettingsTableId` exists. */
   userSettingsTableByUserSettingsTableIdExists?: boolean;
 }
+/** A filter to be used against `RealtimeModule` object types. All fields are combined with a logical ‘and.’ */
+export interface RealtimeModuleFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `databaseId` field. */
+  databaseId?: UUIDFilter;
+  /** Filter by the object’s `schemaId` field. */
+  schemaId?: UUIDFilter;
+  /** Filter by the object’s `privateSchemaId` field. */
+  privateSchemaId?: UUIDFilter;
+  /** Filter by the object’s `subscriptionsSchemaId` field. */
+  subscriptionsSchemaId?: UUIDFilter;
+  /** Filter by the object’s `changeLogTableId` field. */
+  changeLogTableId?: UUIDFilter;
+  /** Filter by the object’s `listenerNodeTableId` field. */
+  listenerNodeTableId?: UUIDFilter;
+  /** Filter by the object’s `sourceRegistryTableId` field. */
+  sourceRegistryTableId?: UUIDFilter;
+  /** Filter by the object’s `retentionHours` field. */
+  retentionHours?: IntFilter;
+  /** Filter by the object’s `lookaheadHours` field. */
+  lookaheadHours?: IntFilter;
+  /** Filter by the object’s `partitionInterval` field. */
+  partitionInterval?: StringFilter;
+  /** Filter by the object’s `notifyChannel` field. */
+  notifyChannel?: StringFilter;
+  /** Checks for all expressions in this list. */
+  and?: RealtimeModuleFilter[];
+  /** Checks for any expressions in this list. */
+  or?: RealtimeModuleFilter[];
+  /** Negates the expression. */
+  not?: RealtimeModuleFilter;
+  /** Filter by the object’s `changeLogTable` relation. */
+  changeLogTable?: TableFilter;
+  /** Filter by the object’s `database` relation. */
+  database?: DatabaseFilter;
+  /** Filter by the object’s `listenerNodeTable` relation. */
+  listenerNodeTable?: TableFilter;
+  /** Filter by the object’s `privateSchema` relation. */
+  privateSchema?: SchemaFilter;
+  /** Filter by the object’s `schema` relation. */
+  schema?: SchemaFilter;
+  /** Filter by the object’s `sourceRegistryTable` relation. */
+  sourceRegistryTable?: TableFilter;
+  /** Filter by the object’s `subscriptionsSchema` relation. */
+  subscriptionsSchema?: SchemaFilter;
+}
 /** A filter to be used against `DatabaseProvisionModule` object types. All fields are combined with a logical ‘and.’ */
 export interface DatabaseProvisionModuleFilter {
   /** Filter by the object’s `id` field. */
@@ -28355,6 +28708,10 @@ export interface DatabaseFilter {
   billingProviderModule?: BillingProviderModuleFilter;
   /** A related `billingProviderModule` exists. */
   billingProviderModuleExists?: boolean;
+  /** Filter by the object’s `realtimeModules` relation. */
+  realtimeModules?: DatabaseToManyRealtimeModuleFilter;
+  /** `realtimeModules` exist. */
+  realtimeModulesExist?: boolean;
   /** Filter by the object’s `databaseProvisionModules` relation. */
   databaseProvisionModules?: DatabaseToManyDatabaseProvisionModuleFilter;
   /** `databaseProvisionModules` exist. */
@@ -32468,6 +32825,51 @@ export type DeleteIdentityProvidersModulePayloadSelect = {
   };
   identityProvidersModuleEdge?: {
     select: IdentityProvidersModuleEdgeSelect;
+  };
+};
+export interface CreateRealtimeModulePayload {
+  clientMutationId?: string | null;
+  /** The `RealtimeModule` that was created by this mutation. */
+  realtimeModule?: RealtimeModule | null;
+  realtimeModuleEdge?: RealtimeModuleEdge | null;
+}
+export type CreateRealtimeModulePayloadSelect = {
+  clientMutationId?: boolean;
+  realtimeModule?: {
+    select: RealtimeModuleSelect;
+  };
+  realtimeModuleEdge?: {
+    select: RealtimeModuleEdgeSelect;
+  };
+};
+export interface UpdateRealtimeModulePayload {
+  clientMutationId?: string | null;
+  /** The `RealtimeModule` that was updated by this mutation. */
+  realtimeModule?: RealtimeModule | null;
+  realtimeModuleEdge?: RealtimeModuleEdge | null;
+}
+export type UpdateRealtimeModulePayloadSelect = {
+  clientMutationId?: boolean;
+  realtimeModule?: {
+    select: RealtimeModuleSelect;
+  };
+  realtimeModuleEdge?: {
+    select: RealtimeModuleEdgeSelect;
+  };
+};
+export interface DeleteRealtimeModulePayload {
+  clientMutationId?: string | null;
+  /** The `RealtimeModule` that was deleted by this mutation. */
+  realtimeModule?: RealtimeModule | null;
+  realtimeModuleEdge?: RealtimeModuleEdge | null;
+}
+export type DeleteRealtimeModulePayloadSelect = {
+  clientMutationId?: boolean;
+  realtimeModule?: {
+    select: RealtimeModuleSelect;
+  };
+  realtimeModuleEdge?: {
+    select: RealtimeModuleEdgeSelect;
   };
 };
 export interface CreateSchemaGrantPayload {
@@ -37923,6 +38325,18 @@ export type IdentityProvidersModuleEdgeSelect = {
   cursor?: boolean;
   node?: {
     select: IdentityProvidersModuleSelect;
+  };
+};
+/** A `RealtimeModule` edge in the connection. */
+export interface RealtimeModuleEdge {
+  cursor?: string | null;
+  /** The `RealtimeModule` at the end of the edge. */
+  node?: RealtimeModule | null;
+}
+export type RealtimeModuleEdgeSelect = {
+  cursor?: boolean;
+  node?: {
+    select: RealtimeModuleSelect;
   };
 };
 /** A `SchemaGrant` edge in the connection. */

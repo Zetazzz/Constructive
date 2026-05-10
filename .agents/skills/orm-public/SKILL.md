@@ -1,13 +1,13 @@
 ---
 name: orm-public
-description: ORM client for the public API — provides typed CRUD operations for 147 tables and 71 custom operations
+description: ORM client for the public API — provides typed CRUD operations for 148 tables and 71 custom operations
 ---
 
 # orm-public
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-ORM client for the public API — provides typed CRUD operations for 147 tables and 71 custom operations
+ORM client for the public API — provides typed CRUD operations for 148 tables and 71 custom operations
 
 ## Usage
 
@@ -68,6 +68,7 @@ See the `references/` directory for detailed per-entity API documentation:
 - [relation-provision](references/relation-provision.md)
 - [session-secrets-module](references/session-secrets-module.md)
 - [identity-providers-module](references/identity-providers-module.md)
+- [realtime-module](references/realtime-module.md)
 - [schema-grant](references/schema-grant.md)
 - [default-privilege](references/default-privilege.md)
 - [enum](references/enum.md)

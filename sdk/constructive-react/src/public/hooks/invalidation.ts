@@ -46,6 +46,7 @@ import {
   relationProvisionKeys,
   sessionSecretsModuleKeys,
   identityProvidersModuleKeys,
+  realtimeModuleKeys,
   schemaGrantKeys,
   defaultPrivilegeKeys,
   enumKeys,
@@ -678,6 +679,23 @@ export const invalidate = {
     ) =>
       queryClient.invalidateQueries({
         queryKey: identityProvidersModuleKeys.detail(id),
+      }),
+  },
+  /** Invalidate realtimeModule queries */ realtimeModule: {
+    /** Invalidate all realtimeModule queries */ all: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: realtimeModuleKeys.all,
+      }),
+    /** Invalidate realtimeModule list queries */ lists: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: realtimeModuleKeys.lists(),
+      }),
+    /** Invalidate a specific realtimeModule */ detail: (
+      queryClient: QueryClient,
+      id: string | number
+    ) =>
+      queryClient.invalidateQueries({
+        queryKey: realtimeModuleKeys.detail(id),
       }),
   },
   /** Invalidate schemaGrant queries */ schemaGrant: {
@@ -2815,6 +2833,14 @@ export const remove = {
   ) => {
     queryClient.removeQueries({
       queryKey: identityProvidersModuleKeys.detail(id),
+    });
+  },
+  /** Remove realtimeModule from cache */ realtimeModule: (
+    queryClient: QueryClient,
+    id: string | number
+  ) => {
+    queryClient.removeQueries({
+      queryKey: realtimeModuleKeys.detail(id),
     });
   },
   /** Remove schemaGrant from cache */ schemaGrant: (

@@ -52,6 +52,7 @@ const db = createClient({
 | `relationProvision` | findMany, findOne, create, update, delete |
 | `sessionSecretsModule` | findMany, findOne, create, update, delete |
 | `identityProvidersModule` | findMany, findOne, create, update, delete |
+| `realtimeModule` | findMany, findOne, create, update, delete |
 | `schemaGrant` | findMany, findOne, create, update, delete |
 | `defaultPrivilege` | findMany, findOne, create, update, delete |
 | `enum` | findMany, findOne, create, update, delete |
@@ -1384,6 +1385,46 @@ const updated = await db.identityProvidersModule.update({ where: { id: '<UUID>' 
 
 // Delete
 const deleted = await db.identityProvidersModule.delete({ where: { id: '<UUID>' } }).execute();
+```
+
+### `db.realtimeModule`
+
+CRUD operations for RealtimeModule records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `databaseId` | UUID | Yes |
+| `schemaId` | UUID | Yes |
+| `privateSchemaId` | UUID | Yes |
+| `subscriptionsSchemaId` | UUID | Yes |
+| `changeLogTableId` | UUID | Yes |
+| `listenerNodeTableId` | UUID | Yes |
+| `sourceRegistryTableId` | UUID | Yes |
+| `retentionHours` | Int | Yes |
+| `lookaheadHours` | Int | Yes |
+| `partitionInterval` | String | Yes |
+| `notifyChannel` | String | Yes |
+
+**Operations:**
+
+```typescript
+// List all realtimeModule records
+const items = await db.realtimeModule.findMany({ select: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, subscriptionsSchemaId: true, changeLogTableId: true, listenerNodeTableId: true, sourceRegistryTableId: true, retentionHours: true, lookaheadHours: true, partitionInterval: true, notifyChannel: true } }).execute();
+
+// Get one by id
+const item = await db.realtimeModule.findOne({ id: '<UUID>', select: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, subscriptionsSchemaId: true, changeLogTableId: true, listenerNodeTableId: true, sourceRegistryTableId: true, retentionHours: true, lookaheadHours: true, partitionInterval: true, notifyChannel: true } }).execute();
+
+// Create
+const created = await db.realtimeModule.create({ data: { databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', subscriptionsSchemaId: '<UUID>', changeLogTableId: '<UUID>', listenerNodeTableId: '<UUID>', sourceRegistryTableId: '<UUID>', retentionHours: '<Int>', lookaheadHours: '<Int>', partitionInterval: '<String>', notifyChannel: '<String>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.realtimeModule.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.realtimeModule.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.schemaGrant`

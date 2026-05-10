@@ -213,6 +213,11 @@ function App() {
 | `useCreateIdentityProvidersModuleMutation` | Mutation | Config row for the identity_providers_module, which provisions a per-database identity_providers config table holding OAuth2 / OIDC (and future SAML) provider definitions: protocol kind, endpoint URLs, encrypted client secret, scopes, audience validation, PKCE, and email-handling flags. Built-in providers (google, github, apple, ...) are seeded as is_built_in=true rows; custom providers use slugs of the form custom:<slug>. |
 | `useUpdateIdentityProvidersModuleMutation` | Mutation | Config row for the identity_providers_module, which provisions a per-database identity_providers config table holding OAuth2 / OIDC (and future SAML) provider definitions: protocol kind, endpoint URLs, encrypted client secret, scopes, audience validation, PKCE, and email-handling flags. Built-in providers (google, github, apple, ...) are seeded as is_built_in=true rows; custom providers use slugs of the form custom:<slug>. |
 | `useDeleteIdentityProvidersModuleMutation` | Mutation | Config row for the identity_providers_module, which provisions a per-database identity_providers config table holding OAuth2 / OIDC (and future SAML) provider definitions: protocol kind, endpoint URLs, encrypted client secret, scopes, audience validation, PKCE, and email-handling flags. Built-in providers (google, github, apple, ...) are seeded as is_built_in=true rows; custom providers use slugs of the form custom:<slug>. |
+| `useRealtimeModulesQuery` | Query | List all realtimeModules |
+| `useRealtimeModuleQuery` | Query | Get one realtimeModule |
+| `useCreateRealtimeModuleMutation` | Mutation | Create a realtimeModule |
+| `useUpdateRealtimeModuleMutation` | Mutation | Update a realtimeModule |
+| `useDeleteRealtimeModuleMutation` | Mutation | Delete a realtimeModule |
 | `useSchemaGrantsQuery` | Query | List all schemaGrants |
 | `useSchemaGrantQuery` | Query | Get one schemaGrant |
 | `useCreateSchemaGrantMutation` | Mutation | Create a schemaGrant |
@@ -1543,6 +1548,27 @@ const { mutate: create } = useCreateIdentityProvidersModuleMutation({
   selection: { fields: { id: true } },
 });
 create({ databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', tableId: '<UUID>', tableName: '<String>' });
+```
+
+### RealtimeModule
+
+```typescript
+// List all realtimeModules
+const { data, isLoading } = useRealtimeModulesQuery({
+  selection: { fields: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, subscriptionsSchemaId: true, changeLogTableId: true, listenerNodeTableId: true, sourceRegistryTableId: true, retentionHours: true, lookaheadHours: true, partitionInterval: true, notifyChannel: true } },
+});
+
+// Get one realtimeModule
+const { data: item } = useRealtimeModuleQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, subscriptionsSchemaId: true, changeLogTableId: true, listenerNodeTableId: true, sourceRegistryTableId: true, retentionHours: true, lookaheadHours: true, partitionInterval: true, notifyChannel: true } },
+});
+
+// Create a realtimeModule
+const { mutate: create } = useCreateRealtimeModuleMutation({
+  selection: { fields: { id: true } },
+});
+create({ databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', subscriptionsSchemaId: '<UUID>', changeLogTableId: '<UUID>', listenerNodeTableId: '<UUID>', sourceRegistryTableId: '<UUID>', retentionHours: '<Int>', lookaheadHours: '<Int>', partitionInterval: '<String>', notifyChannel: '<String>' });
 ```
 
 ### SchemaGrant
