@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.31.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.30.2...graphile-settings@4.31.0) (2026-05-10)
+
+### Features
+
+- refactor ConstructivePreset into createConstructivePreset() factory ([b06968c](https://github.com/constructive-io/constructive/commit/b06968c25baef2d08d1a7fcadf07bfc5fbff5462))
+- typed table reads for CORS, pubkey, webauthn, database_settings + Graphile feature flag wiring ([b4ee8ba](https://github.com/constructive-io/constructive/commit/b4ee8bab5dc216e0bca8d8ede2890e669508cd0f))
+
 ## [4.30.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.30.1...graphile-settings@4.30.2) (2026-05-09)
 
 **Note:** Version bump only for package graphile-settings
