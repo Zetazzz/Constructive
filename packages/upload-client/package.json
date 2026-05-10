@@ -28,6 +28,9 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
+  "dependencies": {
+    "@constructive-io/fetch": "^1.0.0"
+  },
   "devDependencies": {
     "makage": "^0.3.0"
   },
