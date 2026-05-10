@@ -186,6 +186,19 @@ VALUES
   ('d2d2d2d2-0000-0000-0000-000000000002', 'private', 'private', false)
 ON CONFLICT (id) DO NOTHING;
 
+-- Pre-seed a file in Bob's public bucket for mutation attack testing
+INSERT INTO "bob-storage-public".app_files (id, bucket_id, key, content_hash, mime_type, size, filename, is_public)
+VALUES (
+  'd3d3d3d3-0000-0000-0000-000000000002',
+  'd2d2d2d2-0000-0000-0000-000000000001',
+  'seeded-public-hash',
+  'seeded-public-hash',
+  'text/plain',
+  42,
+  'bob-seeded-public.txt',
+  true
+) ON CONFLICT (id) DO NOTHING;
+
 -- Pre-seed a file in Bob's private bucket for RLS testing
 INSERT INTO "bob-storage-public".app_files (id, bucket_id, key, content_hash, mime_type, size, filename, is_public)
 VALUES (
@@ -220,5 +233,114 @@ VALUES (
   'a4a4a4a4-b5b5-4c6c-d7d7-e8e8e8e8e8e8',
   false
 ) ON CONFLICT (api_id) DO NOTHING;
+
+-- =====================================================
+-- MALLORY METASCHEMA DATA (adversarial third tenant)
+-- =====================================================
+
+INSERT INTO metaschema_public.database (id, owner_id, name, hash)
+VALUES (
+  'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5',
+  NULL,
+  'mallory-storage',
+  '636c2f32-2382-7972-a7f0-4c1a2e593446'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO metaschema_public.schema (id, database_id, name, schema_name, description, is_public)
+VALUES
+  ('m2m2m2m2-a3a3-4b4b-c5c5-d6d6d6d6d6d6', 'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5', 'public', 'mallory-storage-public', NULL, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO metaschema_public.table (id, database_id, schema_id, name, description)
+VALUES
+  ('m3m3m3m3-0000-0000-0000-000000000001', 'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5', 'm2m2m2m2-a3a3-4b4b-c5c5-d6d6d6d6d6d6', 'app_buckets', NULL),
+  ('m3m3m3m3-0000-0000-0000-000000000002', 'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5', 'm2m2m2m2-a3a3-4b4b-c5c5-d6d6d6d6d6d6', 'app_files', NULL)
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- MALLORY SERVICES DATA
+-- =====================================================
+
+INSERT INTO services_public.apis (id, database_id, name, dbname, is_public, role_name, anon_role)
+VALUES
+  ('m4m4m4m4-a5a5-4b6b-c7c7-d8d8d8d8d8d8', 'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5', 'mallory-app', current_database(), false, 'authenticated', 'anonymous')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO services_public.api_schemas (id, database_id, schema_id, api_id)
+VALUES
+  ('m5m5m5m5-0000-0000-0000-000000000001', 'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5', 'm2m2m2m2-a3a3-4b4b-c5c5-d6d6d6d6d6d6', 'm4m4m4m4-a5a5-4b6b-c7c7-d8d8d8d8d8d8')
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- MALLORY STORAGE MODULE CONFIG
+-- =====================================================
+
+INSERT INTO metaschema_modules_public.storage_module (
+  id,
+  database_id,
+  schema_id,
+  buckets_table_id,
+  files_table_id,
+  endpoint,
+  public_url_prefix,
+  provider,
+  allowed_origins
+)
+VALUES (
+  'm6m6m6m6-0000-0000-0000-000000000001',
+  'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5',
+  'm2m2m2m2-a3a3-4b4b-c5c5-d6d6d6d6d6d6',
+  'm3m3m3m3-0000-0000-0000-000000000001',
+  'm3m3m3m3-0000-0000-0000-000000000002',
+  NULL,
+  NULL,
+  'minio',
+  ARRAY['*']
+) ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- MALLORY BUCKET SEED DATA
+-- =====================================================
+
+INSERT INTO "mallory-storage-public".app_buckets (id, key, type, is_public)
+VALUES
+  ('m7m7m7m7-0000-0000-0000-000000000001', 'public', 'public', true),
+  ('m7m7m7m7-0000-0000-0000-000000000002', 'private', 'private', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Pre-seed files in Mallory's buckets for RLS testing
+INSERT INTO "mallory-storage-public".app_files (id, bucket_id, key, content_hash, mime_type, size, filename, is_public)
+VALUES (
+  'm9m9m9m9-0000-0000-0000-000000000001',
+  'm7m7m7m7-0000-0000-0000-000000000001',
+  'mallory-public-hash',
+  'mallory-public-hash',
+  'text/plain',
+  42,
+  'mallory-public.txt',
+  true
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO "mallory-storage-public".app_files (id, bucket_id, key, content_hash, mime_type, size, filename, is_public)
+VALUES (
+  'm9m9m9m9-0000-0000-0000-000000000002',
+  'm7m7m7m7-0000-0000-0000-000000000002',
+  'mallory-private-hash',
+  'mallory-private-hash',
+  'text/plain',
+  42,
+  'mallory-private.txt',
+  false
+) ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- MALLORY DATABASE SETTINGS (all defaults — presigned uploads enabled)
+-- =====================================================
+
+INSERT INTO services_public.database_settings (id, database_id)
+VALUES (
+  'm8m8m8m8-0000-0000-0000-000000000001',
+  'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5'
+) ON CONFLICT (database_id) DO NOTHING;
 
 SET session_replication_role TO DEFAULT;

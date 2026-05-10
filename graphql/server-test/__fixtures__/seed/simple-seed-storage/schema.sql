@@ -112,6 +112,20 @@ COMMENT ON TABLE "bob-storage-public".app_files IS E'@storageFiles\nStorage file
 GRANT SELECT, INSERT, UPDATE, DELETE ON "bob-storage-public".app_buckets TO administrator, authenticated, anonymous;
 GRANT SELECT, INSERT, UPDATE, DELETE ON "bob-storage-public".app_files TO administrator, authenticated, anonymous;
 
+-- Enable RLS on Bob's buckets table
+ALTER TABLE "bob-storage-public".app_buckets ENABLE ROW LEVEL SECURITY;
+
+-- RLS: anonymous can only see public buckets (prevents bucket enumeration)
+CREATE POLICY anon_read_public_buckets ON "bob-storage-public".app_buckets
+  FOR SELECT TO anonymous
+  USING (is_public = true);
+
+-- RLS: administrator bypasses bucket RLS
+CREATE POLICY admin_all_buckets ON "bob-storage-public".app_buckets
+  FOR ALL TO administrator
+  USING (true)
+  WITH CHECK (true);
+
 -- Enable RLS on Bob's files table
 ALTER TABLE "bob-storage-public".app_files ENABLE ROW LEVEL SECURITY;
 
@@ -129,8 +143,94 @@ CREATE POLICY anon_insert_files ON "bob-storage-public".app_files
   FOR INSERT TO anonymous
   WITH CHECK (true);
 
+-- No UPDATE or DELETE policies for anonymous — absence means denied.
+-- This prevents Supabase-style attacks where anonymous could:
+--   - change a file's bucket_id from private to public
+--   - flip is_public flags
+--   - delete other users' files
+
 -- RLS policy: administrator bypasses RLS
 CREATE POLICY admin_all_files ON "bob-storage-public".app_files
+  FOR ALL TO administrator
+  USING (true)
+  WITH CHECK (true);
+
+-- =====================================================
+-- MALLORY'S STORAGE SCHEMA (adversarial third tenant — strictest RLS)
+-- anonymous can only SELECT, no INSERT/UPDATE/DELETE at all
+-- =====================================================
+
+CREATE SCHEMA IF NOT EXISTS "mallory-storage-public";
+
+GRANT USAGE ON SCHEMA "mallory-storage-public" TO administrator, authenticated, anonymous;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA "mallory-storage-public"
+  GRANT ALL ON TABLES TO administrator;
+ALTER DEFAULT PRIVILEGES IN SCHEMA "mallory-storage-public"
+  GRANT USAGE ON SEQUENCES TO administrator, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA "mallory-storage-public"
+  GRANT ALL ON FUNCTIONS TO administrator, authenticated, anonymous;
+
+-- Buckets table
+CREATE TABLE IF NOT EXISTS "mallory-storage-public".app_buckets (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key text NOT NULL,
+  type text NOT NULL DEFAULT 'private',
+  is_public boolean NOT NULL DEFAULT false,
+  allowed_mime_types text[] NULL,
+  max_file_size bigint NULL,
+  allow_custom_keys boolean NOT NULL DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE (key)
+);
+
+COMMENT ON TABLE "mallory-storage-public".app_buckets IS E'@storageBuckets\nStorage buckets table';
+
+-- Files table
+CREATE TABLE IF NOT EXISTS "mallory-storage-public".app_files (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bucket_id uuid NOT NULL REFERENCES "mallory-storage-public".app_buckets(id),
+  key text NOT NULL,
+  content_hash text NOT NULL,
+  mime_type text NOT NULL,
+  size bigint,
+  filename text,
+  owner_id uuid,
+  is_public boolean NOT NULL DEFAULT false,
+  previous_version_id uuid REFERENCES "mallory-storage-public".app_files(id),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE (bucket_id, key)
+);
+
+COMMENT ON TABLE "mallory-storage-public".app_files IS E'@storageFiles\nStorage files table';
+
+-- Grant table permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON "mallory-storage-public".app_buckets TO administrator, authenticated, anonymous;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "mallory-storage-public".app_files TO administrator, authenticated, anonymous;
+
+-- Enable RLS on Mallory's buckets — anonymous can only read
+ALTER TABLE "mallory-storage-public".app_buckets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY anon_read_buckets ON "mallory-storage-public".app_buckets
+  FOR SELECT TO anonymous
+  USING (true);
+
+CREATE POLICY admin_all_buckets ON "mallory-storage-public".app_buckets
+  FOR ALL TO administrator
+  USING (true)
+  WITH CHECK (true);
+
+-- Enable RLS on Mallory's files — anonymous can only read (strictest policy)
+-- No INSERT/UPDATE/DELETE for anonymous at all
+ALTER TABLE "mallory-storage-public".app_files ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY anon_read_files ON "mallory-storage-public".app_files
+  FOR SELECT TO anonymous
+  USING (true);
+
+CREATE POLICY admin_all_files ON "mallory-storage-public".app_files
   FOR ALL TO administrator
   USING (true)
   WITH CHECK (true);
