@@ -453,8 +453,6 @@ export * from './useCopyTemplateToBlueprintMutation';
 export * from './useProvisionSpatialRelationMutation';
 export * from './useBootstrapUserMutation';
 export * from './useSetFieldOrderMutation';
-export * from './useAppendFieldSmartTagsMutation';
-export * from './useAppendTableSmartTagsMutation';
 export * from './useProvisionUniqueConstraintMutation';
 export * from './useProvisionFullTextSearchMutation';
 export * from './useProvisionIndexMutation';

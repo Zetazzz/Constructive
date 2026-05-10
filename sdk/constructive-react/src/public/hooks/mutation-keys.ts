@@ -1457,14 +1457,6 @@ export const customMutationKeys = {
     identifier
       ? (['mutation', 'setFieldOrder', identifier] as const)
       : (['mutation', 'setFieldOrder'] as const),
-  /** Mutation key for appendFieldSmartTags */ appendFieldSmartTags: (identifier?: string) =>
-    identifier
-      ? (['mutation', 'appendFieldSmartTags', identifier] as const)
-      : (['mutation', 'appendFieldSmartTags'] as const),
-  /** Mutation key for appendTableSmartTags */ appendTableSmartTags: (identifier?: string) =>
-    identifier
-      ? (['mutation', 'appendTableSmartTags', identifier] as const)
-      : (['mutation', 'appendTableSmartTags'] as const),
   /** Mutation key for provisionUniqueConstraint */ provisionUniqueConstraint: (
     identifier?: string
   ) =>
