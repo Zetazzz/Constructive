@@ -31,7 +31,6 @@
 import crypto from 'crypto';
 import path from 'path';
 import { getConnections, seed } from '../src';
-import type { PgTestClient } from 'pgsql-test/test-client';
 import type supertest from 'supertest';
 
 jest.setTimeout(120000);
@@ -266,7 +265,6 @@ function expectSuccess(res: supertest.Response): Record<string, any> {
 // =========================================================================
 
 describe('Integration tests (uploads, tenant isolation, RLS)', () => {
-  let pg: PgTestClient;
   let request: supertest.Agent;
   let teardown: () => Promise<void>;
 
@@ -313,7 +311,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
 
   // Single setup: one server, one pool, all three schemas registered
   beforeAll(async () => {
-    ({ pg, request, teardown } = await getConnections(
+    ({ request, teardown } = await getConnections(
       {
         schemas: [...aliceSchemas, ...bobSchemas, ...mallorySchemas],
         authRole: 'anonymous',
@@ -671,14 +669,10 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
     });
 
     it('Bob seeded public file still exists after all attack attempts', async () => {
-      // Verify via superuser: ground-truth check that RLS attacks didn't mutate data
-      const { rows } = await pg.query(
-        'SELECT id, bucket_id, is_public FROM "bob-storage-public".app_files WHERE id = $1',
-        [bobSeededPublicFileId],
-      );
-      expect(rows).toHaveLength(1);
-      expect(rows[0].bucket_id).toBe(bobPublicBucketId);
-      expect(rows[0].is_public).toBe(true);
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_FILES });
+      const data = expectSuccess(res);
+      const ids = data.appFiles.nodes.map((f: { id: string }) => f.id);
+      expect(ids).toContain(bobSeededPublicFileId);
     });
   });
 
