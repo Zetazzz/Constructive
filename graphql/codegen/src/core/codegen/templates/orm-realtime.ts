@@ -9,9 +9,51 @@
  * Any changes here will affect all generated ORM clients.
  */
 
-// graphql-ws is loaded lazily so that importing this module does not
-// throw when the package is absent (e.g. CLI-only consumers).
-type WsClient = import('graphql-ws').Client;
+// Minimal type shims for graphql-ws so that this module compiles
+// without requiring graphql-ws to be installed.  The actual library
+// is loaded lazily via require() inside the RealtimeManager
+// constructor — consumers that never use subscriptions never need
+// the package at all.
+
+interface WsGraphQLError {
+  readonly message: string;
+  readonly [key: string]: unknown;
+}
+
+interface WsExecutionResult<TData = Record<string, unknown>> {
+  data?: TData | null;
+  errors?: readonly WsGraphQLError[];
+  extensions?: Record<string, unknown>;
+}
+
+interface WsSink<T> {
+  next(value: T): void;
+  error(error: unknown): void;
+  complete(): void;
+}
+
+interface WsClient {
+  subscribe<TData = Record<string, unknown>>(
+    payload: { query: string; variables?: Record<string, unknown> },
+    sink: WsSink<WsExecutionResult<TData>>,
+  ): () => void;
+  dispose(): void;
+}
+
+interface WsClientOptions {
+  url: string;
+  lazy?: boolean;
+  retryAttempts?: number;
+  retryWait?: (retryCount: number) => Promise<void>;
+  connectionParams?:
+    | Record<string, unknown>
+    | (() => Promise<Record<string, unknown>> | Record<string, unknown>);
+  on?: {
+    connecting?: () => void;
+    connected?: () => void;
+    closed?: (event: unknown) => void;
+  };
+}
 
 // ============================================================================
 // Types
@@ -138,7 +180,9 @@ export class RealtimeManager {
 
   constructor(config: RealtimeConfig) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { createClient: createWsClient } = require('graphql-ws') as typeof import('graphql-ws');
+    const { createClient: createWsClient } = require('graphql-ws') as {
+      createClient: (options: WsClientOptions) => WsClient;
+    };
 
     const retryWait = async (retryCount: number): Promise<void> => {
       if (typeof config.retryWait === 'function') {
