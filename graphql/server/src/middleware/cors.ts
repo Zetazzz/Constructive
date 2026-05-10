@@ -1,7 +1,7 @@
 import { parseUrl } from '@constructive-io/url-domains';
 import corsPlugin from 'cors';
 import type { Request, RequestHandler } from 'express';
-import { CorsModuleData } from '../types';
+import type { ApiStructure, CorsModuleData } from '../types';
 import './types'; // for Request type
 
 /**
@@ -9,7 +9,8 @@ import './types'; // for Request type
  *
  * Feature parity + compatibility:
  *  - Respects a global fallback origin (e.g. from env/CLI) for quick overrides.
- *  - Preserves multi-tenant, per-API CORS via meta schema ('cors' module + domains).
+ *  - Reads per-API CORS origins from typed cors_settings table (via req.api.corsOrigins).
+ *  - Falls back to legacy api_modules CORS data for backwards compatibility.
  *  - Always allows localhost to ease development.
  *
  * Usage:
@@ -33,11 +34,15 @@ export const cors = (fallbackOrigin?: string): RequestHandler => {
 
     // 2) Per-API allowlist sourced from req.api (if available)
     //    createApiMiddleware runs before this in server.ts, so req.api should be set
-    const api = (req as any).api as { apiModules?: any[]; domains?: string[] } | undefined;
+    const api = (req as any).api as ApiStructure | undefined;
     if (api) {
+      // Typed cors_settings origins (preferred)
+      const typedOrigins = api.corsOrigins || [];
+      // Legacy api_modules CORS data (fallback)
       const corsModules = (api.apiModules || []).filter((m: any) => m.name === 'cors') as { name: 'cors'; data: CorsModuleData }[];
+      const legacyOrigins = corsModules.reduce<string[]>((m, mod) => [...mod.data.urls, ...m], []);
       const siteUrls = api.domains || [];
-      const listOfDomains = corsModules.reduce<string[]>((m, mod) => [...mod.data.urls, ...m], siteUrls);
+      const listOfDomains = [...typedOrigins, ...legacyOrigins, ...siteUrls];
 
       if (origin && listOfDomains.includes(origin)) {
         return callback(null, true);

@@ -6,13 +6,14 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { GraphQLError, GraphQLFormattedError } from 'grafast/graphql';
 import { createGraphileInstance, type GraphileCacheEntry, graphileCache } from 'graphile-cache';
 import type { GraphileConfig } from 'graphile-config';
-import { ConstructivePreset, makePgService } from 'graphile-settings';
+import { ConstructivePreset, makePgService, PgAggregatesPreset } from 'graphile-settings';
 import { getPgPool } from 'pg-cache';
 import { getPgEnvOptions } from 'pg-env';
 import './types'; // for Request type
 import { isGraphqlObservabilityEnabled } from '../diagnostics/observability';
 import { HandlerCreationError } from '../errors/api-errors';
 import { observeGraphileBuild } from './observability/graphile-build-stats';
+import type { DatabaseSettings } from '../types';
 
 const maskErrorLog = new Logger('graphile:maskError');
 
@@ -194,15 +195,28 @@ const reqLabel = (req: Request): string => (req.requestId ? `[${req.requestId}]`
 
 /**
  * Build a PostGraphile v5 preset for a tenant.
+ *
+ * When `databaseSettings` are available, feature flags control which
+ * optional plugins are included.  Currently only `enable_aggregates`
+ * adds a preset (PgAggregatesPreset) — all other features are baked
+ * into ConstructivePreset and are always-on until per-plugin disable
+ * logic is implemented in a follow-up.
  */
 const buildPreset = (
   pool: import('pg').Pool,
   schemas: string[],
   anonRole: string,
   roleName: string,
+  databaseSettings?: DatabaseSettings,
 ): GraphileConfig.Preset => {
+  const presets: GraphileConfig.Preset[] = [ConstructivePreset];
+
+  if (databaseSettings?.enableAggregates) {
+    presets.push(PgAggregatesPreset);
+  }
+
   return {
-  extends: [ConstructivePreset],
+  extends: presets,
   pgServices: [
     makePgService({
       pool,
@@ -356,7 +370,7 @@ export const graphile = (opts: ConstructiveOptions): RequestHandler => {
       const pool = getPgPool(pgConfig);
 
       // Create promise and store in in-flight map BEFORE try block
-      const preset = buildPreset(pool, schema || [], anonRole, roleName);
+      const preset = buildPreset(pool, schema || [], anonRole, roleName, api.databaseSettings);
       const creationPromise = observeGraphileBuild(
         {
           cacheKey: key,

@@ -18,6 +18,53 @@ export interface GenericModuleData {
   [key: string]: unknown;
 }
 
+/**
+ * Resolved feature flags from database_settings + api_settings cascade.
+ * api_settings values (when non-null) override database_settings defaults.
+ */
+export interface DatabaseSettings {
+  enableAggregates: boolean;
+  enablePostgis: boolean;
+  enableSearch: boolean;
+  enableDirectUploads: boolean;
+  enablePresignedUploads: boolean;
+  enableManyToMany: boolean;
+  enableConnectionFilter: boolean;
+  enableLtree: boolean;
+  enableLlm: boolean;
+}
+
+/**
+ * Resolved pubkey challenge config from pubkey_settings typed table.
+ * Matches the shape expected by the PublicKeySignature Graphile plugin.
+ */
+export interface PubkeyChallengeSettings {
+  schema: string;
+  cryptoNetwork: string;
+  signUpWithKey: string;
+  signInRequestChallenge: string;
+  signInRecordFailure: string;
+  signInWithChallenge: string;
+}
+
+/**
+ * Resolved WebAuthn config from webauthn_settings typed table.
+ * Stored on ApiStructure for future server-side WebAuthn wiring.
+ */
+export interface WebauthnSettings {
+  schema: string;
+  credentialsSchema: string;
+  sessionsSchema: string;
+  sessionSecretsSchema: string;
+  rpId: string;
+  rpName: string;
+  originAllowlist: string[];
+  attestationType: string;
+  requireUserVerification: boolean;
+  residentKey: string;
+  challengeExpirySeconds: number;
+}
+
 export type ApiModule =
   | { name: 'cors'; data: CorsModuleData }
   | { name: 'pubkey_challenge'; data: PublicKeyChallengeData }
@@ -68,6 +115,10 @@ export interface ApiStructure {
   databaseId?: string;
   isPublic?: boolean;
   authSettings?: AuthSettings;
+  corsOrigins?: string[];
+  databaseSettings?: DatabaseSettings;
+  pubkeyChallengeSettings?: PubkeyChallengeSettings;
+  webauthnSettings?: WebauthnSettings;
 }
 
 export type ApiError = { errorHtml: string };
