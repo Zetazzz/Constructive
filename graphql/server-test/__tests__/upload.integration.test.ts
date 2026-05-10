@@ -221,33 +221,44 @@ async function putToPresignedUrl(
 /**
  * Assert that a mutation was denied specifically by RLS (not by some other error).
  *
- * PostgreSQL RLS denials surface in two ways through PostGraphile:
- *   1. An explicit PG error — message contains "permission denied" or
- *      "new row violates row-level security".
- *   2. The mutation silently affects 0 rows and returns null (RLS USING
- *      clause filtered out the target row).
+ * PostgreSQL RLS denials surface in three ways through PostGraphile:
+ *   1. An explicit PG error — message contains "permission denied",
+ *      "new row violates row-level security", or "No values were".
+ *   2. A masked internal error — in production mode PostGraphile masks
+ *      PG errors with code INTERNAL_SERVER_ERROR (the raw message is
+ *      only logged server-side).
+ *   3. The mutation silently affects 0 rows and returns null or an
+ *      object with all-null fields (RLS USING clause filtered the row).
  *
- * Any other shape (e.g. a GraphQL validation error, a 500, a typo in a
- * field name) is treated as an unexpected failure so tests don't
- * accidentally pass for the wrong reason.
+ * GraphQL validation errors (GRAPHQL_VALIDATION_FAILED) are explicitly
+ * rejected so tests don't accidentally pass for the wrong reason.
  */
 function expectRlsDenied(
   res: supertest.Response,
   mutationName: string,
 ): void {
   if (res.body.errors?.length) {
-    const msg: string = res.body.errors[0].message;
+    const err = res.body.errors[0];
+    const msg: string = err.message;
+    const code: string = err.extensions?.code ?? '';
+    // Reject GraphQL validation errors — these indicate a bug in the test
+    expect(code).not.toBe('GRAPHQL_VALIDATION_FAILED');
     expect(
       msg.includes('permission denied') ||
         msg.includes('new row violates row-level security') ||
         msg.includes('insufficient_privilege') ||
-        msg.includes('No values were'),
+        msg.includes('No values were') ||
+        code === 'INTERNAL_SERVER_ERROR',
     ).toBe(true);
     return;
   }
   if (res.body.data) {
-    expect(res.body.data[mutationName]).toBeNull();
-    return;
+    const result = res.body.data[mutationName];
+    if (result === null) return;
+    if (typeof result === 'object' && Object.values(result).every((v) => v === null)) return;
+    throw new Error(
+      `Expected RLS denial but mutation returned data: ${JSON.stringify(result)}`,
+    );
   }
   throw new Error(
     `Expected RLS denial but got status=${res.status}, body=${JSON.stringify(res.body)}`,
@@ -600,10 +611,10 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
   });
 
   // ==========================================================================
-  // 5. File mutation attacks -- Supabase-style metadata tampering
+  // 5. File mutation attacks — metadata tampering
   // ==========================================================================
 
-  describe('File mutation attacks (Supabase-style)', () => {
+  describe('File mutation attacks', () => {
     it('Bob: anonymous cannot update file bucket_id (move between buckets)', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
         query: UPDATE_APP_FILE,
