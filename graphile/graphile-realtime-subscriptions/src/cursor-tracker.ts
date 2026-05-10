@@ -15,6 +15,7 @@
 
 import { randomUUID } from 'crypto';
 import { Logger } from '@pgpmjs/logger';
+import { QuoteUtils } from '@pgsql/quotes';
 
 import type {
   CursorTrackerOptions,
@@ -154,7 +155,7 @@ export class CursorTracker {
   }
 
   private quoteIdent(identifier: string): string {
-    return `"${identifier.replace(/"/g, '""')}"`;
+    return QuoteUtils.quoteIdentifier(identifier);
   }
 }
 

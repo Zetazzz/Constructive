@@ -40,7 +40,8 @@
     "url": "https://github.com/constructive-io/constructive/issues"
   },
   "dependencies": {
-    "@pgpmjs/logger": "workspace:^"
+    "@pgpmjs/logger": "workspace:^",
+    "@pgsql/quotes": "^17.1.0"
   },
   "peerDependencies": {
     "grafast": "1.0.0",

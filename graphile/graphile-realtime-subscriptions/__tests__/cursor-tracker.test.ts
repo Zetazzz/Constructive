@@ -397,7 +397,7 @@ describe('CursorTracker periodic polling', () => {
 });
 
 describe('CursorTracker schema quoting', () => {
-  it('quotes schema name in SQL queries', async () => {
+  it('includes schema name in SQL queries', async () => {
     const mockClient = createMockClient();
     const tracker = new CursorTracker({
       nodeId: 'schema-node',
@@ -408,7 +408,7 @@ describe('CursorTracker schema quoting', () => {
     await tracker.drain();
 
     expect(mockClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('"my_realtime_public"'),
+      expect.stringContaining('my_realtime_public'),
       expect.any(Array),
     );
   });
@@ -423,7 +423,23 @@ describe('CursorTracker schema quoting', () => {
     await tracker.drain();
 
     expect(mockClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('"realtime_public"'),
+      expect.stringContaining('realtime_public'),
+      expect.any(Array),
+    );
+  });
+
+  it('quotes schema names that need quoting', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'special-schema-node',
+      schema: 'my schema',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.drain();
+
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('"my schema"'),
       expect.any(Array),
     );
   });
