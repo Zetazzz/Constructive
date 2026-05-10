@@ -55,10 +55,10 @@ const bobPrivateBucketId = 'd2d2d2d2-0000-0000-0000-000000000002';
 const bobSeededPublicFileId = 'd3d3d3d3-0000-0000-0000-000000000002';
 
 // Mallory -- strictest RLS (anonymous: SELECT only, no mutations)
-const malloryDatabaseId = 'm1m1m1m1-a2a2-4b3b-c4c4-d5d5d5d5d5d5';
+const malloryDatabaseId = 'fa11fa11-a2a2-4b3b-c4c4-d5d5d5d5d5d5';
 const mallorySchemas = ['mallory-storage-public'];
-const malloryPublicFileId = 'm9m9m9m9-0000-0000-0000-000000000001';
-const malloryPublicBucketId = 'm7m7m7m7-0000-0000-0000-000000000001';
+const malloryPublicFileId = 'fa99fa99-0000-0000-0000-000000000001';
+const malloryPublicBucketId = 'fa77fa77-0000-0000-0000-000000000001';
 
 const metaSchemas = [
   'services_public',
@@ -225,8 +225,10 @@ function expectMutationDenied(
 ): void {
   if (res.body.errors) {
     expect(res.body.errors.length).toBeGreaterThan(0);
-  } else {
+  } else if (res.body.data) {
     expect(res.body.data[mutationName]).toBeNull();
+  } else {
+    expect(res.status).not.toBe(200);
   }
 }
 
@@ -798,3 +800,4 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
     });
   });
 });
+
