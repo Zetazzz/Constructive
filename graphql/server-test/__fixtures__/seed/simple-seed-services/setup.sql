@@ -289,6 +289,42 @@ COMMENT ON CONSTRAINT tokens_table_fkey ON metaschema_modules_public.rls_module 
 COMMENT ON CONSTRAINT users_table_fkey ON metaschema_modules_public.rls_module IS E'@omit';
 CREATE INDEX rls_module_database_id_idx ON metaschema_modules_public.rls_module ( database_id );
 
+-- database_settings table (typed feature flags — database-wide defaults)
+CREATE TABLE IF NOT EXISTS services_public.database_settings (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  database_id uuid NOT NULL UNIQUE,
+  enable_aggregates boolean NOT NULL DEFAULT false,
+  enable_postgis boolean NOT NULL DEFAULT true,
+  enable_search boolean NOT NULL DEFAULT true,
+  enable_direct_uploads boolean NOT NULL DEFAULT true,
+  enable_presigned_uploads boolean NOT NULL DEFAULT true,
+  enable_many_to_many boolean NOT NULL DEFAULT true,
+  enable_connection_filter boolean NOT NULL DEFAULT true,
+  enable_ltree boolean NOT NULL DEFAULT true,
+  enable_llm boolean NOT NULL DEFAULT false,
+  options jsonb NOT NULL DEFAULT '{}'::jsonb,
+  CONSTRAINT ds_db_fkey FOREIGN KEY (database_id) REFERENCES metaschema_public.database (id) ON DELETE CASCADE
+);
+
+-- api_settings table (per-API overrides — NULL = inherit from database_settings)
+CREATE TABLE IF NOT EXISTS services_public.api_settings (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  database_id uuid NOT NULL,
+  api_id uuid NOT NULL UNIQUE,
+  enable_aggregates boolean,
+  enable_postgis boolean,
+  enable_search boolean,
+  enable_direct_uploads boolean,
+  enable_presigned_uploads boolean,
+  enable_many_to_many boolean,
+  enable_connection_filter boolean,
+  enable_ltree boolean,
+  enable_llm boolean,
+  options jsonb NOT NULL DEFAULT '{}'::jsonb,
+  CONSTRAINT as_db_fkey FOREIGN KEY (database_id) REFERENCES metaschema_public.database (id) ON DELETE CASCADE,
+  CONSTRAINT as_api_fkey FOREIGN KEY (api_id) REFERENCES services_public.apis (id) ON DELETE CASCADE
+);
+
 -- Grant permissions on metaschema tables
 GRANT SELECT, INSERT, UPDATE, DELETE ON metaschema_public.database TO administrator, authenticated, anonymous;
 GRANT SELECT, INSERT, UPDATE, DELETE ON metaschema_public.schema TO administrator, authenticated, anonymous;
@@ -301,4 +337,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON services_public.domains TO administrator
 GRANT SELECT, INSERT, UPDATE, DELETE ON services_public.api_schemas TO administrator, authenticated, anonymous;
 GRANT SELECT, INSERT, UPDATE, DELETE ON services_public.api_extensions TO administrator, authenticated, anonymous;
 GRANT SELECT, INSERT, UPDATE, DELETE ON services_public.api_modules TO administrator, authenticated, anonymous;
+GRANT SELECT, INSERT, UPDATE, DELETE ON services_public.database_settings TO administrator, authenticated, anonymous;
+GRANT SELECT, INSERT, UPDATE, DELETE ON services_public.api_settings TO administrator, authenticated, anonymous;
 GRANT SELECT, INSERT, UPDATE, DELETE ON metaschema_modules_public.rls_module TO administrator, authenticated, anonymous;
