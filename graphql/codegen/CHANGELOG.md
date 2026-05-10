@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.39.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.39.0...@constructive-io/graphql-codegen@4.39.1) (2026-05-10)
+
+### Bug Fixes
+
+- **codegen:** replace graphql-ws type import with inline shims in orm-realtime template ([e5b12bd](https://github.com/constructive-io/constructive/commit/e5b12bddad2a9aacf81626123e86e0d92f00f066))
+
 # [4.39.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.38.2...@constructive-io/graphql-codegen@4.39.0) (2026-05-10)
 
 ### Bug Fixes
