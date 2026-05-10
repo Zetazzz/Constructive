@@ -15,6 +15,7 @@ import {
   generateCreateClientFile,
   generateOrmClientFile,
   generateQueryBuilderFile,
+  generateRealtimeFile,
   generateSelectTypesFile,
 } from './client-generator';
 import {
@@ -74,9 +75,12 @@ export function generateOrm(options: GenerateOrmOptions): GenerateOrmResult {
   const hasCustomMutations = (customOperations?.mutations.length ?? 0) > 0;
   const typeRegistry = customOperations?.typeRegistry;
 
-  // 1. Generate runtime files (client, query-builder, select-types)
+  // 1. Generate runtime files (client, query-builder, select-types, realtime)
   const clientFile = generateOrmClientFile();
   files.push({ path: clientFile.fileName, content: clientFile.content });
+
+  const realtimeFile = generateRealtimeFile();
+  files.push({ path: realtimeFile.fileName, content: realtimeFile.content });
 
   const queryBuilderFile = generateQueryBuilderFile();
   files.push({
@@ -193,6 +197,7 @@ export { generateModelsBarrel, generateTypesBarrel } from './barrel';
 export {
   generateOrmClientFile,
   generateQueryBuilderFile,
+  generateRealtimeFile,
   generateSelectTypesFile,
 } from './client-generator';
 export {

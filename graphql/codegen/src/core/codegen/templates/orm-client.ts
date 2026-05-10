@@ -15,11 +15,34 @@ import type {
 } from '@constructive-io/graphql-query/runtime';
 import { createFetch } from '@constructive-io/graphql-query/runtime';
 
+import type {
+  ConnectionState,
+  ConnectionStateListener,
+  RealtimeConfig,
+  SubscribeOptions,
+  SubscriptionEvent,
+  SubscriptionFieldMeta,
+  Unsubscribe,
+} from './realtime';
+import { RealtimeManager } from './realtime';
+
 export type {
   GraphQLAdapter,
   GraphQLError,
   QueryResult,
 } from '@constructive-io/graphql-query/runtime';
+
+export type {
+  ConnectionState,
+  ConnectionStateListener,
+  RealtimeConfig,
+  SubscribeOptions,
+  SubscriptionEvent,
+  SubscriptionFieldMeta,
+  SubscriptionOperation,
+  Unsubscribe,
+} from './realtime';
+export { RealtimeManager } from './realtime';
 
 /**
  * Default adapter that uses fetch for HTTP requests.
@@ -117,6 +140,12 @@ export interface OrmClientConfig {
   fetch?: typeof globalThis.fetch;
   /** Custom adapter for GraphQL execution (overrides endpoint/headers/fetch) */
   adapter?: GraphQLAdapter;
+  /**
+   * Optional realtime (WebSocket) configuration.
+   * When provided, enables subscription methods on models.
+   * The WebSocket connection is created lazily on first subscribe().
+   */
+  realtime?: RealtimeConfig;
 }
 
 /**
@@ -135,6 +164,7 @@ export class GraphQLRequestError extends Error {
 
 export class OrmClient {
   private adapter: GraphQLAdapter;
+  private realtimeManager?: RealtimeManager;
 
   constructor(config: OrmClientConfig) {
     if (config.adapter) {
@@ -150,6 +180,10 @@ export class OrmClient {
         'OrmClientConfig requires either an endpoint or a custom adapter',
       );
     }
+
+    if (config.realtime) {
+      this.realtimeManager = new RealtimeManager(config.realtime);
+    }
   }
 
   async execute<T>(
@@ -157,6 +191,34 @@ export class OrmClient {
     variables?: Record<string, unknown>,
   ): Promise<QueryResult<T>> {
     return this.adapter.execute<T>(document, variables);
+  }
+
+  /**
+   * Subscribe to a GraphQL subscription operation.
+   * Used by generated model subscribe() methods.
+   * @throws Error if realtime is not configured
+   */
+  subscribe<T>(
+    meta: SubscriptionFieldMeta,
+    document: string,
+    variables: Record<string, unknown>,
+    options: {
+      onEvent: (event: SubscriptionEvent<T>) => void;
+      onError?: (error: Error) => void;
+      onComplete?: () => void;
+    },
+  ): Unsubscribe {
+    if (!this.realtimeManager) {
+      throw new Error(
+        'Realtime not configured. Pass a `realtime` option to createClient() to enable subscriptions.',
+      );
+    }
+    return this.realtimeManager.subscribe<T>(
+      meta,
+      document,
+      variables,
+      options,
+    );
   }
 
   /**
@@ -175,5 +237,33 @@ export class OrmClient {
    */
   getEndpoint(): string {
     return this.adapter.getEndpoint?.() ?? '';
+  }
+
+  /** Get current WebSocket connection state */
+  getConnectionState(): ConnectionState {
+    return this.realtimeManager?.getConnectionState() ?? 'disconnected';
+  }
+
+  /** Register a listener for WebSocket connection state changes */
+  onConnectionStateChange(
+    listener: ConnectionStateListener,
+  ): Unsubscribe {
+    if (!this.realtimeManager) return () => {};
+    return this.realtimeManager.onConnectionStateChange(listener);
+  }
+
+  /** Number of active subscriptions */
+  getActiveSubscriptionCount(): number {
+    return this.realtimeManager?.getActiveSubscriptionCount() ?? 0;
+  }
+
+  /** Whether realtime is configured */
+  get isRealtimeEnabled(): boolean {
+    return this.realtimeManager !== undefined;
+  }
+
+  /** Dispose the realtime manager (close WebSocket) */
+  dispose(): void {
+    this.realtimeManager?.dispose();
   }
 }
