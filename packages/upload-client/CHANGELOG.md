@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.9.0...@constructive-io/upload-client@0.10.0) (2026-05-10)
+
+### Bug Fixes
+
+- **upload-client:** remove hashContent (Node.js crypto import) ([b2f57a7](https://github.com/constructive-io/constructive/commit/b2f57a71044089adf8b3e207ed207b6c2c473524))
+
+### Features
+
+- **upload-client:** add hashContent, putToPresignedUrl, fetchFromUrl exports ([0e5a199](https://github.com/constructive-io/constructive/commit/0e5a19990be2a8faa253524022b3b560c6bfc6f3))
+- **upload-client:** re-add hashContent using Web Crypto API ([89d8390](https://github.com/constructive-io/constructive/commit/89d8390d1d862fbbc74bbbea4023ea8d11268569))
+- **upload-client:** use @constructive-io/fetch for isomorphic HTTP (localhost DNS support) ([0589820](https://github.com/constructive-io/constructive/commit/05898203b540cffdcb1028b53db3e80a94073235))
+
 # [0.9.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.8.0...@constructive-io/upload-client@0.9.0) (2026-05-08)
 
 **Note:** Version bump only for package @constructive-io/upload-client

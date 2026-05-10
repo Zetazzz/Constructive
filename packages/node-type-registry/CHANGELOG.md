@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.30.0...node-type-registry@0.31.0) (2026-05-10)
+
+### Features
+
+- add DataBillingMeter and DataAggregateLimitCounter node types ([bd780ff](https://github.com/constructive-io/constructive/commit/bd780ff14493533df60781943ef1841e55abe8b9))
+
 # [0.30.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.29.1...node-type-registry@0.30.0) (2026-05-10)
 
 ### Features

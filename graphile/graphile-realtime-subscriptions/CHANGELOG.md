@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/constructive-io/constructive/compare/graphile-realtime-subscriptions@0.2.0...graphile-realtime-subscriptions@0.3.0) (2026-05-10)
+
+### Features
+
+- add NOTIFY payload parsing, overflow detection, and per-subscriber throttling ([dbfa97e](https://github.com/constructive-io/constructive/commit/dbfa97e3310a519e9216979acfa54cdb20ed4eed))
+
 # 0.2.0 (2026-05-10)
 
 ### Bug Fixes
