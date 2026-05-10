@@ -3,6 +3,7 @@ import type { GraphileConfig } from 'graphile-config';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
 import { createFolderOperatorFactory, GraphileLtreePreset } from 'graphile-ltree';
 import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-postgis';
+import { PgAggregatesPreset } from 'graphile-pg-aggregates';
 import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
 import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearchPreset } from 'graphile-search';
 import { SqlExpressionValidatorPreset } from 'graphile-sql-expression-validator';
@@ -25,163 +26,220 @@ import { createBucketNameResolver, createEnsureBucketProvisioned, getAllowedOrig
 import { constructiveUploadFieldDefinitions } from '../upload-resolver';
 
 /**
- * Constructive PostGraphile v5 Preset
+ * Feature flags that control which optional Graphile plugins are included
+ * in the preset.  Mirrors the `database_settings` / `api_settings` cascade
+ * from the services DB.
  *
- * This is the main preset that combines all our custom plugins and configurations.
- * It provides a clean, opinionated GraphQL API built from PostgreSQL.
+ * Every flag defaults to the value that matches the current production
+ * behavior so that `createConstructivePreset()` (no args) is identical to
+ * the previous static `ConstructivePreset`.
+ */
+export interface ConstructivePresetOptions {
+  enableAggregates?: boolean;
+  enablePostgis?: boolean;
+  enableSearch?: boolean;
+  enableDirectUploads?: boolean;
+  enablePresignedUploads?: boolean;
+  enableManyToMany?: boolean;
+  enableConnectionFilter?: boolean;
+  enableLtree?: boolean;
+  enableLlm?: boolean;
+}
+
+const DEFAULTS: Required<ConstructivePresetOptions> = {
+  enableAggregates: false,
+  enablePostgis: true,
+  enableSearch: true,
+  enableDirectUploads: true,
+  enablePresignedUploads: true,
+  enableManyToMany: true,
+  enableConnectionFilter: true,
+  enableLtree: true,
+  enableLlm: false,
+};
+
+/**
+ * Create a Constructive PostGraphile v5 Preset.
  *
- * FEATURES:
- * - No Node/Relay features (keeps `id` as `id`, no global object identification)
- * - Custom inflection using inflekt library
- * - Conflict detection for multi-schema setups
- * - Inflector logging for debugging (enable with INFLECTOR_LOG=1)
- * - Primary key only lookups (no *ByEmail, *ByUsername, etc.)
- * - Connection filter plugin with all columns filterable
- * - Many-to-many relationships (opt-in via @behavior +manyToMany)
- * - Meta schema plugin (_meta query for introspection of tables, fields, indexes)
- * - PostGIS support (geometry/geography types, GeoJSON scalar — auto-detects PostGIS extension)
- * - PostGIS connection filter operators (spatial filtering on geometry/geography columns)
- * - Upload plugin (file upload to S3/MinIO for image, upload, attachment domain columns)
- * - Presigned URL plugin (requestUploadUrl mutation + downloadUrl computed field)
- * - Bucket provisioner plugin (auto-provisions S3 buckets on @storageBuckets table mutations,
- *   CORS management, provisionBucket mutation for manual/retry)
- * - SQL expression validator (validates @sqlExpression columns in mutations)
- * - PG type mappings (maps custom types like email, url to GraphQL scalars)
- * - pgvector search (auto-discovers vector columns: filter fields, distance computed fields,
- *   orderBy distance — zero config)
- * - pg_textsearch BM25 search (auto-discovers BM25 indexes: filter fields, score computed fields,
- *   orderBy score — zero config)
- * - pg_trgm fuzzy matching (similarTo/wordSimilarTo on text columns, similarity score fields,
- *   orderBy similarity — zero config, typo-tolerant)
- * - ltree support (auto-detects ltree columns, LTree scalar with file-path syntax,
- *   containment/glob filters — within, ancestorOf, glob)
- * - Aggregates (OPTIONAL — not included by default; add PgAggregatesPreset to extends to enable.
- *   Provides sum, avg, min, max, stddev, variance, distinctCount on connections,
- *   groupedAggregates with groupBy + having, orderBy relational aggregates,
- *   filter by relational aggregates — per-table opt-out via @behavior -aggregates)
+ * Accepts optional feature flags (`ConstructivePresetOptions`) that map 1-to-1
+ * with the `database_settings` / `api_settings` tables.  When a flag is `true`
+ * its corresponding plugin preset is included; when `false` it is omitted.
  *
- * RELATION FILTERS:
- * - Enabled via connectionFilterRelations: true
- * - Forward: filter child by parent (e.g. allOrders(where: { clientByClientId: { name: { startsWith: "Acme" } } }))
- * - Backward: filter parent by children (e.g. allClients(where: { ordersByClientId: { some: { total: { greaterThan: 1000 } } } }))
+ * Calling with no arguments produces the same preset as the previous static
+ * `ConstructivePreset` (everything on except aggregates and LLM).
+ *
+ * CORE PRESETS (always included):
+ * - MinimalPreset (PostGraphile without Node/Relay)
+ * - ConflictDetectorPreset (multi-schema conflict detection)
+ * - InflektPreset (custom inflection)
+ * - InflectorLoggerPreset (debugging, INFLECTOR_LOG=1)
+ * - NoUniqueLookupPreset (primary-key-only lookups)
+ * - MetaSchemaPreset (_meta introspection)
+ * - SqlExpressionValidatorPreset (@sqlExpression validation)
+ * - PgTypeMappingsPreset (email, url, etc.)
+ * - RequiredInputPreset (@requiredInput support)
+ *
+ * FLAG-CONTROLLED PRESETS:
+ * - enableConnectionFilter  -> ConnectionFilterPreset, EnableAllFilterColumnsPreset
+ * - enableManyToMany        -> ManyToManyOptInPreset
+ * - enableSearch            -> UnifiedSearchPreset (tsvector, BM25, pg_trgm, pgvector)
+ * - enablePostgis           -> GraphilePostgisPreset
+ * - enableLtree             -> GraphileLtreePreset
+ * - enableDirectUploads     -> UploadPreset
+ * - enablePresignedUploads  -> PresignedUrlPreset, BucketProvisionerPreset
+ * - enableAggregates        -> PgAggregatesPreset (off by default)
+ * - enableLlm               -> (no plugin yet, reserved for future use)
+ *
+ * RELATION FILTERS (when enableConnectionFilter is true):
+ * - Forward: filter child by parent
+ * - Backward: filter parent by children
  *
  * USAGE:
  * ```typescript
- * import { ConstructivePreset } from 'graphile-settings/presets';
- * import { makePgService } from 'postgraphile/adaptors/pg';
+ * import { createConstructivePreset, makePgService } from 'graphile-settings';
  *
- * const preset: GraphileConfig.Preset = {
- *   extends: [ConstructivePreset],
- *   pgServices: [
- *     makePgService({
- *       connectionString: DATABASE_URL,
- *       schemas: ['public'],
- *     }),
- *   ],
+ * // All defaults (same as previous static ConstructivePreset)
+ * const preset = {
+ *   extends: [createConstructivePreset()],
+ *   pgServices: [makePgService({ connectionString, schemas })],
+ * };
+ *
+ * // With database_settings feature flags
+ * const preset = {
+ *   extends: [createConstructivePreset({ enableAggregates: true, enablePostgis: false })],
+ *   pgServices: [makePgService({ connectionString, schemas })],
  * };
  * ```
  */
-export const ConstructivePreset: GraphileConfig.Preset = {
-  extends: [
+export function createConstructivePreset(
+  options?: ConstructivePresetOptions,
+): GraphileConfig.Preset {
+  const opts = { ...DEFAULTS, ...options };
+
+  // ----- extends array -----
+  const presets: GraphileConfig.Preset[] = [
+    // Core (always on)
     MinimalPreset,
     ConflictDetectorPreset,
     InflektPreset,
     InflectorLoggerPreset,
     NoUniqueLookupPreset,
-    ConnectionFilterPreset({ connectionFilterRelations: true }),
-    EnableAllFilterColumnsPreset,
-    ManyToManyOptInPreset,
     MetaSchemaPreset,
-    UnifiedSearchPreset({ fullTextScalarName: 'FullText', tsConfig: 'english' }),
-    GraphilePostgisPreset,
-    GraphileLtreePreset,
-    UploadPreset({
-      uploadFieldDefinitions: constructiveUploadFieldDefinitions,
-      maxFileSize: 10 * 1024 * 1024 // 10MB
-    }),
-    PresignedUrlPreset({
-      s3: getPresignedUrlS3Config,
-      resolveBucketName: createBucketNameResolver(),
-      ensureBucketProvisioned: createEnsureBucketProvisioned()
-    }),
-    BucketProvisionerPreset({
-      connection: getBucketProvisionerConnection,
-      allowedOrigins: getAllowedOrigins()
-    }),
     SqlExpressionValidatorPreset(),
     PgTypeMappingsPreset,
-    RequiredInputPreset
-  ],
-  /**
-   * Disable PostGraphile core's condition argument entirely.
-   * All filtering now lives under the `where` argument via our v5-native
-   * graphile-connection-filter plugin (which renames the default `filter`
-   * argument to `where` via `connectionFilterArgumentName: 'where'`).
-   * Search, BM25, pgvector, and PostGIS filter fields all hook into
-   * `isPgConnectionFilter` instead of `isPgCondition`.
-   */
-  disablePlugins: [
-    'PgConditionArgumentPlugin',
-    'PgConditionCustomFieldsPlugin'
-  ],
-  /**
-   * Connection Filter Plugin Configuration
-   *
-   * These options control what fields appear in the `where` argument on connections.
-   * Our v5-native graphile-connection-filter plugin controls relation filters via the
-   * `connectionFilterRelations` option passed to ConnectionFilterPreset().
-   *
-   * NOTE: By default, PostGraphile v5 only allows filtering on INDEXED columns.
-   * We override this with EnableAllFilterColumnsPreset to allow filtering on ALL columns.
-   * This gives developers flexibility but requires monitoring for slow queries on
-   * non-indexed columns.
-   */
-  schema: {
-    /**
-     * connectionFilterComputedColumns: false
-     * Disables filtering on computed columns (functions that return a value for a row).
-     * Computed columns can be expensive to filter on since they may not be indexed.
-     * To selectively enable, use `@filterable` smart tag on specific functions.
-     */
-    connectionFilterComputedColumns: false,
+    RequiredInputPreset,
+  ];
 
-    /**
-     * connectionFilterSetofFunctions: false
-     * Disables filtering on functions that return `setof` (multiple rows).
-     * These can be expensive operations. To selectively enable, use `@filterable` smart tag.
-     */
-    connectionFilterSetofFunctions: false,
-
-    /**
-     * connectionFilterLogicalOperators: true (default)
-     * Keeps `and`, `or`, `not` operators for combining filter conditions.
-     * Example: where: { or: [{ name: { eq: "foo" } }, { name: { eq: "bar" } }] }
-     */
-    connectionFilterLogicalOperators: true,
-
-    /**
-     * connectionFilterArrays: true (default)
-     * Allows filtering on PostgreSQL array columns.
-     * Example: where: { tags: { contains: ["important"] } }
-     */
-    connectionFilterArrays: true,
-
-    /**
-     * connectionFilterOperatorFactories
-     * Aggregates all satellite plugin operator factories into a single array.
-     * graphile-config replaces (not concatenates) arrays when merging presets,
-     * so we must explicitly collect all factories here at the top level.
-     */
-    connectionFilterOperatorFactories: [
-      createMatchesOperatorFactory('FullText', 'english'),
-      createTrgmOperatorFactories(),
-      createPostgisOperatorFactory(),
-      createFolderOperatorFactory()
-    ]
-    // NOTE: The UnifiedSearchPreset also registers matches + trgm operator factories.
-    // graphile-config merges arrays from presets, so having them here as well is fine
-    // and ensures they're present even if the preset order changes.
+  if (opts.enableConnectionFilter) {
+    presets.push(
+      ConnectionFilterPreset({ connectionFilterRelations: true }),
+      EnableAllFilterColumnsPreset,
+    );
   }
-};
+
+  if (opts.enableManyToMany) {
+    presets.push(ManyToManyOptInPreset);
+  }
+
+  if (opts.enableSearch) {
+    presets.push(
+      UnifiedSearchPreset({ fullTextScalarName: 'FullText', tsConfig: 'english' }),
+    );
+  }
+
+  if (opts.enablePostgis) {
+    presets.push(GraphilePostgisPreset);
+  }
+
+  if (opts.enableLtree) {
+    presets.push(GraphileLtreePreset);
+  }
+
+  if (opts.enableDirectUploads) {
+    presets.push(
+      UploadPreset({
+        uploadFieldDefinitions: constructiveUploadFieldDefinitions,
+        maxFileSize: 10 * 1024 * 1024, // 10MB
+      }),
+    );
+  }
+
+  if (opts.enablePresignedUploads) {
+    presets.push(
+      PresignedUrlPreset({
+        s3: getPresignedUrlS3Config,
+        resolveBucketName: createBucketNameResolver(),
+        ensureBucketProvisioned: createEnsureBucketProvisioned(),
+      }),
+      BucketProvisionerPreset({
+        connection: getBucketProvisionerConnection,
+        allowedOrigins: getAllowedOrigins(),
+      }),
+    );
+  }
+
+  if (opts.enableAggregates) {
+    presets.push(PgAggregatesPreset);
+  }
+
+  // ----- connectionFilterOperatorFactories -----
+  // Only include operator factories for features that are actually enabled.
+  // graphile-config replaces (not concatenates) arrays when merging presets,
+  // so we collect all active factories into a single top-level array.
+  const operatorFactories: unknown[] = [];
+  if (opts.enableConnectionFilter) {
+    if (opts.enableSearch) {
+      operatorFactories.push(
+        createMatchesOperatorFactory('FullText', 'english'),
+        createTrgmOperatorFactories(),
+      );
+    }
+    if (opts.enablePostgis) {
+      operatorFactories.push(createPostgisOperatorFactory());
+    }
+    if (opts.enableLtree) {
+      operatorFactories.push(createFolderOperatorFactory());
+    }
+  }
+
+  // ----- disablePlugins -----
+  // When connection filter is enabled it replaces the built-in condition arg.
+  const disablePlugins: string[] = [];
+  if (opts.enableConnectionFilter) {
+    disablePlugins.push('PgConditionArgumentPlugin', 'PgConditionCustomFieldsPlugin');
+  }
+
+  // ----- schema options -----
+  const schema: Record<string, unknown> = {};
+  if (opts.enableConnectionFilter) {
+    schema.connectionFilterComputedColumns = false;
+    schema.connectionFilterSetofFunctions = false;
+    schema.connectionFilterLogicalOperators = true;
+    schema.connectionFilterArrays = true;
+    if (operatorFactories.length > 0) {
+      schema.connectionFilterOperatorFactories = operatorFactories;
+    }
+  }
+
+  const preset: GraphileConfig.Preset = {
+    extends: presets,
+  };
+
+  if (disablePlugins.length > 0) {
+    preset.disablePlugins = disablePlugins;
+  }
+
+  if (Object.keys(schema).length > 0) {
+    preset.schema = schema;
+  }
+
+  return preset;
+}
+
+/**
+ * Default Constructive preset -- everything enabled except aggregates and LLM.
+ * Backwards-compatible: identical to the previous static ConstructivePreset.
+ */
+export const ConstructivePreset: GraphileConfig.Preset = createConstructivePreset();
 
 export default ConstructivePreset;
