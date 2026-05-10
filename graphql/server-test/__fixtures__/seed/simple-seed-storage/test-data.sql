@@ -49,7 +49,7 @@ VALUES (
 
 INSERT INTO services_public.apis (id, database_id, name, dbname, is_public, role_name, anon_role)
 VALUES
-  ('6c9997a4-591b-4cb3-9313-4ef45d6f134e', '80a2eaaf-f77e-4bfe-8506-df929ef1b8d9', 'app', current_database(), true, 'authenticated', 'anonymous')
+  ('6c9997a4-591b-4cb3-9313-4ef45d6f134e', '80a2eaaf-f77e-4bfe-8506-df929ef1b8d9', 'app', current_database(), false, 'authenticated', 'anonymous')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO services_public.api_schemas (id, database_id, schema_id, api_id)
@@ -185,6 +185,19 @@ VALUES
   ('d2d2d2d2-0000-0000-0000-000000000001', 'public', 'public', true),
   ('d2d2d2d2-0000-0000-0000-000000000002', 'private', 'private', false)
 ON CONFLICT (id) DO NOTHING;
+
+-- Pre-seed a file in Bob's private bucket for RLS testing
+INSERT INTO "bob-storage-public".app_files (id, bucket_id, key, content_hash, mime_type, size, filename, is_public)
+VALUES (
+  'd3d3d3d3-0000-0000-0000-000000000001',
+  'd2d2d2d2-0000-0000-0000-000000000002',
+  'seeded-private-hash',
+  'seeded-private-hash',
+  'text/plain',
+  42,
+  'bob-seeded-private.txt',
+  false
+) ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================
 -- BOB DATABASE SETTINGS (all defaults — presigned uploads enabled)

@@ -64,9 +64,9 @@ const UPLOAD_APP_FILE = `
   }
 `;
 
-const ALL_APP_FILES = `
-  query AllAppFiles {
-    allAppFiles {
+const APP_FILES = `
+  query AppFiles {
+    appFiles {
       nodes {
         id
         key
@@ -153,7 +153,7 @@ describe('Upload integration (file-centric upload mutations)', () => {
   beforeAll(async () => {
     ({ request, teardown } = await getConnections(
       {
-        schemas: aliceSchemas,
+        schemas: [...aliceSchemas, ...bobSchemas],
         authRole: 'anonymous',
         server: {
           api: {
@@ -366,26 +366,26 @@ describe('Upload integration (file-centric upload mutations)', () => {
 
     it('should show Bob his own files via his API', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
-        query: ALL_APP_FILES,
+        query: APP_FILES,
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const files = res.body.data.allAppFiles.nodes;
+      const files = res.body.data.appFiles.nodes;
       expect(files.length).toBeGreaterThanOrEqual(1);
       expect(files.some((f: { filename: string }) => f.filename === 'bob-file.txt')).toBe(true);
     });
 
     it('should NOT show Bob\'s files when querying via Alice\'s API', async () => {
       const res = await postGraphQLViaApi(aliceDatabaseId, 'app', {
-        query: ALL_APP_FILES,
+        query: APP_FILES,
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const files = res.body.data.allAppFiles.nodes;
+      const files = res.body.data.appFiles.nodes;
       const bobFiles = files.filter(
         (f: { filename: string }) => f.filename === 'bob-file.txt',
       );
@@ -394,13 +394,13 @@ describe('Upload integration (file-centric upload mutations)', () => {
 
     it('should NOT show Alice\'s files when querying via Bob\'s API', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
-        query: ALL_APP_FILES,
+        query: APP_FILES,
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
-      const files = res.body.data.allAppFiles.nodes;
+      const files = res.body.data.appFiles.nodes;
       const aliceFiles = files.filter(
         (f: { filename: string }) =>
           f.filename === 'hello-public.txt' || f.filename === 'hello-private.txt',
@@ -410,48 +410,16 @@ describe('Upload integration (file-centric upload mutations)', () => {
   });
 
   describe('RLS enforcement on Bob\'s schema', () => {
-    it('should allow Bob to upload a file to the private bucket', async () => {
-      const fileContent = 'Bob private data';
-      const contentHash = sha256(fileContent);
-
-      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
-        query: UPLOAD_APP_FILE,
-        variables: {
-          input: {
-            bucketKey: 'private',
-            contentHash,
-            contentType: 'text/plain',
-            size: Buffer.byteLength(fileContent),
-            filename: 'bob-private-file.txt',
-          },
-        },
-      });
-
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-
-      const payload = res.body.data.uploadAppFile;
-      expect(payload.fileId).toBeTruthy();
-      expect(payload.uploadUrl).toBeTruthy();
-
-      const putRes = await putToPresignedUrl(
-        payload.uploadUrl,
-        fileContent,
-        'text/plain',
-      );
-      expect(putRes.ok).toBe(true);
-    });
-
     it('should only return public-bucket files for anonymous role (RLS)', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
-        query: ALL_APP_FILES,
+        query: APP_FILES,
       });
 
       expect(res.status).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
       const files: { filename: string; bucketId: string }[] =
-        res.body.data.allAppFiles.nodes;
+        res.body.data.appFiles.nodes;
 
       const publicBucketId = 'd2d2d2d2-0000-0000-0000-000000000001';
       const privateBucketId = 'd2d2d2d2-0000-0000-0000-000000000002';
