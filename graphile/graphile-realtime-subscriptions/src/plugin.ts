@@ -20,6 +20,15 @@
  *   4. The plugin parses the payload and fetches the specific changed row(s)
  *   5. The client receives { event, row, rowId, overflow }
  *
+ * Cursor tracking (at-least-once delivery):
+ *   The CursorTracker class provides a complementary polling-based delivery
+ *   path via drain_changes(). It manages the listener_node lifecycle:
+ *   - start() registers the node via touch_listener()
+ *   - Periodic polling via drain_changes() fetches change_log entries
+ *   - Periodic heartbeat via touch_listener() keeps the node alive
+ *   - stop() calls cleanup_ephemeral() to remove ephemeral subscriptions
+ *   This enables at-least-once semantics by tracking cursor position.
+ *
  * Overflow protection:
  *   - Database-side: statements affecting > 50 rows send INVALIDATE
  *   - Plugin-side: per-subscriber throttle (default 50 events/second/table)
@@ -328,6 +337,10 @@ export function createRealtimeSubscriptionsPlugin(
 }
 
 export { createRealtimeSubscriptionsPlugin as RealtimeSubscriptionsPlugin };
+
+// Re-export CursorTracker for convenience
+export { CursorTracker } from './cursor-tracker';
+export type { CursorTrackerOptions, ChangeLogEntry, WithPgClient, PgClient } from './types';
 
 // Exported for testing
 export { parseNotifyPayload, EventThrottle, DEFAULT_OVERFLOW_THRESHOLD };

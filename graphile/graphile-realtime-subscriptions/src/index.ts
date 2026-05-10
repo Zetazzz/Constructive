@@ -19,4 +19,11 @@
 
 export { createRealtimeSubscriptionsPlugin, RealtimeSubscriptionsPlugin } from './plugin';
 export { RealtimeSubscriptionsPreset } from './preset';
+export { CursorTracker } from './cursor-tracker';
 export type { RealtimeSubscriptionsPluginOptions } from './types';
+export type {
+  CursorTrackerOptions,
+  ChangeLogEntry,
+  PgClient,
+  WithPgClient,
+} from './types';
