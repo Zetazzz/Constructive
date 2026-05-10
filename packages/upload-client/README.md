@@ -12,16 +12,16 @@
    <a href="https://www.npmjs.com/package/@constructive-io/upload-client"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/constructive?filename=packages%2Fupload-client%2Fpackage.json"/></a>
 </p>
 
-Presigned URL upload utilities for Constructive.
+Client-side presigned URL upload utilities for Constructive.
 
-One package for all upload workflows — browser and Node.js.
+No Node.js-only dependencies — all APIs use Web standards (fetch, Web Crypto).
 
 ## Usage
 
 ```typescript
-import { uploadFile, hashFile, hashContent, putToPresignedUrl, fetchFromUrl } from '@constructive-io/upload-client';
+import { uploadFile, hashFile, putToPresignedUrl, fetchFromUrl } from '@constructive-io/upload-client';
 
-// Full orchestrated upload (browser)
+// Full orchestrated upload
 const result = await uploadFile({
   file: selectedFile,
   bucketKey: 'avatars',
@@ -29,8 +29,8 @@ const result = await uploadFile({
   onProgress: (pct) => console.log(`${pct}%`),
 });
 
-// Atomic functions for custom flows (Node.js / tests / scripts)
-const hash = hashContent('file contents');
+// Or use atomic functions individually
+const hash = await hashFile(myFile);
 await putToPresignedUrl(presignedUrl, content, 'image/png');
 const response = await fetchFromUrl(downloadUrl);
 ```
@@ -43,15 +43,11 @@ Orchestrates the full presigned URL upload flow: hash → requestUploadUrl → P
 
 ### `hashFile(file)`
 
-Computes SHA-256 hash using the Web Crypto API (browser / Node 18+).
+Computes SHA-256 hash using the Web Crypto API.
 
 ### `hashFileChunked(file, chunkSize?, onProgress?)`
 
 Computes SHA-256 hash in chunks for large files.
-
-### `hashContent(content)`
-
-Computes SHA-256 hex digest of a string or Buffer (Node.js).
 
 ### `putToPresignedUrl(url, body, contentType, signal?)`
 
