@@ -5,7 +5,12 @@
  *   uploadAppFile mutation → presigned PUT URL → PUT to S3
  *
  * Uses real MinIO (available in CI as minio_cdn service) and lazy bucket
- * provisioning. No RLS — that will be tested in constructive-db.
+ * provisioning.
+ *
+ * Includes Alice/Bob tenant isolation tests:
+ *   - Feature flag gating via database_settings / api_settings cascade
+ *   - Tenant isolation (Alice cannot see Bob's files, Bob cannot see Alice's)
+ *   - RLS enforcement (anonymous can only see public-bucket files in Bob's schema)
  *
  * Run tests:
  *   pnpm test -- --testPathPattern=upload.integration
@@ -16,19 +21,25 @@ import path from 'path';
 import { getConnections, seed } from '../src';
 import type supertest from 'supertest';
 
-jest.setTimeout(60000);
+jest.setTimeout(120000);
 
 const seedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
 const sql = (seedDir: string, file: string) =>
   path.join(seedRoot, seedDir, file);
 
-const servicesDatabaseId = '80a2eaaf-f77e-4bfe-8506-df929ef1b8d9';
+// Alice's tenant (existing)
+const aliceDatabaseId = '80a2eaaf-f77e-4bfe-8506-df929ef1b8d9';
+const aliceSchemas = ['simple-storage-public'];
+
+// Bob's tenant (new)
+const bobDatabaseId = 'a1a1a1a1-b2b2-4c3c-d4d4-e5e5e5e5e5e5';
+const bobSchemas = ['bob-storage-public'];
+
 const metaSchemas = [
   'services_public',
   'metaschema_public',
   'metaschema_modules_public',
 ];
-const schemas = ['simple-storage-public'];
 
 const seedFiles = [
   // Reuse the shared metaschema / services infrastructure
@@ -49,6 +60,31 @@ const UPLOAD_APP_FILE = `
       key
       deduplicated
       expiresAt
+    }
+  }
+`;
+
+const ALL_APP_FILES = `
+  query AllAppFiles {
+    allAppFiles {
+      nodes {
+        id
+        key
+        filename
+        mimeType
+        isPublic
+        bucketId
+      }
+    }
+  }
+`;
+
+const INTROSPECT_UPLOAD_MUTATION = `
+  query IntrospectUpload {
+    __type(name: "Mutation") {
+      fields {
+        name
+      }
     }
   }
 `;
@@ -80,21 +116,44 @@ describe('Upload integration (file-centric upload mutations)', () => {
   let request: supertest.Agent;
   let teardown: () => Promise<void>;
 
+  /**
+   * Posts a GraphQL query using X-Schemata header (admin structure, no
+   * database_settings resolution — used by original upload tests).
+   */
   const postGraphQL = (payload: {
     query: string;
     variables?: Record<string, unknown>;
   }) => {
     return request
       .post('/graphql')
-      .set('X-Database-Id', servicesDatabaseId)
-      .set('X-Schemata', schemas.join(','))
+      .set('X-Database-Id', aliceDatabaseId)
+      .set('X-Schemata', aliceSchemas.join(','))
+      .send(payload);
+  };
+
+  /**
+   * Posts a GraphQL query using X-Api-Name header, which triggers
+   * api-name resolution and loads database_settings + api_settings.
+   */
+  const postGraphQLViaApi = (
+    databaseId: string,
+    apiName: string,
+    payload: {
+      query: string;
+      variables?: Record<string, unknown>;
+    },
+  ) => {
+    return request
+      .post('/graphql')
+      .set('X-Database-Id', databaseId)
+      .set('X-Api-Name', apiName)
       .send(payload);
   };
 
   beforeAll(async () => {
     ({ request, teardown } = await getConnections(
       {
-        schemas,
+        schemas: aliceSchemas,
         authRole: 'anonymous',
         server: {
           api: {
@@ -111,6 +170,10 @@ describe('Upload integration (file-centric upload mutations)', () => {
   afterAll(async () => {
     if (teardown) await teardown();
   });
+
+  // ==========================================================================
+  // Original upload tests (Alice's tenant, schemata-header mode)
+  // ==========================================================================
 
   describe('Public file upload via uploadAppFile mutation', () => {
     const fileContent = 'Hello, public world!';
@@ -216,6 +279,188 @@ describe('Upload integration (file-centric upload mutations)', () => {
       expect(payload.uploadUrl).toBeNull();
       expect(payload.expiresAt).toBeNull();
       expect(payload.fileId).toBeTruthy();
+    });
+  });
+
+  // ==========================================================================
+  // Alice/Bob tenant isolation and feature flag tests
+  // Uses X-Api-Name resolution which loads database_settings + api_settings
+  // ==========================================================================
+
+  describe('Feature flag gating via database_settings / api_settings', () => {
+    it('should expose uploadAppFile mutation when presigned uploads are enabled (Alice)', async () => {
+      const res = await postGraphQLViaApi(aliceDatabaseId, 'app', {
+        query: INTROSPECT_UPLOAD_MUTATION,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const mutationFields: { name: string }[] =
+        res.body.data.__type?.fields ?? [];
+      const fieldNames = mutationFields.map((f) => f.name);
+      expect(fieldNames).toContain('uploadAppFile');
+    });
+
+    it('should expose uploadAppFile mutation on Bob primary API (presigned uploads enabled by default)', async () => {
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
+        query: INTROSPECT_UPLOAD_MUTATION,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const mutationFields: { name: string }[] =
+        res.body.data.__type?.fields ?? [];
+      const fieldNames = mutationFields.map((f) => f.name);
+      expect(fieldNames).toContain('uploadAppFile');
+    });
+
+    it('should NOT expose uploadAppFile on Bob restricted API (api_settings disables presigned uploads)', async () => {
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-restricted', {
+        query: INTROSPECT_UPLOAD_MUTATION,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const mutationFields: { name: string }[] =
+        res.body.data.__type?.fields ?? [];
+      const fieldNames = mutationFields.map((f) => f.name);
+      expect(fieldNames).not.toContain('uploadAppFile');
+    });
+  });
+
+  describe('Tenant isolation — Alice and Bob cannot see each other\'s files', () => {
+    it('should allow Bob to upload a file via his primary API', async () => {
+      const fileContent = 'Bob secret data';
+      const contentHash = sha256(fileContent);
+
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
+        query: UPLOAD_APP_FILE,
+        variables: {
+          input: {
+            bucketKey: 'public',
+            contentHash,
+            contentType: 'text/plain',
+            size: Buffer.byteLength(fileContent),
+            filename: 'bob-file.txt',
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const payload = res.body.data.uploadAppFile;
+      expect(payload.fileId).toBeTruthy();
+      expect(payload.uploadUrl).toBeTruthy();
+
+      const putRes = await putToPresignedUrl(
+        payload.uploadUrl,
+        fileContent,
+        'text/plain',
+      );
+      expect(putRes.ok).toBe(true);
+    });
+
+    it('should show Bob his own files via his API', async () => {
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
+        query: ALL_APP_FILES,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const files = res.body.data.allAppFiles.nodes;
+      expect(files.length).toBeGreaterThanOrEqual(1);
+      expect(files.some((f: { filename: string }) => f.filename === 'bob-file.txt')).toBe(true);
+    });
+
+    it('should NOT show Bob\'s files when querying via Alice\'s API', async () => {
+      const res = await postGraphQLViaApi(aliceDatabaseId, 'app', {
+        query: ALL_APP_FILES,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const files = res.body.data.allAppFiles.nodes;
+      const bobFiles = files.filter(
+        (f: { filename: string }) => f.filename === 'bob-file.txt',
+      );
+      expect(bobFiles).toHaveLength(0);
+    });
+
+    it('should NOT show Alice\'s files when querying via Bob\'s API', async () => {
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
+        query: ALL_APP_FILES,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const files = res.body.data.allAppFiles.nodes;
+      const aliceFiles = files.filter(
+        (f: { filename: string }) =>
+          f.filename === 'hello-public.txt' || f.filename === 'hello-private.txt',
+      );
+      expect(aliceFiles).toHaveLength(0);
+    });
+  });
+
+  describe('RLS enforcement on Bob\'s schema', () => {
+    it('should allow Bob to upload a file to the private bucket', async () => {
+      const fileContent = 'Bob private data';
+      const contentHash = sha256(fileContent);
+
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
+        query: UPLOAD_APP_FILE,
+        variables: {
+          input: {
+            bucketKey: 'private',
+            contentHash,
+            contentType: 'text/plain',
+            size: Buffer.byteLength(fileContent),
+            filename: 'bob-private-file.txt',
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const payload = res.body.data.uploadAppFile;
+      expect(payload.fileId).toBeTruthy();
+      expect(payload.uploadUrl).toBeTruthy();
+
+      const putRes = await putToPresignedUrl(
+        payload.uploadUrl,
+        fileContent,
+        'text/plain',
+      );
+      expect(putRes.ok).toBe(true);
+    });
+
+    it('should only return public-bucket files for anonymous role (RLS)', async () => {
+      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
+        query: ALL_APP_FILES,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toBeUndefined();
+
+      const files: { filename: string; bucketId: string }[] =
+        res.body.data.allAppFiles.nodes;
+
+      const publicBucketId = 'd2d2d2d2-0000-0000-0000-000000000001';
+      const privateBucketId = 'd2d2d2d2-0000-0000-0000-000000000002';
+
+      const publicFiles = files.filter((f) => f.bucketId === publicBucketId);
+      const privateFiles = files.filter((f) => f.bucketId === privateBucketId);
+
+      expect(publicFiles.length).toBeGreaterThanOrEqual(1);
+      expect(privateFiles).toHaveLength(0);
     });
   });
 });
