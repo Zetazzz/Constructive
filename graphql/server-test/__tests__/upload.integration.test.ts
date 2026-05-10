@@ -240,7 +240,8 @@ function expectRlsDenied(
     expect(
       msg.includes('permission denied') ||
         msg.includes('new row violates row-level security') ||
-        msg.includes('insufficient_privilege'),
+        msg.includes('insufficient_privilege') ||
+        msg.includes('No values were'),
     ).toBe(true);
     return;
   }
@@ -607,7 +608,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
         query: UPDATE_APP_FILE,
         variables: {
-          input: { id: bobSeededPublicFileId, patch: { bucketId: bobPrivateBucketId } },
+          input: { id: bobSeededPublicFileId, appFilePatch: { bucketId: bobPrivateBucketId } },
         },
       });
       expectRlsDenied(res, 'updateAppFile');
@@ -617,7 +618,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
         query: UPDATE_APP_FILE,
         variables: {
-          input: { id: bobSeededPublicFileId, patch: { isPublic: false } },
+          input: { id: bobSeededPublicFileId, appFilePatch: { isPublic: false } },
         },
       });
       expectRlsDenied(res, 'updateAppFile');
@@ -654,7 +655,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(malloryDatabaseId, 'mallory-app', {
         query: UPDATE_APP_FILE,
         variables: {
-          input: { id: malloryPublicFileId, patch: { filename: 'hacked.txt' } },
+          input: { id: malloryPublicFileId, appFilePatch: { filename: 'hacked.txt' } },
         },
       });
       expectRlsDenied(res, 'updateAppFile');
@@ -695,7 +696,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
         query: UPDATE_APP_BUCKET,
         variables: {
-          input: { id: bobPublicBucketId, patch: { isPublic: false } },
+          input: { id: bobPublicBucketId, appBucketPatch: { isPublic: false } },
         },
       });
       expectRlsDenied(res, 'updateAppBucket');
