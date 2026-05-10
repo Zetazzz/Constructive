@@ -299,7 +299,11 @@ export function generate(options: GenerateOptions): GenerateResult {
   }
 
   // 8b. Generate subscription hooks (subscriptions/*.ts)
-  const subscriptionHooks = generateAllSubscriptionHooks(tables);
+  // Only generate for tables with the @realtime smart tag
+  const realtimeTables = tables.filter(
+    (t) => t.smartTags?.['@realtime'] !== undefined,
+  );
+  const subscriptionHooks = generateAllSubscriptionHooks(realtimeTables);
   for (const hook of subscriptionHooks) {
     files.push({
       path: `subscriptions/${hook.fileName}`,
@@ -307,19 +311,19 @@ export function generate(options: GenerateOptions): GenerateResult {
     });
   }
 
-  // 8c. Generate connection state hook
-  const connectionStateHook = generateConnectionStateHook();
-  files.push({
-    path: `subscriptions/${connectionStateHook.fileName}`,
-    content: connectionStateHook.content,
-  });
-
-  // 8d. Generate subscriptions/index.ts barrel
+  // 8c. Generate connection state hook + barrel only if any table has @realtime
   const hasSubscriptions = subscriptionHooks.length > 0;
   if (hasSubscriptions) {
+    const connectionStateHook = generateConnectionStateHook();
+    files.push({
+      path: `subscriptions/${connectionStateHook.fileName}`,
+      content: connectionStateHook.content,
+    });
+
+    // 8d. Generate subscriptions/index.ts barrel
     files.push({
       path: 'subscriptions/index.ts',
-      content: generateSubscriptionsBarrel(tables),
+      content: generateSubscriptionsBarrel(realtimeTables),
     });
   }
 

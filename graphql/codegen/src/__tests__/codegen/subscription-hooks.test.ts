@@ -7,6 +7,7 @@
  * - Subscription barrel file
  */
 import { generateSubscriptionsBarrel } from '../../core/codegen/barrel';
+import { generate } from '../../core/codegen/index';
 import {
   generateAllSubscriptionHooks,
   generateConnectionStateHook,
@@ -42,6 +43,7 @@ function createTable(partial: Partial<Table> & { name: string }): Table {
     query: partial.query,
     inflection: partial.inflection,
     constraints: partial.constraints,
+    smartTags: partial.smartTags,
   };
 }
 
@@ -63,6 +65,25 @@ const contactTable = createTable({
   },
 });
 
+const contactTableWithRealtime = createTable({
+  name: 'Contact',
+  fields: [
+    { name: 'id', type: fieldTypes.uuid },
+    { name: 'firstName', type: fieldTypes.string },
+    { name: 'lastName', type: fieldTypes.string },
+    { name: 'email', type: fieldTypes.string },
+    { name: 'createdAt', type: fieldTypes.datetime },
+  ],
+  query: {
+    all: 'contacts',
+    one: 'contact',
+    create: 'createContact',
+    update: 'updateContact',
+    delete: 'deleteContact',
+  },
+  smartTags: { '@realtime': true },
+});
+
 const projectTable = createTable({
   name: 'Project',
   fields: [
@@ -78,6 +99,24 @@ const projectTable = createTable({
     update: 'updateProject',
     delete: 'deleteProject',
   },
+});
+
+const projectTableWithRealtime = createTable({
+  name: 'Project',
+  fields: [
+    { name: 'id', type: fieldTypes.uuid },
+    { name: 'name', type: fieldTypes.string },
+    { name: 'active', type: fieldTypes.boolean },
+    { name: 'createdAt', type: fieldTypes.datetime },
+  ],
+  query: {
+    all: 'projects',
+    one: 'project',
+    create: 'createProject',
+    update: 'updateProject',
+    delete: 'deleteProject',
+  },
+  smartTags: { '@realtime': true },
 });
 
 describe('Subscription naming utils', () => {
@@ -241,5 +280,69 @@ describe('Subscription Barrel Generator', () => {
     const result = generateSubscriptionsBarrel([contactTable, projectTable]);
     expect(result).toContain('./useContactSubscription');
     expect(result).toContain('./useProjectSubscription');
+  });
+});
+
+describe('Smart Tag Gating', () => {
+  const minConfig = {
+    tables: { include: [], exclude: [], systemExclude: [] },
+    queries: { include: [], exclude: [], systemExclude: [] },
+    mutations: { include: [], exclude: [], systemExclude: [] },
+    codegen: { skipQueryField: false },
+    reactQuery: true,
+  } as any;
+
+  it('does not generate subscription hooks when no tables have @realtime', () => {
+    const result = generate({
+      tables: [contactTable, projectTable],
+      config: minConfig,
+    });
+    expect(result.stats.subscriptionHooks).toBe(0);
+    const subFiles = result.files.filter((f) => f.path.startsWith('subscriptions/'));
+    expect(subFiles).toHaveLength(0);
+  });
+
+  it('generates subscription hooks only for tables with @realtime', () => {
+    const result = generate({
+      tables: [contactTableWithRealtime, projectTable],
+      config: minConfig,
+    });
+    expect(result.stats.subscriptionHooks).toBe(1);
+    const subFiles = result.files.filter((f) => f.path.startsWith('subscriptions/'));
+    expect(subFiles.some((f) => f.path.includes('useContactSubscription'))).toBe(true);
+    expect(subFiles.some((f) => f.path.includes('useProjectSubscription'))).toBe(false);
+    expect(subFiles.some((f) => f.path.includes('useConnectionState'))).toBe(true);
+    expect(subFiles.some((f) => f.path === 'subscriptions/index.ts')).toBe(true);
+  });
+
+  it('generates subscription hooks for all @realtime tables', () => {
+    const result = generate({
+      tables: [contactTableWithRealtime, projectTableWithRealtime],
+      config: minConfig,
+    });
+    expect(result.stats.subscriptionHooks).toBe(2);
+    const subFiles = result.files.filter((f) => f.path.startsWith('subscriptions/'));
+    expect(subFiles.some((f) => f.path.includes('useContactSubscription'))).toBe(true);
+    expect(subFiles.some((f) => f.path.includes('useProjectSubscription'))).toBe(true);
+  });
+
+  it('does not emit useConnectionState or barrel when no @realtime tables', () => {
+    const result = generate({
+      tables: [contactTable],
+      config: minConfig,
+    });
+    const subFiles = result.files.filter((f) => f.path.startsWith('subscriptions/'));
+    expect(subFiles).toHaveLength(0);
+    const mainBarrel = result.files.find((f) => f.path === 'index.ts');
+    expect(mainBarrel?.content).not.toContain('./subscriptions');
+  });
+
+  it('emits subscriptions barrel in main index when @realtime tables exist', () => {
+    const result = generate({
+      tables: [contactTableWithRealtime],
+      config: minConfig,
+    });
+    const mainBarrel = result.files.find((f) => f.path === 'index.ts');
+    expect(mainBarrel?.content).toContain('./subscriptions');
   });
 });

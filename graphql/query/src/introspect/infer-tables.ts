@@ -14,7 +14,7 @@
  */
 import { lcFirst, pluralize, singularize, ucFirst } from 'inflekt';
 
-import { stripSmartComments } from '../utils';
+import { parseSmartTags, stripSmartComments } from '../utils';
 
 import type {
   IntrospectionField,
@@ -324,6 +324,9 @@ function buildCleanTable(
   // Extract description from entity type (PostgreSQL COMMENT), strip smart comments
   const description = commentsEnabled ? stripSmartComments(entityType.description) : undefined;
 
+  // Parse smart tags from raw description before they are stripped
+  const smartTags = parseSmartTags(entityType.description);
+
   return {
     table: {
       name: entityName,
@@ -333,6 +336,7 @@ function buildCleanTable(
       inflection,
       query,
       constraints,
+      ...(smartTags ? { smartTags } : {}),
     },
     hasRealOperation,
   };
