@@ -34,6 +34,7 @@ export { SecureTableProvisionModel } from './secureTableProvision';
 export { RelationProvisionModel } from './relationProvision';
 export { SessionSecretsModuleModel } from './sessionSecretsModule';
 export { IdentityProvidersModuleModel } from './identityProvidersModule';
+export { RealtimeModuleModel } from './realtimeModule';
 export { SchemaGrantModel } from './schemaGrant';
 export { DefaultPrivilegeModel } from './defaultPrivilege';
 export { EnumModel } from './enum';

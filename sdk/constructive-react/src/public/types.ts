@@ -421,6 +421,20 @@ export interface IdentityProvidersModule {
   tableId: string | null;
   tableName: string | null;
 }
+export interface RealtimeModule {
+  id: string | null;
+  databaseId: string | null;
+  schemaId: string | null;
+  privateSchemaId: string | null;
+  subscriptionsSchemaId: string | null;
+  changeLogTableId: string | null;
+  listenerNodeTableId: string | null;
+  sourceRegistryTableId: string | null;
+  retentionHours: number | null;
+  lookaheadHours: number | null;
+  partitionInterval: string | null;
+  notifyChannel: string | null;
+}
 export interface SchemaGrant {
   id: string | null;
   databaseId: string | null;

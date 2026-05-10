@@ -1,13 +1,13 @@
 ---
 name: hooks-public
-description: React Query hooks for the public API — provides typed query and mutation hooks for 147 tables and 71 custom operations
+description: React Query hooks for the public API — provides typed query and mutation hooks for 148 tables and 71 custom operations
 ---
 
 # hooks-public
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-React Query hooks for the public API — provides typed query and mutation hooks for 147 tables and 71 custom operations
+React Query hooks for the public API — provides typed query and mutation hooks for 148 tables and 71 custom operations
 
 ## Usage
 
@@ -68,6 +68,7 @@ See the `references/` directory for detailed per-entity API documentation:
 - [relation-provision](references/relation-provision.md)
 - [session-secrets-module](references/session-secrets-module.md)
 - [identity-providers-module](references/identity-providers-module.md)
+- [realtime-module](references/realtime-module.md)
 - [schema-grant](references/schema-grant.md)
 - [default-privilege](references/default-privilege.md)
 - [enum](references/enum.md)

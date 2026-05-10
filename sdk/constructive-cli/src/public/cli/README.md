@@ -57,6 +57,7 @@ csdk auth set-token <your-token>
 | `relation-provision` | relationProvision CRUD operations |
 | `session-secrets-module` | sessionSecretsModule CRUD operations |
 | `identity-providers-module` | identityProvidersModule CRUD operations |
+| `realtime-module` | realtimeModule CRUD operations |
 | `schema-grant` | schemaGrant CRUD operations |
 | `default-privilege` | defaultPrivilege CRUD operations |
 | `enum` | enum CRUD operations |
@@ -1296,6 +1297,39 @@ CRUD operations for IdentityProvidersModule records.
 
 **Required create fields:** `databaseId`
 **Optional create fields (backend defaults):** `schemaId`, `privateSchemaId`, `tableId`, `tableName`
+
+### `realtime-module`
+
+CRUD operations for RealtimeModule records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all realtimeModule records |
+| `find-first` | Find first matching realtimeModule record |
+| `get` | Get a realtimeModule by id |
+| `create` | Create a new realtimeModule |
+| `update` | Update an existing realtimeModule |
+| `delete` | Delete a realtimeModule |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `databaseId` | UUID |
+| `schemaId` | UUID |
+| `privateSchemaId` | UUID |
+| `subscriptionsSchemaId` | UUID |
+| `changeLogTableId` | UUID |
+| `listenerNodeTableId` | UUID |
+| `sourceRegistryTableId` | UUID |
+| `retentionHours` | Int |
+| `lookaheadHours` | Int |
+| `partitionInterval` | String |
+| `notifyChannel` | String |
+
+**Required create fields:** `databaseId`
+**Optional create fields (backend defaults):** `schemaId`, `privateSchemaId`, `subscriptionsSchemaId`, `changeLogTableId`, `listenerNodeTableId`, `sourceRegistryTableId`, `retentionHours`, `lookaheadHours`, `partitionInterval`, `notifyChannel`
 
 ### `schema-grant`
 

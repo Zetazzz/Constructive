@@ -62,6 +62,8 @@ export * from './useSessionSecretsModulesQuery';
 export * from './useSessionSecretsModuleQuery';
 export * from './useIdentityProvidersModulesQuery';
 export * from './useIdentityProvidersModuleQuery';
+export * from './useRealtimeModulesQuery';
+export * from './useRealtimeModuleQuery';
 export * from './useSchemaGrantsQuery';
 export * from './useSchemaGrantQuery';
 export * from './useDefaultPrivilegesQuery';

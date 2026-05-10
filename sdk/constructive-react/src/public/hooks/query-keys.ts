@@ -298,6 +298,15 @@ export const identityProvidersModuleKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...identityProvidersModuleKeys.details(), id] as const,
 } as const;
+export const realtimeModuleKeys = {
+  /** All realtimeModule queries */ all: ['realtimemodule'] as const,
+  /** List query keys */ lists: () => [...realtimeModuleKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...realtimeModuleKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...realtimeModuleKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...realtimeModuleKeys.details(), id] as const,
+} as const;
 export const schemaGrantKeys = {
   /** All schemaGrant queries */ all: ['schemagrant'] as const,
   /** List query keys */ lists: () => [...schemaGrantKeys.all, 'list'] as const,
@@ -1446,6 +1455,7 @@ export const queryKeys = {
   relationProvision: relationProvisionKeys,
   sessionSecretsModule: sessionSecretsModuleKeys,
   identityProvidersModule: identityProvidersModuleKeys,
+  realtimeModule: realtimeModuleKeys,
   schemaGrant: schemaGrantKeys,
   defaultPrivilege: defaultPrivilegeKeys,
   enum: enumKeys,
