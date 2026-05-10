@@ -70,6 +70,21 @@ export function generateOrmClientFile(): GeneratedClientFile {
 }
 
 /**
+ * Generate the realtime.ts file (RealtimeManager + subscription types)
+ *
+ * Reads from the templates directory for proper type checking.
+ */
+export function generateRealtimeFile(): GeneratedClientFile {
+  return {
+    fileName: 'realtime.ts',
+    content: readTemplateFile(
+      'orm-realtime.ts',
+      'Realtime Manager - WebSocket subscription support',
+    ),
+  };
+}
+
+/**
  * Generate the query-builder.ts file (runtime query builder)
  *
  * Reads from the templates directory for proper type checking and testability.

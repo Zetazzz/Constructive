@@ -101,6 +101,42 @@ export class FetchAdapter implements GraphQLAdapter {
   }
 }
 
+export type SubscriptionOperation = 'INSERT' | 'UPDATE' | 'DELETE';
+export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
+export type ConnectionStateListener = (state: ConnectionState) => void;
+export type Unsubscribe = () => void;
+
+export interface SubscriptionEvent<T> {
+  operation: SubscriptionOperation;
+  data: T | null;
+  previousValues?: Partial<T>;
+  timestamp: string;
+}
+
+export interface SubscriptionFieldMeta {
+  fieldName: string;
+  tableName: string;
+  dataFieldName: string;
+}
+
+export interface SubscribeOptions<T, TFilter = Record<string, unknown>> {
+  filter?: TFilter;
+  onEvent: (event: SubscriptionEvent<T>) => void;
+  onError?: (error: Error) => void;
+  onComplete?: () => void;
+}
+
+export interface RealtimeConfig {
+  url: string;
+  getToken?: () => string | Promise<string>;
+  connectionParams?: Record<string, unknown>;
+  lazy?: boolean;
+  retryAttempts?: number;
+  retryWait?: number | ((retryCount: number) => number | Promise<number>);
+  onConnected?: () => void;
+  onDisconnected?: (reason?: unknown) => void;
+}
+
 /**
  * Configuration for creating an ORM client.
  */
@@ -111,6 +147,8 @@ export interface OrmClientConfig {
   headers?: Record<string, string>;
   /** Custom adapter for GraphQL execution (overrides endpoint/headers) */
   adapter?: GraphQLAdapter;
+  /** Optional realtime (WebSocket) configuration */
+  realtime?: RealtimeConfig;
 }
 
 export class GraphQLRequestError extends Error {
@@ -146,6 +184,19 @@ export class OrmClient {
     return this.adapter.execute<T>(document, variables);
   }
 
+  subscribe<T>(
+    meta: SubscriptionFieldMeta,
+    document: string,
+    variables: Record<string, unknown>,
+    options: {
+      onEvent: (event: SubscriptionEvent<T>) => void;
+      onError?: (error: Error) => void;
+      onComplete?: () => void;
+    },
+  ): Unsubscribe {
+    throw new Error('Realtime not configured');
+  }
+
   setHeaders(headers: Record<string, string>): void {
     if (this.adapter.setHeaders) {
       this.adapter.setHeaders(headers);
@@ -155,4 +206,22 @@ export class OrmClient {
   getEndpoint(): string {
     return this.adapter.getEndpoint?.() ?? '';
   }
+
+  getConnectionState(): ConnectionState {
+    return 'disconnected';
+  }
+
+  onConnectionStateChange(listener: ConnectionStateListener): Unsubscribe {
+    return () => {};
+  }
+
+  getActiveSubscriptionCount(): number {
+    return 0;
+  }
+
+  get isRealtimeEnabled(): boolean {
+    return false;
+  }
+
+  dispose(): void {}
 }

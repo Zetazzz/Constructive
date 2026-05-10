@@ -138,6 +138,32 @@ export function getDeleteMutationFileName(table: Table): string {
   return `${getDeleteMutationHookName(table)}.ts`;
 }
 
+/**
+ * Generate hook function name for subscription
+ * e.g., "useContactSubscription"
+ */
+export function getSubscriptionHookName(table: Table): string {
+  const { singularName } = getTableNames(table);
+  return `use${ucFirst(singularName)}Subscription`;
+}
+
+/**
+ * Generate file name for subscription hook
+ * e.g., "useContactSubscription.ts"
+ */
+export function getSubscriptionFileName(table: Table): string {
+  return `${getSubscriptionHookName(table)}.ts`;
+}
+
+/**
+ * Generate the GraphQL subscription field name
+ * e.g., "onContactChanged"
+ */
+export function getSubscriptionFieldName(table: Table): string {
+  const { singularName } = getTableNames(table);
+  return `on${ucFirst(singularName)}Changed`;
+}
+
 // ============================================================================
 // GraphQL operation names
 // ============================================================================

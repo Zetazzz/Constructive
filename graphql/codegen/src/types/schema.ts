@@ -18,6 +18,8 @@ export interface Table {
   query?: TableQueryNames;
   /** Constraint information */
   constraints?: TableConstraints;
+  /** Smart tags parsed from PostGraphile @-prefixed comment directives */
+  smartTags?: Record<string, string | true>;
 }
 
 /**

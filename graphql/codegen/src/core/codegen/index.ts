@@ -38,6 +38,7 @@ import {
   generateMainBarrel,
   generateMutationsBarrel,
   generateQueriesBarrel,
+  generateSubscriptionsBarrel,
 } from './barrel';
 import { generateClientFile } from './client';
 import { generateAllCustomMutationHooks } from './custom-mutations';
@@ -47,6 +48,10 @@ import { generateMutationKeysFile } from './mutation-keys';
 import { generateAllMutationHooks } from './mutations';
 import { generateAllQueryHooks } from './queries';
 import { generateQueryKeysFile } from './query-keys';
+import {
+  generateAllSubscriptionHooks,
+  generateConnectionStateHook,
+} from './subscriptions';
 import { generateSelectionFile } from './selection';
 import { getTableNames } from './utils';
 
@@ -67,6 +72,7 @@ export interface GenerateResult {
     tables: number;
     queryHooks: number;
     mutationHooks: number;
+    subscriptionHooks: number;
     customQueryHooks: number;
     customMutationHooks: number;
     totalFiles: number;
@@ -292,12 +298,42 @@ export function generate(options: GenerateOptions): GenerateResult {
     });
   }
 
+  // 8b. Generate subscription hooks (subscriptions/*.ts)
+  // Only generate for tables with the @realtime smart tag
+  const realtimeTables = tables.filter(
+    (t) => t.smartTags?.['@realtime'] !== undefined,
+  );
+  const subscriptionHooks = generateAllSubscriptionHooks(realtimeTables);
+  for (const hook of subscriptionHooks) {
+    files.push({
+      path: `subscriptions/${hook.fileName}`,
+      content: hook.content,
+    });
+  }
+
+  // 8c. Generate connection state hook + barrel only if any table has @realtime
+  const hasSubscriptions = subscriptionHooks.length > 0;
+  if (hasSubscriptions) {
+    const connectionStateHook = generateConnectionStateHook();
+    files.push({
+      path: `subscriptions/${connectionStateHook.fileName}`,
+      content: connectionStateHook.content,
+    });
+
+    // 8d. Generate subscriptions/index.ts barrel
+    files.push({
+      path: 'subscriptions/index.ts',
+      content: generateSubscriptionsBarrel(realtimeTables),
+    });
+  }
+
   // 9. Generate main index.ts barrel
   // No longer includes types.ts or schema-types.ts - hooks import from ORM directly
   files.push({
     path: 'index.ts',
     content: generateMainBarrel(tables, {
       hasMutations,
+      hasSubscriptions,
       hasQueryKeys,
       hasMutationKeys,
       hasInvalidation,
@@ -310,6 +346,7 @@ export function generate(options: GenerateOptions): GenerateResult {
       tables: tables.length,
       queryHooks: queryHooks.length,
       mutationHooks: mutationHooks.length,
+      subscriptionHooks: subscriptionHooks.length,
       customQueryHooks: customQueryHooks.length,
       customMutationHooks: customMutationHooks.length,
       totalFiles: files.length,
@@ -327,6 +364,7 @@ export {
   generateMainBarrel,
   generateMutationsBarrel,
   generateQueriesBarrel,
+  generateSubscriptionsBarrel,
 } from './barrel';
 export { generateClientFile } from './client';
 export {
@@ -351,3 +389,8 @@ export {
   generateSingleQueryHook,
 } from './queries';
 export { generateQueryKeysFile } from './query-keys';
+export {
+  generateAllSubscriptionHooks,
+  generateConnectionStateHook,
+  generateSubscriptionHook,
+} from './subscriptions';
