@@ -9,8 +9,9 @@
  * Any changes here will affect all generated ORM clients.
  */
 
-import { createClient as createWsClient } from 'graphql-ws';
-import type { Client as WsClient } from 'graphql-ws';
+// graphql-ws is loaded lazily so that importing this module does not
+// throw when the package is absent (e.g. CLI-only consumers).
+type WsClient = import('graphql-ws').Client;
 
 // ============================================================================
 // Types
@@ -136,6 +137,9 @@ export class RealtimeManager {
   private activeSubscriptions = 0;
 
   constructor(config: RealtimeConfig) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { createClient: createWsClient } = require('graphql-ws') as typeof import('graphql-ws');
+
     const retryWait = async (retryCount: number): Promise<void> => {
       if (typeof config.retryWait === 'function') {
         const result = config.retryWait(retryCount);
