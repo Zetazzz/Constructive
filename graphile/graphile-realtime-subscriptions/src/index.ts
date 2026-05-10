@@ -20,10 +20,12 @@
 export { createRealtimeSubscriptionsPlugin, RealtimeSubscriptionsPlugin } from './plugin';
 export { RealtimeSubscriptionsPreset } from './preset';
 export { CursorTracker } from './cursor-tracker';
+export { RealtimeManager } from './realtime-manager';
 export type { RealtimeSubscriptionsPluginOptions } from './types';
 export type {
   CursorTrackerOptions,
   ChangeLogEntry,
   PgClient,
   WithPgClient,
+  RealtimeManagerOptions,
 } from './types';

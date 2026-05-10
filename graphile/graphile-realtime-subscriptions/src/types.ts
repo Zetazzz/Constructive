@@ -106,3 +106,63 @@ export interface CursorTrackerOptions {
    */
   onError?: (error: Error) => void;
 }
+
+/**
+ * Configuration for the RealtimeManager, which bridges CursorTracker
+ * events into PostGraphile's PgSubscriber for at-least-once delivery.
+ */
+export interface RealtimeManagerOptions {
+  /**
+   * The PgSubscriber instance from PostGraphile's context.
+   * RealtimeManager emits cursor-tracked events on its internal EventEmitter
+   * so they flow through existing subscription plans.
+   */
+  pgSubscriber: unknown;
+
+  /**
+   * Function to acquire a PgClient for executing cursor tracking queries.
+   */
+  withPgClient: WithPgClient;
+
+  /**
+   * Unique identifier for this listener node.
+   * Should be stable across restarts if you want cursor continuity.
+   * If not provided, a random ID is generated (ephemeral mode).
+   */
+  nodeId?: string;
+
+  /**
+   * The realtime_public schema name where drain_changes(),
+   * touch_listener(), and cleanup_ephemeral() live.
+   *
+   * Default: 'realtime_public'
+   */
+  schema?: string;
+
+  /**
+   * How often to poll drain_changes() for new events (milliseconds).
+   *
+   * Default: 5000 (5 seconds)
+   */
+  pollIntervalMs?: number;
+
+  /**
+   * How often to send a heartbeat via touch_listener() (milliseconds).
+   *
+   * Default: 30000 (30 seconds)
+   */
+  heartbeatIntervalMs?: number;
+
+  /**
+   * Maximum number of change_log rows to fetch per drain_changes() call.
+   *
+   * Default: 500
+   */
+  batchLimit?: number;
+
+  /**
+   * Called when an error occurs during polling, heartbeat, or cleanup.
+   * If not provided, errors are logged via @pgpmjs/logger.
+   */
+  onError?: (error: Error) => void;
+}
