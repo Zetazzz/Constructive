@@ -12103,16 +12103,6 @@ export interface SetFieldOrderInput {
   clientMutationId?: string;
   fieldIds?: string[];
 }
-export interface AppendFieldSmartTagsInput {
-  clientMutationId?: string;
-  pFieldId?: string;
-  pTags?: unknown;
-}
-export interface AppendTableSmartTagsInput {
-  clientMutationId?: string;
-  pTableId?: string;
-  pTags?: unknown;
-}
 export interface ProvisionUniqueConstraintInput {
   clientMutationId?: string;
   databaseId?: string;
@@ -20820,12 +20810,6 @@ export interface BootstrapUserPayload {
   result?: BootstrapUserRecord[] | null;
 }
 export interface SetFieldOrderPayload {
-  clientMutationId?: string | null;
-}
-export interface AppendFieldSmartTagsPayload {
-  clientMutationId?: string | null;
-}
-export interface AppendTableSmartTagsPayload {
   clientMutationId?: string | null;
 }
 export interface ProvisionUniqueConstraintPayload {

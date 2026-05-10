@@ -36535,18 +36535,6 @@ type Mutation {
     """
     input: SetFieldOrderInput!
   ): SetFieldOrderPayload
-  appendFieldSmartTags(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: AppendFieldSmartTagsInput!
-  ): AppendFieldSmartTagsPayload
-  appendTableSmartTags(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: AppendTableSmartTagsInput!
-  ): AppendTableSmartTagsPayload
 
   """
   Creates a unique constraint on a table. Accepts a jsonb definition with columns (array of field names). Graceful: skips if the exact same unique constraint already exists.
@@ -40800,56 +40788,6 @@ input SetFieldOrderInput {
   """
   clientMutationId: String
   fieldIds: [UUID]
-}
-
-"""The output of our `appendFieldSmartTags` mutation."""
-type AppendFieldSmartTagsPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-}
-
-"""All input for the `appendFieldSmartTags` mutation."""
-input AppendFieldSmartTagsInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  pFieldId: UUID
-  pTags: JSON
-}
-
-"""The output of our `appendTableSmartTags` mutation."""
-type AppendTableSmartTagsPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-}
-
-"""All input for the `appendTableSmartTags` mutation."""
-input AppendTableSmartTagsInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  pTableId: UUID
-  pTags: JSON
 }
 
 """The output of our `provisionUniqueConstraint` mutation."""

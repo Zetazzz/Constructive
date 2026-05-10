@@ -33,8 +33,6 @@ import type {
   ProvisionSpatialRelationInput,
   BootstrapUserInput,
   SetFieldOrderInput,
-  AppendFieldSmartTagsInput,
-  AppendTableSmartTagsInput,
   ProvisionUniqueConstraintInput,
   ProvisionFullTextSearchInput,
   ProvisionIndexInput,
@@ -83,8 +81,6 @@ import type {
   ProvisionSpatialRelationPayload,
   BootstrapUserPayload,
   SetFieldOrderPayload,
-  AppendFieldSmartTagsPayload,
-  AppendTableSmartTagsPayload,
   ProvisionUniqueConstraintPayload,
   ProvisionFullTextSearchPayload,
   ProvisionIndexPayload,
@@ -133,8 +129,6 @@ import type {
   ProvisionSpatialRelationPayloadSelect,
   BootstrapUserPayloadSelect,
   SetFieldOrderPayloadSelect,
-  AppendFieldSmartTagsPayloadSelect,
-  AppendTableSmartTagsPayloadSelect,
   ProvisionUniqueConstraintPayloadSelect,
   ProvisionFullTextSearchPayloadSelect,
   ProvisionIndexPayloadSelect,
@@ -248,12 +242,6 @@ export interface BootstrapUserVariables {
 }
 export interface SetFieldOrderVariables {
   input: SetFieldOrderInput;
-}
-export interface AppendFieldSmartTagsVariables {
-  input: AppendFieldSmartTagsInput;
-}
-export interface AppendTableSmartTagsVariables {
-  input: AppendTableSmartTagsInput;
 }
 /**
  * Variables for provisionUniqueConstraint
@@ -1121,64 +1109,6 @@ export function createMutationOperations(client: OrmClient) {
           ],
           connectionFieldsMap,
           'SetFieldOrderPayload'
-        ),
-      }),
-    appendFieldSmartTags: <S extends AppendFieldSmartTagsPayloadSelect>(
-      args: AppendFieldSmartTagsVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, AppendFieldSmartTagsPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        appendFieldSmartTags: InferSelectResult<AppendFieldSmartTagsPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'AppendFieldSmartTags',
-        fieldName: 'appendFieldSmartTags',
-        ...buildCustomDocument(
-          'mutation',
-          'AppendFieldSmartTags',
-          'appendFieldSmartTags',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'AppendFieldSmartTagsInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'AppendFieldSmartTagsPayload'
-        ),
-      }),
-    appendTableSmartTags: <S extends AppendTableSmartTagsPayloadSelect>(
-      args: AppendTableSmartTagsVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, AppendTableSmartTagsPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        appendTableSmartTags: InferSelectResult<AppendTableSmartTagsPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'AppendTableSmartTags',
-        fieldName: 'appendTableSmartTags',
-        ...buildCustomDocument(
-          'mutation',
-          'AppendTableSmartTags',
-          'appendTableSmartTags',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'AppendTableSmartTagsInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'AppendTableSmartTagsPayload'
         ),
       }),
     provisionUniqueConstraint: <S extends ProvisionUniqueConstraintPayloadSelect>(

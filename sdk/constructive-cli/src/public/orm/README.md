@@ -6553,36 +6553,6 @@ setFieldOrder
 const result = await db.mutation.setFieldOrder({ input: { fieldIds: '<UUID>' } }).execute();
 ```
 
-### `db.mutation.appendFieldSmartTags`
-
-appendFieldSmartTags
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | AppendFieldSmartTagsInput (required) |
-
-```typescript
-const result = await db.mutation.appendFieldSmartTags({ input: { pFieldId: '<UUID>', pTags: '<JSON>' } }).execute();
-```
-
-### `db.mutation.appendTableSmartTags`
-
-appendTableSmartTags
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | AppendTableSmartTagsInput (required) |
-
-```typescript
-const result = await db.mutation.appendTableSmartTags({ input: { pTableId: '<UUID>', pTags: '<JSON>' } }).execute();
-```
-
 ### `db.mutation.provisionUniqueConstraint`
 
 Creates a unique constraint on a table. Accepts a jsonb definition with columns (array of field names). Graceful: skips if the exact same unique constraint already exists.

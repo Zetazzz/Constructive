@@ -1,13 +1,13 @@
 ---
 name: orm-public
-description: ORM client for the public API — provides typed CRUD operations for 148 tables and 72 custom operations
+description: ORM client for the public API — provides typed CRUD operations for 148 tables and 70 custom operations
 ---
 
 # orm-public
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-ORM client for the public API — provides typed CRUD operations for 148 tables and 72 custom operations
+ORM client for the public API — provides typed CRUD operations for 148 tables and 70 custom operations
 
 ## Usage
 
@@ -233,8 +233,6 @@ See the `references/` directory for detailed per-entity API documentation:
 - [provision-spatial-relation](references/provision-spatial-relation.md)
 - [bootstrap-user](references/bootstrap-user.md)
 - [set-field-order](references/set-field-order.md)
-- [append-field-smart-tags](references/append-field-smart-tags.md)
-- [append-table-smart-tags](references/append-table-smart-tags.md)
 - [provision-unique-constraint](references/provision-unique-constraint.md)
 - [provision-full-text-search](references/provision-full-text-search.md)
 - [provision-index](references/provision-index.md)
