@@ -9,9 +9,38 @@
  * Any changes here will affect all generated ORM clients.
  */
 
-// graphql-ws is loaded lazily so that importing this module does not
-// throw when the package is absent (e.g. CLI-only consumers).
-type WsClient = import('graphql-ws').Client;
+// Minimal type shims so this module compiles without graphql-ws
+// installed.  Consumers supply a WsClient via RealtimeConfig;
+// the SDK itself never imports or requires graphql-ws.
+
+interface WsGraphQLError {
+  readonly message: string;
+  readonly [key: string]: unknown;
+}
+
+interface WsExecutionResult<TData = Record<string, unknown>> {
+  data?: TData | null;
+  errors?: readonly WsGraphQLError[];
+  extensions?: Record<string, unknown>;
+}
+
+interface WsSink<T> {
+  next(value: T): void;
+  error(error: unknown): void;
+  complete(): void;
+}
+
+/**
+ * Minimal interface matching the graphql-ws Client.
+ * Consumers pass a concrete instance via RealtimeConfig.client.
+ */
+export interface WsClient {
+  subscribe<TData = Record<string, unknown>>(
+    payload: { query: string; variables?: Record<string, unknown> },
+    sink: WsSink<WsExecutionResult<TData>>,
+  ): () => void;
+  dispose(): void;
+}
 
 // ============================================================================
 // Types
@@ -85,40 +114,32 @@ export interface SubscriptionFieldMeta {
 /**
  * Configuration for the realtime (WebSocket) connection.
  * Pass this as the `realtime` option in OrmClientConfig.
+ *
+ * @example
+ * ```ts
+ * import { createClient } from 'graphql-ws';
+ *
+ * const client = createOrmClient({
+ *   endpoint: 'https://api.example.com/graphql',
+ *   realtime: {
+ *     client: createClient({ url: 'wss://api.example.com/graphql' }),
+ *   },
+ * });
+ * ```
  */
 export interface RealtimeConfig {
-  /** WebSocket endpoint URL (e.g., 'wss://api.example.com/graphql') */
-  url: string;
   /**
-   * Returns the current auth token. Called on connection init and
-   * on reconnection so the client always sends a fresh token.
+   * A graphql-ws Client instance (or any object satisfying WsClient).
+   * The consumer creates this themselves, giving full control over
+   * connection options, auth, and transport.
+   *
+   * @example
+   * ```ts
+   * import { createClient } from 'graphql-ws';
+   * const wsClient = createClient({ url: 'wss://...' });
+   * ```
    */
-  getToken?: () => string | Promise<string>;
-  /**
-   * Additional connection parameters sent during WebSocket handshake.
-   * Merged with the authorization header from getToken().
-   */
-  connectionParams?: Record<string, unknown>;
-  /**
-   * Whether to connect lazily (on first subscribe) or eagerly.
-   * @default true
-   */
-  lazy?: boolean;
-  /**
-   * Maximum number of reconnection attempts before giving up.
-   * @default 5
-   */
-  retryAttempts?: number;
-  /**
-   * Delay between reconnection attempts in milliseconds,
-   * or a function for custom backoff.
-   * @default 1000
-   */
-  retryWait?: number | ((retryCount: number) => number | Promise<number>);
-  /** Called when the WebSocket connection is established */
-  onConnected?: () => void;
-  /** Called when the WebSocket connection is closed */
-  onDisconnected?: (reason?: unknown) => void;
+  client: WsClient;
 }
 
 // ============================================================================
@@ -126,8 +147,8 @@ export interface RealtimeConfig {
 // ============================================================================
 
 /**
- * Manages a single graphql-ws WebSocket connection and multiplexes
- * subscriptions over it. Created lazily by OrmClient when `realtime`
+ * Manages a graphql-ws WebSocket client and multiplexes
+ * subscriptions over it. Created by OrmClient when `realtime`
  * config is provided.
  */
 export class RealtimeManager {
@@ -137,56 +158,7 @@ export class RealtimeManager {
   private activeSubscriptions = 0;
 
   constructor(config: RealtimeConfig) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { createClient: createWsClient } = require('graphql-ws') as typeof import('graphql-ws');
-
-    const retryWait = async (retryCount: number): Promise<void> => {
-      if (typeof config.retryWait === 'function') {
-        const result = config.retryWait(retryCount);
-        const ms = typeof result === 'number' ? result : await result;
-        await new Promise<void>((resolve) => setTimeout(resolve, ms));
-      } else {
-        const base =
-          typeof config.retryWait === 'number' ? config.retryWait : 1000;
-        await new Promise<void>((resolve) =>
-          setTimeout(resolve, base * Math.pow(2, retryCount)),
-        );
-      }
-    };
-
-    this.wsClient = createWsClient({
-      url: config.url,
-      lazy: config.lazy ?? true,
-      retryAttempts: config.retryAttempts ?? 5,
-      retryWait,
-      connectionParams: async () => {
-        const params: Record<string, unknown> = {
-          ...config.connectionParams,
-        };
-        if (config.getToken) {
-          const token = await config.getToken();
-          params['authorization'] = `Bearer ${token}`;
-        }
-        return params;
-      },
-      on: {
-        connecting: () => {
-          const newState =
-            this.connectionState === 'disconnected'
-              ? 'connecting'
-              : 'reconnecting';
-          this.setConnectionState(newState);
-        },
-        connected: () => {
-          this.setConnectionState('connected');
-          config.onConnected?.();
-        },
-        closed: (event) => {
-          this.setConnectionState('disconnected');
-          config.onDisconnected?.(event);
-        },
-      },
-    });
+    this.wsClient = config.client;
   }
 
   /**

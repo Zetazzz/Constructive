@@ -41,6 +41,7 @@ export type {
   SubscriptionFieldMeta,
   SubscriptionOperation,
   Unsubscribe,
+  WsClient,
 } from './realtime';
 export { RealtimeManager } from './realtime';
 
