@@ -1,0 +1,493 @@
+/**
+ * Tests for the CursorTracker class.
+ *
+ * Covers:
+ * - Lifecycle: start, stop, heartbeat, cleanup
+ * - drain_changes() polling and result delivery
+ * - Error handling for database failures
+ * - Guard against concurrent drains
+ * - Configuration defaults and overrides
+ * - Proper SQL generation with schema quoting
+ */
+
+jest.mock('@pgpmjs/logger', () => ({
+  Logger: jest.fn().mockImplementation(() => ({
+    info: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  })),
+}));
+
+import {
+  CursorTracker,
+  DEFAULT_POLL_INTERVAL_MS,
+  DEFAULT_HEARTBEAT_INTERVAL_MS,
+  DEFAULT_BATCH_LIMIT,
+  DEFAULT_SCHEMA,
+} from '../src/cursor-tracker';
+import type { PgClient, WithPgClient, ChangeLogEntry } from '../src/types';
+
+// --- Test helpers ---
+
+function createMockClient(queryResult: { rows: any[] } = { rows: [] }): PgClient {
+  return {
+    query: jest.fn().mockResolvedValue(queryResult),
+  };
+}
+
+function createMockWithPgClient(client?: PgClient): WithPgClient {
+  const mockClient = client ?? createMockClient();
+  return async <T>(callback: (c: PgClient) => Promise<T>): Promise<T> => {
+    return callback(mockClient);
+  };
+}
+
+function createChangeLogEntry(overrides: Partial<ChangeLogEntry> = {}): ChangeLogEntry {
+  return {
+    id: 'change-1',
+    occurred_at: '2025-01-01T00:00:00Z',
+    source_schema: 'app_public',
+    source_table: 'projects',
+    operation: 'INSERT',
+    payload_after: { id: 'row-1', name: 'Test' },
+    payload_before: null,
+    payload_diff: null,
+    subscriber_ids: ['sub-1'],
+    ...overrides,
+  };
+}
+
+// --- Tests ---
+
+describe('CursorTracker defaults', () => {
+  it('exports expected default constants', () => {
+    expect(DEFAULT_POLL_INTERVAL_MS).toBe(5000);
+    expect(DEFAULT_HEARTBEAT_INTERVAL_MS).toBe(30000);
+    expect(DEFAULT_BATCH_LIMIT).toBe(500);
+    expect(DEFAULT_SCHEMA).toBe('realtime_public');
+  });
+
+  it('generates a nodeId when not provided', () => {
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(),
+    });
+
+    expect(tracker.nodeId).toBeDefined();
+    expect(typeof tracker.nodeId).toBe('string');
+    expect(tracker.nodeId.length).toBeGreaterThan(0);
+  });
+
+  it('uses provided nodeId', () => {
+    const tracker = new CursorTracker({
+      nodeId: 'my-node-42',
+      withPgClient: createMockWithPgClient(),
+    });
+
+    expect(tracker.nodeId).toBe('my-node-42');
+  });
+});
+
+describe('CursorTracker.start()', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('calls touch_listener on start', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'test-node',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.start();
+
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('touch_listener'),
+      ['test-node'],
+    );
+
+    await tracker.stop();
+  });
+
+  it('calls drain_changes immediately after start', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'test-node',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.start();
+
+    const calls = (mockClient.query as jest.Mock).mock.calls;
+    const drainCalls = calls.filter((c: any[]) => c[0].includes('drain_changes'));
+    expect(drainCalls.length).toBeGreaterThanOrEqual(1);
+
+    await tracker.stop();
+  });
+
+  it('sets isRunning to true', async () => {
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(),
+    });
+
+    expect(tracker.isRunning).toBe(false);
+    await tracker.start();
+    expect(tracker.isRunning).toBe(true);
+
+    await tracker.stop();
+  });
+
+  it('is idempotent (calling start twice does not double-register)', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'test-node',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.start();
+    const callCountAfterFirst = (mockClient.query as jest.Mock).mock.calls.length;
+
+    await tracker.start();
+    const callCountAfterSecond = (mockClient.query as jest.Mock).mock.calls.length;
+
+    expect(callCountAfterSecond).toBe(callCountAfterFirst);
+
+    await tracker.stop();
+  });
+});
+
+describe('CursorTracker.stop()', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('calls cleanup_ephemeral on stop', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'test-node',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.start();
+    (mockClient.query as jest.Mock).mockClear();
+
+    await tracker.stop();
+
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('cleanup_ephemeral'),
+      ['test-node'],
+    );
+  });
+
+  it('sets isRunning to false', async () => {
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(),
+    });
+
+    await tracker.start();
+    await tracker.stop();
+    expect(tracker.isRunning).toBe(false);
+  });
+
+  it('is idempotent (calling stop twice does not double-cleanup)', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'test-node',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.start();
+    (mockClient.query as jest.Mock).mockClear();
+
+    await tracker.stop();
+    const callCountAfterFirst = (mockClient.query as jest.Mock).mock.calls.length;
+
+    await tracker.stop();
+    const callCountAfterSecond = (mockClient.query as jest.Mock).mock.calls.length;
+
+    expect(callCountAfterSecond).toBe(callCountAfterFirst);
+  });
+
+  it('clears poll and heartbeat timers', async () => {
+    const clearSpy = jest.spyOn(global, 'clearInterval');
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(),
+    });
+
+    await tracker.start();
+    await tracker.stop();
+
+    expect(clearSpy).toHaveBeenCalledTimes(2);
+    clearSpy.mockRestore();
+  });
+});
+
+describe('CursorTracker.drain()', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('calls drain_changes with nodeId and batchLimit', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'drain-node',
+      batchLimit: 100,
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.drain();
+
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('drain_changes'),
+      ['drain-node', 100],
+    );
+  });
+
+  it('returns parsed change_log entries', async () => {
+    const entry = createChangeLogEntry();
+    const mockClient = createMockClient({
+      rows: [{ drain_changes: entry }],
+    });
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    const result = await tracker.drain();
+    expect(result).toEqual([entry]);
+  });
+
+  it('calls onChanges callback with entries', async () => {
+    const entry = createChangeLogEntry();
+    const mockClient = createMockClient({
+      rows: [{ drain_changes: entry }],
+    });
+    const onChanges = jest.fn();
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(mockClient),
+      onChanges,
+    });
+
+    await tracker.drain();
+    expect(onChanges).toHaveBeenCalledWith([entry]);
+  });
+
+  it('does not call onChanges when no entries', async () => {
+    const onChanges = jest.fn();
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(),
+      onChanges,
+    });
+
+    await tracker.drain();
+    expect(onChanges).not.toHaveBeenCalled();
+  });
+
+  it('returns empty array on error and calls onError', async () => {
+    const failingClient: PgClient = {
+      query: jest.fn().mockRejectedValue(new Error('connection lost')),
+    };
+    const onError = jest.fn();
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(failingClient),
+      onError,
+    });
+
+    const result = await tracker.drain();
+
+    expect(result).toEqual([]);
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'connection lost',
+    }));
+  });
+
+  it('prevents concurrent drains', async () => {
+    let resolveQuery: (() => void) | null = null;
+    const slowClient: PgClient = {
+      query: jest.fn().mockImplementation(() => {
+        return new Promise<{ rows: any[] }>((resolve) => {
+          resolveQuery = () => resolve({ rows: [] });
+        });
+      }),
+    };
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(slowClient),
+    });
+
+    const drain1 = tracker.drain();
+    const drain2Promise = tracker.drain();
+
+    const result2 = await drain2Promise;
+    expect(result2).toEqual([]);
+
+    resolveQuery!();
+    await drain1;
+  });
+});
+
+describe('CursorTracker periodic polling', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('polls drain_changes at configured interval', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'poll-node',
+      pollIntervalMs: 2000,
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.start();
+    (mockClient.query as jest.Mock).mockClear();
+
+    jest.advanceTimersByTime(2000);
+    // Allow async callbacks
+    await Promise.resolve();
+
+    const drainCalls = (mockClient.query as jest.Mock).mock.calls
+      .filter((c: any[]) => c[0].includes('drain_changes'));
+    expect(drainCalls.length).toBeGreaterThanOrEqual(1);
+
+    await tracker.stop();
+  });
+
+  it('heartbeats at configured interval', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'hb-node',
+      heartbeatIntervalMs: 5000,
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.start();
+    (mockClient.query as jest.Mock).mockClear();
+
+    jest.advanceTimersByTime(5000);
+    await Promise.resolve();
+
+    const touchCalls = (mockClient.query as jest.Mock).mock.calls
+      .filter((c: any[]) => c[0].includes('touch_listener'));
+    expect(touchCalls.length).toBeGreaterThanOrEqual(1);
+
+    await tracker.stop();
+  });
+});
+
+describe('CursorTracker schema quoting', () => {
+  it('quotes schema name in SQL queries', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'schema-node',
+      schema: 'my_realtime_public',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.drain();
+
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('"my_realtime_public"'),
+      expect.any(Array),
+    );
+  });
+
+  it('uses default schema when not specified', async () => {
+    const mockClient = createMockClient();
+    const tracker = new CursorTracker({
+      nodeId: 'default-schema-node',
+      withPgClient: createMockWithPgClient(mockClient),
+    });
+
+    await tracker.drain();
+
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('"realtime_public"'),
+      expect.any(Array),
+    );
+  });
+});
+
+describe('CursorTracker error handling', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('touch_listener error calls onError without throwing', async () => {
+    const failingClient: PgClient = {
+      query: jest.fn().mockRejectedValue(new Error('touch failed')),
+    };
+    const onError = jest.fn();
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(failingClient),
+      onError,
+    });
+
+    await tracker.touchListener();
+
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'touch failed',
+    }));
+  });
+
+  it('cleanup_ephemeral error calls onError without throwing', async () => {
+    const failingClient: PgClient = {
+      query: jest.fn().mockRejectedValue(new Error('cleanup failed')),
+    };
+    const onError = jest.fn();
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(failingClient),
+      onError,
+    });
+
+    await tracker.cleanupEphemeral();
+
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'cleanup failed',
+    }));
+  });
+
+  it('wraps non-Error objects in Error', async () => {
+    const failingClient: PgClient = {
+      query: jest.fn().mockRejectedValue('string error'),
+    };
+    const onError = jest.fn();
+
+    const tracker = new CursorTracker({
+      withPgClient: createMockWithPgClient(failingClient),
+      onError,
+    });
+
+    await tracker.drain();
+
+    expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    expect(onError.mock.calls[0][0].message).toBe('string error');
+  });
+});
