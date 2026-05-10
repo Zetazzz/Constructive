@@ -1,9 +1,9 @@
 /**
- * String content hashing using Web Crypto API.
+ * String content hashing using @noble/hashes.
  *
  * Complements `hashFile` (which accepts File/Blob) with a convenience
- * function for hashing plain strings. Uses the same Web Crypto API —
- * no Node.js-only dependencies.
+ * function for hashing plain strings. Uses @noble/hashes for incremental
+ * SHA-256 — works in browsers, Node.js, Deno, and Cloudflare Workers.
  *
  * @example
  * ```typescript
@@ -14,25 +14,20 @@
  * ```
  */
 
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import { UploadError } from './types';
 
 /**
- * Compute the SHA-256 hex digest of a string using Web Crypto API.
+ * Compute the SHA-256 hex digest of a string.
  *
  * @param content - The string content to hash
  * @returns 64-character lowercase hex string
  */
 export async function hashContent(content: string): Promise<string> {
   try {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(content);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const bytes = new Uint8Array(hashBuffer);
-    const hex = new Array<string>(bytes.length);
-    for (let i = 0; i < bytes.length; i++) {
-      hex[i] = bytes[i].toString(16).padStart(2, '0');
-    }
-    return hex.join('');
+    const data = new TextEncoder().encode(content);
+    return bytesToHex(sha256(data));
   } catch (err) {
     throw new UploadError('HASH_FAILED', 'Failed to compute SHA-256 hash', err);
   }

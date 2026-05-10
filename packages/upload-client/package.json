@@ -29,7 +29,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@constructive-io/fetch": "^1.0.0"
+    "@constructive-io/fetch": "^1.0.0",
+    "@noble/hashes": "^2.2.0"
   },
   "devDependencies": {
     "makage": "^0.3.0"

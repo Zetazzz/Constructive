@@ -4,9 +4,9 @@
  * Client-side presigned URL upload utilities for Constructive.
  *
  * Provides atomic functions for the presigned URL upload pipeline:
- * - `hashFile` — SHA-256 hash via Web Crypto API (File/Blob)
- * - `hashFileChunked` — chunked SHA-256 for large files
- * - `hashContent` — SHA-256 hash for plain strings (Web Crypto)
+ * - `hashFile` — SHA-256 hash (File/Blob, one-shot)
+ * - `hashFileChunked` — true incremental SHA-256 for large files (GB+)
+ * - `hashContent` — SHA-256 hash for plain strings
  * - `putToPresignedUrl` — PUT bytes to a presigned S3 URL
  * - `fetchFromUrl` — GET from a presigned or CDN URL
  * - `uploadFile` — full upload orchestrator (hash → request → PUT)
