@@ -316,7 +316,7 @@ describe('createRealtimeSubscriptionsPlugin', () => {
   });
 
   describe('type definitions', () => {
-    it('generates subscription field with id and ids arguments', () => {
+    it('generates subscription field with ids argument', () => {
       createRealtimeSubscriptionsPlugin();
 
       const codec = createMockCodec('documents', { realtime: true });
@@ -326,7 +326,7 @@ describe('createRealtimeSubscriptionsPlugin', () => {
 
       const result = capturedFactory!(build);
 
-      expect(result.typeDefs).toContain('onDocumentsChanged(id: UUID, ids: [UUID!]): DocumentsSubscriptionPayload');
+      expect(result.typeDefs).toContain('onDocumentsChanged(ids: [UUID!]): DocumentsSubscriptionPayload');
     });
 
     it('generates payload type with event, row, rowId, and overflow fields', () => {
@@ -502,43 +502,17 @@ describe('createRealtimeSubscriptionsPlugin', () => {
       const result = capturedFactory!(build);
       const mockParent = { get: jest.fn((key: string) => {
         if (key === 'parsed') return { event: 'INSERT', rowIds: ['row-uuid'], overflow: false };
-        if (key === 'subscribedId') return null;
         if (key === 'subscribedIds') return null;
         return null;
       }) };
 
       result.plans['TasksSubscriptionPayload'].tasks(mockParent);
       expect(mockParent.get).toHaveBeenCalledWith('parsed');
-      expect(mockParent.get).toHaveBeenCalledWith('subscribedId');
       expect(mockParent.get).toHaveBeenCalledWith('subscribedIds');
       expect(mockResource.get).toHaveBeenCalled();
     });
 
-    it('payload row resolver prefers subscribedId over parsed rowId', () => {
-      createRealtimeSubscriptionsPlugin();
-
-      const codec = createMockCodec('tasks', { realtime: true });
-      const mockResource = {
-        ...createMockResource('tasks', codec),
-        get: jest.fn(),
-      };
-      const build = createMockBuild({
-        tasks: mockResource,
-      });
-
-      const result = capturedFactory!(build);
-      const mockParent = { get: jest.fn((key: string) => {
-        if (key === 'parsed') return { event: 'UPDATE', rowIds: ['row-uuid'], overflow: false };
-        if (key === 'subscribedId') return 'subscribed-uuid';
-        if (key === 'subscribedIds') return null;
-        return null;
-      }) };
-
-      result.plans['TasksSubscriptionPayload'].tasks(mockParent);
-      expect(mockResource.get).toHaveBeenCalled();
-    });
-
-    it('payload row resolver uses first matching ID in sparse set mode', () => {
+    it('payload row resolver uses first matching ID when ids provided', () => {
       createRealtimeSubscriptionsPlugin();
 
       const codec = createMockCodec('tasks', { realtime: true });
@@ -553,7 +527,6 @@ describe('createRealtimeSubscriptionsPlugin', () => {
       const result = capturedFactory!(build);
       const mockParent = { get: jest.fn((key: string) => {
         if (key === 'parsed') return { event: 'INSERT', rowIds: ['id-a', 'id-b', 'id-c'], overflow: false };
-        if (key === 'subscribedId') return null;
         if (key === 'subscribedIds') return ['id-b', 'id-d'];
         return null;
       }) };
@@ -601,14 +574,12 @@ describe('createRealtimeSubscriptionsPlugin', () => {
 
       const result = capturedFactory!(build);
       const mockArgs = { get: jest.fn((key: string) => {
-        if (key === 'id') return null;
         if (key === 'ids') return ['id-a', 'id-b'];
         return null;
       }) };
 
       result.plans['Subscription']['onTasksChanged'].subscribePlan(null, mockArgs);
 
-      expect(mockArgs.get).toHaveBeenCalledWith('id');
       expect(mockArgs.get).toHaveBeenCalledWith('ids');
 
       // The listen callback is captured but not invoked by the mock.
@@ -743,8 +714,7 @@ describe('createRealtimeSubscriptionsPlugin', () => {
       });
 
       const result = capturedFactory!(build);
-      expect(result.typeDefs).toContain('single record');
-      expect(result.typeDefs).toContain('sparse set');
+      expect(result.typeDefs).toContain('specific rows');
       expect(result.typeDefs).toContain('full collection');
     });
   });

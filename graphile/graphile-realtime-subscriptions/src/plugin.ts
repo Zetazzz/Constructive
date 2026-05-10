@@ -6,8 +6,7 @@
  * for real-time event delivery.
  *
  * Subscription modes:
- *   - Single record: onXxxChanged(id: UUID) — subscribe to changes on one row
- *   - Sparse set: onXxxChanged(ids: [UUID!]) — subscribe to changes on specific rows
+ *   - Specific rows: onXxxChanged(ids: [UUID!]) — subscribe to changes on specific rows
  *   - Full collection: onXxxChanged (no args) — subscribe to any change on the table
  *
  * NOTIFY payload format (from emit_change trigger):
@@ -34,8 +33,8 @@
  *   - For DELETE events, row is naturally null (the row no longer exists).
  *   - For INVALIDATE (overflow), the client should refetch via a normal query
  *     which is also RLS-gated.
- *   - Sparse set mode only delivers events for rows the subscriber explicitly
- *     requested, preventing cross-tenant event leaks.
+ *   - When ids are provided, only events for those specific rows are delivered,
+ *     preventing cross-tenant event leaks.
  */
 
 import { context as grafastContext, listen, object, constant, lambda } from 'grafast';
@@ -170,7 +169,7 @@ function discoverRealtimeTables(build: any): RealtimeTableInfo[] {
 function buildTypeDefs(tables: RealtimeTableInfo[]): string {
   const subscriptionFields = tables
     .map(({ fieldName, payloadTypeName }) =>
-      `  """Subscribe to changes on this table. Pass id for a single record, ids for a sparse set, or no args for the full collection."""\n  ${fieldName}(id: UUID, ids: [UUID!]): ${payloadTypeName}`
+      `  """Subscribe to changes on this table. Pass ids to watch specific rows, or no args for the full collection."""\n  ${fieldName}(ids: [UUID!]): ${payloadTypeName}`
     )
     .join('\n');
 
@@ -207,7 +206,6 @@ function buildPlans(
       subscribePlan(_$root: any, args: any) {
         const $pgSubscriber = (grafastContext() as any).get('pgSubscriber');
         const $topic = constant(notifyChannel);
-        const $id = args.get('id');
         const $ids = args.get('ids');
 
         return listen($pgSubscriber, $topic, ($payload: any) => {
@@ -240,7 +238,6 @@ function buildPlans(
 
           return object({
             parsed: $parsed,
-            subscribedId: $id,
             subscribedIds: $ids,
           });
         });
@@ -262,7 +259,7 @@ function buildPlans(
           const [p, subscribedIds] = pair as readonly [ParsedPayload | null, string[] | null | undefined];
           if (!p || p.overflow || p.rowIds.length === 0) return null;
 
-          // Sparse set: return the first matching row ID
+          // When ids are provided, return the first matching row ID
           if (subscribedIds && subscribedIds.length > 0) {
             return p.rowIds.find((rid: string) => subscribedIds.includes(rid)) ?? null;
           }
@@ -276,21 +273,17 @@ function buildPlans(
       },
       [rowFieldName]($parent: any) {
         const $parsed = $parent.get('parsed');
-        const $subscribedId = $parent.get('subscribedId');
         const $subscribedIds = $parent.get('subscribedIds');
 
         const $rowId = lambda(
-          [$parsed, $subscribedId, $subscribedIds],
+          [$parsed, $subscribedIds],
           (tuple: unknown) => {
-            const [p, subscribedId, subscribedIds] = tuple as readonly [
+            const [p, subscribedIds] = tuple as readonly [
               ParsedPayload | null,
-              string | null,
               string[] | null | undefined,
             ];
-            // Single-record mode: use the subscribed ID
-            if (subscribedId) return subscribedId;
             if (!p || p.overflow || p.rowIds.length === 0) return null;
-            // Sparse set mode: return first matching row ID
+            // When ids are provided, return first matching row ID
             if (subscribedIds && subscribedIds.length > 0) {
               return p.rowIds.find((rid: string) => subscribedIds.includes(rid)) ?? null;
             }
