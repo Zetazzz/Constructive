@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.13.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.12.1...graphile-test@4.13.0) (2026-05-10)
+
+### Features
+
+- **graphile-test:** add withTransaction to pgClient in test context ([df8938a](https://github.com/constructive-io/constructive/commit/df8938a16f8efdeddeaf937ad50a2643d8de36ba))
+
 ## [4.12.1](https://github.com/constructive-io/constructive/compare/graphile-test@4.12.0...graphile-test@4.12.1) (2026-05-09)
 
 **Note:** Version bump only for package graphile-test

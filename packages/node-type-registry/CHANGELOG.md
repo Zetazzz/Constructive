@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.29.1...node-type-registry@0.30.0) (2026-05-10)
+
+### Features
+
+- add DataRealtime node type definition ([587f563](https://github.com/constructive-io/constructive/commit/587f563fc8b798e5b40ea4e0ccc09e56b99b5877))
+
 ## [0.29.1](https://github.com/constructive-io/constructive/compare/node-type-registry@0.29.0...node-type-registry@0.29.1) (2026-05-09)
 
 ### Bug Fixes

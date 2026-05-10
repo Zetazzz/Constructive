@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.22.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.21.2...@constructive-io/graphql-query@3.22.0) (2026-05-10)
+
+### Features
+
+- gate subscription hook generation on [@realtime](https://github.com/realtime) smart tag ([90481ed](https://github.com/constructive-io/constructive/commit/90481ed06fc1febdd48312f03bf6e985deb3cea3))
+
 ## [3.21.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-query@3.21.1...@constructive-io/graphql-query@3.21.2) (2026-05-10)
 
 **Note:** Version bump only for package @constructive-io/graphql-query

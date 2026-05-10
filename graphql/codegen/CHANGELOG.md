@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.39.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.38.2...@constructive-io/graphql-codegen@4.39.0) (2026-05-10)
+
+### Bug Fixes
+
+- make graphql-ws a lazy dependency so ORM works without it ([24fe3ee](https://github.com/constructive-io/constructive/commit/24fe3ee8b020b83f1cd27f0ee0452ea17367d0d1))
+
+### Features
+
+- add ORM-integrated realtime subscription support (Variation F) ([cb3bd3f](https://github.com/constructive-io/constructive/commit/cb3bd3fc40334e2600e84164706c2fd78f2145cf))
+- gate subscription hook generation on [@realtime](https://github.com/realtime) smart tag ([90481ed](https://github.com/constructive-io/constructive/commit/90481ed06fc1febdd48312f03bf6e985deb3cea3))
+
 ## [4.38.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.38.1...@constructive-io/graphql-codegen@4.38.2) (2026-05-10)
 
 **Note:** Version bump only for package @constructive-io/graphql-codegen

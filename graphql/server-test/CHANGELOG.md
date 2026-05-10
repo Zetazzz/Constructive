@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.20.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.5...graphql-server-test@2.20.0) (2026-05-10)
+
+### Bug Fixes
+
+- correct Alice API is_public, rename allAppFiles to appFiles, pre-seed private file for RLS test ([f93dc1d](https://github.com/constructive-io/constructive/commit/f93dc1de75ed95b02f8b782f1f82e9ca5ba38b67))
+- correct mutation variable shapes and expand expectRlsDenied patterns ([3c71d06](https://github.com/constructive-io/constructive/commit/3c71d060665ce5a70715bed3acfed65e5808d433))
+- handle masked errors and nested null in expectRlsDenied ([8c0d743](https://github.com/constructive-io/constructive/commit/8c0d743ba3e1ecea8c0817421fcb903eec41c086))
+- replace invalid Mallory UUIDs (m is not hex) with valid fa-prefix UUIDs ([13e6b48](https://github.com/constructive-io/constructive/commit/13e6b4843e3bd582dee89c5c580d571434486cbc))
+- revert superuser verification to use same HTTP path (addresses connection isolation concern) ([36ad127](https://github.com/constructive-io/constructive/commit/36ad127f85a8dec71db150d1e4274d5afb06740b))
+
+### Features
+
+- add Alice/Bob RLS + feature flag integration tests ([455ed81](https://github.com/constructive-io/constructive/commit/455ed816baf287a005f33c843bfb65e2aecc046a))
+- expand integration tests with Mallory (3rd actor) and comprehensive RLS/attack scenarios ([e10c1cc](https://github.com/constructive-io/constructive/commit/e10c1cc87e490804307afd458c5ec6e0d801bc3c))
+
 ## [2.19.5](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.4...graphql-server-test@2.19.5) (2026-05-10)
 
 **Note:** Version bump only for package graphql-server-test
