@@ -31,6 +31,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import { getConnections, seed } from '../src';
+import type { PgTestClient } from 'pgsql-test/test-client';
 import type supertest from 'supertest';
 
 jest.setTimeout(120000);
@@ -218,18 +219,46 @@ async function putToPresignedUrl(
   });
 }
 
-/** Expect a GraphQL response to indicate a denied mutation (error or null). */
-function expectMutationDenied(
+/**
+ * Assert that a mutation was denied specifically by RLS (not by some other error).
+ *
+ * PostgreSQL RLS denials surface in two ways through PostGraphile:
+ *   1. An explicit PG error — message contains "permission denied" or
+ *      "new row violates row-level security".
+ *   2. The mutation silently affects 0 rows and returns null (RLS USING
+ *      clause filtered out the target row).
+ *
+ * Any other shape (e.g. a GraphQL validation error, a 500, a typo in a
+ * field name) is treated as an unexpected failure so tests don't
+ * accidentally pass for the wrong reason.
+ */
+function expectRlsDenied(
   res: supertest.Response,
   mutationName: string,
 ): void {
-  if (res.body.errors) {
-    expect(res.body.errors.length).toBeGreaterThan(0);
-  } else if (res.body.data) {
-    expect(res.body.data[mutationName]).toBeNull();
-  } else {
-    expect(res.status).not.toBe(200);
+  if (res.body.errors?.length) {
+    const msg: string = res.body.errors[0].message;
+    expect(
+      msg.includes('permission denied') ||
+        msg.includes('new row violates row-level security') ||
+        msg.includes('insufficient_privilege'),
+    ).toBe(true);
+    return;
   }
+  if (res.body.data) {
+    expect(res.body.data[mutationName]).toBeNull();
+    return;
+  }
+  throw new Error(
+    `Expected RLS denial but got status=${res.status}, body=${JSON.stringify(res.body)}`,
+  );
+}
+
+/** Assert 200 + no GraphQL errors, return the data payload. */
+function expectSuccess(res: supertest.Response): Record<string, any> {
+  expect(res.status).toBe(200);
+  expect(res.body.errors).toBeUndefined();
+  return res.body.data;
 }
 
 // =========================================================================
@@ -237,6 +266,7 @@ function expectMutationDenied(
 // =========================================================================
 
 describe('Integration tests (uploads, tenant isolation, RLS)', () => {
+  let pg: PgTestClient;
   let request: supertest.Agent;
   let teardown: () => Promise<void>;
 
@@ -283,7 +313,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
 
   // Single setup: one server, one pool, all three schemas registered
   beforeAll(async () => {
-    ({ request, teardown } = await getConnections(
+    ({ pg, request, teardown } = await getConnections(
       {
         schemas: [...aliceSchemas, ...bobSchemas, ...mallorySchemas],
         authRole: 'anonymous',
@@ -328,10 +358,9 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           },
         });
 
-        expect(res.status).toBe(200);
-        expect(res.body.errors).toBeUndefined();
+        const data = expectSuccess(res);
 
-        const payload = res.body.data.uploadAppFile;
+        const payload = data.uploadAppFile;
         expect(payload.uploadUrl).toBeTruthy();
         expect(payload.fileId).toBeTruthy();
         expect(payload.key).toBe(contentHash);
@@ -367,10 +396,9 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           },
         });
 
-        expect(res.status).toBe(200);
-        expect(res.body.errors).toBeUndefined();
+        const data = expectSuccess(res);
 
-        const payload = res.body.data.uploadAppFile;
+        const payload = data.uploadAppFile;
         expect(payload.uploadUrl).toBeTruthy();
         expect(payload.fileId).toBeTruthy();
         expect(payload.key).toBe(contentHash);
@@ -404,10 +432,9 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           },
         });
 
-        expect(res.status).toBe(200);
-        expect(res.body.errors).toBeUndefined();
+        const data = expectSuccess(res);
 
-        const payload = res.body.data.uploadAppFile;
+        const payload = data.uploadAppFile;
         expect(payload.deduplicated).toBe(true);
         expect(payload.uploadUrl).toBeNull();
         expect(payload.expiresAt).toBeNull();
@@ -425,9 +452,8 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(aliceDatabaseId, 'app', {
         query: INTROSPECT_UPLOAD_MUTATION,
       });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const names = (res.body.data.__type?.fields ?? []).map(
+      const data = expectSuccess(res);
+      const names = (data.__type?.fields ?? []).map(
         (f: { name: string }) => f.name,
       );
       expect(names).toContain('uploadAppFile');
@@ -437,9 +463,8 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', {
         query: INTROSPECT_UPLOAD_MUTATION,
       });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const names = (res.body.data.__type?.fields ?? []).map(
+      const data = expectSuccess(res);
+      const names = (data.__type?.fields ?? []).map(
         (f: { name: string }) => f.name,
       );
       expect(names).toContain('uploadAppFile');
@@ -449,9 +474,8 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-restricted', {
         query: INTROSPECT_UPLOAD_MUTATION,
       });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const names = (res.body.data.__type?.fields ?? []).map(
+      const data = expectSuccess(res);
+      const names = (data.__type?.fields ?? []).map(
         (f: { name: string }) => f.name,
       );
       expect(names).not.toContain('uploadAppFile');
@@ -461,9 +485,8 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
       const res = await postGraphQLViaApi(malloryDatabaseId, 'mallory-app', {
         query: INTROSPECT_UPLOAD_MUTATION,
       });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const names = (res.body.data.__type?.fields ?? []).map(
+      const data = expectSuccess(res);
+      const names = (data.__type?.fields ?? []).map(
         (f: { name: string }) => f.name,
       );
       expect(names).toContain('uploadAppFile');
@@ -492,9 +515,8 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
         },
       });
 
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const payload = res.body.data.uploadAppFile;
+      const data = expectSuccess(res);
+      const payload = data.uploadAppFile;
       expect(payload.fileId).toBeTruthy();
       expect(payload.uploadUrl).toBeTruthy();
 
@@ -504,27 +526,24 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
 
     it('Bob sees his own files', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const files = res.body.data.appFiles.nodes;
+      const data = expectSuccess(res);
+      const files = data.appFiles.nodes;
       expect(files.length).toBeGreaterThanOrEqual(1);
       expect(files.some((f: { filename: string }) => f.filename === 'bob-file.txt')).toBe(true);
     });
 
     it('Mallory sees her own pre-seeded files', async () => {
       const res = await postGraphQLViaApi(malloryDatabaseId, 'mallory-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const files: { filename: string }[] = res.body.data.appFiles.nodes;
+      const data = expectSuccess(res);
+      const files: { filename: string }[] = data.appFiles.nodes;
       expect(files.some((f) => f.filename === 'mallory-public.txt')).toBe(true);
       expect(files.some((f) => f.filename === 'mallory-private.txt')).toBe(true);
     });
 
     it('Alice API does NOT leak Bob or Mallory files', async () => {
       const res = await postGraphQLViaApi(aliceDatabaseId, 'app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const names = res.body.data.appFiles.nodes.map((f: { filename: string }) => f.filename);
+      const data = expectSuccess(res);
+      const names = data.appFiles.nodes.map((f: { filename: string }) => f.filename);
       expect(names).not.toContain('bob-file.txt');
       expect(names).not.toContain('mallory-public.txt');
       expect(names).not.toContain('mallory-private.txt');
@@ -532,9 +551,8 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
 
     it('Bob API does NOT leak Alice or Mallory files', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const names = res.body.data.appFiles.nodes.map((f: { filename: string }) => f.filename);
+      const data = expectSuccess(res);
+      const names = data.appFiles.nodes.map((f: { filename: string }) => f.filename);
       expect(names).not.toContain('hello-public.txt');
       expect(names).not.toContain('hello-private.txt');
       expect(names).not.toContain('mallory-public.txt');
@@ -543,9 +561,8 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
 
     it('Mallory API does NOT leak Alice or Bob files', async () => {
       const res = await postGraphQLViaApi(malloryDatabaseId, 'mallory-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const names = res.body.data.appFiles.nodes.map((f: { filename: string }) => f.filename);
+      const data = expectSuccess(res);
+      const names = data.appFiles.nodes.map((f: { filename: string }) => f.filename);
       expect(names).not.toContain('hello-public.txt');
       expect(names).not.toContain('hello-private.txt');
       expect(names).not.toContain('bob-file.txt');
@@ -560,27 +577,24 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
   describe('Bucket enumeration attacks', () => {
     it('Alice sees all buckets (no RLS on her schema)', async () => {
       const res = await postGraphQLViaApi(aliceDatabaseId, 'app', { query: APP_BUCKETS });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const keys = res.body.data.appBuckets.nodes.map((b: { key: string }) => b.key);
+      const data = expectSuccess(res);
+      const keys = data.appBuckets.nodes.map((b: { key: string }) => b.key);
       expect(keys).toContain('public');
       expect(keys).toContain('private');
     });
 
     it('Bob anonymous only sees public buckets (RLS hides private)', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_BUCKETS });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const buckets: { isPublic: boolean }[] = res.body.data.appBuckets.nodes;
+      const data = expectSuccess(res);
+      const buckets: { isPublic: boolean }[] = data.appBuckets.nodes;
       expect(buckets.length).toBeGreaterThanOrEqual(1);
       expect(buckets.every((b) => b.isPublic)).toBe(true);
     });
 
     it('Mallory anonymous sees all buckets (her RLS policy allows all SELECT)', async () => {
       const res = await postGraphQLViaApi(malloryDatabaseId, 'mallory-app', { query: APP_BUCKETS });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const keys = res.body.data.appBuckets.nodes.map((b: { key: string }) => b.key);
+      const data = expectSuccess(res);
+      const keys = data.appBuckets.nodes.map((b: { key: string }) => b.key);
       expect(keys).toContain('public');
       expect(keys).toContain('private');
     });
@@ -598,7 +612,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           input: { id: bobSeededPublicFileId, patch: { bucketId: bobPrivateBucketId } },
         },
       });
-      expectMutationDenied(res, 'updateAppFile');
+      expectRlsDenied(res, 'updateAppFile');
     });
 
     it('Bob: anonymous cannot flip is_public flag on a file', async () => {
@@ -608,7 +622,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           input: { id: bobSeededPublicFileId, patch: { isPublic: false } },
         },
       });
-      expectMutationDenied(res, 'updateAppFile');
+      expectRlsDenied(res, 'updateAppFile');
     });
 
     it('Bob: anonymous cannot delete a file', async () => {
@@ -616,7 +630,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
         query: DELETE_APP_FILE,
         variables: { input: { id: bobSeededPublicFileId } },
       });
-      expectMutationDenied(res, 'deleteAppFile');
+      expectRlsDenied(res, 'deleteAppFile');
     });
 
     it('Mallory: anonymous cannot create a file directly (bypassing presigned URL)', async () => {
@@ -635,7 +649,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           },
         },
       });
-      expectMutationDenied(res, 'createAppFile');
+      expectRlsDenied(res, 'createAppFile');
     });
 
     it('Mallory: anonymous cannot update a file', async () => {
@@ -645,7 +659,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           input: { id: malloryPublicFileId, patch: { filename: 'hacked.txt' } },
         },
       });
-      expectMutationDenied(res, 'updateAppFile');
+      expectRlsDenied(res, 'updateAppFile');
     });
 
     it('Mallory: anonymous cannot delete a file', async () => {
@@ -653,15 +667,18 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
         query: DELETE_APP_FILE,
         variables: { input: { id: malloryPublicFileId } },
       });
-      expectMutationDenied(res, 'deleteAppFile');
+      expectRlsDenied(res, 'deleteAppFile');
     });
 
     it('Bob seeded public file still exists after all attack attempts', async () => {
-      const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
-      const ids = res.body.data.appFiles.nodes.map((f: { id: string }) => f.id);
-      expect(ids).toContain(bobSeededPublicFileId);
+      // Verify via superuser: ground-truth check that RLS attacks didn't mutate data
+      const { rows } = await pg.query(
+        'SELECT id, bucket_id, is_public FROM "bob-storage-public".app_files WHERE id = $1',
+        [bobSeededPublicFileId],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].bucket_id).toBe(bobPublicBucketId);
+      expect(rows[0].is_public).toBe(true);
     });
   });
 
@@ -677,7 +694,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           input: { appBucket: { key: 'evil-bucket', type: 'public', isPublic: true } },
         },
       });
-      expectMutationDenied(res, 'createAppBucket');
+      expectRlsDenied(res, 'createAppBucket');
     });
 
     it('Bob: anonymous cannot update a bucket (flip public to private)', async () => {
@@ -687,7 +704,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           input: { id: bobPublicBucketId, patch: { isPublic: false } },
         },
       });
-      expectMutationDenied(res, 'updateAppBucket');
+      expectRlsDenied(res, 'updateAppBucket');
     });
 
     it('Bob: anonymous cannot delete a bucket', async () => {
@@ -695,7 +712,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
         query: DELETE_APP_BUCKET,
         variables: { input: { id: bobPublicBucketId } },
       });
-      expectMutationDenied(res, 'deleteAppBucket');
+      expectRlsDenied(res, 'deleteAppBucket');
     });
 
     it('Mallory: anonymous cannot create a bucket', async () => {
@@ -705,7 +722,7 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
           input: { appBucket: { key: 'evil-bucket', type: 'public', isPublic: true } },
         },
       });
-      expectMutationDenied(res, 'createAppBucket');
+      expectRlsDenied(res, 'createAppBucket');
     });
   });
 
@@ -774,10 +791,9 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
   describe('RLS enforcement on Bob schema', () => {
     it('anonymous only sees public-bucket files', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      expect(res.body.errors).toBeUndefined();
+      const data = expectSuccess(res);
 
-      const files: { bucketId: string }[] = res.body.data.appFiles.nodes;
+      const files: { bucketId: string }[] = data.appFiles.nodes;
       const publicFiles = files.filter((f) => f.bucketId === bobPublicBucketId);
       const privateFiles = files.filter((f) => f.bucketId === bobPrivateBucketId);
 
@@ -787,15 +803,15 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
 
     it('pre-seeded private file is NOT visible to anonymous', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      const names = res.body.data.appFiles.nodes.map((f: { filename: string }) => f.filename);
+      const data = expectSuccess(res);
+      const names = data.appFiles.nodes.map((f: { filename: string }) => f.filename);
       expect(names).not.toContain('bob-seeded-private.txt');
     });
 
     it('pre-seeded public file IS visible to anonymous', async () => {
       const res = await postGraphQLViaApi(bobDatabaseId, 'bob-app', { query: APP_FILES });
-      expect(res.status).toBe(200);
-      const names = res.body.data.appFiles.nodes.map((f: { filename: string }) => f.filename);
+      const data = expectSuccess(res);
+      const names = data.appFiles.nodes.map((f: { filename: string }) => f.filename);
       expect(names).toContain('bob-seeded-public.txt');
     });
   });
