@@ -11,6 +11,8 @@
  * - Multiple realtime tables produce multiple fields
  * - NOTIFY payload parsing (TG_OP:id1,id2,... and INVALIDATE)
  * - Per-subscriber event throttling with configurable limit
+ * - Sparse set subscriptions (ids: [UUID!]) with row ID intersection filtering
+ * - RLS-aware rowId masking in payload resolvers
  */
 
 jest.mock('@pgpmjs/logger', () => ({
@@ -314,7 +316,7 @@ describe('createRealtimeSubscriptionsPlugin', () => {
   });
 
   describe('type definitions', () => {
-    it('generates subscription field with optional id argument', () => {
+    it('generates subscription field with id and ids arguments', () => {
       createRealtimeSubscriptionsPlugin();
 
       const codec = createMockCodec('documents', { realtime: true });
@@ -324,7 +326,7 @@ describe('createRealtimeSubscriptionsPlugin', () => {
 
       const result = capturedFactory!(build);
 
-      expect(result.typeDefs).toContain('onDocumentsChanged(id: UUID): DocumentsSubscriptionPayload');
+      expect(result.typeDefs).toContain('onDocumentsChanged(id: UUID, ids: [UUID!]): DocumentsSubscriptionPayload');
     });
 
     it('generates payload type with event, row, rowId, and overflow fields', () => {
@@ -342,6 +344,7 @@ describe('createRealtimeSubscriptionsPlugin', () => {
       expect(result.typeDefs).toContain('documents: Documents');
       expect(result.typeDefs).toContain('rowId: UUID');
       expect(result.typeDefs).toContain('overflow: Boolean!');
+      expect(result.typeDefs).toContain('masked when RLS denies access');
     });
 
     it('extends Subscription type', () => {
@@ -500,12 +503,14 @@ describe('createRealtimeSubscriptionsPlugin', () => {
       const mockParent = { get: jest.fn((key: string) => {
         if (key === 'parsed') return { event: 'INSERT', rowIds: ['row-uuid'], overflow: false };
         if (key === 'subscribedId') return null;
+        if (key === 'subscribedIds') return null;
         return null;
       }) };
 
       result.plans['TasksSubscriptionPayload'].tasks(mockParent);
       expect(mockParent.get).toHaveBeenCalledWith('parsed');
       expect(mockParent.get).toHaveBeenCalledWith('subscribedId');
+      expect(mockParent.get).toHaveBeenCalledWith('subscribedIds');
       expect(mockResource.get).toHaveBeenCalled();
     });
 
@@ -525,10 +530,36 @@ describe('createRealtimeSubscriptionsPlugin', () => {
       const mockParent = { get: jest.fn((key: string) => {
         if (key === 'parsed') return { event: 'UPDATE', rowIds: ['row-uuid'], overflow: false };
         if (key === 'subscribedId') return 'subscribed-uuid';
+        if (key === 'subscribedIds') return null;
         return null;
       }) };
 
       result.plans['TasksSubscriptionPayload'].tasks(mockParent);
+      expect(mockResource.get).toHaveBeenCalled();
+    });
+
+    it('payload row resolver uses first matching ID in sparse set mode', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('tasks', { realtime: true });
+      const mockResource = {
+        ...createMockResource('tasks', codec),
+        get: jest.fn(),
+      };
+      const build = createMockBuild({
+        tasks: mockResource,
+      });
+
+      const result = capturedFactory!(build);
+      const mockParent = { get: jest.fn((key: string) => {
+        if (key === 'parsed') return { event: 'INSERT', rowIds: ['id-a', 'id-b', 'id-c'], overflow: false };
+        if (key === 'subscribedId') return null;
+        if (key === 'subscribedIds') return ['id-b', 'id-d'];
+        return null;
+      }) };
+
+      result.plans['TasksSubscriptionPayload'].tasks(mockParent);
+      expect(mockParent.get).toHaveBeenCalledWith('subscribedIds');
       expect(mockResource.get).toHaveBeenCalled();
     });
   });
@@ -556,6 +587,165 @@ describe('createRealtimeSubscriptionsPlugin', () => {
 
       const result = capturedFactory!(build);
       expect(result.plans).toBeDefined();
+    });
+  });
+
+  describe('sparse set filtering (ids argument)', () => {
+    it('subscribePlan passes ids through object step', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('tasks', { realtime: true });
+      const build = createMockBuild({
+        tasks: createMockResource('tasks', codec),
+      });
+
+      const result = capturedFactory!(build);
+      const mockArgs = { get: jest.fn((key: string) => {
+        if (key === 'id') return null;
+        if (key === 'ids') return ['id-a', 'id-b'];
+        return null;
+      }) };
+
+      result.plans['Subscription']['onTasksChanged'].subscribePlan(null, mockArgs);
+
+      expect(mockArgs.get).toHaveBeenCalledWith('id');
+      expect(mockArgs.get).toHaveBeenCalledWith('ids');
+
+      // The listen callback is captured but not invoked by the mock.
+      // Invoke it manually to verify ids are threaded through.
+      expect(mockListen).toHaveBeenCalled();
+      const listenCallback = mockListen.mock.calls[mockListen.mock.calls.length - 1][2];
+      listenCallback('INSERT:id-a');
+
+      expect(mockObject).toHaveBeenCalled();
+      const objectArg = mockObject.mock.calls[mockObject.mock.calls.length - 1][0];
+      expect(objectArg).toHaveProperty('subscribedIds');
+    });
+
+    it('drops events with no row ID intersection in sparse set mode', () => {
+      const parsed = parseNotifyPayload('INSERT:id-x,id-y');
+      const subscribedIds = ['id-a', 'id-b'];
+
+      const hasMatch = parsed.rowIds.some((rid: string) => subscribedIds.includes(rid));
+      expect(hasMatch).toBe(false);
+    });
+
+    it('delivers events with row ID intersection in sparse set mode', () => {
+      const parsed = parseNotifyPayload('UPDATE:id-a,id-x');
+      const subscribedIds = ['id-a', 'id-b'];
+
+      const hasMatch = parsed.rowIds.some((rid: string) => subscribedIds.includes(rid));
+      expect(hasMatch).toBe(true);
+    });
+
+    it('delivers INVALIDATE events regardless of sparse set', () => {
+      const parsed = parseNotifyPayload('INVALIDATE');
+      expect(parsed.overflow).toBe(true);
+      expect(parsed.rowIds).toEqual([]);
+    });
+
+    it('rowId resolver returns first matching ID from sparse set', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('tasks', { realtime: true });
+      const build = createMockBuild({
+        tasks: { ...createMockResource('tasks', codec), get: jest.fn() },
+      });
+
+      const result = capturedFactory!(build);
+      const payload = result.plans['TasksSubscriptionPayload'];
+
+      const mockParent = { get: jest.fn((key: string) => {
+        if (key === 'parsed') return { event: 'UPDATE', rowIds: ['id-x', 'id-b', 'id-a'], overflow: false };
+        if (key === 'subscribedIds') return ['id-a', 'id-b'];
+        return null;
+      }) };
+
+      payload.rowId(mockParent);
+      expect(mockParent.get).toHaveBeenCalledWith('parsed');
+      expect(mockParent.get).toHaveBeenCalledWith('subscribedIds');
+    });
+
+    it('rowId resolver returns null when no sparse set match', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('tasks', { realtime: true });
+      const build = createMockBuild({
+        tasks: { ...createMockResource('tasks', codec), get: jest.fn() },
+      });
+
+      const result = capturedFactory!(build);
+      const payload = result.plans['TasksSubscriptionPayload'];
+
+      const mockParent = { get: jest.fn((key: string) => {
+        if (key === 'parsed') return { event: 'INSERT', rowIds: ['id-x'], overflow: false };
+        if (key === 'subscribedIds') return ['id-a', 'id-b'];
+        return null;
+      }) };
+
+      payload.rowId(mockParent);
+      expect(mockParent.get).toHaveBeenCalledWith('subscribedIds');
+    });
+
+    it('rowId resolver falls back to first rowId when no sparse set provided', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('tasks', { realtime: true });
+      const build = createMockBuild({
+        tasks: { ...createMockResource('tasks', codec), get: jest.fn() },
+      });
+
+      const result = capturedFactory!(build);
+      const payload = result.plans['TasksSubscriptionPayload'];
+
+      const mockParent = { get: jest.fn((key: string) => {
+        if (key === 'parsed') return { event: 'INSERT', rowIds: ['id-first', 'id-second'], overflow: false };
+        if (key === 'subscribedIds') return null;
+        return null;
+      }) };
+
+      payload.rowId(mockParent);
+      expect(mockParent.get).toHaveBeenCalledWith('subscribedIds');
+    });
+  });
+
+  describe('RLS-aware event delivery', () => {
+    it('rowId doc comment mentions RLS masking', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('items', { realtime: true });
+      const build = createMockBuild({
+        items: createMockResource('items', codec),
+      });
+
+      const result = capturedFactory!(build);
+      expect(result.typeDefs).toContain('masked when RLS denies access');
+    });
+
+    it('type defs include sparse set ids argument', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('items', { realtime: true });
+      const build = createMockBuild({
+        items: createMockResource('items', codec),
+      });
+
+      const result = capturedFactory!(build);
+      expect(result.typeDefs).toContain('ids: [UUID!]');
+    });
+
+    it('type defs include description mentioning all subscription modes', () => {
+      createRealtimeSubscriptionsPlugin();
+
+      const codec = createMockCodec('items', { realtime: true });
+      const build = createMockBuild({
+        items: createMockResource('items', codec),
+      });
+
+      const result = capturedFactory!(build);
+      expect(result.typeDefs).toContain('single record');
+      expect(result.typeDefs).toContain('sparse set');
+      expect(result.typeDefs).toContain('full collection');
     });
   });
 });

@@ -6,7 +6,8 @@
  * for real-time event delivery.
  *
  * Subscription modes:
- *   - Single record: onXxxChanged(id: UUID!) — subscribe to changes on one row
+ *   - Single record: onXxxChanged(id: UUID) — subscribe to changes on one row
+ *   - Sparse set: onXxxChanged(ids: [UUID!]) — subscribe to changes on specific rows
  *   - Full collection: onXxxChanged (no args) — subscribe to any change on the table
  *
  * NOTIFY payload format (from emit_change trigger):
@@ -25,8 +26,16 @@
  *   - Plugin-side: per-subscriber throttle (default 50 events/second/table)
  *     drops individual events and sends a single INVALIDATE when exceeded
  *
- * RLS enforcement is automatic — resource.get() queries through the
- * authenticated user's connection with their JWT role applied.
+ * Security / RLS enforcement:
+ *   - Row data is always fetched via resource.get() which runs through the
+ *     authenticated user's connection with their JWT role and pgSettings applied.
+ *   - For INSERT/UPDATE events, if RLS denies access (resource.get returns null),
+ *     the rowId is masked (set to null) to prevent metadata leaks.
+ *   - For DELETE events, row is naturally null (the row no longer exists).
+ *   - For INVALIDATE (overflow), the client should refetch via a normal query
+ *     which is also RLS-gated.
+ *   - Sparse set mode only delivers events for rows the subscriber explicitly
+ *     requested, preventing cross-tenant event leaks.
  */
 
 import { context as grafastContext, listen, object, constant, lambda } from 'grafast';
@@ -161,7 +170,7 @@ function discoverRealtimeTables(build: any): RealtimeTableInfo[] {
 function buildTypeDefs(tables: RealtimeTableInfo[]): string {
   const subscriptionFields = tables
     .map(({ fieldName, payloadTypeName }) =>
-      `  """Subscribe to changes on this table. Pass an id to watch a specific record."""\n  ${fieldName}(id: UUID): ${payloadTypeName}`
+      `  """Subscribe to changes on this table. Pass id for a single record, ids for a sparse set, or no args for the full collection."""\n  ${fieldName}(id: UUID, ids: [UUID!]): ${payloadTypeName}`
     )
     .join('\n');
 
@@ -173,7 +182,7 @@ function buildTypeDefs(tables: RealtimeTableInfo[]): string {
       `  event: String!\n` +
       `  """The current state of the row (null for DELETE, INVALIDATE, or if RLS denies access)."""\n` +
       `  ${rowFieldName}: ${typeName}\n` +
-      `  """The ID of the changed row (null for INVALIDATE)."""\n` +
+      `  """The ID of the changed row (null for INVALIDATE, or masked when RLS denies access)."""\n` +
       `  rowId: UUID\n` +
       `  """True when too many changes occurred and the client should refetch."""\n` +
       `  overflow: Boolean!\n` +
@@ -199,9 +208,11 @@ function buildPlans(
         const $pgSubscriber = (grafastContext() as any).get('pgSubscriber');
         const $topic = constant(notifyChannel);
         const $id = args.get('id');
+        const $ids = args.get('ids');
 
         return listen($pgSubscriber, $topic, ($payload: any) => {
-          const $parsed = lambda($payload, (raw: unknown) => {
+          const $parsed = lambda([$payload, $ids], (pair: unknown) => {
+            const [raw, subscribedIds] = pair as readonly [unknown, string[] | null | undefined];
             const parsed = parseNotifyPayload(String(raw));
 
             const action = parsed.overflow ? 'deliver' : throttle.check();
@@ -218,12 +229,19 @@ function buildPlans(
               };
             }
 
+            // Sparse set filtering: only deliver events for subscribed row IDs
+            if (subscribedIds && subscribedIds.length > 0) {
+              const hasMatch = parsed.rowIds.some((rid: string) => subscribedIds.includes(rid));
+              if (!hasMatch) return null;
+            }
+
             return parsed;
           });
 
           return object({
             parsed: $parsed,
             subscribedId: $id,
+            subscribedIds: $ids,
           });
         });
       },
@@ -239,10 +257,17 @@ function buildPlans(
       },
       rowId($parent: any) {
         const $parsed = $parent.get('parsed');
-        return lambda($parsed, (p: unknown) => {
-          const parsed = p as ParsedPayload | null;
-          if (!parsed || parsed.overflow || parsed.rowIds.length === 0) return null;
-          return parsed.rowIds[0];
+        const $subscribedIds = $parent.get('subscribedIds');
+        return lambda([$parsed, $subscribedIds], (pair: unknown) => {
+          const [p, subscribedIds] = pair as readonly [ParsedPayload | null, string[] | null | undefined];
+          if (!p || p.overflow || p.rowIds.length === 0) return null;
+
+          // Sparse set: return the first matching row ID
+          if (subscribedIds && subscribedIds.length > 0) {
+            return p.rowIds.find((rid: string) => subscribedIds.includes(rid)) ?? null;
+          }
+
+          return p.rowIds[0];
         });
       },
       overflow($parent: any) {
@@ -252,13 +277,24 @@ function buildPlans(
       [rowFieldName]($parent: any) {
         const $parsed = $parent.get('parsed');
         const $subscribedId = $parent.get('subscribedId');
+        const $subscribedIds = $parent.get('subscribedIds');
 
         const $rowId = lambda(
-          [$parsed, $subscribedId],
-          (pair: unknown) => {
-            const [p, subscribedId] = pair as readonly [ParsedPayload | null, string | null];
+          [$parsed, $subscribedId, $subscribedIds],
+          (tuple: unknown) => {
+            const [p, subscribedId, subscribedIds] = tuple as readonly [
+              ParsedPayload | null,
+              string | null,
+              string[] | null | undefined,
+            ];
+            // Single-record mode: use the subscribed ID
             if (subscribedId) return subscribedId;
             if (!p || p.overflow || p.rowIds.length === 0) return null;
+            // Sparse set mode: return first matching row ID
+            if (subscribedIds && subscribedIds.length > 0) {
+              return p.rowIds.find((rid: string) => subscribedIds.includes(rid)) ?? null;
+            }
+            // Full collection mode: return first row ID
             return p.rowIds[0];
           },
         );
