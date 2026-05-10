@@ -17,6 +17,7 @@ export { DataOwnedFields } from './data-owned-fields';
 export { DataOwnershipInEntity } from './data-ownership-in-entity';
 export { DataPeoplestamps } from './data-peoplestamps';
 export { DataPublishable } from './data-publishable';
+export { DataRealtime } from './data-realtime';
 export { DataSlug } from './data-slug';
 export { DataSoftDelete } from './data-soft-delete';
 export { DataStatusField } from './data-status-field';
