@@ -6,7 +6,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { GraphQLError, GraphQLFormattedError } from 'grafast/graphql';
 import { createGraphileInstance, type GraphileCacheEntry, graphileCache } from 'graphile-cache';
 import type { GraphileConfig } from 'graphile-config';
-import { ConstructivePreset, makePgService, PgAggregatesPreset } from 'graphile-settings';
+import { createConstructivePreset, makePgService } from 'graphile-settings';
 import { getPgPool } from 'pg-cache';
 import { getPgEnvOptions } from 'pg-env';
 import './types'; // for Request type
@@ -196,11 +196,10 @@ const reqLabel = (req: Request): string => (req.requestId ? `[${req.requestId}]`
 /**
  * Build a PostGraphile v5 preset for a tenant.
  *
- * When `databaseSettings` are available, feature flags control which
- * optional plugins are included.  Currently only `enable_aggregates`
- * adds a preset (PgAggregatesPreset) — all other features are baked
- * into ConstructivePreset and are always-on until per-plugin disable
- * logic is implemented in a follow-up.
+ * When `databaseSettings` are available the flags are forwarded to
+ * `createConstructivePreset()` which conditionally includes each
+ * plugin preset.  Without settings the default preset is used
+ * (everything on except aggregates and LLM).
  */
 const buildPreset = (
   pool: import('pg').Pool,
@@ -209,14 +208,8 @@ const buildPreset = (
   roleName: string,
   databaseSettings?: DatabaseSettings,
 ): GraphileConfig.Preset => {
-  const presets: GraphileConfig.Preset[] = [ConstructivePreset];
-
-  if (databaseSettings?.enableAggregates) {
-    presets.push(PgAggregatesPreset);
-  }
-
   return {
-  extends: presets,
+  extends: [createConstructivePreset(databaseSettings)],
   pgServices: [
     makePgService({
       pool,

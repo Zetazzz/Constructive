@@ -41,11 +41,9 @@ import 'graphile-build';
 // Re-export all plugins and presets
 // ============================================================================
 
-// Main preset
-export { ConstructivePreset } from './presets/constructive-preset';
-
-// Optional presets (not included in ConstructivePreset by default)
-export { PgAggregatesPreset } from 'graphile-pg-aggregates';
+// Main preset + factory
+export { ConstructivePreset, createConstructivePreset } from './presets/constructive-preset';
+export type { ConstructivePresetOptions } from './presets/constructive-preset';
 
 // Re-export all plugins for convenience
 export * from './plugins/index';
