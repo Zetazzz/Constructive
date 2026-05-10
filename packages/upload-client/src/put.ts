@@ -18,7 +18,10 @@
  * ```
  */
 
+import { createFetch } from '@constructive-io/fetch';
 import { UploadError } from './types';
+
+const fetch = createFetch();
 
 /**
  * PUT content to a presigned S3 URL.
@@ -43,7 +46,7 @@ export async function putToPresignedUrl(
     const response = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': contentType },
-      body,
+      body: body as BodyInit,
       signal,
     });
 

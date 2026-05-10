@@ -12,7 +12,7 @@
  * - `uploadFile` — full upload orchestrator (hash → request → PUT)
  *
  * Framework-agnostic, works in any browser or Node.js 18+ environment.
- * No Node.js-only dependencies — all APIs use Web standards (fetch, Web Crypto).
+ * Uses @constructive-io/fetch for isomorphic HTTP (handles *.localhost DNS in Node.js).
  *
  * @example
  * ```typescript
