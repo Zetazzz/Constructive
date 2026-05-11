@@ -123,11 +123,8 @@ SET session_replication_role TO DEFAULT;`;
  */
 export const META_TABLE_ORDER = [
   'database',
-  'database_extension',
   'schema',
   'function',
-  'node_type_registry',
-  'spatial_relation',
   'table',
   'field',
   'policy',
@@ -186,9 +183,6 @@ export const META_TABLE_ORDER = [
   'denormalized_table_field',
   'table_template_module',
   'relation_provision',
-  'blueprint_template',
-  'blueprint',
-  'blueprint_construction',
   'entity_type_provision',
   'rate_limits_module',
   'storage_module',
@@ -1198,67 +1192,6 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       out_target_field_id: 'uuid'
     }
   },
-  blueprint: {
-    schema: 'metaschema_modules_public',
-    table: 'blueprint',
-    fields: {
-      id: 'uuid',
-      owner_id: 'uuid',
-      database_id: 'uuid',
-      name: 'text',
-      display_name: 'text',
-      description: 'text',
-      definition: 'jsonb',
-      template_id: 'uuid',
-      definition_hash: 'uuid',
-      table_hashes: 'jsonb',
-      created_at: 'timestamptz',
-      updated_at: 'timestamptz'
-    }
-  },
-  blueprint_construction: {
-    schema: 'metaschema_modules_public',
-    table: 'blueprint_construction',
-    fields: {
-      id: 'uuid',
-      blueprint_id: 'uuid',
-      database_id: 'uuid',
-      schema_id: 'uuid',
-      status: 'text',
-      error_details: 'text',
-      table_map: 'jsonb',
-      constructed_definition: 'jsonb',
-      constructed_at: 'timestamptz',
-      created_at: 'timestamptz',
-      updated_at: 'timestamptz'
-    }
-  },
-  blueprint_template: {
-    schema: 'metaschema_modules_public',
-    table: 'blueprint_template',
-    fields: {
-      id: 'uuid',
-      name: 'text',
-      version: 'text',
-      display_name: 'text',
-      description: 'text',
-      owner_id: 'uuid',
-      visibility: 'text',
-      categories: 'text[]',
-      tags: 'text[]',
-      definition: 'jsonb',
-      definition_schema_version: 'text',
-      source: 'text',
-      complexity: 'text',
-      copy_count: 'int',
-      fork_count: 'int',
-      forked_from_id: 'uuid',
-      definition_hash: 'uuid',
-      table_hashes: 'jsonb',
-      created_at: 'timestamptz',
-      updated_at: 'timestamptz'
-    }
-  },
   rate_limits_module: {
     schema: 'metaschema_modules_public',
     table: 'rate_limits_module',
@@ -1516,41 +1449,6 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       table_id: 'uuid',
       owner_table_id: 'uuid',
       table_name: 'text'
-    }
-  },
-  // =============================================================================
-  // metaschema_public tables (new)
-  // =============================================================================
-  node_type_registry: {
-    schema: 'metaschema_public',
-    table: 'node_type_registry',
-    fields: {
-      name: 'text',
-      slug: 'text',
-      category: 'text',
-      display_name: 'text',
-      description: 'text',
-      parameter_schema: 'jsonb',
-      tags: 'text[]'
-    }
-  },
-  spatial_relation: {
-    schema: 'metaschema_public',
-    table: 'spatial_relation',
-    fields: {
-      id: 'uuid',
-      database_id: 'uuid',
-      table_id: 'uuid',
-      field_id: 'uuid',
-      ref_table_id: 'uuid',
-      ref_field_id: 'uuid',
-      name: 'text',
-      operator: 'text',
-      param_name: 'text',
-      category: 'text',
-      module: 'text',
-      scope: 'int',
-      tags: 'text[]'
     }
   }
 };

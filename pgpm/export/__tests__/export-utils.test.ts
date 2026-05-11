@@ -50,7 +50,10 @@ describe('META_TABLE_CONFIG and META_TABLE_ORDER consistency', () => {
       }
     }
 
-    const knownExceptions: string[] = [];
+    // database_extension is in config but intentionally not in META_TABLE_ORDER
+    // (it's queried but not included in the meta package output)
+    // If there are other exceptions, document them here.
+    const knownExceptions = ['database_extension'];
     const unexpectedMissing = missingFromOrder.filter(k => !knownExceptions.includes(k));
 
     expect(unexpectedMissing).toEqual([]);
@@ -80,21 +83,16 @@ describe('META_TABLE_CONFIG and META_TABLE_ORDER consistency', () => {
     }
   });
 
-  it('every config entry should have an id field of type uuid (except node_type_registry)', () => {
-    // node_type_registry uses name (text) as its primary key instead of uuid id
-    const noIdExceptions = ['node_type_registry'];
+  it('every config entry should have an id field of type uuid', () => {
     for (const [key, config] of Object.entries(META_TABLE_CONFIG)) {
-      if (noIdExceptions.includes(key)) continue;
       expect(config.fields).toHaveProperty('id');
       expect(config.fields.id).toBe('uuid');
     }
   });
 
-  it('every config entry (except known exceptions) should have a database_id field', () => {
-    // database: uses id instead; node_type_registry: global table; blueprint_template: uses owner_id
-    const noDatabaseIdExceptions = ['database', 'node_type_registry', 'blueprint_template'];
+  it('every config entry (except database) should have a database_id field', () => {
     for (const [key, config] of Object.entries(META_TABLE_CONFIG)) {
-      if (noDatabaseIdExceptions.includes(key)) continue;
+      if (key === 'database') continue;
       expect(config.fields).toHaveProperty('database_id');
       expect(config.fields.database_id).toBe('uuid');
     }
