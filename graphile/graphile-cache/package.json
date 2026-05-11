@@ -31,6 +31,7 @@
   "dependencies": {
     "@pgpmjs/logger": "workspace:^",
     "express": "^5.2.1",
+    "graphile-realtime-subscriptions": "workspace:^",
     "grafserv": "1.0.0",
     "lru-cache": "^11.2.7",
     "pg-cache": "workspace:^",

@@ -6,6 +6,7 @@ import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-pos
 import { PgAggregatesPreset } from 'graphile-pg-aggregates';
 import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
 import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearchPreset } from 'graphile-search';
+import { RealtimeSubscriptionsPreset } from 'graphile-realtime-subscriptions';
 import { SqlExpressionValidatorPreset } from 'graphile-sql-expression-validator';
 import { UploadPreset } from 'graphile-upload-plugin';
 
@@ -44,6 +45,7 @@ export interface ConstructivePresetOptions {
   enableConnectionFilter?: boolean;
   enableLtree?: boolean;
   enableLlm?: boolean;
+  enableRealtime?: boolean;
 }
 
 const DEFAULTS: Required<ConstructivePresetOptions> = {
@@ -56,6 +58,7 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
   enableConnectionFilter: true,
   enableLtree: true,
   enableLlm: false,
+  enableRealtime: false,
 };
 
 /**
@@ -88,6 +91,7 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
  * - enableDirectUploads     -> UploadPreset
  * - enablePresignedUploads  -> PresignedUrlPreset, BucketProvisionerPreset
  * - enableAggregates        -> PgAggregatesPreset (off by default)
+ * - enableRealtime          -> RealtimeSubscriptionsPreset (off by default)
  * - enableLlm               -> (no plugin yet, reserved for future use)
  *
  * RELATION FILTERS (when enableConnectionFilter is true):
@@ -180,6 +184,10 @@ export function createConstructivePreset(
 
   if (opts.enableAggregates) {
     presets.push(PgAggregatesPreset);
+  }
+
+  if (opts.enableRealtime) {
+    presets.push(RealtimeSubscriptionsPreset());
   }
 
   // ----- connectionFilterOperatorFactories -----

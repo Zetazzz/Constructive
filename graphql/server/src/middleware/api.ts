@@ -226,7 +226,8 @@ const DATABASE_SETTINGS_SQL = `
     COALESCE(aps.enable_many_to_many, ds.enable_many_to_many) AS resolved_enable_many_to_many,
     COALESCE(aps.enable_connection_filter, ds.enable_connection_filter) AS resolved_enable_connection_filter,
     COALESCE(aps.enable_ltree, ds.enable_ltree) AS resolved_enable_ltree,
-    COALESCE(aps.enable_llm, ds.enable_llm) AS resolved_enable_llm
+    COALESCE(aps.enable_llm, ds.enable_llm) AS resolved_enable_llm,
+    COALESCE(aps.enable_realtime, ds.enable_realtime) AS resolved_enable_realtime
   FROM services_public.database_settings ds
   LEFT JOIN services_public.api_settings aps ON ds.database_id = aps.database_id AND aps.api_id = $2
   WHERE ds.database_id = $1
@@ -325,6 +326,7 @@ interface DatabaseSettingsRow {
   resolved_enable_connection_filter: boolean;
   resolved_enable_ltree: boolean;
   resolved_enable_llm: boolean;
+  resolved_enable_realtime: boolean;
 }
 
 interface ApiListRow {
@@ -668,6 +670,7 @@ const toDatabaseSettings = (row: DatabaseSettingsRow | null): DatabaseSettings |
     enableConnectionFilter: row.resolved_enable_connection_filter,
     enableLtree: row.resolved_enable_ltree,
     enableLlm: row.resolved_enable_llm,
+    enableRealtime: row.resolved_enable_realtime,
   };
 };
 
