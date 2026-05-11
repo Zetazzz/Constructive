@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/constructive-io/constructive/compare/graphile-realtime-subscriptions@0.3.0...graphile-realtime-subscriptions@0.4.0) (2026-05-11)
+
+### Features
+
+- add CursorTracker for at-least-once delivery via drain_changes() polling ([a088b20](https://github.com/constructive-io/constructive/commit/a088b20ecf21d0cbbec9191687e155e39b08d176))
+- add RealtimeManager to bridge CursorTracker events into PgSubscriber ([13a0e63](https://github.com/constructive-io/constructive/commit/13a0e63116703255b79c0fa6d0b74f85697e25fd))
+- add sparse set subscriptions (ids: [UUID!]) and RLS-aware rowId masking ([61ac186](https://github.com/constructive-io/constructive/commit/61ac18686616e25cf53f849b9c7e3af470b55226))
+
 # [0.3.0](https://github.com/constructive-io/constructive/compare/graphile-realtime-subscriptions@0.2.0...graphile-realtime-subscriptions@0.3.0) (2026-05-10)
 
 ### Features

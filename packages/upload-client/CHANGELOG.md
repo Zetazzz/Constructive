@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.11.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.10.0...@constructive-io/upload-client@0.11.0) (2026-05-11)
+
+### Features
+
+- **upload-client:** replace Web Crypto with @noble/hashes for true incremental hashing ([51855e4](https://github.com/constructive-io/constructive/commit/51855e44ade7339738a3fa33632654286b95fcc5))
+
 # [0.10.0](https://github.com/constructive-io/constructive/compare/@constructive-io/upload-client@0.9.0...@constructive-io/upload-client@0.10.0) (2026-05-10)
 
 ### Bug Fixes
