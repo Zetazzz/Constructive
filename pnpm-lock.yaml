@@ -1448,6 +1448,9 @@ importers:
       '@constructive-io/graphql-types':
         specifier: workspace:^
         version: link:../types/dist
+      '@constructive-io/upload-client':
+        specifier: workspace:*
+        version: link:../../packages/upload-client/dist
       '@pgpmjs/types':
         specifier: workspace:^
         version: link:../../pgpm/types/dist
