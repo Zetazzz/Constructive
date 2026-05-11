@@ -588,6 +588,7 @@ export interface ApiSetting {
   enableConnectionFilter: boolean | null;
   enableLtree: boolean | null;
   enableLlm: boolean | null;
+  enableRealtime: boolean | null;
   options: unknown | null;
 }
 export interface ConnectedAccountsModule {
@@ -1636,6 +1637,7 @@ export interface DatabaseSetting {
   enableConnectionFilter: boolean | null;
   enableLtree: boolean | null;
   enableLlm: boolean | null;
+  enableRealtime: boolean | null;
   options: unknown | null;
 }
 export interface PlansModule {

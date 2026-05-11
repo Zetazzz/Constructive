@@ -1,13 +1,13 @@
 ---
 name: cli-public
-description: CLI tool (csdk) for the public API — provides CRUD commands for 149 tables and 70 custom operations
+description: CLI tool (csdk) for the public API — provides CRUD commands for 149 tables and 71 custom operations
 ---
 
 # cli-public
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-CLI tool (csdk) for the public API — provides CRUD commands for 149 tables and 70 custom operations
+CLI tool (csdk) for the public API — provides CRUD commands for 149 tables and 71 custom operations
 
 ## Usage
 
@@ -253,6 +253,7 @@ See the `references/` directory for detailed per-entity API documentation:
 - [provision-spatial-relation](references/provision-spatial-relation.md)
 - [bootstrap-user](references/bootstrap-user.md)
 - [set-field-order](references/set-field-order.md)
+- [provision-check-constraint](references/provision-check-constraint.md)
 - [provision-unique-constraint](references/provision-unique-constraint.md)
 - [provision-full-text-search](references/provision-full-text-search.md)
 - [provision-index](references/provision-index.md)

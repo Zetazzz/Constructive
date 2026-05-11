@@ -2004,19 +2004,20 @@ CRUD operations for ApiSetting records.
 | `enableConnectionFilter` | Boolean | Yes |
 | `enableLtree` | Boolean | Yes |
 | `enableLlm` | Boolean | Yes |
+| `enableRealtime` | Boolean | Yes |
 | `options` | JSON | Yes |
 
 **Operations:**
 
 ```typescript
 // List all apiSetting records
-const items = await db.apiSetting.findMany({ select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } }).execute();
+const items = await db.apiSetting.findMany({ select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
 
 // Get one by id
-const item = await db.apiSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } }).execute();
+const item = await db.apiSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
 
 // Create
-const created = await db.apiSetting.create({ data: { databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
+const created = await db.apiSetting.create({ data: { databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.apiSetting.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
@@ -5392,19 +5393,20 @@ CRUD operations for DatabaseSetting records.
 | `enableConnectionFilter` | Boolean | Yes |
 | `enableLtree` | Boolean | Yes |
 | `enableLlm` | Boolean | Yes |
+| `enableRealtime` | Boolean | Yes |
 | `options` | JSON | Yes |
 
 **Operations:**
 
 ```typescript
 // List all databaseSetting records
-const items = await db.databaseSetting.findMany({ select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } }).execute();
+const items = await db.databaseSetting.findMany({ select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
 
 // Get one by id
-const item = await db.databaseSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } }).execute();
+const item = await db.databaseSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
 
 // Create
-const created = await db.databaseSetting.create({ data: { databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
+const created = await db.databaseSetting.create({ data: { databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.databaseSetting.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
@@ -6470,7 +6472,7 @@ const result = await db.mutation.initEmptyRepo({ input: { dbId: '<UUID>', storeI
 
 ### `db.mutation.constructBlueprint`
 
-Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Six phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level indexes/fts/unique_constraints are deferred to phases 3-5 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure.
+Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Seven phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints/check_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints, (6) provision_check_constraint() for top-level + deferred check constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level entries are deferred to phases 3-6 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure.
 
 - **Type:** mutation
 - **Arguments:**
@@ -6586,6 +6588,21 @@ setFieldOrder
 
 ```typescript
 const result = await db.mutation.setFieldOrder({ input: { fieldIds: '<UUID>' } }).execute();
+```
+
+### `db.mutation.provisionCheckConstraint`
+
+Creates a check constraint on a table from a $type + data blueprint definition. Supports: CheckOneOf (enum validation via = ANY(ARRAY[...])), CheckGreaterThan (single-column > value or cross-column), CheckLessThan (single-column < value or cross-column), CheckNotEqual (cross-column inequality). Builds AST expressions via ast_helpers and inserts into metaschema_public.check_constraint. Graceful: skips if a constraint with the same name already exists.
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | ProvisionCheckConstraintInput (required) |
+
+```typescript
+const result = await db.mutation.provisionCheckConstraint({ input: { databaseId: '<UUID>', tableId: '<UUID>', definition: '<JSON>' } }).execute();
 ```
 
 ### `db.mutation.provisionUniqueConstraint`

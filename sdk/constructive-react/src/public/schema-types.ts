@@ -1264,6 +1264,8 @@ export type ApiSettingOrderBy =
   | 'ENABLE_LTREE_DESC'
   | 'ENABLE_LLM_ASC'
   | 'ENABLE_LLM_DESC'
+  | 'ENABLE_REALTIME_ASC'
+  | 'ENABLE_REALTIME_DESC'
   | 'OPTIONS_ASC'
   | 'OPTIONS_DESC';
 /** Methods to use when ordering `ConnectedAccountsModule`. */
@@ -3531,6 +3533,8 @@ export type DatabaseSettingOrderBy =
   | 'ENABLE_LTREE_DESC'
   | 'ENABLE_LLM_ASC'
   | 'ENABLE_LLM_DESC'
+  | 'ENABLE_REALTIME_ASC'
+  | 'ENABLE_REALTIME_DESC'
   | 'OPTIONS_ASC'
   | 'OPTIONS_DESC';
 /** Methods to use when ordering `PlansModule`. */
@@ -8674,6 +8678,8 @@ export interface ApiSettingFilter {
   enableLtree?: BooleanFilter;
   /** Filter by the object’s `enableLlm` field. */
   enableLlm?: BooleanFilter;
+  /** Filter by the object’s `enableRealtime` field. */
+  enableRealtime?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -9120,6 +9126,8 @@ export interface DatabaseSettingFilter {
   enableLtree?: BooleanFilter;
   /** Filter by the object’s `enableLlm` field. */
   enableLlm?: BooleanFilter;
+  /** Filter by the object’s `enableRealtime` field. */
+  enableRealtime?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -12142,6 +12150,12 @@ export interface SetFieldOrderInput {
   clientMutationId?: string;
   fieldIds?: string[];
 }
+export interface ProvisionCheckConstraintInput {
+  clientMutationId?: string;
+  databaseId?: string;
+  tableId?: string;
+  definition?: unknown;
+}
 export interface ProvisionUniqueConstraintInput {
   clientMutationId?: string;
   databaseId?: string;
@@ -13883,38 +13897,6 @@ export interface AppLevelInput {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface CreateDatabaseSettingInput {
-  clientMutationId?: string;
-  /** The `DatabaseSetting` to be created by this mutation. */
-  databaseSetting: DatabaseSettingInput;
-}
-/** An input for mutations affecting `DatabaseSetting` */
-export interface DatabaseSettingInput {
-  /** Unique identifier for this settings record */
-  id?: string;
-  /** Reference to the metaschema database these settings apply to */
-  databaseId: string;
-  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
-  enableAggregates?: boolean;
-  /** Enable PostGIS spatial types and operators in the GraphQL API */
-  enablePostgis?: boolean;
-  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
-  enableSearch?: boolean;
-  /** Enable direct (multipart) file upload mutations in the GraphQL API */
-  enableDirectUploads?: boolean;
-  /** Enable presigned URL upload flow for S3/MinIO storage */
-  enablePresignedUploads?: boolean;
-  /** Enable many-to-many relationship queries in the GraphQL API */
-  enableManyToMany?: boolean;
-  /** Enable connection filter (where argument) in the GraphQL API */
-  enableConnectionFilter?: boolean;
-  /** Enable ltree hierarchical data type support in the GraphQL API */
-  enableLtree?: boolean;
-  /** Enable LLM/AI integration features in the GraphQL API */
-  enableLlm?: boolean;
-  /** Extensible JSON for additional settings that do not have dedicated columns */
-  options?: unknown;
-}
 export interface CreateBlueprintInput {
   clientMutationId?: string;
   /** The `Blueprint` to be created by this mutation. */
@@ -13987,38 +13969,38 @@ export interface RealtimeModuleInput {
   partitionInterval?: string;
   notifyChannel?: string;
 }
-export interface CreateApiSettingInput {
+export interface CreateDatabaseSettingInput {
   clientMutationId?: string;
-  /** The `ApiSetting` to be created by this mutation. */
-  apiSetting: ApiSettingInput;
+  /** The `DatabaseSetting` to be created by this mutation. */
+  databaseSetting: DatabaseSettingInput;
 }
-/** An input for mutations affecting `ApiSetting` */
-export interface ApiSettingInput {
-  /** Unique identifier for this API settings record */
+/** An input for mutations affecting `DatabaseSetting` */
+export interface DatabaseSettingInput {
+  /** Unique identifier for this settings record */
   id?: string;
-  /** Reference to the metaschema database */
+  /** Reference to the metaschema database these settings apply to */
   databaseId: string;
-  /** API these settings override for */
-  apiId: string;
-  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
   enableAggregates?: boolean;
-  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  /** Enable PostGIS spatial types and operators in the GraphQL API */
   enablePostgis?: boolean;
-  /** Override: enable unified search (NULL = inherit from database_settings) */
+  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
   enableSearch?: boolean;
-  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  /** Enable direct (multipart) file upload mutations in the GraphQL API */
   enableDirectUploads?: boolean;
-  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  /** Enable presigned URL upload flow for S3/MinIO storage */
   enablePresignedUploads?: boolean;
-  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  /** Enable many-to-many relationship queries in the GraphQL API */
   enableManyToMany?: boolean;
-  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  /** Enable connection filter (where argument) in the GraphQL API */
   enableConnectionFilter?: boolean;
-  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  /** Enable ltree hierarchical data type support in the GraphQL API */
   enableLtree?: boolean;
-  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  /** Enable LLM/AI integration features in the GraphQL API */
   enableLlm?: boolean;
-  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  /** Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API */
+  enableRealtime?: boolean;
+  /** Extensible JSON for additional settings that do not have dedicated columns */
   options?: unknown;
 }
 export interface CreatePlansModuleInput {
@@ -14140,6 +14122,42 @@ export interface DatabaseTransferInput {
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;
+}
+export interface CreateApiSettingInput {
+  clientMutationId?: string;
+  /** The `ApiSetting` to be created by this mutation. */
+  apiSetting: ApiSettingInput;
+}
+/** An input for mutations affecting `ApiSetting` */
+export interface ApiSettingInput {
+  /** Unique identifier for this API settings record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId: string;
+  /** API these settings override for */
+  apiId: string;
+  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  enableAggregates?: boolean;
+  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  enablePostgis?: boolean;
+  /** Override: enable unified search (NULL = inherit from database_settings) */
+  enableSearch?: boolean;
+  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  enableDirectUploads?: boolean;
+  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  enablePresignedUploads?: boolean;
+  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  enableManyToMany?: boolean;
+  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  enableConnectionFilter?: boolean;
+  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  enableLtree?: boolean;
+  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  enableLlm?: boolean;
+  /** Override: enable realtime subscriptions (NULL = inherit from database_settings) */
+  enableRealtime?: boolean;
+  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  options?: unknown;
 }
 export interface CreateBillingModuleInput {
   clientMutationId?: string;
@@ -17295,40 +17313,6 @@ export interface AppLevelPatch {
   /** Upload for Badge or icon image associated with this level */
   imageUpload?: File;
 }
-export interface UpdateDatabaseSettingInput {
-  clientMutationId?: string;
-  /** Unique identifier for this settings record */
-  id: string;
-  /** An object where the defined keys will be set on the `DatabaseSetting` being updated. */
-  databaseSettingPatch: DatabaseSettingPatch;
-}
-/** Represents an update to a `DatabaseSetting`. Fields that are set will be updated. */
-export interface DatabaseSettingPatch {
-  /** Unique identifier for this settings record */
-  id?: string;
-  /** Reference to the metaschema database these settings apply to */
-  databaseId?: string;
-  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
-  enableAggregates?: boolean;
-  /** Enable PostGIS spatial types and operators in the GraphQL API */
-  enablePostgis?: boolean;
-  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
-  enableSearch?: boolean;
-  /** Enable direct (multipart) file upload mutations in the GraphQL API */
-  enableDirectUploads?: boolean;
-  /** Enable presigned URL upload flow for S3/MinIO storage */
-  enablePresignedUploads?: boolean;
-  /** Enable many-to-many relationship queries in the GraphQL API */
-  enableManyToMany?: boolean;
-  /** Enable connection filter (where argument) in the GraphQL API */
-  enableConnectionFilter?: boolean;
-  /** Enable ltree hierarchical data type support in the GraphQL API */
-  enableLtree?: boolean;
-  /** Enable LLM/AI integration features in the GraphQL API */
-  enableLlm?: boolean;
-  /** Extensible JSON for additional settings that do not have dedicated columns */
-  options?: unknown;
-}
 export interface UpdateBlueprintInput {
   clientMutationId?: string;
   /** Unique identifier for this blueprint. */
@@ -17405,40 +17389,40 @@ export interface RealtimeModulePatch {
   partitionInterval?: string;
   notifyChannel?: string;
 }
-export interface UpdateApiSettingInput {
+export interface UpdateDatabaseSettingInput {
   clientMutationId?: string;
-  /** Unique identifier for this API settings record */
+  /** Unique identifier for this settings record */
   id: string;
-  /** An object where the defined keys will be set on the `ApiSetting` being updated. */
-  apiSettingPatch: ApiSettingPatch;
+  /** An object where the defined keys will be set on the `DatabaseSetting` being updated. */
+  databaseSettingPatch: DatabaseSettingPatch;
 }
-/** Represents an update to a `ApiSetting`. Fields that are set will be updated. */
-export interface ApiSettingPatch {
-  /** Unique identifier for this API settings record */
+/** Represents an update to a `DatabaseSetting`. Fields that are set will be updated. */
+export interface DatabaseSettingPatch {
+  /** Unique identifier for this settings record */
   id?: string;
-  /** Reference to the metaschema database */
+  /** Reference to the metaschema database these settings apply to */
   databaseId?: string;
-  /** API these settings override for */
-  apiId?: string;
-  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
   enableAggregates?: boolean;
-  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  /** Enable PostGIS spatial types and operators in the GraphQL API */
   enablePostgis?: boolean;
-  /** Override: enable unified search (NULL = inherit from database_settings) */
+  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
   enableSearch?: boolean;
-  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  /** Enable direct (multipart) file upload mutations in the GraphQL API */
   enableDirectUploads?: boolean;
-  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  /** Enable presigned URL upload flow for S3/MinIO storage */
   enablePresignedUploads?: boolean;
-  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  /** Enable many-to-many relationship queries in the GraphQL API */
   enableManyToMany?: boolean;
-  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  /** Enable connection filter (where argument) in the GraphQL API */
   enableConnectionFilter?: boolean;
-  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  /** Enable ltree hierarchical data type support in the GraphQL API */
   enableLtree?: boolean;
-  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  /** Enable LLM/AI integration features in the GraphQL API */
   enableLlm?: boolean;
-  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  /** Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API */
+  enableRealtime?: boolean;
+  /** Extensible JSON for additional settings that do not have dedicated columns */
   options?: unknown;
 }
 export interface UpdatePlansModuleInput {
@@ -17545,6 +17529,44 @@ export interface DatabaseTransferPatch {
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;
+}
+export interface UpdateApiSettingInput {
+  clientMutationId?: string;
+  /** Unique identifier for this API settings record */
+  id: string;
+  /** An object where the defined keys will be set on the `ApiSetting` being updated. */
+  apiSettingPatch: ApiSettingPatch;
+}
+/** Represents an update to a `ApiSetting`. Fields that are set will be updated. */
+export interface ApiSettingPatch {
+  /** Unique identifier for this API settings record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId?: string;
+  /** API these settings override for */
+  apiId?: string;
+  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  enableAggregates?: boolean;
+  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  enablePostgis?: boolean;
+  /** Override: enable unified search (NULL = inherit from database_settings) */
+  enableSearch?: boolean;
+  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  enableDirectUploads?: boolean;
+  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  enablePresignedUploads?: boolean;
+  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  enableManyToMany?: boolean;
+  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  enableConnectionFilter?: boolean;
+  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  enableLtree?: boolean;
+  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  enableLlm?: boolean;
+  /** Override: enable realtime subscriptions (NULL = inherit from database_settings) */
+  enableRealtime?: boolean;
+  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  options?: unknown;
 }
 export interface UpdateBillingModuleInput {
   clientMutationId?: string;
@@ -19520,11 +19542,6 @@ export interface DeleteAppLevelInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteDatabaseSettingInput {
-  clientMutationId?: string;
-  /** Unique identifier for this settings record */
-  id: string;
-}
 export interface DeleteBlueprintInput {
   clientMutationId?: string;
   /** Unique identifier for this blueprint. */
@@ -19538,9 +19555,9 @@ export interface DeleteRealtimeModuleInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteApiSettingInput {
+export interface DeleteDatabaseSettingInput {
   clientMutationId?: string;
-  /** Unique identifier for this API settings record */
+  /** Unique identifier for this settings record */
   id: string;
 }
 export interface DeletePlansModuleInput {
@@ -19557,6 +19574,11 @@ export interface DeleteOrgMemberProfileInput {
 }
 export interface DeleteDatabaseTransferInput {
   clientMutationId?: string;
+  id: string;
+}
+export interface DeleteApiSettingInput {
+  clientMutationId?: string;
+  /** Unique identifier for this API settings record */
   id: string;
 }
 export interface DeleteBillingModuleInput {
@@ -20406,13 +20428,6 @@ export interface AppLevelConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `DatabaseSetting` values. */
-export interface DatabaseSettingConnection {
-  nodes: DatabaseSetting[];
-  edges: DatabaseSettingEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `Blueprint` values. */
 export interface BlueprintConnection {
   nodes: Blueprint[];
@@ -20434,10 +20449,10 @@ export interface RealtimeModuleConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `ApiSetting` values. */
-export interface ApiSettingConnection {
-  nodes: ApiSetting[];
-  edges: ApiSettingEdge[];
+/** A connection to a list of `DatabaseSetting` values. */
+export interface DatabaseSettingConnection {
+  nodes: DatabaseSetting[];
+  edges: DatabaseSettingEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -20473,6 +20488,13 @@ export interface SqlActionConnection {
 export interface DatabaseTransferConnection {
   nodes: DatabaseTransfer[];
   edges: DatabaseTransferEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `ApiSetting` values. */
+export interface ApiSettingConnection {
+  nodes: ApiSetting[];
+  edges: ApiSettingEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -20899,6 +20921,9 @@ export interface BootstrapUserPayload {
   result?: BootstrapUserRecord[] | null;
 }
 export interface SetFieldOrderPayload {
+  clientMutationId?: string | null;
+}
+export interface ProvisionCheckConstraintPayload {
   clientMutationId?: string | null;
 }
 export interface ProvisionUniqueConstraintPayload {
@@ -21517,12 +21542,6 @@ export interface CreateAppLevelPayload {
   appLevel?: AppLevel | null;
   appLevelEdge?: AppLevelEdge | null;
 }
-export interface CreateDatabaseSettingPayload {
-  clientMutationId?: string | null;
-  /** The `DatabaseSetting` that was created by this mutation. */
-  databaseSetting?: DatabaseSetting | null;
-  databaseSettingEdge?: DatabaseSettingEdge | null;
-}
 export interface CreateBlueprintPayload {
   clientMutationId?: string | null;
   /** The `Blueprint` that was created by this mutation. */
@@ -21541,11 +21560,11 @@ export interface CreateRealtimeModulePayload {
   realtimeModule?: RealtimeModule | null;
   realtimeModuleEdge?: RealtimeModuleEdge | null;
 }
-export interface CreateApiSettingPayload {
+export interface CreateDatabaseSettingPayload {
   clientMutationId?: string | null;
-  /** The `ApiSetting` that was created by this mutation. */
-  apiSetting?: ApiSetting | null;
-  apiSettingEdge?: ApiSettingEdge | null;
+  /** The `DatabaseSetting` that was created by this mutation. */
+  databaseSetting?: DatabaseSetting | null;
+  databaseSettingEdge?: DatabaseSettingEdge | null;
 }
 export interface CreatePlansModulePayload {
   clientMutationId?: string | null;
@@ -21575,6 +21594,12 @@ export interface CreateDatabaseTransferPayload {
   /** The `DatabaseTransfer` that was created by this mutation. */
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
+}
+export interface CreateApiSettingPayload {
+  clientMutationId?: string | null;
+  /** The `ApiSetting` that was created by this mutation. */
+  apiSetting?: ApiSetting | null;
+  apiSettingEdge?: ApiSettingEdge | null;
 }
 export interface CreateBillingModulePayload {
   clientMutationId?: string | null;
@@ -22361,12 +22386,6 @@ export interface UpdateAppLevelPayload {
   appLevel?: AppLevel | null;
   appLevelEdge?: AppLevelEdge | null;
 }
-export interface UpdateDatabaseSettingPayload {
-  clientMutationId?: string | null;
-  /** The `DatabaseSetting` that was updated by this mutation. */
-  databaseSetting?: DatabaseSetting | null;
-  databaseSettingEdge?: DatabaseSettingEdge | null;
-}
 export interface UpdateBlueprintPayload {
   clientMutationId?: string | null;
   /** The `Blueprint` that was updated by this mutation. */
@@ -22385,11 +22404,11 @@ export interface UpdateRealtimeModulePayload {
   realtimeModule?: RealtimeModule | null;
   realtimeModuleEdge?: RealtimeModuleEdge | null;
 }
-export interface UpdateApiSettingPayload {
+export interface UpdateDatabaseSettingPayload {
   clientMutationId?: string | null;
-  /** The `ApiSetting` that was updated by this mutation. */
-  apiSetting?: ApiSetting | null;
-  apiSettingEdge?: ApiSettingEdge | null;
+  /** The `DatabaseSetting` that was updated by this mutation. */
+  databaseSetting?: DatabaseSetting | null;
+  databaseSettingEdge?: DatabaseSettingEdge | null;
 }
 export interface UpdatePlansModulePayload {
   clientMutationId?: string | null;
@@ -22414,6 +22433,12 @@ export interface UpdateDatabaseTransferPayload {
   /** The `DatabaseTransfer` that was updated by this mutation. */
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
+}
+export interface UpdateApiSettingPayload {
+  clientMutationId?: string | null;
+  /** The `ApiSetting` that was updated by this mutation. */
+  apiSetting?: ApiSetting | null;
+  apiSettingEdge?: ApiSettingEdge | null;
 }
 export interface UpdateBillingModulePayload {
   clientMutationId?: string | null;
@@ -23195,12 +23220,6 @@ export interface DeleteAppLevelPayload {
   appLevel?: AppLevel | null;
   appLevelEdge?: AppLevelEdge | null;
 }
-export interface DeleteDatabaseSettingPayload {
-  clientMutationId?: string | null;
-  /** The `DatabaseSetting` that was deleted by this mutation. */
-  databaseSetting?: DatabaseSetting | null;
-  databaseSettingEdge?: DatabaseSettingEdge | null;
-}
 export interface DeleteBlueprintPayload {
   clientMutationId?: string | null;
   /** The `Blueprint` that was deleted by this mutation. */
@@ -23219,11 +23238,11 @@ export interface DeleteRealtimeModulePayload {
   realtimeModule?: RealtimeModule | null;
   realtimeModuleEdge?: RealtimeModuleEdge | null;
 }
-export interface DeleteApiSettingPayload {
+export interface DeleteDatabaseSettingPayload {
   clientMutationId?: string | null;
-  /** The `ApiSetting` that was deleted by this mutation. */
-  apiSetting?: ApiSetting | null;
-  apiSettingEdge?: ApiSettingEdge | null;
+  /** The `DatabaseSetting` that was deleted by this mutation. */
+  databaseSetting?: DatabaseSetting | null;
+  databaseSettingEdge?: DatabaseSettingEdge | null;
 }
 export interface DeletePlansModulePayload {
   clientMutationId?: string | null;
@@ -23248,6 +23267,12 @@ export interface DeleteDatabaseTransferPayload {
   /** The `DatabaseTransfer` that was deleted by this mutation. */
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
+}
+export interface DeleteApiSettingPayload {
+  clientMutationId?: string | null;
+  /** The `ApiSetting` that was deleted by this mutation. */
+  apiSetting?: ApiSetting | null;
+  apiSettingEdge?: ApiSettingEdge | null;
 }
 export interface DeleteBillingModulePayload {
   clientMutationId?: string | null;
@@ -24102,12 +24127,6 @@ export interface AppLevelEdge {
   /** The `AppLevel` at the end of the edge. */
   node?: AppLevel | null;
 }
-/** A `DatabaseSetting` edge in the connection. */
-export interface DatabaseSettingEdge {
-  cursor?: string | null;
-  /** The `DatabaseSetting` at the end of the edge. */
-  node?: DatabaseSetting | null;
-}
 /** A `Blueprint` edge in the connection. */
 export interface BlueprintEdge {
   cursor?: string | null;
@@ -24126,11 +24145,11 @@ export interface RealtimeModuleEdge {
   /** The `RealtimeModule` at the end of the edge. */
   node?: RealtimeModule | null;
 }
-/** A `ApiSetting` edge in the connection. */
-export interface ApiSettingEdge {
+/** A `DatabaseSetting` edge in the connection. */
+export interface DatabaseSettingEdge {
   cursor?: string | null;
-  /** The `ApiSetting` at the end of the edge. */
-  node?: ApiSetting | null;
+  /** The `DatabaseSetting` at the end of the edge. */
+  node?: DatabaseSetting | null;
 }
 /** A `PlansModule` edge in the connection. */
 export interface PlansModuleEdge {
@@ -24161,6 +24180,12 @@ export interface DatabaseTransferEdge {
   cursor?: string | null;
   /** The `DatabaseTransfer` at the end of the edge. */
   node?: DatabaseTransfer | null;
+}
+/** A `ApiSetting` edge in the connection. */
+export interface ApiSettingEdge {
+  cursor?: string | null;
+  /** The `ApiSetting` at the end of the edge. */
+  node?: ApiSetting | null;
 }
 /** A `BillingModule` edge in the connection. */
 export interface BillingModuleEdge {
