@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.29.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.28.0...@constructive-io/graphql-server@4.29.0) (2026-05-11)
+
+### Bug Fixes
+
+- fall back to legacy rls_module when rls_settings has NULL function names ([87d3e23](https://github.com/constructive-io/constructive/commit/87d3e23735cd43953cc48f3fae27616c929d42fe))
+- remove enable_realtime from database_settings SQL query ([f422075](https://github.com/constructive-io/constructive/commit/f422075bb9e6ddd38d78a621acbf87a83286674f))
+- replace silent catch blocks with log.warn in settings query functions ([bb0c07d](https://github.com/constructive-io/constructive/commit/bb0c07d830e765f60e2ecef35677035827bb1c95))
+- revert enable_realtime SQL wiring until constructive-db[#1105](https://github.com/constructive-io/constructive/issues/1105) is merged ([0d34dda](https://github.com/constructive-io/constructive/commit/0d34dda517f2bf2de63d228f905e07cfd9ab593c))
+
+### Features
+
+- integrate RealtimeManager into constructive preset and cache lifecycle ([a4dd5b9](https://github.com/constructive-io/constructive/commit/a4dd5b9e8b0440ed49749f0eac1b3d2f3841f4a5))
+- wire enable_realtime into DATABASE_SETTINGS_SQL COALESCE cascade ([f13e76c](https://github.com/constructive-io/constructive/commit/f13e76cf9cca08166d2420456d7899b261a8c159)), closes [constructive-db#1105](https://github.com/constructive-db/issues/1105)
+- wire enable_realtime into DATABASE_SETTINGS_SQL COALESCE cascade ([c6cc405](https://github.com/constructive-io/constructive/commit/c6cc405f8556820f7ef1e518c64df6c834d4ef85)), closes [constructive-db#1105](https://github.com/constructive-db/issues/1105)
+
 # [4.28.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.27.1...@constructive-io/graphql-server@4.28.0) (2026-05-11)
 
 **Note:** Version bump only for package @constructive-io/graphql-server

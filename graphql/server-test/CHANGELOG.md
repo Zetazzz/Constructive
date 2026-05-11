@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.21.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.0...graphql-server-test@2.21.1) (2026-05-11)
+
+### Bug Fixes
+
+- add enable_realtime column to test seed database_settings and api_settings ([def6aa9](https://github.com/constructive-io/constructive/commit/def6aa906ee9022d4cbc74ce60d3f6ec0a3b2b67))
+- move async hashContent calls into beforeAll blocks ([2e11ee3](https://github.com/constructive-io/constructive/commit/2e11ee32bb88d20fb00410c712a176c13279e9cf))
+
 # [2.21.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.20.1...graphql-server-test@2.21.0) (2026-05-11)
 
 **Note:** Version bump only for package graphql-server-test
