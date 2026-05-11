@@ -203,10 +203,7 @@ export const AuthCookiePlugin: GraphileConfig.Plugin = {
   grafserv: {
     middleware: {
       processRequest: {
-        callback: async (
-          next: MiddlewareNext<Result | null>,
-          event: Parameters<GraphileConfig.GrafservMiddleware['processRequest']>[0]
-        ): Promise<Result | null> => {
+        callback: async (next, event) => {
           const result = await next();
 
           // Only process buffer results (JSON responses)
