@@ -76,6 +76,34 @@ describe('client-generator', () => {
       );
       expect(result.content).toContain('createFetch()');
     });
+
+    it('binds fetchFn to globalThis to avoid Illegal invocation in browsers', () => {
+      const result = generateOrmClientFile();
+
+      // The generated FetchAdapter must .bind(globalThis) to prevent
+      // "Illegal invocation" when native window.fetch is stored as
+      // an instance property (which detaches it from its original this).
+      expect(result.content).toContain('.bind(globalThis)');
+    });
+
+    it('bind(globalThis) prevents Illegal invocation for this-sensitive fetch', () => {
+      // Simulate a native browser fetch that requires this === globalThis
+      // (calling window.fetch with any other this throws TypeError)
+      function thisSensitiveFetch(this: unknown): Promise<Response> {
+        if (this !== globalThis) {
+          throw new TypeError('Illegal invocation');
+        }
+        return Promise.resolve(new Response(JSON.stringify({ data: null })));
+      }
+
+      // Without bind: storing on an object and calling detaches this
+      const broken = { fetchFn: thisSensitiveFetch };
+      expect(() => broken.fetchFn()).toThrow('Illegal invocation');
+
+      // With bind: the pattern used in FetchAdapter keeps correct this
+      const fixed = { fetchFn: thisSensitiveFetch.bind(globalThis) };
+      expect(() => fixed.fetchFn()).not.toThrow();
+    });
   });
 
   describe('generateQueryBuilderFile', () => {
