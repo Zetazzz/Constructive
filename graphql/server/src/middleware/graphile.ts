@@ -245,6 +245,9 @@ const buildPreset = (
         if (req.get('User-Agent')) {
           context['jwt.claims.user_agent'] = req.get('User-Agent') as string;
         }
+        if (req.deviceToken) {
+          context['jwt.claims.device_token'] = req.deviceToken;
+        }
 
         if (req.token?.user_id) {
           const pgSettings: Record<string, string> = {
