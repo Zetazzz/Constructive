@@ -3,7 +3,7 @@ import type { NodeTypeDefinition } from '../types';
 export const CheckNotEqual: NodeTypeDefinition = {
   name: 'CheckNotEqual',
   slug: 'check_not_equal',
-  category: 'data',
+  category: 'check',
   display_name: 'Check Not Equal',
   description:
     'Adds a CHECK constraint that validates two columns are not equal (columns[0] != columns[1]). Useful for preventing self-referencing rows. Compiled via AST helpers.',

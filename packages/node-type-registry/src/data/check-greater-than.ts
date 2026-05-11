@@ -3,7 +3,7 @@ import type { NodeTypeDefinition } from '../types';
 export const CheckGreaterThan: NodeTypeDefinition = {
   name: 'CheckGreaterThan',
   slug: 'check_greater_than',
-  category: 'data',
+  category: 'check',
   display_name: 'Check Greater Than',
   description:
     'Adds a CHECK constraint that validates a column value is greater than a threshold (single-column: column > value) or that one column is greater than another (cross-column: columns[0] > columns[1]). Compiled via AST helpers.',

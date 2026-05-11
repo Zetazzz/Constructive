@@ -3,7 +3,7 @@ import type { NodeTypeDefinition } from '../types';
 export const CheckLessThan: NodeTypeDefinition = {
   name: 'CheckLessThan',
   slug: 'check_less_than',
-  category: 'data',
+  category: 'check',
   display_name: 'Check Less Than',
   description:
     'Adds a CHECK constraint that validates a column value is less than a threshold (single-column: column < value) or that one column is less than another (cross-column: columns[0] < columns[1]). Compiled via AST helpers.',

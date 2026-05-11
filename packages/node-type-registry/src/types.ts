@@ -43,7 +43,7 @@ export interface NodeTypeDefinition {
   name: string;
   /** snake_case slug, e.g. 'authz_direct_owner' */
   slug: string;
-  /** Category: authz | data | field | relation | view */
+  /** Category: authz | check | data | field | relation | search | view */
   category: string;
   /** Human-readable display name, e.g. 'Direct Ownership' */
   display_name: string;
