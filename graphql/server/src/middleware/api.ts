@@ -424,6 +424,10 @@ const toRlsModule = (row: RlsModuleRow | null): RlsModule | undefined => {
 
 const toRlsModuleFromSettings = (row: RlsModuleData | null): RlsModule | undefined => {
   if (!row) return undefined;
+  // If metaschema_public.function rows are missing (e.g. trigger was skipped
+  // during migration), the LEFT JOINs resolve NULL.  Return undefined so the
+  // caller falls back to the legacy api_modules lookup.
+  if (!row.authenticate || !row.authenticate_schema) return undefined;
   return {
     authenticate: row.authenticate,
     authenticateStrict: row.authenticate_strict,
