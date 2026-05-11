@@ -133,6 +133,8 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('database_extension', `SELECT * FROM metaschema_public.database_extension WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('schema', `SELECT * FROM metaschema_public.schema WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('function', `SELECT * FROM metaschema_public.function WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('node_type_registry', `SELECT * FROM metaschema_public.node_type_registry ORDER BY name`);
+  await queryAndParse('spatial_relation', `SELECT * FROM metaschema_public.spatial_relation WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('table', `SELECT * FROM metaschema_public.table WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('field', `SELECT * FROM metaschema_public.field WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('policy', `SELECT * FROM metaschema_public.policy WHERE database_id = $1 ORDER BY id`);
@@ -198,6 +200,23 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('uuid_module', `SELECT * FROM metaschema_modules_public.uuid_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('default_ids_module', `SELECT * FROM metaschema_modules_public.default_ids_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('denormalized_table_field', `SELECT * FROM metaschema_modules_public.denormalized_table_field WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('relation_provision', `SELECT * FROM metaschema_modules_public.relation_provision WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('blueprint_template', `SELECT * FROM metaschema_modules_public.blueprint_template ORDER BY id`);
+  await queryAndParse('blueprint', `SELECT * FROM metaschema_modules_public.blueprint WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('blueprint_construction', `SELECT * FROM metaschema_modules_public.blueprint_construction WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('entity_type_provision', `SELECT * FROM metaschema_modules_public.entity_type_provision WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('rate_limits_module', `SELECT * FROM metaschema_modules_public.rate_limits_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('storage_module', `SELECT * FROM metaschema_modules_public.storage_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('billing_module', `SELECT * FROM metaschema_modules_public.billing_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('billing_provider_module', `SELECT * FROM metaschema_modules_public.billing_provider_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('devices_module', `SELECT * FROM metaschema_modules_public.devices_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('identity_providers_module', `SELECT * FROM metaschema_modules_public.identity_providers_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('notifications_module', `SELECT * FROM metaschema_modules_public.notifications_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('plans_module', `SELECT * FROM metaschema_modules_public.plans_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('realtime_module', `SELECT * FROM metaschema_modules_public.realtime_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('session_secrets_module', `SELECT * FROM metaschema_modules_public.session_secrets_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('webauthn_auth_module', `SELECT * FROM metaschema_modules_public.webauthn_auth_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('webauthn_credentials_module', `SELECT * FROM metaschema_modules_public.webauthn_credentials_module WHERE database_id = $1 ORDER BY id`);
 
   return sql;
 };
