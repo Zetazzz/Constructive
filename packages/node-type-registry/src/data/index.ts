@@ -1,3 +1,7 @@
+export { CheckGreaterThan } from './check-greater-than';
+export { CheckLessThan } from './check-less-than';
+export { CheckNotEqual } from './check-not-equal';
+export { CheckOneOf } from './check-one-of';
 export { DataAggregateLimitCounter } from './data-aggregate-limit-counter';
 export { DataBillingMeter } from './data-billing-meter';
 export { DataChunks } from './data-chunks';
