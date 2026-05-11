@@ -5,6 +5,7 @@ import { Logger } from '@pgpmjs/logger';
 import { healthz, poweredBy, svcCache, trustProxy } from '@pgpmjs/server-utils';
 import { PgpmOptions } from '@pgpmjs/types';
 import { middleware as parseDomains } from '@constructive-io/url-domains';
+import cookieParser from 'cookie-parser';
 import express, { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import type { Server as HttpServer } from 'http';
 import graphqlUpload from 'graphql-upload';
@@ -148,6 +149,7 @@ class Server {
     }
 
     app.use(poweredBy('constructive'));
+    app.use(cookieParser());
     app.use(cors(fallbackOrigin));
     app.use('/graphql', graphqlUpload.graphqlUploadExpress({
       maxFileSize: 10 * 1024 * 1024, // 10 MB

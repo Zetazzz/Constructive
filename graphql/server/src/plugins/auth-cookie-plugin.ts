@@ -220,7 +220,20 @@ export const AuthCookiePlugin: GraphileConfig.Plugin = {
           }
 
           // Get request body for mutation detection
-          const body = req.body as GraphQLRequestBody;
+          // grafserv provides getBody() which returns { type: 'buffer', buffer: Buffer }
+          let body: GraphQLRequestBody | undefined;
+          if (typeof event.requestDigest.getBody === 'function') {
+            try {
+              const rawBody = await event.requestDigest.getBody() as { type?: string; buffer?: Buffer };
+              if (rawBody?.type === 'buffer' && rawBody.buffer) {
+                const jsonStr = rawBody.buffer.toString('utf8');
+                body = JSON.parse(jsonStr) as GraphQLRequestBody;
+              }
+            } catch (e) {
+              log.debug('[auth-cookie] Failed to parse body from requestDigest');
+            }
+          }
+          body = body || (req.body as GraphQLRequestBody);
           if (!body?.query) {
             return result;
           }
@@ -283,24 +296,38 @@ export const AuthCookiePlugin: GraphileConfig.Plugin = {
               }
             }
 
-            // Return modified result with Set-Cookie headers
+            // Set cookies directly on Express response and return modified headers
             if (cookiesToSet.length > 0) {
-              const existingSetCookie = bufferResult.headers['set-cookie'];
-              let newSetCookie: string;
+              const res = (event.requestDigest.requestContext as { expressv4?: { res?: { setHeader: (name: string, value: string[]) => void; getHeader: (name: string) => string | string[] | undefined } } })?.expressv4?.res;
 
-              if (existingSetCookie) {
-                // Append to existing Set-Cookie
-                newSetCookie = `${existingSetCookie}, ${cookiesToSet.join(', ')}`;
-              } else {
-                newSetCookie = cookiesToSet.join(', ');
+              if (res?.setHeader) {
+                // Get existing Set-Cookie headers from Express response
+                const existingCookies = res.getHeader('Set-Cookie');
+                const allCookies: string[] = [];
+
+                if (existingCookies) {
+                  if (Array.isArray(existingCookies)) {
+                    allCookies.push(...existingCookies);
+                  } else {
+                    allCookies.push(existingCookies);
+                  }
+                }
+                allCookies.push(...cookiesToSet);
+
+                // Set as array to get multiple Set-Cookie headers
+                res.setHeader('Set-Cookie', allCookies);
               }
+
+              // Also update the BufferResult headers for grafserv to pass through
+              const existingBufferCookie = bufferResult.headers['set-cookie'];
+              const updatedHeaders = { ...bufferResult.headers };
+
+              // Remove set-cookie from grafserv headers since we set it on Express
+              delete updatedHeaders['set-cookie'];
 
               return {
                 ...bufferResult,
-                headers: {
-                  ...bufferResult.headers,
-                  'set-cookie': newSetCookie,
-                },
+                headers: updatedHeaders,
               };
             }
           } catch (err) {

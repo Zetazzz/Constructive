@@ -22,11 +22,15 @@ export const getSessionCookieConfig = (
   authSettings?: AuthSettings,
   rememberMe = false
 ): CookieConfig => {
-  const maxAge = rememberMe && authSettings?.rememberMeDuration
-    ? parseInt(authSettings.rememberMeDuration, 10)
-    : authSettings?.cookieMaxAge
-      ? parseInt(authSettings.cookieMaxAge, 10)
-      : 86400; // 24 hours default
+  const DEFAULT_MAX_AGE = 86400; // 24 hours
+  let maxAge = DEFAULT_MAX_AGE;
+  if (rememberMe && authSettings?.rememberMeDuration) {
+    const parsed = parseInt(authSettings.rememberMeDuration, 10);
+    if (!isNaN(parsed)) maxAge = parsed;
+  } else if (authSettings?.cookieMaxAge) {
+    const parsed = parseInt(authSettings.cookieMaxAge, 10);
+    if (!isNaN(parsed)) maxAge = parsed;
+  }
 
   return {
     secure: authSettings?.cookieSecure ?? process.env.NODE_ENV === 'production',
