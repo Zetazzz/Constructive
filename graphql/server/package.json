@@ -41,6 +41,7 @@
     "backend"
   ],
   "dependencies": {
+    "@constructive-io/csrf": "workspace:^",
     "@constructive-io/graphql-env": "workspace:^",
     "@constructive-io/graphql-types": "workspace:^",
     "@constructive-io/s3-utils": "workspace:^",
