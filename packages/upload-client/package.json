@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@constructive-io/fetch": "^1.0.0",
-    "@noble/hashes": "^2.2.0"
+    "@constructive-io/noble-hashes": "^0.2.1"
   },
   "devDependencies": {
     "makage": "^0.3.0"
