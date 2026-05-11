@@ -124,6 +124,7 @@ SET session_replication_role TO DEFAULT;`;
 export const META_TABLE_ORDER = [
   'database',
   'schema',
+  'function',
   'table',
   'field',
   'policy',
@@ -241,6 +242,16 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       schema_name: 'text',
       description: 'text',
       is_public: 'boolean'
+    }
+  },
+  function: {
+    schema: 'metaschema_public',
+    table: 'function',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      name: 'text'
     }
   },
   table: {
