@@ -1,17 +1,17 @@
 /**
- * File hashing utilities using @noble/hashes.
+ * File hashing utilities using @constructive-io/noble-hashes.
  *
  * Two strategies:
  * - `hashFile` — reads entire file into memory, fast for files up to ~200MB
  * - `hashFileChunked` — true incremental hashing via Blob.slice, suitable
  *   for arbitrarily large files (GB+). Only one chunk is in memory at a time.
  *
- * Both use @noble/hashes (pure JS, audited, 0 dependencies) which supports
- * incremental .update() — unlike Web Crypto API's one-shot digest().
+ * Both use @constructive-io/noble-hashes (pure JS, audited, 0 dependencies)
+ * which supports incremental .update() — unlike Web Crypto API's one-shot digest().
  */
 
-import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex } from '@noble/hashes/utils.js';
+import { sha256 } from '@constructive-io/noble-hashes/sha2';
+import { bytesToHex } from '@constructive-io/noble-hashes/utils';
 import { UploadError } from './types';
 import type { FileInput } from './types';
 
@@ -42,6 +42,7 @@ export async function hashFile(file: FileInput): Promise<string> {
     const buffer = await file.arrayBuffer();
     return bytesToHex(sha256(new Uint8Array(buffer)));
   } catch (err) {
+    if (err instanceof UploadError) throw err;
     throw new UploadError('HASH_FAILED', 'Failed to compute SHA-256 hash', err);
   }
 }
@@ -50,12 +51,8 @@ export async function hashFile(file: FileInput): Promise<string> {
  * Hash a file using SHA-256 in chunks (true incremental).
  *
  * Reads the file in fixed-size slices using `Blob.slice()`, feeding each
- * chunk into @noble/hashes' incremental SHA-256 hasher. Only one chunk
- * is held in memory at a time — O(chunkSize) memory for any file size.
- *
- * This is the same `.create().update().digest()` pattern used by
- * uuid-hash and etag-hash in the uploads/ pipeline, but using SHA-256
- * and working in both browsers and Node.js.
+ * chunk into an incremental SHA-256 hasher. Only one chunk is held in
+ * memory at a time — O(chunkSize) memory for any file size.
  *
  * @param file - File to hash
  * @param chunkSize - Size of each chunk in bytes (default: 2MB)

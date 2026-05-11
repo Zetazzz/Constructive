@@ -1,9 +1,8 @@
 /**
- * String content hashing using @noble/hashes.
+ * String content hashing.
  *
  * Complements `hashFile` (which accepts File/Blob) with a convenience
- * function for hashing plain strings. Uses @noble/hashes for incremental
- * SHA-256 — works in browsers, Node.js, Deno, and Cloudflare Workers.
+ * function for hashing plain strings.
  *
  * @example
  * ```typescript
@@ -14,8 +13,8 @@
  * ```
  */
 
-import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex } from '@noble/hashes/utils.js';
+import { sha256 } from '@constructive-io/noble-hashes/sha2';
+import { bytesToHex } from '@constructive-io/noble-hashes/utils';
 import { UploadError } from './types';
 
 /**
@@ -29,6 +28,7 @@ export async function hashContent(content: string): Promise<string> {
     const data = new TextEncoder().encode(content);
     return bytesToHex(sha256(data));
   } catch (err) {
+    if (err instanceof UploadError) throw err;
     throw new UploadError('HASH_FAILED', 'Failed to compute SHA-256 hash', err);
   }
 }
