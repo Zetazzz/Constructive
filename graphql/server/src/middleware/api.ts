@@ -537,7 +537,8 @@ const queryRlsSettings = async (pool: Pool, databaseId: string): Promise<RlsModu
   try {
     const result = await pool.query<RlsModuleData>(RLS_SETTINGS_SQL, [databaseId]);
     return toRlsModuleFromSettings(result.rows[0] ?? null);
-  } catch {
+  } catch (e: any) {
+    log.warn(`[rls-settings] Failed to load RLS settings: ${e.message}`);
     return undefined;
   }
 };
@@ -563,7 +564,8 @@ const queryCorsSettings = async (pool: Pool, databaseId: string, apiId?: string)
     }
     const dbDefault = await pool.query<CorsSettingsRow>(CORS_SETTINGS_DB_DEFAULT_SQL, [databaseId]);
     return dbDefault.rows[0]?.allowed_origins;
-  } catch {
+  } catch (e: any) {
+    log.warn(`[cors-settings] Failed to load CORS settings: ${e.message}`);
     return undefined;
   }
 };
@@ -611,7 +613,8 @@ const queryPubkeySettings = async (pool: Pool, databaseId: string): Promise<Pubk
   try {
     const result = await pool.query<PubkeySettingsRow>(PUBKEY_SETTINGS_SQL, [databaseId]);
     return toPubkeyChallengeSettings(result.rows[0] ?? null);
-  } catch {
+  } catch (e: any) {
+    log.warn(`[pubkey-settings] Failed to load pubkey challenge settings: ${e.message}`);
     return undefined;
   }
 };
@@ -651,7 +654,8 @@ const queryWebauthnSettings = async (pool: Pool, databaseId: string): Promise<We
   try {
     const result = await pool.query<WebauthnSettingsRow>(WEBAUTHN_SETTINGS_SQL, [databaseId]);
     return toWebauthnSettings(result.rows[0] ?? null);
-  } catch {
+  } catch (e: any) {
+    log.warn(`[webauthn-settings] Failed to load webauthn settings: ${e.message}`);
     return undefined;
   }
 };
@@ -678,7 +682,8 @@ const queryDatabaseSettings = async (pool: Pool, databaseId: string, apiId?: str
   try {
     const result = await pool.query<DatabaseSettingsRow>(DATABASE_SETTINGS_SQL, [databaseId, apiId ?? null]);
     return toDatabaseSettings(result.rows[0] ?? null);
-  } catch {
+  } catch (e: any) {
+    log.warn(`[database-settings] Failed to load database settings: ${e.message}`);
     return undefined;
   }
 };
