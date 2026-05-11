@@ -133,6 +133,7 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('database_extension', `SELECT * FROM metaschema_public.database_extension WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('schema', `SELECT * FROM metaschema_public.schema WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('function', `SELECT * FROM metaschema_public.function WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('spatial_relation', `SELECT * FROM metaschema_public.spatial_relation WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('table', `SELECT * FROM metaschema_public.table WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('field', `SELECT * FROM metaschema_public.field WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('policy', `SELECT * FROM metaschema_public.policy WHERE database_id = $1 ORDER BY id`);

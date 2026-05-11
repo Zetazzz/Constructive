@@ -125,6 +125,7 @@ export const exportGraphQLMeta = async ({
     queryAndParse('database_extension'),
     queryAndParse('schema'),
     queryAndParse('function'),
+    queryAndParse('spatial_relation'),
     queryAndParse('table'),
     queryAndParse('field'),
     queryAndParse('policy'),

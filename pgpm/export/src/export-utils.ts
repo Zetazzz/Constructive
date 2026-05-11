@@ -127,6 +127,7 @@ export const META_TABLE_ORDER = [
   'function',
   'table',
   'field',
+  'spatial_relation',
   'policy',
   'index',
   'trigger',
@@ -1449,6 +1450,25 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       table_id: 'uuid',
       owner_table_id: 'uuid',
       table_name: 'text'
+    }
+  },
+  spatial_relation: {
+    schema: 'metaschema_public',
+    table: 'spatial_relation',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      table_id: 'uuid',
+      field_id: 'uuid',
+      ref_table_id: 'uuid',
+      ref_field_id: 'uuid',
+      name: 'text',
+      operator: 'text',
+      param_name: 'text',
+      category: 'text',
+      module: 'text',
+      scope: 'int',
+      tags: 'text[]'
     }
   }
 };
