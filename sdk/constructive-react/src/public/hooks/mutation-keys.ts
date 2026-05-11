@@ -1466,6 +1466,12 @@ export const customMutationKeys = {
     identifier
       ? (['mutation', 'setFieldOrder', identifier] as const)
       : (['mutation', 'setFieldOrder'] as const),
+  /** Mutation key for provisionCheckConstraint */ provisionCheckConstraint: (
+    identifier?: string
+  ) =>
+    identifier
+      ? (['mutation', 'provisionCheckConstraint', identifier] as const)
+      : (['mutation', 'provisionCheckConstraint'] as const),
   /** Mutation key for provisionUniqueConstraint */ provisionUniqueConstraint: (
     identifier?: string
   ) =>

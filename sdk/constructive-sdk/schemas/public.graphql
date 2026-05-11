@@ -2796,35 +2796,6 @@ type Query {
     orderBy: [AppLevelOrderBy!] = [PRIMARY_KEY_ASC]
   ): AppLevelConnection
 
-  """Reads and enables pagination through a set of `DatabaseSetting`."""
-  databaseSettings(
-    """Only read the first `n` values of the set."""
-    first: Int
-
-    """Only read the last `n` values of the set."""
-    last: Int
-
-    """
-    Skip the first `n` values from our `after` cursor, an alternative to cursor
-    based pagination. May not be used with `last`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: DatabaseSettingFilter
-
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!] = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingConnection
-
   """Reads and enables pagination through a set of `Blueprint`."""
   blueprints(
     """Only read the first `n` values of the set."""
@@ -2914,8 +2885,8 @@ type Query {
     orderBy: [RealtimeModuleOrderBy!] = [PRIMARY_KEY_ASC]
   ): RealtimeModuleConnection
 
-  """Reads and enables pagination through a set of `ApiSetting`."""
-  apiSettings(
+  """Reads and enables pagination through a set of `DatabaseSetting`."""
+  databaseSettings(
     """Only read the first `n` values of the set."""
     first: Int
 
@@ -2937,11 +2908,11 @@ type Query {
     """
     A filter to be used in determining which values should be returned by the collection.
     """
-    where: ApiSettingFilter
+    where: DatabaseSettingFilter
 
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!] = [PRIMARY_KEY_ASC]
-  ): ApiSettingConnection
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!] = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingConnection
 
   """Reads and enables pagination through a set of `PlansModule`."""
   plansModules(
@@ -3087,6 +3058,35 @@ type Query {
     """The method to use when ordering `DatabaseTransfer`."""
     orderBy: [DatabaseTransferOrderBy!] = [PRIMARY_KEY_ASC]
   ): DatabaseTransferConnection
+
+  """Reads and enables pagination through a set of `ApiSetting`."""
+  apiSettings(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: ApiSettingFilter
+
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!] = [PRIMARY_KEY_ASC]
+  ): ApiSettingConnection
 
   """Reads and enables pagination through a set of `BillingModule`."""
   billingModules(
@@ -17885,6 +17885,9 @@ input ApiSettingFilter {
   """Filter by the object’s `enableLlm` field."""
   enableLlm: BooleanFilter
 
+  """Filter by the object’s `enableRealtime` field."""
+  enableRealtime: BooleanFilter
+
   """Filter by the object’s `options` field."""
   options: JSONFilter
 
@@ -18573,6 +18576,9 @@ input DatabaseSettingFilter {
 
   """Filter by the object’s `enableLlm` field."""
   enableLlm: BooleanFilter
+
+  """Filter by the object’s `enableRealtime` field."""
+  enableRealtime: BooleanFilter
 
   """Filter by the object’s `options` field."""
   options: JSONFilter
@@ -25519,6 +25525,11 @@ type ApiSetting {
   enableLlm: Boolean
 
   """
+  Override: enable realtime subscriptions (NULL = inherit from database_settings)
+  """
+  enableRealtime: Boolean
+
+  """
   Extensible JSON for additional per-API settings that do not have dedicated columns
   """
   options: JSON!
@@ -25978,6 +25989,11 @@ type DatabaseSetting {
   enableLlm: Boolean!
 
   """
+  Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API
+  """
+  enableRealtime: Boolean!
+
+  """
   Extensible JSON for additional settings that do not have dedicated columns
   """
   options: JSON!
@@ -26041,6 +26057,8 @@ enum ApiSettingOrderBy {
   ENABLE_LTREE_DESC
   ENABLE_LLM_ASC
   ENABLE_LLM_DESC
+  ENABLE_REALTIME_ASC
+  ENABLE_REALTIME_DESC
   OPTIONS_ASC
   OPTIONS_DESC
 }
@@ -35573,6 +35591,8 @@ enum DatabaseSettingOrderBy {
   ENABLE_LTREE_DESC
   ENABLE_LLM_ASC
   ENABLE_LLM_DESC
+  ENABLE_REALTIME_ASC
+  ENABLE_REALTIME_DESC
   OPTIONS_ASC
   OPTIONS_DESC
 }
@@ -36614,7 +36634,7 @@ type Mutation {
   ): InitEmptyRepoPayload
 
   """
-  Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Six phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level indexes/fts/unique_constraints are deferred to phases 3-5 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure.
+  Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Seven phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints/check_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints, (6) provision_check_constraint() for top-level + deferred check constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level entries are deferred to phases 3-6 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure.
   """
   constructBlueprint(
     """
@@ -36672,6 +36692,16 @@ type Mutation {
     """
     input: SetFieldOrderInput!
   ): SetFieldOrderPayload
+
+  """
+  Creates a check constraint on a table from a $type + data blueprint definition. Supports: CheckOneOf (enum validation via = ANY(ARRAY[...])), CheckGreaterThan (single-column > value or cross-column), CheckLessThan (single-column < value or cross-column), CheckNotEqual (cross-column inequality). Builds AST expressions via ast_helpers and inserts into metaschema_public.check_constraint. Graceful: skips if a constraint with the same name already exists.
+  """
+  provisionCheckConstraint(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: ProvisionCheckConstraintInput!
+  ): ProvisionCheckConstraintPayload
 
   """
   Creates a unique constraint on a table. Accepts a jsonb definition with columns (array of field names). Graceful: skips if the exact same unique constraint already exists.
@@ -37541,14 +37571,6 @@ type Mutation {
     input: CreateAppLevelInput!
   ): CreateAppLevelPayload
 
-  """Creates a single `DatabaseSetting`."""
-  createDatabaseSetting(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateDatabaseSettingInput!
-  ): CreateDatabaseSettingPayload
-
   """Creates a single `Blueprint`."""
   createBlueprint(
     """
@@ -37573,13 +37595,13 @@ type Mutation {
     input: CreateRealtimeModuleInput!
   ): CreateRealtimeModulePayload
 
-  """Creates a single `ApiSetting`."""
-  createApiSetting(
+  """Creates a single `DatabaseSetting`."""
+  createDatabaseSetting(
     """
     The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     """
-    input: CreateApiSettingInput!
-  ): CreateApiSettingPayload
+    input: CreateDatabaseSettingInput!
+  ): CreateDatabaseSettingPayload
 
   """Creates a single `PlansModule`."""
   createPlansModule(
@@ -37620,6 +37642,14 @@ type Mutation {
     """
     input: CreateDatabaseTransferInput!
   ): CreateDatabaseTransferPayload
+
+  """Creates a single `ApiSetting`."""
+  createApiSetting(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateApiSettingInput!
+  ): CreateApiSettingPayload
 
   """Creates a single `BillingModule`."""
   createBillingModule(
@@ -38697,14 +38727,6 @@ type Mutation {
     input: UpdateAppLevelInput!
   ): UpdateAppLevelPayload
 
-  """Updates a single `DatabaseSetting` using a unique key and a patch."""
-  updateDatabaseSetting(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateDatabaseSettingInput!
-  ): UpdateDatabaseSettingPayload
-
   """Updates a single `Blueprint` using a unique key and a patch."""
   updateBlueprint(
     """
@@ -38731,13 +38753,13 @@ type Mutation {
     input: UpdateRealtimeModuleInput!
   ): UpdateRealtimeModulePayload
 
-  """Updates a single `ApiSetting` using a unique key and a patch."""
-  updateApiSetting(
+  """Updates a single `DatabaseSetting` using a unique key and a patch."""
+  updateDatabaseSetting(
     """
     The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     """
-    input: UpdateApiSettingInput!
-  ): UpdateApiSettingPayload
+    input: UpdateDatabaseSettingInput!
+  ): UpdateDatabaseSettingPayload
 
   """Updates a single `PlansModule` using a unique key and a patch."""
   updatePlansModule(
@@ -38770,6 +38792,14 @@ type Mutation {
     """
     input: UpdateDatabaseTransferInput!
   ): UpdateDatabaseTransferPayload
+
+  """Updates a single `ApiSetting` using a unique key and a patch."""
+  updateApiSetting(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateApiSettingInput!
+  ): UpdateApiSettingPayload
 
   """Updates a single `BillingModule` using a unique key and a patch."""
   updateBillingModule(
@@ -39823,14 +39853,6 @@ type Mutation {
     input: DeleteAppLevelInput!
   ): DeleteAppLevelPayload
 
-  """Deletes a single `DatabaseSetting` using a unique key."""
-  deleteDatabaseSetting(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteDatabaseSettingInput!
-  ): DeleteDatabaseSettingPayload
-
   """Deletes a single `Blueprint` using a unique key."""
   deleteBlueprint(
     """
@@ -39855,13 +39877,13 @@ type Mutation {
     input: DeleteRealtimeModuleInput!
   ): DeleteRealtimeModulePayload
 
-  """Deletes a single `ApiSetting` using a unique key."""
-  deleteApiSetting(
+  """Deletes a single `DatabaseSetting` using a unique key."""
+  deleteDatabaseSetting(
     """
     The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     """
-    input: DeleteApiSettingInput!
-  ): DeleteApiSettingPayload
+    input: DeleteDatabaseSettingInput!
+  ): DeleteDatabaseSettingPayload
 
   """Deletes a single `PlansModule` using a unique key."""
   deletePlansModule(
@@ -39894,6 +39916,14 @@ type Mutation {
     """
     input: DeleteDatabaseTransferInput!
   ): DeleteDatabaseTransferPayload
+
+  """Deletes a single `ApiSetting` using a unique key."""
+  deleteApiSetting(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteApiSettingInput!
+  ): DeleteApiSettingPayload
 
   """Deletes a single `BillingModule` using a unique key."""
   deleteBillingModule(
@@ -40949,6 +40979,32 @@ input SetFieldOrderInput {
   """
   clientMutationId: String
   fieldIds: [UUID]
+}
+
+"""The output of our `provisionCheckConstraint` mutation."""
+type ProvisionCheckConstraintPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+}
+
+"""All input for the `provisionCheckConstraint` mutation."""
+input ProvisionCheckConstraintInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  databaseId: UUID
+  tableId: UUID
+  definition: JSON
 }
 
 """The output of our `provisionUniqueConstraint` mutation."""
@@ -46320,84 +46376,6 @@ input AppLevelInput {
   updatedAt: Datetime
 }
 
-"""The output of our create `DatabaseSetting` mutation."""
-type CreateDatabaseSettingPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` that was created by this mutation."""
-  databaseSetting: DatabaseSetting
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
-  databaseSettingEdge(
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingEdge
-}
-
-"""All input for the create `DatabaseSetting` mutation."""
-input CreateDatabaseSettingInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` to be created by this mutation."""
-  databaseSetting: DatabaseSettingInput!
-}
-
-"""An input for mutations affecting `DatabaseSetting`"""
-input DatabaseSettingInput {
-  """Unique identifier for this settings record"""
-  id: UUID
-
-  """Reference to the metaschema database these settings apply to"""
-  databaseId: UUID!
-
-  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
-  enableAggregates: Boolean
-
-  """Enable PostGIS spatial types and operators in the GraphQL API"""
-  enablePostgis: Boolean
-
-  """
-  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
-  """
-  enableSearch: Boolean
-
-  """Enable direct (multipart) file upload mutations in the GraphQL API"""
-  enableDirectUploads: Boolean
-
-  """Enable presigned URL upload flow for S3/MinIO storage"""
-  enablePresignedUploads: Boolean
-
-  """Enable many-to-many relationship queries in the GraphQL API"""
-  enableManyToMany: Boolean
-
-  """Enable connection filter (where argument) in the GraphQL API"""
-  enableConnectionFilter: Boolean
-
-  """Enable ltree hierarchical data type support in the GraphQL API"""
-  enableLtree: Boolean
-
-  """Enable LLM/AI integration features in the GraphQL API"""
-  enableLlm: Boolean
-
-  """
-  Extensible JSON for additional settings that do not have dedicated columns
-  """
-  options: JSON
-}
-
 """The output of our create `Blueprint` mutation."""
 type CreateBlueprintPayload {
   """
@@ -46584,99 +46562,85 @@ input RealtimeModuleInput {
   notifyChannel: String
 }
 
-"""The output of our create `ApiSetting` mutation."""
-type CreateApiSettingPayload {
+"""The output of our create `DatabaseSetting` mutation."""
+type CreateDatabaseSettingPayload {
   """
   The exact same `clientMutationId` that was provided in the mutation input,
   unchanged and unused. May be used by a client to track mutations.
   """
   clientMutationId: String
 
-  """The `ApiSetting` that was created by this mutation."""
-  apiSetting: ApiSetting
+  """The `DatabaseSetting` that was created by this mutation."""
+  databaseSetting: DatabaseSetting
 
   """
   Our root query field type. Allows us to run any query from our mutation payload.
   """
   query: Query
 
-  """An edge for our `ApiSetting`. May be used by Relay 1."""
-  apiSettingEdge(
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): ApiSettingEdge
+  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
+  databaseSettingEdge(
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingEdge
 }
 
-"""All input for the create `ApiSetting` mutation."""
-input CreateApiSettingInput {
+"""All input for the create `DatabaseSetting` mutation."""
+input CreateDatabaseSettingInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
 
-  """The `ApiSetting` to be created by this mutation."""
-  apiSetting: ApiSettingInput!
+  """The `DatabaseSetting` to be created by this mutation."""
+  databaseSetting: DatabaseSettingInput!
 }
 
-"""An input for mutations affecting `ApiSetting`"""
-input ApiSettingInput {
-  """Unique identifier for this API settings record"""
+"""An input for mutations affecting `DatabaseSetting`"""
+input DatabaseSettingInput {
+  """Unique identifier for this settings record"""
   id: UUID
 
-  """Reference to the metaschema database"""
+  """Reference to the metaschema database these settings apply to"""
   databaseId: UUID!
 
-  """API these settings override for"""
-  apiId: UUID!
-
-  """
-  Override: enable aggregate queries (NULL = inherit from database_settings)
-  """
+  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
   enableAggregates: Boolean
 
-  """
-  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
-  """
+  """Enable PostGIS spatial types and operators in the GraphQL API"""
   enablePostgis: Boolean
 
   """
-  Override: enable unified search (NULL = inherit from database_settings)
+  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
   """
   enableSearch: Boolean
 
-  """
-  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
-  """
+  """Enable direct (multipart) file upload mutations in the GraphQL API"""
   enableDirectUploads: Boolean
 
-  """
-  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
-  """
+  """Enable presigned URL upload flow for S3/MinIO storage"""
   enablePresignedUploads: Boolean
 
-  """
-  Override: enable many-to-many relationships (NULL = inherit from database_settings)
-  """
+  """Enable many-to-many relationship queries in the GraphQL API"""
   enableManyToMany: Boolean
 
-  """
-  Override: enable connection filter (NULL = inherit from database_settings)
-  """
+  """Enable connection filter (where argument) in the GraphQL API"""
   enableConnectionFilter: Boolean
 
-  """
-  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
-  """
+  """Enable ltree hierarchical data type support in the GraphQL API"""
   enableLtree: Boolean
 
-  """
-  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
-  """
+  """Enable LLM/AI integration features in the GraphQL API"""
   enableLlm: Boolean
 
   """
-  Extensible JSON for additional per-API settings that do not have dedicated columns
+  Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API
+  """
+  enableRealtime: Boolean
+
+  """
+  Extensible JSON for additional settings that do not have dedicated columns
   """
   options: JSON
 }
@@ -46980,6 +46944,108 @@ input DatabaseTransferInput {
   createdAt: Datetime
   updatedAt: Datetime
   completedAt: Datetime
+}
+
+"""The output of our create `ApiSetting` mutation."""
+type CreateApiSettingPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` that was created by this mutation."""
+  apiSetting: ApiSetting
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `ApiSetting`. May be used by Relay 1."""
+  apiSettingEdge(
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): ApiSettingEdge
+}
+
+"""All input for the create `ApiSetting` mutation."""
+input CreateApiSettingInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` to be created by this mutation."""
+  apiSetting: ApiSettingInput!
+}
+
+"""An input for mutations affecting `ApiSetting`"""
+input ApiSettingInput {
+  """Unique identifier for this API settings record"""
+  id: UUID
+
+  """Reference to the metaschema database"""
+  databaseId: UUID!
+
+  """API these settings override for"""
+  apiId: UUID!
+
+  """
+  Override: enable aggregate queries (NULL = inherit from database_settings)
+  """
+  enableAggregates: Boolean
+
+  """
+  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
+  """
+  enablePostgis: Boolean
+
+  """
+  Override: enable unified search (NULL = inherit from database_settings)
+  """
+  enableSearch: Boolean
+
+  """
+  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
+  """
+  enableDirectUploads: Boolean
+
+  """
+  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
+  """
+  enablePresignedUploads: Boolean
+
+  """
+  Override: enable many-to-many relationships (NULL = inherit from database_settings)
+  """
+  enableManyToMany: Boolean
+
+  """
+  Override: enable connection filter (NULL = inherit from database_settings)
+  """
+  enableConnectionFilter: Boolean
+
+  """
+  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
+  """
+  enableLtree: Boolean
+
+  """
+  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
+  """
+  enableLlm: Boolean
+
+  """
+  Override: enable realtime subscriptions (NULL = inherit from database_settings)
+  """
+  enableRealtime: Boolean
+
+  """
+  Extensible JSON for additional per-API settings that do not have dedicated columns
+  """
+  options: JSON
 }
 
 """The output of our create `BillingModule` mutation."""
@@ -55266,91 +55332,6 @@ input AppLevelPatch {
   imageUpload: Upload
 }
 
-"""The output of our update `DatabaseSetting` mutation."""
-type UpdateDatabaseSettingPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` that was updated by this mutation."""
-  databaseSetting: DatabaseSetting
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
-  databaseSettingEdge(
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingEdge
-}
-
-"""All input for the `updateDatabaseSetting` mutation."""
-input UpdateDatabaseSettingInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """Unique identifier for this settings record"""
-  id: UUID!
-
-  """
-  An object where the defined keys will be set on the `DatabaseSetting` being updated.
-  """
-  databaseSettingPatch: DatabaseSettingPatch!
-}
-
-"""
-Represents an update to a `DatabaseSetting`. Fields that are set will be updated.
-"""
-input DatabaseSettingPatch {
-  """Unique identifier for this settings record"""
-  id: UUID
-
-  """Reference to the metaschema database these settings apply to"""
-  databaseId: UUID
-
-  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
-  enableAggregates: Boolean
-
-  """Enable PostGIS spatial types and operators in the GraphQL API"""
-  enablePostgis: Boolean
-
-  """
-  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
-  """
-  enableSearch: Boolean
-
-  """Enable direct (multipart) file upload mutations in the GraphQL API"""
-  enableDirectUploads: Boolean
-
-  """Enable presigned URL upload flow for S3/MinIO storage"""
-  enablePresignedUploads: Boolean
-
-  """Enable many-to-many relationship queries in the GraphQL API"""
-  enableManyToMany: Boolean
-
-  """Enable connection filter (where argument) in the GraphQL API"""
-  enableConnectionFilter: Boolean
-
-  """Enable ltree hierarchical data type support in the GraphQL API"""
-  enableLtree: Boolean
-
-  """Enable LLM/AI integration features in the GraphQL API"""
-  enableLlm: Boolean
-
-  """
-  Extensible JSON for additional settings that do not have dedicated columns
-  """
-  options: JSON
-}
-
 """The output of our update `Blueprint` mutation."""
 type UpdateBlueprintPayload {
   """
@@ -55554,106 +55535,92 @@ input RealtimeModulePatch {
   notifyChannel: String
 }
 
-"""The output of our update `ApiSetting` mutation."""
-type UpdateApiSettingPayload {
+"""The output of our update `DatabaseSetting` mutation."""
+type UpdateDatabaseSettingPayload {
   """
   The exact same `clientMutationId` that was provided in the mutation input,
   unchanged and unused. May be used by a client to track mutations.
   """
   clientMutationId: String
 
-  """The `ApiSetting` that was updated by this mutation."""
-  apiSetting: ApiSetting
+  """The `DatabaseSetting` that was updated by this mutation."""
+  databaseSetting: DatabaseSetting
 
   """
   Our root query field type. Allows us to run any query from our mutation payload.
   """
   query: Query
 
-  """An edge for our `ApiSetting`. May be used by Relay 1."""
-  apiSettingEdge(
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): ApiSettingEdge
+  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
+  databaseSettingEdge(
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingEdge
 }
 
-"""All input for the `updateApiSetting` mutation."""
-input UpdateApiSettingInput {
+"""All input for the `updateDatabaseSetting` mutation."""
+input UpdateDatabaseSettingInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
 
-  """Unique identifier for this API settings record"""
+  """Unique identifier for this settings record"""
   id: UUID!
 
   """
-  An object where the defined keys will be set on the `ApiSetting` being updated.
+  An object where the defined keys will be set on the `DatabaseSetting` being updated.
   """
-  apiSettingPatch: ApiSettingPatch!
+  databaseSettingPatch: DatabaseSettingPatch!
 }
 
 """
-Represents an update to a `ApiSetting`. Fields that are set will be updated.
+Represents an update to a `DatabaseSetting`. Fields that are set will be updated.
 """
-input ApiSettingPatch {
-  """Unique identifier for this API settings record"""
+input DatabaseSettingPatch {
+  """Unique identifier for this settings record"""
   id: UUID
 
-  """Reference to the metaschema database"""
+  """Reference to the metaschema database these settings apply to"""
   databaseId: UUID
 
-  """API these settings override for"""
-  apiId: UUID
-
-  """
-  Override: enable aggregate queries (NULL = inherit from database_settings)
-  """
+  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
   enableAggregates: Boolean
 
-  """
-  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
-  """
+  """Enable PostGIS spatial types and operators in the GraphQL API"""
   enablePostgis: Boolean
 
   """
-  Override: enable unified search (NULL = inherit from database_settings)
+  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
   """
   enableSearch: Boolean
 
-  """
-  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
-  """
+  """Enable direct (multipart) file upload mutations in the GraphQL API"""
   enableDirectUploads: Boolean
 
-  """
-  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
-  """
+  """Enable presigned URL upload flow for S3/MinIO storage"""
   enablePresignedUploads: Boolean
 
-  """
-  Override: enable many-to-many relationships (NULL = inherit from database_settings)
-  """
+  """Enable many-to-many relationship queries in the GraphQL API"""
   enableManyToMany: Boolean
 
-  """
-  Override: enable connection filter (NULL = inherit from database_settings)
-  """
+  """Enable connection filter (where argument) in the GraphQL API"""
   enableConnectionFilter: Boolean
 
-  """
-  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
-  """
+  """Enable ltree hierarchical data type support in the GraphQL API"""
   enableLtree: Boolean
 
-  """
-  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
-  """
+  """Enable LLM/AI integration features in the GraphQL API"""
   enableLlm: Boolean
 
   """
-  Extensible JSON for additional per-API settings that do not have dedicated columns
+  Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API
+  """
+  enableRealtime: Boolean
+
+  """
+  Extensible JSON for additional settings that do not have dedicated columns
   """
   options: JSON
 }
@@ -55934,6 +55901,115 @@ input DatabaseTransferPatch {
   createdAt: Datetime
   updatedAt: Datetime
   completedAt: Datetime
+}
+
+"""The output of our update `ApiSetting` mutation."""
+type UpdateApiSettingPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` that was updated by this mutation."""
+  apiSetting: ApiSetting
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `ApiSetting`. May be used by Relay 1."""
+  apiSettingEdge(
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): ApiSettingEdge
+}
+
+"""All input for the `updateApiSetting` mutation."""
+input UpdateApiSettingInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """Unique identifier for this API settings record"""
+  id: UUID!
+
+  """
+  An object where the defined keys will be set on the `ApiSetting` being updated.
+  """
+  apiSettingPatch: ApiSettingPatch!
+}
+
+"""
+Represents an update to a `ApiSetting`. Fields that are set will be updated.
+"""
+input ApiSettingPatch {
+  """Unique identifier for this API settings record"""
+  id: UUID
+
+  """Reference to the metaschema database"""
+  databaseId: UUID
+
+  """API these settings override for"""
+  apiId: UUID
+
+  """
+  Override: enable aggregate queries (NULL = inherit from database_settings)
+  """
+  enableAggregates: Boolean
+
+  """
+  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
+  """
+  enablePostgis: Boolean
+
+  """
+  Override: enable unified search (NULL = inherit from database_settings)
+  """
+  enableSearch: Boolean
+
+  """
+  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
+  """
+  enableDirectUploads: Boolean
+
+  """
+  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
+  """
+  enablePresignedUploads: Boolean
+
+  """
+  Override: enable many-to-many relationships (NULL = inherit from database_settings)
+  """
+  enableManyToMany: Boolean
+
+  """
+  Override: enable connection filter (NULL = inherit from database_settings)
+  """
+  enableConnectionFilter: Boolean
+
+  """
+  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
+  """
+  enableLtree: Boolean
+
+  """
+  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
+  """
+  enableLlm: Boolean
+
+  """
+  Override: enable realtime subscriptions (NULL = inherit from database_settings)
+  """
+  enableRealtime: Boolean
+
+  """
+  Extensible JSON for additional per-API settings that do not have dedicated columns
+  """
+  options: JSON
 }
 
 """The output of our update `BillingModule` mutation."""
@@ -62335,41 +62411,6 @@ input DeleteAppLevelInput {
   id: UUID!
 }
 
-"""The output of our delete `DatabaseSetting` mutation."""
-type DeleteDatabaseSettingPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` that was deleted by this mutation."""
-  databaseSetting: DatabaseSetting
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
-  databaseSettingEdge(
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingEdge
-}
-
-"""All input for the `deleteDatabaseSetting` mutation."""
-input DeleteDatabaseSettingInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """Unique identifier for this settings record"""
-  id: UUID!
-}
-
 """The output of our delete `Blueprint` mutation."""
 type DeleteBlueprintPayload {
   """
@@ -62471,38 +62512,38 @@ input DeleteRealtimeModuleInput {
   id: UUID!
 }
 
-"""The output of our delete `ApiSetting` mutation."""
-type DeleteApiSettingPayload {
+"""The output of our delete `DatabaseSetting` mutation."""
+type DeleteDatabaseSettingPayload {
   """
   The exact same `clientMutationId` that was provided in the mutation input,
   unchanged and unused. May be used by a client to track mutations.
   """
   clientMutationId: String
 
-  """The `ApiSetting` that was deleted by this mutation."""
-  apiSetting: ApiSetting
+  """The `DatabaseSetting` that was deleted by this mutation."""
+  databaseSetting: DatabaseSetting
 
   """
   Our root query field type. Allows us to run any query from our mutation payload.
   """
   query: Query
 
-  """An edge for our `ApiSetting`. May be used by Relay 1."""
-  apiSettingEdge(
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): ApiSettingEdge
+  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
+  databaseSettingEdge(
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingEdge
 }
 
-"""All input for the `deleteApiSetting` mutation."""
-input DeleteApiSettingInput {
+"""All input for the `deleteDatabaseSetting` mutation."""
+input DeleteDatabaseSettingInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
 
-  """Unique identifier for this API settings record"""
+  """Unique identifier for this settings record"""
   id: UUID!
 }
 
@@ -62635,6 +62676,41 @@ input DeleteDatabaseTransferInput {
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
+  id: UUID!
+}
+
+"""The output of our delete `ApiSetting` mutation."""
+type DeleteApiSettingPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` that was deleted by this mutation."""
+  apiSetting: ApiSetting
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `ApiSetting`. May be used by Relay 1."""
+  apiSettingEdge(
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): ApiSettingEdge
+}
+
+"""All input for the `deleteApiSetting` mutation."""
+input DeleteApiSettingInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """Unique identifier for this API settings record"""
   id: UUID!
 }
 

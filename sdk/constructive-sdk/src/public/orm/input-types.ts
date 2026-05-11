@@ -1043,6 +1043,8 @@ export interface ApiSetting {
   enableLtree?: boolean | null;
   /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
   enableLlm?: boolean | null;
+  /** Override: enable realtime subscriptions (NULL = inherit from database_settings) */
+  enableRealtime?: boolean | null;
   /** Extensible JSON for additional per-API settings that do not have dedicated columns */
   options?: Record<string, unknown> | null;
 }
@@ -2665,6 +2667,8 @@ export interface DatabaseSetting {
   enableLtree?: boolean | null;
   /** Enable LLM/AI integration features in the GraphQL API */
   enableLlm?: boolean | null;
+  /** Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API */
+  enableRealtime?: boolean | null;
   /** Extensible JSON for additional settings that do not have dedicated columns */
   options?: Record<string, unknown> | null;
 }
@@ -5585,6 +5589,7 @@ export type ApiSettingSelect = {
   enableConnectionFilter?: boolean;
   enableLtree?: boolean;
   enableLlm?: boolean;
+  enableRealtime?: boolean;
   options?: boolean;
   api?: {
     select: ApiSelect;
@@ -7485,6 +7490,7 @@ export type DatabaseSettingSelect = {
   enableConnectionFilter?: boolean;
   enableLtree?: boolean;
   enableLlm?: boolean;
+  enableRealtime?: boolean;
   options?: boolean;
   database?: {
     select: DatabaseSelect;
@@ -10228,6 +10234,8 @@ export interface ApiSettingFilter {
   enableLtree?: BooleanFilter;
   /** Filter by the object’s `enableLlm` field. */
   enableLlm?: BooleanFilter;
+  /** Filter by the object’s `enableRealtime` field. */
+  enableRealtime?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -13364,6 +13372,8 @@ export interface DatabaseSettingFilter {
   enableLtree?: BooleanFilter;
   /** Filter by the object’s `enableLlm` field. */
   enableLlm?: BooleanFilter;
+  /** Filter by the object’s `enableRealtime` field. */
+  enableRealtime?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -15279,6 +15289,8 @@ export type ApiSettingOrderBy =
   | 'ENABLE_LTREE_DESC'
   | 'ENABLE_LLM_ASC'
   | 'ENABLE_LLM_DESC'
+  | 'ENABLE_REALTIME_ASC'
+  | 'ENABLE_REALTIME_DESC'
   | 'OPTIONS_ASC'
   | 'OPTIONS_DESC';
 export type ConnectedAccountsModuleOrderBy =
@@ -17365,6 +17377,8 @@ export type DatabaseSettingOrderBy =
   | 'ENABLE_LTREE_DESC'
   | 'ENABLE_LLM_ASC'
   | 'ENABLE_LLM_DESC'
+  | 'ENABLE_REALTIME_ASC'
+  | 'ENABLE_REALTIME_DESC'
   | 'OPTIONS_ASC'
   | 'OPTIONS_DESC';
 export type PlansModuleOrderBy =
@@ -19256,6 +19270,7 @@ export interface CreateApiSettingInput {
     enableConnectionFilter?: boolean;
     enableLtree?: boolean;
     enableLlm?: boolean;
+    enableRealtime?: boolean;
     options?: Record<string, unknown>;
   };
 }
@@ -19271,6 +19286,7 @@ export interface ApiSettingPatch {
   enableConnectionFilter?: boolean | null;
   enableLtree?: boolean | null;
   enableLlm?: boolean | null;
+  enableRealtime?: boolean | null;
   options?: Record<string, unknown> | null;
 }
 export interface UpdateApiSettingInput {
@@ -22137,6 +22153,7 @@ export interface CreateDatabaseSettingInput {
     enableConnectionFilter?: boolean;
     enableLtree?: boolean;
     enableLlm?: boolean;
+    enableRealtime?: boolean;
     options?: Record<string, unknown>;
   };
 }
@@ -22151,6 +22168,7 @@ export interface DatabaseSettingPatch {
   enableConnectionFilter?: boolean | null;
   enableLtree?: boolean | null;
   enableLlm?: boolean | null;
+  enableRealtime?: boolean | null;
   options?: Record<string, unknown> | null;
 }
 export interface UpdateDatabaseSettingInput {
@@ -22929,6 +22947,12 @@ export interface BootstrapUserInput {
 export interface SetFieldOrderInput {
   clientMutationId?: string;
   fieldIds?: string[];
+}
+export interface ProvisionCheckConstraintInput {
+  clientMutationId?: string;
+  databaseId?: string;
+  tableId?: string;
+  definition?: Record<string, unknown>;
 }
 export interface ProvisionUniqueConstraintInput {
   clientMutationId?: string;
@@ -26569,6 +26593,8 @@ export interface ApiSettingFilter {
   enableLtree?: BooleanFilter;
   /** Filter by the object’s `enableLlm` field. */
   enableLlm?: BooleanFilter;
+  /** Filter by the object’s `enableRealtime` field. */
+  enableRealtime?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -30403,6 +30429,8 @@ export interface DatabaseSettingFilter {
   enableLtree?: BooleanFilter;
   /** Filter by the object’s `enableLlm` field. */
   enableLlm?: BooleanFilter;
+  /** Filter by the object’s `enableRealtime` field. */
+  enableRealtime?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -31440,6 +31468,12 @@ export interface SetFieldOrderPayload {
   clientMutationId?: string | null;
 }
 export type SetFieldOrderPayloadSelect = {
+  clientMutationId?: boolean;
+};
+export interface ProvisionCheckConstraintPayload {
+  clientMutationId?: string | null;
+}
+export type ProvisionCheckConstraintPayloadSelect = {
   clientMutationId?: boolean;
 };
 export interface ProvisionUniqueConstraintPayload {

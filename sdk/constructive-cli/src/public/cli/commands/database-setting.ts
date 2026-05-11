@@ -27,6 +27,7 @@ const fieldSchema: FieldSchema = {
   enableConnectionFilter: 'boolean',
   enableLtree: 'boolean',
   enableLlm: 'boolean',
+  enableRealtime: 'boolean',
   options: 'json',
 };
 const usage =
@@ -91,6 +92,7 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       enableConnectionFilter: true,
       enableLtree: true,
       enableLlm: true,
+      enableRealtime: true,
       options: true,
     };
     const findManyArgs = parseFindManyArgs<
@@ -123,6 +125,7 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       enableConnectionFilter: true,
       enableLtree: true,
       enableLlm: true,
+      enableRealtime: true,
       options: true,
     };
     const findFirstArgs = parseFindFirstArgs<
@@ -167,6 +170,7 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           enableConnectionFilter: true,
           enableLtree: true,
           enableLlm: true,
+          enableRealtime: true,
           options: true,
         },
       })
@@ -253,6 +257,13 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'enableRealtime',
+        message: 'enableRealtime',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'json',
         name: 'options',
         message: 'options',
@@ -279,6 +290,7 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           enableConnectionFilter: cleanedData.enableConnectionFilter,
           enableLtree: cleanedData.enableLtree,
           enableLlm: cleanedData.enableLlm,
+          enableRealtime: cleanedData.enableRealtime,
           options: cleanedData.options,
         },
         select: {
@@ -293,6 +305,7 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           enableConnectionFilter: true,
           enableLtree: true,
           enableLlm: true,
+          enableRealtime: true,
           options: true,
         },
       })
@@ -385,6 +398,13 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'enableRealtime',
+        message: 'enableRealtime',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'json',
         name: 'options',
         message: 'options',
@@ -411,6 +431,7 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           enableConnectionFilter: cleanedData.enableConnectionFilter,
           enableLtree: cleanedData.enableLtree,
           enableLlm: cleanedData.enableLlm,
+          enableRealtime: cleanedData.enableRealtime,
           options: cleanedData.options,
         },
         select: {
@@ -425,6 +446,7 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           enableConnectionFilter: true,
           enableLtree: true,
           enableLlm: true,
+          enableRealtime: true,
           options: true,
         },
       })

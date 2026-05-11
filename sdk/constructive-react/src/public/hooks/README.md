@@ -869,7 +869,7 @@ function App() {
 | `useVerifyEmailMutation` | Mutation | verifyEmail |
 | `useFreezeObjectsMutation` | Mutation | freezeObjects |
 | `useInitEmptyRepoMutation` | Mutation | initEmptyRepo |
-| `useConstructBlueprintMutation` | Mutation | Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Six phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level indexes/fts/unique_constraints are deferred to phases 3-5 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure. |
+| `useConstructBlueprintMutation` | Mutation | Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Seven phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints/check_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints, (6) provision_check_constraint() for top-level + deferred check constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level entries are deferred to phases 3-6 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure. |
 | `useProvisionNewUserMutation` | Mutation | provisionNewUser |
 | `useResetPasswordMutation` | Mutation | resetPassword |
 | `useRemoveNodeAtPathMutation` | Mutation | removeNodeAtPath |
@@ -877,6 +877,7 @@ function App() {
 | `useProvisionSpatialRelationMutation` | Mutation | Idempotent provisioner for metaschema_public.spatial_relation. Inserts a row declaring a spatial predicate between two geometry/geography columns (owner and target). Called from construct_blueprint when a relation entry has $type=RelationSpatial. Graceful: re-running with the same (source_table_id, name) returns the existing id without modifying the row. Operator whitelist and st_dwithin ↔ param_name pairing are enforced by the spatial_relation table CHECKs. Both fields must already exist — this is a metadata-only insert. |
 | `useBootstrapUserMutation` | Mutation | bootstrapUser |
 | `useSetFieldOrderMutation` | Mutation | setFieldOrder |
+| `useProvisionCheckConstraintMutation` | Mutation | Creates a check constraint on a table from a $type + data blueprint definition. Supports: CheckOneOf (enum validation via = ANY(ARRAY[...])), CheckGreaterThan (single-column > value or cross-column), CheckLessThan (single-column < value or cross-column), CheckNotEqual (cross-column inequality). Builds AST expressions via ast_helpers and inserts into metaschema_public.check_constraint. Graceful: skips if a constraint with the same name already exists. |
 | `useProvisionUniqueConstraintMutation` | Mutation | Creates a unique constraint on a table. Accepts a jsonb definition with columns (array of field names). Graceful: skips if the exact same unique constraint already exists. |
 | `useProvisionFullTextSearchMutation` | Mutation | Creates a full-text search configuration on a table. Accepts a jsonb definition with field (tsvector column name) and sources (array of {field, weight, lang}). Graceful: skips if FTS config already exists for the same (table_id, field_id). Returns the fts_id. |
 | `useProvisionIndexMutation` | Mutation | Creates an index on a table. Accepts a jsonb definition with columns (array of names or single column string), access_method (default BTREE), is_unique, op_classes, options, and name (auto-generated if omitted). Graceful: skips if an index with the same (table_id, field_ids, access_method) already exists. Returns the index_id. |
@@ -1916,20 +1917,20 @@ create({ databaseId: '<UUID>', siteId: '<UUID>', name: '<String>', appImage: '<I
 ```typescript
 // List all apiSettings
 const { data, isLoading } = useApiSettingsQuery({
-  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } },
+  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
 });
 
 // Get one apiSetting
 const { data: item } = useApiSettingQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } },
+  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
 });
 
 // Create a apiSetting
 const { mutate: create } = useCreateApiSettingMutation({
   selection: { fields: { id: true } },
 });
-create({ databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', options: '<JSON>' });
+create({ databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' });
 ```
 
 ### ConnectedAccountsModule
@@ -3788,20 +3789,20 @@ create({ databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', se
 ```typescript
 // List all databaseSettings
 const { data, isLoading } = useDatabaseSettingsQuery({
-  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } },
+  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
 });
 
 // Get one databaseSetting
 const { data: item } = useDatabaseSettingQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, options: true } },
+  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
 });
 
 // Create a databaseSetting
 const { mutate: create } = useCreateDatabaseSettingMutation({
   selection: { fields: { id: true } },
 });
-create({ databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', options: '<JSON>' });
+create({ databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' });
 ```
 
 ### PlansModule
@@ -4476,7 +4477,7 @@ initEmptyRepo
 
 ### `useConstructBlueprintMutation`
 
-Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Six phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level indexes/fts/unique_constraints are deferred to phases 3-5 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure.
+Executes a blueprint definition by delegating to provision_* procedures. Creates a blueprint_construction record to track the attempt. Seven phases: (0) entity_type_provision for each membership_type entry — provisions entity tables, membership modules, and security, (1) provision_table() for each table with nodes[], fields[], policies[], and grants (table-level indexes/fts/unique_constraints/check_constraints are deferred), (2) provision_relation() for each relation, (3) provision_index() for top-level + deferred indexes, (4) provision_full_text_search() for top-level + deferred FTS, (5) provision_unique_constraint() for top-level + deferred unique constraints, (6) provision_check_constraint() for top-level + deferred check constraints. Phase 0 entity tables are added to the table_map so subsequent phases can reference them by name. Table-level entries are deferred to phases 3-6 so they can reference columns created by relations in phase 2. Returns the construction record ID on success, NULL on failure.
 
 - **Type:** mutation
 - **Arguments:**
@@ -4561,6 +4562,17 @@ setFieldOrder
   | Argument | Type |
   |----------|------|
   | `input` | SetFieldOrderInput (required) |
+
+### `useProvisionCheckConstraintMutation`
+
+Creates a check constraint on a table from a $type + data blueprint definition. Supports: CheckOneOf (enum validation via = ANY(ARRAY[...])), CheckGreaterThan (single-column > value or cross-column), CheckLessThan (single-column < value or cross-column), CheckNotEqual (cross-column inequality). Builds AST expressions via ast_helpers and inserts into metaschema_public.check_constraint. Graceful: skips if a constraint with the same name already exists.
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | ProvisionCheckConstraintInput (required) |
 
 ### `useProvisionUniqueConstraintMutation`
 
