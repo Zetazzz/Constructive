@@ -220,6 +220,9 @@ importers:
       grafserv:
         specifier: 1.0.0
         version: 1.0.0(@types/node@25.6.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(grafast@1.0.0(graphql@16.13.0))(graphile-config@1.0.0)(graphql@16.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))(ws@8.19.0)
+      graphile-realtime-subscriptions:
+        specifier: workspace:^
+        version: link:../graphile-realtime-subscriptions/dist
       lru-cache:
         specifier: ^11.2.7
         version: 11.2.7
@@ -758,6 +761,9 @@ importers:
       graphile-presigned-url-plugin:
         specifier: workspace:^
         version: link:../graphile-presigned-url-plugin/dist
+      graphile-realtime-subscriptions:
+        specifier: workspace:^
+        version: link:../graphile-realtime-subscriptions/dist
       graphile-search:
         specifier: workspace:^
         version: link:../graphile-search/dist

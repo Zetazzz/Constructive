@@ -32,6 +32,7 @@ export interface DatabaseSettings {
   enableConnectionFilter: boolean;
   enableLtree: boolean;
   enableLlm: boolean;
+  enableRealtime: boolean;
 }
 
 /**

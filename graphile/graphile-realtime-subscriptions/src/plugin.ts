@@ -341,7 +341,7 @@ export { createRealtimeSubscriptionsPlugin as RealtimeSubscriptionsPlugin };
 // Re-export CursorTracker and RealtimeManager for convenience
 export { CursorTracker } from './cursor-tracker';
 export { RealtimeManager } from './realtime-manager';
-export type { CursorTrackerOptions, ChangeLogEntry, WithPgClient, PgClient, RealtimeManagerOptions } from './types';
+export type { CursorTrackerOptions, ChangeLogEntry, Queryable, RealtimeManagerOptions } from './types';
 
 // Exported for testing
 export { parseNotifyPayload, EventThrottle, DEFAULT_OVERFLOW_THRESHOLD };

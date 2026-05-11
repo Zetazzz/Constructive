@@ -86,6 +86,8 @@ export interface GraphileCacheEntry {
   httpServer: HttpServer;
   cacheKey: string;
   createdAt: number;
+  /** Optional RealtimeManager for cursor-tracked subscription delivery */
+  realtimeManager?: { stop(): Promise<void> } | null;
 }
 
 // Track disposed entries to prevent double-disposal
@@ -118,6 +120,14 @@ const disposeEntry = async (entry: GraphileCacheEntry, key: string): Promise<voi
       await new Promise<void>((resolve) => {
         entry.httpServer.close(() => resolve());
       });
+    }
+    // Stop RealtimeManager if present (before releasing PostGraphile)
+    if (entry.realtimeManager) {
+      try {
+        await entry.realtimeManager.stop();
+      } catch (err) {
+        log.error(`Error stopping RealtimeManager for PostGraphile[${key}]:`, err);
+      }
     }
     // Release PostGraphile instance (this also releases grafserv internally)
     if (entry.pgl) {

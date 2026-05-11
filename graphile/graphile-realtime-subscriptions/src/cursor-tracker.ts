@@ -9,8 +9,8 @@
  *   4. stop() → calls cleanup_ephemeral() to remove ephemeral subscriptions
  *              and delete the listener_node row
  *
- * The caller provides a withPgClient callback that acquires a PgClient
- * for each operation. This keeps connection management external.
+ * The caller provides a Queryable (typically a pg.Pool from pg-cache)
+ * and this class calls pool.query() directly for each operation.
  */
 
 import { randomUUID } from 'crypto';
@@ -20,8 +20,7 @@ import { QuoteUtils } from '@pgsql/quotes';
 import type {
   CursorTrackerOptions,
   ChangeLogEntry,
-  WithPgClient,
-  PgClient,
+  Queryable,
 } from './types';
 
 const log = new Logger('cursor-tracker');
@@ -38,7 +37,7 @@ export class CursorTracker {
   private readonly pollIntervalMs: number;
   private readonly heartbeatIntervalMs: number;
   private readonly batchLimit: number;
-  private readonly withPgClient: WithPgClient;
+  private readonly pool: Queryable;
   private readonly onChanges: (entries: ChangeLogEntry[]) => void;
   private readonly onError: (error: Error) => void;
 
@@ -53,7 +52,7 @@ export class CursorTracker {
     this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
     this.heartbeatIntervalMs = options.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS;
     this.batchLimit = options.batchLimit ?? DEFAULT_BATCH_LIMIT;
-    this.withPgClient = options.withPgClient;
+    this.pool = options.pool;
     this.onChanges = options.onChanges ?? (() => {});
     this.onError = options.onError ?? ((err) => {
       log.error(`CursorTracker error: ${err.message}`);
@@ -104,14 +103,12 @@ export class CursorTracker {
     this.draining = true;
 
     try {
-      const entries = await this.withPgClient(async (client: PgClient) => {
-        const sql = `SELECT * FROM ${this.quoteIdent(this.schema)}.drain_changes($1, $2)`;
-        const result = await client.query<{ drain_changes: ChangeLogEntry }>(
-          sql,
-          [this.nodeId, this.batchLimit],
-        );
-        return result.rows.map((row) => row.drain_changes);
-      });
+      const sql = `SELECT * FROM ${this.quoteIdent(this.schema)}.drain_changes($1, $2)`;
+      const result = await this.pool.query<{ drain_changes: ChangeLogEntry }>(
+        sql,
+        [this.nodeId, this.batchLimit],
+      );
+      const entries = result.rows.map((row) => row.drain_changes);
 
       if (entries.length > 0) {
         log.info(`Drained ${entries.length} change(s) for node=${this.nodeId}`);
@@ -129,10 +126,8 @@ export class CursorTracker {
 
   async touchListener(): Promise<void> {
     try {
-      await this.withPgClient(async (client: PgClient) => {
-        const sql = `SELECT ${this.quoteIdent(this.schema)}.touch_listener($1)`;
-        await client.query(sql, [this.nodeId]);
-      });
+      const sql = `SELECT ${this.quoteIdent(this.schema)}.touch_listener($1)`;
+      await this.pool.query(sql, [this.nodeId]);
     } catch (err) {
       this.onError(err instanceof Error ? err : new Error(String(err)));
     }
@@ -140,10 +135,8 @@ export class CursorTracker {
 
   async cleanupEphemeral(): Promise<void> {
     try {
-      await this.withPgClient(async (client: PgClient) => {
-        const sql = `SELECT ${this.quoteIdent(this.schema)}.cleanup_ephemeral($1)`;
-        await client.query(sql, [this.nodeId]);
-      });
+      const sql = `SELECT ${this.quoteIdent(this.schema)}.cleanup_ephemeral($1)`;
+      await this.pool.query(sql, [this.nodeId]);
       log.info(`Cleaned up ephemeral subscriptions for node=${this.nodeId}`);
     } catch (err) {
       this.onError(err instanceof Error ? err : new Error(String(err)));
