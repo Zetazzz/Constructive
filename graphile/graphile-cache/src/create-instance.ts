@@ -3,7 +3,6 @@ import { Logger } from '@pgpmjs/logger';
 import express from 'express';
 import { postgraphile } from 'postgraphile';
 import { grafserv } from 'grafserv/express/v4';
-import type { Pool } from 'pg';
 import type { WithPgClient, PgClient } from 'graphile-realtime-subscriptions';
 import type { GraphileCacheEntry } from './graphile-cache';
 
@@ -14,24 +13,18 @@ interface GraphileInstanceOptions {
   cacheKey: string;
   /**
    * When true, a RealtimeManager is created and started alongside the
-   * PostGraphile instance.  Requires `pool` to be provided.
+   * PostGraphile instance.  The pool is extracted from the preset's
+   * pgServices (managed by pg-cache) rather than passed separately.
    */
   enableRealtime?: boolean;
-  /**
-   * The pg Pool used by this PostGraphile instance.
-   * Required when `enableRealtime` is true so we can create a
-   * `withPgClient` for cursor-tracking queries.
-   */
-  pool?: Pool;
 }
 
 /**
- * Create a simple withPgClient wrapper from a pg Pool.
- *
- * This satisfies the `WithPgClient` type expected by RealtimeManager
- * without pulling in @dataplan/pg adaptor code.
+ * Build a WithPgClient from the pool inside a pgService's adaptorSettings.
+ * The pool is the same one managed by pg-cache via getPgPool(), threaded
+ * through the preset by makePgService({ pool, schemas }).
  */
-function createWithPgClient(pool: Pool): WithPgClient {
+function withPgClientFromPool(pool: { connect(): Promise<any> }): WithPgClient {
   return async <T>(callback: (client: PgClient) => Promise<T>): Promise<T> => {
     const pgClient = await pool.connect();
     try {
@@ -55,14 +48,16 @@ function createWithPgClient(pool: Pool): WithPgClient {
  * Callers are responsible for building the `GraphileConfig.Preset` (including
  * pgServices, grafserv options, grafast context, etc.) before passing it here.
  *
- * When `enableRealtime` is true and a `pool` is provided, a RealtimeManager
- * is created that bridges cursor-tracked events from `drain_changes()` into
- * the PostGraphile instance's PgSubscriber EventEmitter.
+ * When `enableRealtime` is true, a RealtimeManager is created that bridges
+ * cursor-tracked events from `drain_changes()` into the PostGraphile
+ * instance's PgSubscriber EventEmitter.  Both `pgSubscriber` and the pg
+ * pool are extracted from the resolved preset's pgServices — no separate
+ * pool parameter is needed.
  */
 export const createGraphileInstance = async (
   opts: GraphileInstanceOptions
 ): Promise<GraphileCacheEntry> => {
-  const { preset, cacheKey, enableRealtime = false, pool } = opts;
+  const { preset, cacheKey, enableRealtime = false } = opts;
 
   const pgl = postgraphile(preset);
   const serv = pgl.createServ(grafserv);
@@ -81,18 +76,24 @@ export const createGraphileInstance = async (
     createdAt: Date.now(),
   };
 
-  if (enableRealtime && pool) {
+  if (enableRealtime) {
     try {
       const { RealtimeManager } = await import('graphile-realtime-subscriptions');
 
-      // Extract PgSubscriber from the resolved preset's pgServices
+      // Extract PgSubscriber and pool from the resolved preset's pgServices.
+      // The pool is the same instance managed by pg-cache (via getPgPool)
+      // and threaded into the preset by makePgService({ pool, schemas }).
       const resolvedPreset = pgl.getResolvedPreset();
-      const pgSubscriber = (resolvedPreset as any).pgServices?.[0]?.pgSubscriber ?? null;
+      const pgService = (resolvedPreset as any).pgServices?.[0];
+      const pgSubscriber = pgService?.pgSubscriber ?? null;
+      const pool = pgService?.adaptorSettings?.pool ?? null;
 
       if (!pgSubscriber) {
         log.warn(`PostGraphile[${cacheKey}] has no pgSubscriber — RealtimeManager will not be started`);
+      } else if (!pool) {
+        log.warn(`PostGraphile[${cacheKey}] has no pool in pgService — RealtimeManager will not be started`);
       } else {
-        const withPgClient = createWithPgClient(pool);
+        const withPgClient = withPgClientFromPool(pool);
         const manager = new RealtimeManager({
           pgSubscriber,
           withPgClient,

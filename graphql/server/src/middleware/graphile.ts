@@ -374,7 +374,6 @@ export const graphile = (opts: ConstructiveOptions): RequestHandler => {
           preset,
           cacheKey: key,
           enableRealtime: api.databaseSettings?.enableRealtime,
-          pool,
         }),
         { enabled: observabilityEnabled },
       );
