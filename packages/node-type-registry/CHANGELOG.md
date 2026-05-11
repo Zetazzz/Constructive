@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.32.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.31.0...node-type-registry@0.32.0) (2026-05-11)
+
+**Note:** Version bump only for package node-type-registry
+
 # [0.31.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.30.0...node-type-registry@0.31.0) (2026-05-10)
 
 ### Features
