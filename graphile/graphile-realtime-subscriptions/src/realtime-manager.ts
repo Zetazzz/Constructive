@@ -28,7 +28,6 @@ import { Logger } from '@pgpmjs/logger';
 import { CursorTracker } from './cursor-tracker';
 import type {
   ChangeLogEntry,
-  WithPgClient,
   RealtimeManagerOptions,
 } from './types';
 
@@ -74,7 +73,7 @@ export class RealtimeManager {
   private started = false;
 
   constructor(options: RealtimeManagerOptions) {
-    const { pgSubscriber, withPgClient, ...cursorOpts } = options;
+    const { pgSubscriber, pool, ...cursorOpts } = options;
     this.subscriber = pgSubscriber;
 
     this.cursorTracker = new CursorTracker({
@@ -83,7 +82,7 @@ export class RealtimeManager {
       pollIntervalMs: cursorOpts.pollIntervalMs,
       heartbeatIntervalMs: cursorOpts.heartbeatIntervalMs,
       batchLimit: cursorOpts.batchLimit,
-      withPgClient,
+      pool,
       onChanges: (entries) => this.dispatchEntries(entries),
       onError: cursorOpts.onError ?? ((err) => {
         log.error(`RealtimeManager error: ${err.message}`);

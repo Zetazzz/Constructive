@@ -3,7 +3,6 @@ import { Logger } from '@pgpmjs/logger';
 import express from 'express';
 import { postgraphile } from 'postgraphile';
 import { grafserv } from 'grafserv/express/v4';
-import type { WithPgClient, PgClient } from 'graphile-realtime-subscriptions';
 import type { GraphileCacheEntry } from './graphile-cache';
 
 const log = new Logger('graphile-cache:create');
@@ -17,25 +16,6 @@ interface GraphileInstanceOptions {
    * pgServices (managed by pg-cache) rather than passed separately.
    */
   enableRealtime?: boolean;
-}
-
-/**
- * Build a WithPgClient from the pool inside a pgService's adaptorSettings.
- * The pool is the same one managed by pg-cache via getPgPool(), threaded
- * through the preset by makePgService({ pool, schemas }).
- */
-function withPgClientFromPool(pool: { connect(): Promise<any> }): WithPgClient {
-  return async <T>(callback: (client: PgClient) => Promise<T>): Promise<T> => {
-    const pgClient = await pool.connect();
-    try {
-      return await callback({
-        query: <R = Record<string, unknown>>(sql: string, params?: unknown[]) =>
-          pgClient.query(sql, params) as Promise<{ rows: R[] }>,
-      });
-    } finally {
-      pgClient.release();
-    }
-  };
 }
 
 /**
@@ -93,10 +73,9 @@ export const createGraphileInstance = async (
       } else if (!pool) {
         log.warn(`PostGraphile[${cacheKey}] has no pool in pgService — RealtimeManager will not be started`);
       } else {
-        const withPgClient = withPgClientFromPool(pool);
         const manager = new RealtimeManager({
           pgSubscriber,
-          withPgClient,
+          pool,
           nodeId: `graphile-cache:${cacheKey}`,
           schema: 'realtime_public',
         });

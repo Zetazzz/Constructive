@@ -1,6 +1,6 @@
 import { RealtimeManager } from '../src/realtime-manager';
 import { extractRowId, entryToNotifyPayload, entryToChannel } from '../src/realtime-manager';
-import type { ChangeLogEntry, WithPgClient, PgClient } from '../src/types';
+import type { ChangeLogEntry, Queryable } from '../src/types';
 import { EventEmitter } from 'events';
 
 // ---------------------------------------------------------------------------
@@ -22,14 +22,10 @@ function makeEntry(overrides: Partial<ChangeLogEntry> = {}): ChangeLogEntry {
   };
 }
 
-function createMockClient(): jest.Mocked<PgClient> {
+function createMockPool(): jest.Mocked<Queryable> {
   return {
     query: jest.fn().mockResolvedValue({ rows: [] }),
   };
-}
-
-function createMockWithPgClient(mockClient: PgClient): WithPgClient {
-  return async <T>(cb: (client: PgClient) => Promise<T>) => cb(mockClient);
 }
 
 function createMockPgSubscriber() {
@@ -115,12 +111,12 @@ describe('entryToChannel', () => {
 // ---------------------------------------------------------------------------
 
 describe('RealtimeManager', () => {
-  let mockClient: jest.Mocked<PgClient>;
+  let mockPool: jest.Mocked<Queryable>;
   let mockSubscriber: ReturnType<typeof createMockPgSubscriber>;
 
   beforeEach(() => {
     jest.useFakeTimers();
-    mockClient = createMockClient();
+    mockPool = createMockPool();
     mockSubscriber = createMockPgSubscriber();
   });
 
@@ -131,7 +127,7 @@ describe('RealtimeManager', () => {
   function createManager(overrides: Record<string, unknown> = {}) {
     return new RealtimeManager({
       pgSubscriber: mockSubscriber,
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
       nodeId: 'test-manager-node',
       pollIntervalMs: 1000,
       heartbeatIntervalMs: 5000,
@@ -157,7 +153,7 @@ describe('RealtimeManager', () => {
     const manager = createManager();
     await manager.start();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('touch_listener'),
       expect.any(Array),
     );
@@ -168,11 +164,11 @@ describe('RealtimeManager', () => {
   it('calls cleanup_ephemeral on stop', async () => {
     const manager = createManager();
     await manager.start();
-    mockClient.query.mockClear();
+    mockPool.query.mockClear();
 
     await manager.stop();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('cleanup_ephemeral'),
       expect.any(Array),
     );
@@ -206,7 +202,7 @@ describe('RealtimeManager', () => {
         makeEntry({ operation: 'UPDATE', payload_after: { id: 'row-b' } }),
       ];
 
-      mockClient.query.mockImplementation(async (sql: string) => {
+      mockPool.query.mockImplementation(async (sql: string) => {
         if (typeof sql === 'string' && sql.includes('drain_changes')) {
           return { rows: entries.map((e) => ({ drain_changes: e })) };
         }
@@ -238,7 +234,7 @@ describe('RealtimeManager', () => {
         }),
       ];
 
-      mockClient.query.mockImplementation(async (sql: string) => {
+      mockPool.query.mockImplementation(async (sql: string) => {
         if (typeof sql === 'string' && sql.includes('drain_changes')) {
           return { rows: entries.map((e) => ({ drain_changes: e })) };
         }
@@ -275,7 +271,7 @@ describe('RealtimeManager', () => {
         }),
       ];
 
-      mockClient.query.mockImplementation(async (sql: string) => {
+      mockPool.query.mockImplementation(async (sql: string) => {
         if (typeof sql === 'string' && sql.includes('drain_changes')) {
           return { rows: entries.map((e) => ({ drain_changes: e })) };
         }
@@ -296,7 +292,7 @@ describe('RealtimeManager', () => {
     it('calls onError when drain fails', async () => {
       const errors: Error[] = [];
 
-      mockClient.query.mockImplementation(async (sql: string) => {
+      mockPool.query.mockImplementation(async (sql: string) => {
         if (typeof sql === 'string' && sql.includes('drain_changes')) {
           throw new Error('drain failed');
         }
@@ -317,7 +313,7 @@ describe('RealtimeManager', () => {
         makeEntry({ operation: 'INSERT', payload_after: { id: 'row-x' } }),
       ];
 
-      mockClient.query.mockImplementation(async (sql: string) => {
+      mockPool.query.mockImplementation(async (sql: string) => {
         if (typeof sql === 'string' && sql.includes('drain_changes')) {
           return { rows: entries.map((e) => ({ drain_changes: e })) };
         }

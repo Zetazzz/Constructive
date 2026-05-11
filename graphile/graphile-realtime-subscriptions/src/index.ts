@@ -25,7 +25,6 @@ export type { RealtimeSubscriptionsPluginOptions } from './types';
 export type {
   CursorTrackerOptions,
   ChangeLogEntry,
-  PgClient,
-  WithPgClient,
+  Queryable,
   RealtimeManagerOptions,
 } from './types';

@@ -26,20 +26,13 @@ import {
   DEFAULT_BATCH_LIMIT,
   DEFAULT_SCHEMA,
 } from '../src/cursor-tracker';
-import type { PgClient, WithPgClient, ChangeLogEntry } from '../src/types';
+import type { Queryable, ChangeLogEntry } from '../src/types';
 
 // --- Test helpers ---
 
-function createMockClient(queryResult: { rows: any[] } = { rows: [] }): PgClient {
+function createMockPool(queryResult: { rows: any[] } = { rows: [] }): jest.Mocked<Queryable> {
   return {
     query: jest.fn().mockResolvedValue(queryResult),
-  };
-}
-
-function createMockWithPgClient(client?: PgClient): WithPgClient {
-  const mockClient = client ?? createMockClient();
-  return async <T>(callback: (c: PgClient) => Promise<T>): Promise<T> => {
-    return callback(mockClient);
   };
 }
 
@@ -70,7 +63,7 @@ describe('CursorTracker defaults', () => {
 
   it('generates a nodeId when not provided', () => {
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(),
+      pool: createMockPool(),
     });
 
     expect(tracker.nodeId).toBeDefined();
@@ -81,7 +74,7 @@ describe('CursorTracker defaults', () => {
   it('uses provided nodeId', () => {
     const tracker = new CursorTracker({
       nodeId: 'my-node-42',
-      withPgClient: createMockWithPgClient(),
+      pool: createMockPool(),
     });
 
     expect(tracker.nodeId).toBe('my-node-42');
@@ -98,15 +91,15 @@ describe('CursorTracker.start()', () => {
   });
 
   it('calls touch_listener on start', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'test-node',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.start();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('touch_listener'),
       ['test-node'],
     );
@@ -115,15 +108,15 @@ describe('CursorTracker.start()', () => {
   });
 
   it('calls drain_changes immediately after start', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'test-node',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.start();
 
-    const calls = (mockClient.query as jest.Mock).mock.calls;
+    const calls = (mockPool.query as jest.Mock).mock.calls;
     const drainCalls = calls.filter((c: any[]) => c[0].includes('drain_changes'));
     expect(drainCalls.length).toBeGreaterThanOrEqual(1);
 
@@ -132,7 +125,7 @@ describe('CursorTracker.start()', () => {
 
   it('sets isRunning to true', async () => {
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(),
+      pool: createMockPool(),
     });
 
     expect(tracker.isRunning).toBe(false);
@@ -143,17 +136,17 @@ describe('CursorTracker.start()', () => {
   });
 
   it('is idempotent (calling start twice does not double-register)', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'test-node',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.start();
-    const callCountAfterFirst = (mockClient.query as jest.Mock).mock.calls.length;
+    const callCountAfterFirst = (mockPool.query as jest.Mock).mock.calls.length;
 
     await tracker.start();
-    const callCountAfterSecond = (mockClient.query as jest.Mock).mock.calls.length;
+    const callCountAfterSecond = (mockPool.query as jest.Mock).mock.calls.length;
 
     expect(callCountAfterSecond).toBe(callCountAfterFirst);
 
@@ -171,18 +164,18 @@ describe('CursorTracker.stop()', () => {
   });
 
   it('calls cleanup_ephemeral on stop', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'test-node',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.start();
-    (mockClient.query as jest.Mock).mockClear();
+    (mockPool.query as jest.Mock).mockClear();
 
     await tracker.stop();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('cleanup_ephemeral'),
       ['test-node'],
     );
@@ -190,7 +183,7 @@ describe('CursorTracker.stop()', () => {
 
   it('sets isRunning to false', async () => {
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(),
+      pool: createMockPool(),
     });
 
     await tracker.start();
@@ -199,20 +192,20 @@ describe('CursorTracker.stop()', () => {
   });
 
   it('is idempotent (calling stop twice does not double-cleanup)', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'test-node',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.start();
-    (mockClient.query as jest.Mock).mockClear();
+    (mockPool.query as jest.Mock).mockClear();
 
     await tracker.stop();
-    const callCountAfterFirst = (mockClient.query as jest.Mock).mock.calls.length;
+    const callCountAfterFirst = (mockPool.query as jest.Mock).mock.calls.length;
 
     await tracker.stop();
-    const callCountAfterSecond = (mockClient.query as jest.Mock).mock.calls.length;
+    const callCountAfterSecond = (mockPool.query as jest.Mock).mock.calls.length;
 
     expect(callCountAfterSecond).toBe(callCountAfterFirst);
   });
@@ -221,7 +214,7 @@ describe('CursorTracker.stop()', () => {
     const clearSpy = jest.spyOn(global, 'clearInterval');
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(),
+      pool: createMockPool(),
     });
 
     await tracker.start();
@@ -242,16 +235,16 @@ describe('CursorTracker.drain()', () => {
   });
 
   it('calls drain_changes with nodeId and batchLimit', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'drain-node',
       batchLimit: 100,
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.drain();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('drain_changes'),
       ['drain-node', 100],
     );
@@ -259,12 +252,12 @@ describe('CursorTracker.drain()', () => {
 
   it('returns parsed change_log entries', async () => {
     const entry = createChangeLogEntry();
-    const mockClient = createMockClient({
+    const mockPool = createMockPool({
       rows: [{ drain_changes: entry }],
     });
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     const result = await tracker.drain();
@@ -273,13 +266,13 @@ describe('CursorTracker.drain()', () => {
 
   it('calls onChanges callback with entries', async () => {
     const entry = createChangeLogEntry();
-    const mockClient = createMockClient({
+    const mockPool = createMockPool({
       rows: [{ drain_changes: entry }],
     });
     const onChanges = jest.fn();
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
       onChanges,
     });
 
@@ -291,7 +284,7 @@ describe('CursorTracker.drain()', () => {
     const onChanges = jest.fn();
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(),
+      pool: createMockPool(),
       onChanges,
     });
 
@@ -300,13 +293,13 @@ describe('CursorTracker.drain()', () => {
   });
 
   it('returns empty array on error and calls onError', async () => {
-    const failingClient: PgClient = {
+    const failingPool: Queryable = {
       query: jest.fn().mockRejectedValue(new Error('connection lost')),
     };
     const onError = jest.fn();
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(failingClient),
+      pool: failingPool,
       onError,
     });
 
@@ -320,7 +313,7 @@ describe('CursorTracker.drain()', () => {
 
   it('prevents concurrent drains', async () => {
     let resolveQuery: (() => void) | null = null;
-    const slowClient: PgClient = {
+    const slowPool: Queryable = {
       query: jest.fn().mockImplementation(() => {
         return new Promise<{ rows: any[] }>((resolve) => {
           resolveQuery = () => resolve({ rows: [] });
@@ -329,7 +322,7 @@ describe('CursorTracker.drain()', () => {
     };
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(slowClient),
+      pool: slowPool,
     });
 
     const drain1 = tracker.drain();
@@ -353,21 +346,21 @@ describe('CursorTracker periodic polling', () => {
   });
 
   it('polls drain_changes at configured interval', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'poll-node',
       pollIntervalMs: 2000,
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.start();
-    (mockClient.query as jest.Mock).mockClear();
+    (mockPool.query as jest.Mock).mockClear();
 
     jest.advanceTimersByTime(2000);
     // Allow async callbacks
     await Promise.resolve();
 
-    const drainCalls = (mockClient.query as jest.Mock).mock.calls
+    const drainCalls = (mockPool.query as jest.Mock).mock.calls
       .filter((c: any[]) => c[0].includes('drain_changes'));
     expect(drainCalls.length).toBeGreaterThanOrEqual(1);
 
@@ -375,20 +368,20 @@ describe('CursorTracker periodic polling', () => {
   });
 
   it('heartbeats at configured interval', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'hb-node',
       heartbeatIntervalMs: 5000,
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.start();
-    (mockClient.query as jest.Mock).mockClear();
+    (mockPool.query as jest.Mock).mockClear();
 
     jest.advanceTimersByTime(5000);
     await Promise.resolve();
 
-    const touchCalls = (mockClient.query as jest.Mock).mock.calls
+    const touchCalls = (mockPool.query as jest.Mock).mock.calls
       .filter((c: any[]) => c[0].includes('touch_listener'));
     expect(touchCalls.length).toBeGreaterThanOrEqual(1);
 
@@ -398,47 +391,47 @@ describe('CursorTracker periodic polling', () => {
 
 describe('CursorTracker schema quoting', () => {
   it('includes schema name in SQL queries', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'schema-node',
       schema: 'my_realtime_public',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.drain();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('my_realtime_public'),
       expect.any(Array),
     );
   });
 
   it('uses default schema when not specified', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'default-schema-node',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.drain();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('realtime_public'),
       expect.any(Array),
     );
   });
 
   it('quotes schema names that need quoting', async () => {
-    const mockClient = createMockClient();
+    const mockPool = createMockPool();
     const tracker = new CursorTracker({
       nodeId: 'special-schema-node',
       schema: 'my schema',
-      withPgClient: createMockWithPgClient(mockClient),
+      pool: mockPool,
     });
 
     await tracker.drain();
 
-    expect(mockClient.query).toHaveBeenCalledWith(
+    expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('"my schema"'),
       expect.any(Array),
     );
@@ -455,13 +448,13 @@ describe('CursorTracker error handling', () => {
   });
 
   it('touch_listener error calls onError without throwing', async () => {
-    const failingClient: PgClient = {
+    const failingPool: Queryable = {
       query: jest.fn().mockRejectedValue(new Error('touch failed')),
     };
     const onError = jest.fn();
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(failingClient),
+      pool: failingPool,
       onError,
     });
 
@@ -473,13 +466,13 @@ describe('CursorTracker error handling', () => {
   });
 
   it('cleanup_ephemeral error calls onError without throwing', async () => {
-    const failingClient: PgClient = {
+    const failingPool: Queryable = {
       query: jest.fn().mockRejectedValue(new Error('cleanup failed')),
     };
     const onError = jest.fn();
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(failingClient),
+      pool: failingPool,
       onError,
     });
 
@@ -491,13 +484,13 @@ describe('CursorTracker error handling', () => {
   });
 
   it('wraps non-Error objects in Error', async () => {
-    const failingClient: PgClient = {
+    const failingPool: Queryable = {
       query: jest.fn().mockRejectedValue('string error'),
     };
     const onError = jest.fn();
 
     const tracker = new CursorTracker({
-      withPgClient: createMockWithPgClient(failingClient),
+      pool: failingPool,
       onError,
     });
 

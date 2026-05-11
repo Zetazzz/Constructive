@@ -14,23 +14,19 @@ export interface RealtimeSubscriptionsPluginOptions {
 }
 
 /**
- * A minimal PostgreSQL client interface used by CursorTracker.
- * Compatible with node-postgres (pg) Client or PoolClient.
+ * A minimal query-capable interface — satisfied by pg.Pool, pg.Client,
+ * pg.PoolClient, or any object with a compatible `query` method.
+ *
+ * CursorTracker and RealtimeManager use only one-shot queries, so
+ * `pool.query()` (which internally borrows a client, runs the query,
+ * and releases the client) is all that's needed — no callback wrapper.
  */
-export interface PgClient {
+export interface Queryable {
   query<R = Record<string, unknown>>(
     text: string,
     values?: unknown[],
   ): Promise<{ rows: R[] }>;
 }
-
-/**
- * Callback that provides a PgClient for executing queries.
- * The client is released after the callback returns.
- */
-export type WithPgClient = <T>(
-  callback: (client: PgClient) => Promise<T>,
-) => Promise<T>;
 
 /**
  * A single entry from drain_changes(), representing a change_log row
@@ -89,10 +85,12 @@ export interface CursorTrackerOptions {
   batchLimit?: number;
 
   /**
-   * Function to acquire a PgClient for executing queries.
-   * The cursor tracker calls this for every poll and heartbeat cycle.
+   * A query-capable object (typically a pg.Pool from pg-cache) used to
+   * run drain_changes(), touch_listener(), and cleanup_ephemeral() queries.
+   * pool.query() internally borrows a connection and releases it after
+   * each call — no manual connection management needed.
    */
-  withPgClient: WithPgClient;
+  pool: Queryable;
 
   /**
    * Called when drain_changes() returns new change_log entries.
@@ -120,9 +118,10 @@ export interface RealtimeManagerOptions {
   pgSubscriber: unknown;
 
   /**
-   * Function to acquire a PgClient for executing cursor tracking queries.
+   * A query-capable object (typically a pg.Pool from pg-cache) used by
+   * the underlying CursorTracker for drain_changes() polling.
    */
-  withPgClient: WithPgClient;
+  pool: Queryable;
 
   /**
    * Unique identifier for this listener node.
