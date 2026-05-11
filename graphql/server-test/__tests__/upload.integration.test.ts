@@ -332,8 +332,12 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
     describe('Public file upload', () => {
       const fileContent = 'Hello, public world!';
       const contentType = 'text/plain';
-      const contentHash = await hashContent(fileContent);
+      let contentHash: string;
       let uploadUrl: string;
+
+      beforeAll(async () => {
+        contentHash = await hashContent(fileContent);
+      });
 
       it('should return a presigned PUT URL via uploadAppFile', async () => {
         const res = await postGraphQL({
@@ -370,8 +374,12 @@ describe('Integration tests (uploads, tenant isolation, RLS)', () => {
     describe('Private file upload', () => {
       const fileContent = 'Hello, private world!';
       const contentType = 'text/plain';
-      const contentHash = await hashContent(fileContent);
+      let contentHash: string;
       let uploadUrl: string;
+
+      beforeAll(async () => {
+        contentHash = await hashContent(fileContent);
+      });
 
       it('should return a presigned PUT URL via uploadAppFile', async () => {
         const res = await postGraphQL({
