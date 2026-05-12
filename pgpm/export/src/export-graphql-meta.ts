@@ -122,7 +122,6 @@ export const exportGraphQLMeta = async ({
   // metaschema_public tables
   await Promise.all([
     queryAndParse('database'),
-    queryAndParse('database_extension'),
     queryAndParse('schema'),
     queryAndParse('function'),
     queryAndParse('spatial_relation'),
