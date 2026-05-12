@@ -133,6 +133,7 @@ const AUTH_SETTINGS_SQL = (schemaName: string, tableName: string) => `
     cookie_httponly,
     cookie_max_age,
     cookie_path,
+    remember_me_duration,
     enable_captcha,
     captcha_site_key
   FROM "${schemaName}"."${tableName}"
@@ -266,6 +267,7 @@ interface AuthSettingsRow {
   cookie_httponly: boolean;
   cookie_max_age: string | null;
   cookie_path: string;
+  remember_me_duration: string | null;
   enable_captcha: boolean;
   captcha_site_key: string | null;
 }
@@ -453,6 +455,7 @@ const toAuthSettings = (row: AuthSettingsRow | null): AuthSettings | undefined =
     cookieHttponly: row.cookie_httponly,
     cookieMaxAge: row.cookie_max_age,
     cookiePath: row.cookie_path,
+    rememberMeDuration: row.remember_me_duration,
     enableCaptcha: row.enable_captcha,
     captchaSiteKey: row.captcha_site_key,
   };
