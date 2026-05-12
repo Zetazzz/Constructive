@@ -237,16 +237,6 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       hash: 'uuid'
     }
   },
-  database_extension: {
-    schema: 'metaschema_public',
-    table: 'database_extension',
-    fields: {
-      id: 'uuid',
-      database_id: 'uuid',
-      name: 'text',
-      schema_id: 'uuid'
-    }
-  },
   schema: {
     schema: 'metaschema_public',
     table: 'schema',
