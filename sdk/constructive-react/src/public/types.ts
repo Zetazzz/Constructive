@@ -1350,6 +1350,7 @@ export interface OrgInvite {
   multiple: boolean | null;
   data: unknown | null;
   profileId: string | null;
+  isReadOnly: boolean | null;
   expiresAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;

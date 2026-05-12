@@ -3873,35 +3873,6 @@ type Query {
     orderBy: [WebauthnSettingOrderBy!] = [PRIMARY_KEY_ASC]
   ): WebauthnSettingConnection
 
-  """Reads and enables pagination through a set of `OrgInvite`."""
-  orgInvites(
-    """Only read the first `n` values of the set."""
-    first: Int
-
-    """Only read the last `n` values of the set."""
-    last: Int
-
-    """
-    Skip the first `n` values from our `after` cursor, an alternative to cursor
-    based pagination. May not be used with `last`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: OrgInviteFilter
-
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!] = [PRIMARY_KEY_ASC]
-  ): OrgInviteConnection
-
   """Reads and enables pagination through a set of `AppMembership`."""
   appMemberships(
     """Only read the first `n` values of the set."""
@@ -3988,6 +3959,35 @@ type Query {
     """The method to use when ordering `Index`."""
     orderBy: [IndexOrderBy!] = [PRIMARY_KEY_ASC]
   ): IndexConnection
+
+  """Reads and enables pagination through a set of `OrgInvite`."""
+  orgInvites(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: OrgInviteFilter
+
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!] = [PRIMARY_KEY_ASC]
+  ): OrgInviteConnection
 
   """Reads and enables pagination through a set of `BillingProviderModule`."""
   billingProviderModules(
@@ -13919,6 +13919,9 @@ input OrgInviteFilter {
 
   """Filter by the object’s `profileId` field."""
   profileId: UUIDFilter
+
+  """Filter by the object’s `isReadOnly` field."""
+  isReadOnly: BooleanFilter
 
   """Filter by the object’s `expiresAt` field."""
   expiresAt: DatetimeFilter
@@ -32639,6 +32642,11 @@ type OrgInvite {
   """
   profileId: UUID
 
+  """
+  Whether the resulting membership should be read-only when this invite is claimed
+  """
+  isReadOnly: Boolean!
+
   """Timestamp after which this invitation can no longer be redeemed"""
   expiresAt: Datetime!
   createdAt: Datetime
@@ -32691,6 +32699,8 @@ enum OrgInviteOrderBy {
   DATA_DESC
   PROFILE_ID_ASC
   PROFILE_ID_DESC
+  IS_READ_ONLY_ASC
+  IS_READ_ONLY_DESC
   EXPIRES_AT_ASC
   EXPIRES_AT_DESC
   CREATED_AT_ASC
@@ -37867,14 +37877,6 @@ type Mutation {
     input: CreateWebauthnSettingInput!
   ): CreateWebauthnSettingPayload
 
-  """Creates a single `OrgInvite`."""
-  createOrgInvite(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateOrgInviteInput!
-  ): CreateOrgInvitePayload
-
   """Creates a single `AppMembership`."""
   createAppMembership(
     """
@@ -37898,6 +37900,14 @@ type Mutation {
     """
     input: CreateIndexInput!
   ): CreateIndexPayload
+
+  """Creates a single `OrgInvite`."""
+  createOrgInvite(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateOrgInviteInput!
+  ): CreateOrgInvitePayload
 
   """Creates a single `BillingProviderModule`."""
   createBillingProviderModule(
@@ -39017,14 +39027,6 @@ type Mutation {
     input: UpdateWebauthnSettingInput!
   ): UpdateWebauthnSettingPayload
 
-  """Updates a single `OrgInvite` using a unique key and a patch."""
-  updateOrgInvite(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateOrgInviteInput!
-  ): UpdateOrgInvitePayload
-
   """Updates a single `AppMembership` using a unique key and a patch."""
   updateAppMembership(
     """
@@ -39048,6 +39050,14 @@ type Mutation {
     """
     input: UpdateIndexInput!
   ): UpdateIndexPayload
+
+  """Updates a single `OrgInvite` using a unique key and a patch."""
+  updateOrgInvite(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateOrgInviteInput!
+  ): UpdateOrgInvitePayload
 
   """
   Updates a single `BillingProviderModule` using a unique key and a patch.
@@ -40133,14 +40143,6 @@ type Mutation {
     input: DeleteWebauthnSettingInput!
   ): DeleteWebauthnSettingPayload
 
-  """Deletes a single `OrgInvite` using a unique key."""
-  deleteOrgInvite(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteOrgInviteInput!
-  ): DeleteOrgInvitePayload
-
   """Deletes a single `AppMembership` using a unique key."""
   deleteAppMembership(
     """
@@ -40164,6 +40166,14 @@ type Mutation {
     """
     input: DeleteIndexInput!
   ): DeleteIndexPayload
+
+  """Deletes a single `OrgInvite` using a unique key."""
+  deleteOrgInvite(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteOrgInviteInput!
+  ): DeleteOrgInvitePayload
 
   """Deletes a single `BillingProviderModule` using a unique key."""
   deleteBillingProviderModule(
@@ -48763,84 +48773,6 @@ input WebauthnSettingInput {
   challengeExpirySeconds: BigInt
 }
 
-"""The output of our create `OrgInvite` mutation."""
-type CreateOrgInvitePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` that was created by this mutation."""
-  orgInvite: OrgInvite
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `OrgInvite`. May be used by Relay 1."""
-  orgInviteEdge(
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): OrgInviteEdge
-}
-
-"""All input for the create `OrgInvite` mutation."""
-input CreateOrgInviteInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` to be created by this mutation."""
-  orgInvite: OrgInviteInput!
-}
-
-"""An input for mutations affecting `OrgInvite`"""
-input OrgInviteInput {
-  id: UUID
-
-  """Email address of the invited recipient"""
-  email: ConstructiveInternalTypeEmail
-
-  """User ID of the member who sent this invitation"""
-  senderId: UUID
-
-  """User ID of the intended recipient, if targeting a specific user"""
-  receiverId: UUID
-
-  """Unique random hex token used to redeem this invitation"""
-  inviteToken: String
-
-  """Whether this invitation is still valid and can be redeemed"""
-  inviteValid: Boolean
-
-  """Maximum number of times this invite can be claimed; -1 means unlimited"""
-  inviteLimit: Int
-
-  """Running count of how many times this invite has been claimed"""
-  inviteCount: Int
-
-  """Whether this invite can be claimed by multiple recipients"""
-  multiple: Boolean
-
-  """Optional JSON payload of additional invite metadata"""
-  data: JSON
-
-  """
-  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
-  """
-  profileId: UUID
-
-  """Timestamp after which this invitation can no longer be redeemed"""
-  expiresAt: Datetime
-  createdAt: Datetime
-  updatedAt: Datetime
-  entityId: UUID!
-}
-
 """The output of our create `AppMembership` mutation."""
 type CreateAppMembershipPayload {
   """
@@ -49031,6 +48963,89 @@ input IndexInput {
   tags: [String]
   createdAt: Datetime
   updatedAt: Datetime
+}
+
+"""The output of our create `OrgInvite` mutation."""
+type CreateOrgInvitePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` that was created by this mutation."""
+  orgInvite: OrgInvite
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `OrgInvite`. May be used by Relay 1."""
+  orgInviteEdge(
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): OrgInviteEdge
+}
+
+"""All input for the create `OrgInvite` mutation."""
+input CreateOrgInviteInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` to be created by this mutation."""
+  orgInvite: OrgInviteInput!
+}
+
+"""An input for mutations affecting `OrgInvite`"""
+input OrgInviteInput {
+  id: UUID
+
+  """Email address of the invited recipient"""
+  email: ConstructiveInternalTypeEmail
+
+  """User ID of the member who sent this invitation"""
+  senderId: UUID
+
+  """User ID of the intended recipient, if targeting a specific user"""
+  receiverId: UUID
+
+  """Unique random hex token used to redeem this invitation"""
+  inviteToken: String
+
+  """Whether this invitation is still valid and can be redeemed"""
+  inviteValid: Boolean
+
+  """Maximum number of times this invite can be claimed; -1 means unlimited"""
+  inviteLimit: Int
+
+  """Running count of how many times this invite has been claimed"""
+  inviteCount: Int
+
+  """Whether this invite can be claimed by multiple recipients"""
+  multiple: Boolean
+
+  """Optional JSON payload of additional invite metadata"""
+  data: JSON
+
+  """
+  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
+  """
+  profileId: UUID
+
+  """
+  Whether the resulting membership should be read-only when this invite is claimed
+  """
+  isReadOnly: Boolean
+
+  """Timestamp after which this invitation can no longer be redeemed"""
+  expiresAt: Datetime
+  createdAt: Datetime
+  updatedAt: Datetime
+  entityId: UUID!
 }
 
 """The output of our create `BillingProviderModule` mutation."""
@@ -57827,89 +57842,6 @@ input WebauthnSettingPatch {
   challengeExpirySeconds: BigInt
 }
 
-"""The output of our update `OrgInvite` mutation."""
-type UpdateOrgInvitePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` that was updated by this mutation."""
-  orgInvite: OrgInvite
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `OrgInvite`. May be used by Relay 1."""
-  orgInviteEdge(
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): OrgInviteEdge
-}
-
-"""All input for the `updateOrgInvite` mutation."""
-input UpdateOrgInviteInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  id: UUID!
-
-  """
-  An object where the defined keys will be set on the `OrgInvite` being updated.
-  """
-  orgInvitePatch: OrgInvitePatch!
-}
-
-"""
-Represents an update to a `OrgInvite`. Fields that are set will be updated.
-"""
-input OrgInvitePatch {
-  id: UUID
-
-  """Email address of the invited recipient"""
-  email: ConstructiveInternalTypeEmail
-
-  """User ID of the member who sent this invitation"""
-  senderId: UUID
-
-  """User ID of the intended recipient, if targeting a specific user"""
-  receiverId: UUID
-
-  """Unique random hex token used to redeem this invitation"""
-  inviteToken: String
-
-  """Whether this invitation is still valid and can be redeemed"""
-  inviteValid: Boolean
-
-  """Maximum number of times this invite can be claimed; -1 means unlimited"""
-  inviteLimit: Int
-
-  """Running count of how many times this invite has been claimed"""
-  inviteCount: Int
-
-  """Whether this invite can be claimed by multiple recipients"""
-  multiple: Boolean
-
-  """Optional JSON payload of additional invite metadata"""
-  data: JSON
-
-  """
-  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
-  """
-  profileId: UUID
-
-  """Timestamp after which this invitation can no longer be redeemed"""
-  expiresAt: Datetime
-  createdAt: Datetime
-  updatedAt: Datetime
-  entityId: UUID
-}
-
 """The output of our update `AppMembership` mutation."""
 type UpdateAppMembershipPayload {
   """
@@ -58115,6 +58047,94 @@ input IndexPatch {
   tags: [String]
   createdAt: Datetime
   updatedAt: Datetime
+}
+
+"""The output of our update `OrgInvite` mutation."""
+type UpdateOrgInvitePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` that was updated by this mutation."""
+  orgInvite: OrgInvite
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `OrgInvite`. May be used by Relay 1."""
+  orgInviteEdge(
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): OrgInviteEdge
+}
+
+"""All input for the `updateOrgInvite` mutation."""
+input UpdateOrgInviteInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: UUID!
+
+  """
+  An object where the defined keys will be set on the `OrgInvite` being updated.
+  """
+  orgInvitePatch: OrgInvitePatch!
+}
+
+"""
+Represents an update to a `OrgInvite`. Fields that are set will be updated.
+"""
+input OrgInvitePatch {
+  id: UUID
+
+  """Email address of the invited recipient"""
+  email: ConstructiveInternalTypeEmail
+
+  """User ID of the member who sent this invitation"""
+  senderId: UUID
+
+  """User ID of the intended recipient, if targeting a specific user"""
+  receiverId: UUID
+
+  """Unique random hex token used to redeem this invitation"""
+  inviteToken: String
+
+  """Whether this invitation is still valid and can be redeemed"""
+  inviteValid: Boolean
+
+  """Maximum number of times this invite can be claimed; -1 means unlimited"""
+  inviteLimit: Int
+
+  """Running count of how many times this invite has been claimed"""
+  inviteCount: Int
+
+  """Whether this invite can be claimed by multiple recipients"""
+  multiple: Boolean
+
+  """Optional JSON payload of additional invite metadata"""
+  data: JSON
+
+  """
+  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
+  """
+  profileId: UUID
+
+  """
+  Whether the resulting membership should be read-only when this invite is claimed
+  """
+  isReadOnly: Boolean
+
+  """Timestamp after which this invitation can no longer be redeemed"""
+  expiresAt: Datetime
+  createdAt: Datetime
+  updatedAt: Datetime
+  entityId: UUID
 }
 
 """The output of our update `BillingProviderModule` mutation."""
@@ -63580,39 +63600,6 @@ input DeleteWebauthnSettingInput {
   id: UUID!
 }
 
-"""The output of our delete `OrgInvite` mutation."""
-type DeleteOrgInvitePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` that was deleted by this mutation."""
-  orgInvite: OrgInvite
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `OrgInvite`. May be used by Relay 1."""
-  orgInviteEdge(
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): OrgInviteEdge
-}
-
-"""All input for the `deleteOrgInvite` mutation."""
-input DeleteOrgInviteInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  id: UUID!
-}
-
 """The output of our delete `AppMembership` mutation."""
 type DeleteAppMembershipPayload {
   """
@@ -63704,6 +63691,39 @@ type DeleteIndexPayload {
 
 """All input for the `deleteIndex` mutation."""
 input DeleteIndexInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: UUID!
+}
+
+"""The output of our delete `OrgInvite` mutation."""
+type DeleteOrgInvitePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` that was deleted by this mutation."""
+  orgInvite: OrgInvite
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `OrgInvite`. May be used by Relay 1."""
+  orgInviteEdge(
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): OrgInviteEdge
+}
+
+"""All input for the `deleteOrgInvite` mutation."""
+input DeleteOrgInviteInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.

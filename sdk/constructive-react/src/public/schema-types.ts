@@ -2866,6 +2866,8 @@ export type OrgInviteOrderBy =
   | 'DATA_DESC'
   | 'PROFILE_ID_ASC'
   | 'PROFILE_ID_DESC'
+  | 'IS_READ_ONLY_ASC'
+  | 'IS_READ_ONLY_DESC'
   | 'EXPIRES_AT_ASC'
   | 'EXPIRES_AT_DESC'
   | 'CREATED_AT_ASC'
@@ -6189,6 +6191,8 @@ export interface OrgInviteFilter {
   multiple?: BooleanFilter;
   /** Filter by the object’s `profileId` field. */
   profileId?: UUIDFilter;
+  /** Filter by the object’s `isReadOnly` field. */
+  isReadOnly?: BooleanFilter;
   /** Filter by the object’s `expiresAt` field. */
   expiresAt?: DatetimeFilter;
   /** Filter by the object’s `createdAt` field. */
@@ -14851,40 +14855,6 @@ export interface WebauthnSettingInput {
   /** Challenge TTL in seconds (default 300 = 5 minutes) */
   challengeExpirySeconds?: string;
 }
-export interface CreateOrgInviteInput {
-  clientMutationId?: string;
-  /** The `OrgInvite` to be created by this mutation. */
-  orgInvite: OrgInviteInput;
-}
-/** An input for mutations affecting `OrgInvite` */
-export interface OrgInviteInput {
-  id?: string;
-  /** Email address of the invited recipient */
-  email?: ConstructiveInternalTypeEmail;
-  /** User ID of the member who sent this invitation */
-  senderId?: string;
-  /** User ID of the intended recipient, if targeting a specific user */
-  receiverId?: string;
-  /** Unique random hex token used to redeem this invitation */
-  inviteToken?: string;
-  /** Whether this invitation is still valid and can be redeemed */
-  inviteValid?: boolean;
-  /** Maximum number of times this invite can be claimed; -1 means unlimited */
-  inviteLimit?: number;
-  /** Running count of how many times this invite has been claimed */
-  inviteCount?: number;
-  /** Whether this invite can be claimed by multiple recipients */
-  multiple?: boolean;
-  /** Optional JSON payload of additional invite metadata */
-  data?: unknown;
-  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
-  profileId?: string;
-  /** Timestamp after which this invitation can no longer be redeemed */
-  expiresAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  entityId: string;
-}
 export interface CreateAppMembershipInput {
   clientMutationId?: string;
   /** The `AppMembership` to be created by this mutation. */
@@ -14967,6 +14937,42 @@ export interface IndexInput {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+export interface CreateOrgInviteInput {
+  clientMutationId?: string;
+  /** The `OrgInvite` to be created by this mutation. */
+  orgInvite: OrgInviteInput;
+}
+/** An input for mutations affecting `OrgInvite` */
+export interface OrgInviteInput {
+  id?: string;
+  /** Email address of the invited recipient */
+  email?: ConstructiveInternalTypeEmail;
+  /** User ID of the member who sent this invitation */
+  senderId?: string;
+  /** User ID of the intended recipient, if targeting a specific user */
+  receiverId?: string;
+  /** Unique random hex token used to redeem this invitation */
+  inviteToken?: string;
+  /** Whether this invitation is still valid and can be redeemed */
+  inviteValid?: boolean;
+  /** Maximum number of times this invite can be claimed; -1 means unlimited */
+  inviteLimit?: number;
+  /** Running count of how many times this invite has been claimed */
+  inviteCount?: number;
+  /** Whether this invite can be claimed by multiple recipients */
+  multiple?: boolean;
+  /** Optional JSON payload of additional invite metadata */
+  data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
+  /** Whether the resulting membership should be read-only when this invite is claimed */
+  isReadOnly?: boolean;
+  /** Timestamp after which this invitation can no longer be redeemed */
+  expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  entityId: string;
 }
 export interface CreateBillingProviderModuleInput {
   clientMutationId?: string;
@@ -18281,41 +18287,6 @@ export interface WebauthnSettingPatch {
   /** Challenge TTL in seconds (default 300 = 5 minutes) */
   challengeExpirySeconds?: string;
 }
-export interface UpdateOrgInviteInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `OrgInvite` being updated. */
-  orgInvitePatch: OrgInvitePatch;
-}
-/** Represents an update to a `OrgInvite`. Fields that are set will be updated. */
-export interface OrgInvitePatch {
-  id?: string;
-  /** Email address of the invited recipient */
-  email?: ConstructiveInternalTypeEmail;
-  /** User ID of the member who sent this invitation */
-  senderId?: string;
-  /** User ID of the intended recipient, if targeting a specific user */
-  receiverId?: string;
-  /** Unique random hex token used to redeem this invitation */
-  inviteToken?: string;
-  /** Whether this invitation is still valid and can be redeemed */
-  inviteValid?: boolean;
-  /** Maximum number of times this invite can be claimed; -1 means unlimited */
-  inviteLimit?: number;
-  /** Running count of how many times this invite has been claimed */
-  inviteCount?: number;
-  /** Whether this invite can be claimed by multiple recipients */
-  multiple?: boolean;
-  /** Optional JSON payload of additional invite metadata */
-  data?: unknown;
-  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
-  profileId?: string;
-  /** Timestamp after which this invitation can no longer be redeemed */
-  expiresAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  entityId?: string;
-}
 export interface UpdateAppMembershipInput {
   clientMutationId?: string;
   id: string;
@@ -18401,6 +18372,43 @@ export interface IndexPatch {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+export interface UpdateOrgInviteInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgInvite` being updated. */
+  orgInvitePatch: OrgInvitePatch;
+}
+/** Represents an update to a `OrgInvite`. Fields that are set will be updated. */
+export interface OrgInvitePatch {
+  id?: string;
+  /** Email address of the invited recipient */
+  email?: ConstructiveInternalTypeEmail;
+  /** User ID of the member who sent this invitation */
+  senderId?: string;
+  /** User ID of the intended recipient, if targeting a specific user */
+  receiverId?: string;
+  /** Unique random hex token used to redeem this invitation */
+  inviteToken?: string;
+  /** Whether this invitation is still valid and can be redeemed */
+  inviteValid?: boolean;
+  /** Maximum number of times this invite can be claimed; -1 means unlimited */
+  inviteLimit?: number;
+  /** Running count of how many times this invite has been claimed */
+  inviteCount?: number;
+  /** Whether this invite can be claimed by multiple recipients */
+  multiple?: boolean;
+  /** Optional JSON payload of additional invite metadata */
+  data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
+  /** Whether the resulting membership should be read-only when this invite is claimed */
+  isReadOnly?: boolean;
+  /** Timestamp after which this invitation can no longer be redeemed */
+  expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  entityId?: string;
 }
 export interface UpdateBillingProviderModuleInput {
   clientMutationId?: string;
@@ -19689,10 +19697,6 @@ export interface DeleteWebauthnSettingInput {
   /** Unique identifier for this WebAuthn settings record */
   id: string;
 }
-export interface DeleteOrgInviteInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface DeleteAppMembershipInput {
   clientMutationId?: string;
   id: string;
@@ -19702,6 +19706,10 @@ export interface DeleteSchemaInput {
   id: string;
 }
 export interface DeleteIndexInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteOrgInviteInput {
   clientMutationId?: string;
   id: string;
 }
@@ -20687,13 +20695,6 @@ export interface WebauthnSettingConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `OrgInvite` values. */
-export interface OrgInviteConnection {
-  nodes: OrgInvite[];
-  edges: OrgInviteEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `AppMembership` values. */
 export interface AppMembershipConnection {
   nodes: AppMembership[];
@@ -20712,6 +20713,13 @@ export interface SchemaConnection {
 export interface IndexConnection {
   nodes: Index[];
   edges: IndexEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgInvite` values. */
+export interface OrgInviteConnection {
+  nodes: OrgInvite[];
+  edges: OrgInviteEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -21762,12 +21770,6 @@ export interface CreateWebauthnSettingPayload {
   webauthnSetting?: WebauthnSetting | null;
   webauthnSettingEdge?: WebauthnSettingEdge | null;
 }
-export interface CreateOrgInvitePayload {
-  clientMutationId?: string | null;
-  /** The `OrgInvite` that was created by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
-}
 export interface CreateAppMembershipPayload {
   clientMutationId?: string | null;
   /** The `AppMembership` that was created by this mutation. */
@@ -21785,6 +21787,12 @@ export interface CreateIndexPayload {
   /** The `Index` that was created by this mutation. */
   index?: Index | null;
   indexEdge?: IndexEdge | null;
+}
+export interface CreateOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was created by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
 }
 export interface CreateBillingProviderModulePayload {
   clientMutationId?: string | null;
@@ -22596,12 +22604,6 @@ export interface UpdateWebauthnSettingPayload {
   webauthnSetting?: WebauthnSetting | null;
   webauthnSettingEdge?: WebauthnSettingEdge | null;
 }
-export interface UpdateOrgInvitePayload {
-  clientMutationId?: string | null;
-  /** The `OrgInvite` that was updated by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
-}
 export interface UpdateAppMembershipPayload {
   clientMutationId?: string | null;
   /** The `AppMembership` that was updated by this mutation. */
@@ -22619,6 +22621,12 @@ export interface UpdateIndexPayload {
   /** The `Index` that was updated by this mutation. */
   index?: Index | null;
   indexEdge?: IndexEdge | null;
+}
+export interface UpdateOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was updated by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
 }
 export interface UpdateBillingProviderModulePayload {
   clientMutationId?: string | null;
@@ -23430,12 +23438,6 @@ export interface DeleteWebauthnSettingPayload {
   webauthnSetting?: WebauthnSetting | null;
   webauthnSettingEdge?: WebauthnSettingEdge | null;
 }
-export interface DeleteOrgInvitePayload {
-  clientMutationId?: string | null;
-  /** The `OrgInvite` that was deleted by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
-}
 export interface DeleteAppMembershipPayload {
   clientMutationId?: string | null;
   /** The `AppMembership` that was deleted by this mutation. */
@@ -23453,6 +23455,12 @@ export interface DeleteIndexPayload {
   /** The `Index` that was deleted by this mutation. */
   index?: Index | null;
   indexEdge?: IndexEdge | null;
+}
+export interface DeleteOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was deleted by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
 }
 export interface DeleteBillingProviderModulePayload {
   clientMutationId?: string | null;
@@ -24349,12 +24357,6 @@ export interface WebauthnSettingEdge {
   /** The `WebauthnSetting` at the end of the edge. */
   node?: WebauthnSetting | null;
 }
-/** A `OrgInvite` edge in the connection. */
-export interface OrgInviteEdge {
-  cursor?: string | null;
-  /** The `OrgInvite` at the end of the edge. */
-  node?: OrgInvite | null;
-}
 /** A `AppMembership` edge in the connection. */
 export interface AppMembershipEdge {
   cursor?: string | null;
@@ -24372,6 +24374,12 @@ export interface IndexEdge {
   cursor?: string | null;
   /** The `Index` at the end of the edge. */
   node?: Index | null;
+}
+/** A `OrgInvite` edge in the connection. */
+export interface OrgInviteEdge {
+  cursor?: string | null;
+  /** The `OrgInvite` at the end of the edge. */
+  node?: OrgInvite | null;
 }
 /** A `BillingProviderModule` edge in the connection. */
 export interface BillingProviderModuleEdge {
