@@ -1,6 +1,6 @@
 {
   "name": "graphile-realtime-test",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Subscription testing utilities for graphile-realtime-subscriptions — smart tag injection, grafast.subscribe() helpers, and pg_notify simulation",
   "author": "Constructive <developers@constructive.io>",
   "homepage": "https://github.com/constructive-io/constructive",
@@ -39,8 +39,8 @@
     "url": "https://github.com/constructive-io/constructive/issues"
   },
   "dependencies": {
-    "graphile-test": "workspace:^",
-    "graphile-realtime-subscriptions": "workspace:^"
+    "graphile-realtime-subscriptions": "workspace:^",
+    "graphile-test": "workspace:^"
   },
   "peerDependencies": {
     "grafast": "1.0.0",
