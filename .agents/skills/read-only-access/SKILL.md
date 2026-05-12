@@ -13,26 +13,45 @@ Mark an entity-scoped membership as read-only to block all mutations (INSERT, UP
 
 ### How It Works
 
-- Every entity-scoped membership (orgs, groups, data rooms, channels — `membership_type >= 2`) has an `isReadOnly` boolean field on both the memberships table and the SPRT (Security Policy Resolution Table).
-- When `isReadOnly` is `true`, an auto-generated **restrictive RLS policy** (`AuthzNotReadOnly`) blocks all mutation privileges. Since PostgreSQL ANDs restrictive policies with permissive ones, the member's normal permissions still grant SELECT but all writes are denied.
+- Every entity-scoped membership (orgs, groups, data rooms, channels, etc.) has an `isReadOnly` boolean field.
+- When `isReadOnly` is `true`, a restrictive policy blocks all mutation privileges. The member's normal permissions still grant SELECT but all writes are denied.
 - Owners and admins cannot be set to read-only — trigger guards prevent `isReadOnly = true` when `isOwner = true` or `isAdmin = true`.
 
 ### SDK Usage
 
-```bash
-# Invite a member as read-only
-csdk org-membership create --actorId <user-uuid> --entityId <org-uuid> --isReadOnly true
+The invite system (`org-invite create` / `submit-org-invite-code`) does not currently support setting `isReadOnly` at invite time. New members join with `isReadOnly = false` by default. To make a member read-only, update their membership after they join:
 
-# Update an existing member to read-only
+```bash
+# Update an existing member to read-only (admin/owner only)
 csdk org-membership update --id <membership-uuid> --isReadOnly true
 
 # Remove read-only restriction
 csdk org-membership update --id <membership-uuid> --isReadOnly false
 ```
 
+Direct membership creation (admin/owner only, bypasses the invite flow):
+
+```bash
+csdk org-membership create --actorId <user-uuid> --entityId <org-uuid> --isReadOnly true
+```
+
 ### GraphQL
 
 ```graphql
+# Update a member to read-only
+mutation {
+  updateOrgMembership(input: {
+    id: "membership-uuid"
+    patch: { isReadOnly: true }
+  }) {
+    orgMembership {
+      id
+      isReadOnly
+    }
+  }
+}
+
+# Direct creation (admin/owner only)
 mutation {
   createOrgMembership(input: {
     actorId: "user-uuid"
@@ -58,9 +77,9 @@ mutation {
 
 ### Scope
 
-- Applies to **all entity-scoped tables** for that entity (any table with an `AuthzEntityMembership` policy)
+- Applies to **all entity-scoped tables** for that entity
 - One restrictive policy per table — automatically injected during table provisioning
-- If a table has mixed-scope policies (e.g., both `AuthzEntityMembership` and `AuthzDirectOwner`), read-only still blocks all mutations for the entity scope
+- If a table has mixed-scope policies, read-only still blocks all mutations for the entity scope
 
 ## 2. Read-Only API Keys (`accessLevel`)
 
@@ -68,9 +87,9 @@ Create an API key with `accessLevel: 'read_only'` to make the entire transaction
 
 ### How It Works
 
-- The `session_credentials` table has an `accessLevel` field (default: `'full_access'`).
-- When a request authenticates with a credential where `accessLevel = 'read_only'`, the server sets `default_transaction_read_only = 'on'` via `pgSettings`. PostgreSQL then rejects any write operation in that transaction with: `ERROR: cannot execute INSERT in a read-only transaction`.
-- This is enforced by the PostgreSQL engine itself — no RLS policy, trigger, or function can bypass it.
+- API keys have an `accessLevel` field (default: `'full_access'`).
+- When a request authenticates with a credential where `accessLevel = 'read_only'`, the server enforces a read-only transaction. PostgreSQL then rejects any write operation with: `ERROR: cannot execute INSERT in a read-only transaction`.
+- This is enforced at the PostgreSQL engine level — no policy, trigger, or function can bypass it.
 
 ### SDK Usage
 
@@ -127,5 +146,5 @@ Any request authenticated with a read-only API key:
 
 Both mechanisms have negligible performance impact:
 
-- **Read-only membership**: The restrictive policy checks `isReadOnly IS NOT TRUE` on a SPRT row already fetched by the permissive policy. Cost: <0.01ms per mutation. Zero impact on SELECT queries.
-- **Read-only API key**: `default_transaction_read_only` is a PostgreSQL GUC checked by the executor. No additional queries or index lookups.
+- **Read-only membership**: The restrictive policy reuses data already fetched by the permissive policy. Zero additional queries. Zero impact on SELECT queries.
+- **Read-only API key**: Enforced by the PostgreSQL executor with no additional queries or index lookups.
