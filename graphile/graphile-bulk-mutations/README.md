@@ -12,7 +12,7 @@
    <a href="https://www.npmjs.com/package/graphile-bulk-mutations"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/constructive?filename=graphile%2Fgraphile-bulk-mutations%2Fpackage.json"/></a>
 </p>
 
-PostGraphile v5 plugin for bulk mutations in the Constructive monorepo.
+PostGraphile v5 plugin for bulk insert, upsert, update, and delete mutations with ON CONFLICT handling.
 
 Adds bulk mutation support to PostGraphile:
 
