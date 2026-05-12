@@ -1,6 +1,7 @@
 import '../augmentations';
-import type { GraphileConfig } from 'graphile-config';
+
 import { sideEffectWithPgClient } from '@dataplan/pg';
+import type { GraphileConfig } from 'graphile-config';
 
 const version = '0.1.0';
 
@@ -24,7 +25,7 @@ export const BulkDeletePlugin: GraphileConfig.Plugin = {
     hooks: {
       GraphQLObjectType_fields(fields, build, context) {
         const {
-          scope: { isRootMutation },
+          scope: { isRootMutation }
         } = context;
         if (!isRootMutation) return fields;
 
@@ -34,8 +35,8 @@ export const BulkDeletePlugin: GraphileConfig.Plugin = {
           graphql: { GraphQLNonNull },
           options: {
             bulkDelete: enableDelete = true,
-            bulkRequireWhere = true,
-          },
+            bulkRequireWhere = true
+          }
         } = build;
 
         if (!enableDelete) return fields;
@@ -68,7 +69,7 @@ export const BulkDeletePlugin: GraphileConfig.Plugin = {
           ) as [string, any][]) {
             const gqlFieldName = inflection.attribute({
               attributeName: attrName,
-              codec: resource.codec,
+              codec: resource.codec
             });
             fieldToAttr[gqlFieldName] = attrName;
             attrToSqlType[attrName] = sql.compile(attr.codec.sqlType).text;
@@ -95,8 +96,8 @@ export const BulkDeletePlugin: GraphileConfig.Plugin = {
                   type: payloadType,
                   args: {
                     input: {
-                      type: new GraphQLNonNull(inputType),
-                    },
+                      type: new GraphQLNonNull(inputType)
+                    }
                   },
                   plan(_$root: any, args: any) {
                     const $input = args.getRaw('input');
@@ -134,45 +135,45 @@ export const BulkDeletePlugin: GraphileConfig.Plugin = {
                                 values.push(val);
                                 const paramRef = `$${values.length}::${sqlType}`;
                                 switch (op) {
-                                  case 'equalTo':
-                                    whereClauses.push(`"${attrName}" = ${paramRef}`);
-                                    break;
-                                  case 'notEqualTo':
-                                    whereClauses.push(`"${attrName}" != ${paramRef}`);
-                                    break;
-                                  case 'greaterThan':
-                                    whereClauses.push(`"${attrName}" > ${paramRef}`);
-                                    break;
-                                  case 'greaterThanOrEqualTo':
-                                    whereClauses.push(`"${attrName}" >= ${paramRef}`);
-                                    break;
-                                  case 'lessThan':
-                                    whereClauses.push(`"${attrName}" < ${paramRef}`);
-                                    break;
-                                  case 'lessThanOrEqualTo':
-                                    whereClauses.push(`"${attrName}" <= ${paramRef}`);
-                                    break;
-                                  case 'in':
-                                    if (Array.isArray(val)) {
-                                      const placeholders = val.map((v: any) => {
-                                        values.push(v);
-                                        return `$${values.length}::${sqlType}`;
-                                      });
-                                      values.pop();
-                                      whereClauses.push(`"${attrName}" IN (${placeholders.join(', ')})`);
-                                    }
-                                    break;
-                                  case 'isNull':
+                                case 'equalTo':
+                                  whereClauses.push(`"${attrName}" = ${paramRef}`);
+                                  break;
+                                case 'notEqualTo':
+                                  whereClauses.push(`"${attrName}" != ${paramRef}`);
+                                  break;
+                                case 'greaterThan':
+                                  whereClauses.push(`"${attrName}" > ${paramRef}`);
+                                  break;
+                                case 'greaterThanOrEqualTo':
+                                  whereClauses.push(`"${attrName}" >= ${paramRef}`);
+                                  break;
+                                case 'lessThan':
+                                  whereClauses.push(`"${attrName}" < ${paramRef}`);
+                                  break;
+                                case 'lessThanOrEqualTo':
+                                  whereClauses.push(`"${attrName}" <= ${paramRef}`);
+                                  break;
+                                case 'in':
+                                  if (Array.isArray(val)) {
+                                    const placeholders = val.map((v: any) => {
+                                      values.push(v);
+                                      return `$${values.length}::${sqlType}`;
+                                    });
                                     values.pop();
-                                    if (val) {
-                                      whereClauses.push(`"${attrName}" IS NULL`);
-                                    } else {
-                                      whereClauses.push(`"${attrName}" IS NOT NULL`);
-                                    }
-                                    break;
-                                  default:
-                                    values.pop();
-                                    break;
+                                    whereClauses.push(`"${attrName}" IN (${placeholders.join(', ')})`);
+                                  }
+                                  break;
+                                case 'isNull':
+                                  values.pop();
+                                  if (val) {
+                                    whereClauses.push(`"${attrName}" IS NULL`);
+                                  } else {
+                                    whereClauses.push(`"${attrName}" IS NOT NULL`);
+                                  }
+                                  break;
+                                default:
+                                  values.pop();
+                                  break;
                                 }
                               }
                             }
@@ -201,21 +202,21 @@ export const BulkDeletePlugin: GraphileConfig.Plugin = {
 
                         return {
                           affectedCount,
-                          returning,
+                          returning
                         };
                       }
                     );
                     return $result;
-                  },
+                  }
                 }
-              ),
+              )
             },
             `Adding bulk delete field for ${typeName}`
           );
         }
 
         return fields;
-      },
-    },
-  },
+      }
+    }
+  }
 };

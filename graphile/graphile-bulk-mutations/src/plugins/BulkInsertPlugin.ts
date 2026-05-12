@@ -1,6 +1,10 @@
 import '../augmentations';
-import type { GraphileConfig } from 'graphile-config';
+
 import { sideEffectWithPgClient } from '@dataplan/pg';
+import type { GraphileConfig } from 'graphile-config';
+
+import type { NestedRelationInfo } from '../utils/relations';
+import { discoverNestedRelations } from '../utils/relations';
 import type { ColumnSpec } from '../utils/sql-builder';
 import { buildBulkInsertSQL } from '../utils/sql-builder';
 
@@ -18,6 +22,10 @@ const version = '0.1.0';
  * rows using only the returned PKs, ensuring the query runs through
  * the normal grant-aware pipeline.
  *
+ * When `bulkRelational` is enabled, nested child records are detected
+ * in the input and inserted in a layered fashion: parent rows first,
+ * then child rows with FK values auto-populated from the parent PKs.
+ *
  * Pattern from: https://github.com/pyramation/graphile-column-privileges-mutations
  */
 export const BulkInsertPlugin: GraphileConfig.Plugin = {
@@ -30,7 +38,7 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
     hooks: {
       GraphQLObjectType_fields(fields, build, context) {
         const {
-          scope: { isRootMutation },
+          scope: { isRootMutation }
         } = context;
         if (!isRootMutation) return fields;
 
@@ -40,8 +48,9 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
           graphql: { GraphQLNonNull },
           options: {
             bulkInsert: enableInsert = true,
-            bulkMaxRows = 1000,
-          },
+            bulkRelational: enableRelational = false,
+            bulkMaxRows = 1000
+          }
         } = build;
 
         if (!enableInsert) return fields;
@@ -76,12 +85,12 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
             if (attr.extensions?.isInsertable === false) continue;
             const gqlFieldName = inflection.attribute({
               attributeName: attrName,
-              codec: resource.codec,
+              codec: resource.codec
             });
             fieldToAttr[gqlFieldName] = attrName;
             columnSpecs.push({
               name: attrName,
-              sqlType: sql.compile(attr.codec.sqlType).text,
+              sqlType: sql.compile(attr.codec.sqlType).text
             });
           }
 
@@ -90,6 +99,14 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
           const pkColumns: string[] = primaryUnique.attributes;
 
           const compiledFrom = sql.compile(resource.from).text;
+
+          // Discover nested relations at schema build time
+          const nestedRelations: NestedRelationInfo[] = enableRelational
+            ? discoverNestedRelations(resource, pgRegistry, inflection, sql)
+            : [];
+          const nestedFieldNames = new Set(
+            nestedRelations.map((r) => r.fieldName)
+          );
 
           // Capture executor for plan closure
           const executor = resource.executor;
@@ -105,8 +122,8 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
                   type: payloadType,
                   args: {
                     input: {
-                      type: new GraphQLNonNull(inputType),
-                    },
+                      type: new GraphQLNonNull(inputType)
+                    }
                   },
                   plan(_$root: any, args: any) {
                     const $input = args.getRaw('input');
@@ -125,10 +142,31 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
                           );
                         }
 
-                        // Map GraphQL field names to SQL column names
+                        // Check for nested data
+                        const hasNestedData =
+                          nestedRelations.length > 0 &&
+                          values.some((row: any) =>
+                            nestedRelations.some(
+                              (rel) =>
+                                Array.isArray(row[rel.fieldName]) &&
+                                row[rel.fieldName].length > 0
+                            )
+                          );
+
+                        // Validate: ON CONFLICT not allowed with nested inserts
+                        if (hasNestedData && input.onConflict) {
+                          throw new Error(
+                            'ON CONFLICT cannot be used with nested/relational inserts. ' +
+                            'Remove the onConflict option or remove nested records from values.'
+                          );
+                        }
+
+                        // Map GraphQL field names to SQL column names,
+                        // separating parent data from nested data
                         const rows = values.map((row: any) => {
                           const mapped: Record<string, unknown> = {};
                           for (const [key, val] of Object.entries(row)) {
+                            if (nestedFieldNames.has(key)) continue;
                             const attrName = fieldToAttr[key];
                             if (attrName) {
                               mapped[attrName] = val;
@@ -138,7 +176,6 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
                         });
 
                         // Build ON CONFLICT clause
-                        // The constraint enum value is a comma-separated column list
                         let onConflict: Parameters<typeof buildBulkInsertSQL>[4];
                         if (input.onConflict) {
                           const conflictColumns = input.onConflict.constraint
@@ -146,7 +183,7 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
                             : undefined;
                           onConflict = {
                             conflictColumns,
-                            action: input.onConflict.action,
+                            action: input.onConflict.action
                           };
                         }
 
@@ -172,6 +209,65 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
                           }
                         }
 
+                        // Layered nested inserts: insert child rows with FK
+                        // values auto-populated from parent PKs
+                        if (hasNestedData) {
+                          for (
+                            let i = 0;
+                            i < values.length && i < allPkRows.length;
+                            i++
+                          ) {
+                            const row = values[i];
+                            const parentPk = allPkRows[i];
+
+                            for (const rel of nestedRelations) {
+                              const childInputRows = row[rel.fieldName] as any[];
+                              if (!childInputRows?.length) continue;
+
+                              // Map child GraphQL fields to SQL columns
+                              // and inject FK values from parent PK
+                              const childRows = childInputRows.map(
+                                (childRow: any) => {
+                                  const mapped: Record<string, unknown> = {};
+                                  for (const [key, val] of Object.entries(
+                                    childRow
+                                  )) {
+                                    const attrName = rel.childFieldToAttr[key];
+                                    if (attrName) {
+                                      mapped[attrName] = val;
+                                    }
+                                  }
+                                  // Fill FK columns from parent PK
+                                  for (
+                                    let j = 0;
+                                    j < rel.localAttributes.length;
+                                    j++
+                                  ) {
+                                    mapped[rel.remoteAttributes[j]] =
+                                      parentPk[rel.localAttributes[j]];
+                                  }
+                                  return mapped;
+                                }
+                              );
+
+                              const childBatches = buildBulkInsertSQL(
+                                rel.childCompiledFrom,
+                                rel.childColumnSpecs,
+                                childRows,
+                                rel.childPkColumns
+                              );
+
+                              for (const batch of childBatches) {
+                                const result = await pgClient.query(
+                                  batch.text,
+                                  batch.values
+                                );
+                                totalAffected += result.rowCount ?? 0;
+                              }
+                            }
+                          }
+                        }
+
                         // Follow-up SELECT using PKs to respect column-level grants
                         let returning: unknown[] = [];
                         if (allPkRows.length > 0) {
@@ -194,21 +290,21 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
 
                         return {
                           affectedCount: totalAffected,
-                          returning,
+                          returning
                         };
                       }
                     );
                     return $result;
-                  },
+                  }
                 }
-              ),
+              )
             },
             `Adding bulk insert field for ${typeName}`
           );
         }
 
         return fields;
-      },
-    },
-  },
+      }
+    }
+  }
 };

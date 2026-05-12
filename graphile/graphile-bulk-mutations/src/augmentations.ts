@@ -8,6 +8,7 @@
 
 import 'graphile-build';
 import 'graphile-build-pg';
+
 import type { BulkNamingStrategy } from './types';
 
 declare global {
@@ -49,6 +50,12 @@ declare global {
       bulkInsertValuesItemType(this: Inflection, typeName: string): string;
       /** Values item input type for upsert, e.g. "UserBulkUpsertItem" */
       bulkUpsertValuesItemType(this: Inflection, typeName: string): string;
+      /** Nested values item type for relational inserts */
+      bulkNestedValuesItemType(
+        this: Inflection,
+        parentTypeName: string,
+        childTypeName: string
+      ): string;
     }
 
     interface BehaviorStrings {
@@ -76,6 +83,9 @@ declare global {
       isBulkMutationInput?: boolean;
       isBulkMutationOnConflictInput?: boolean;
       isBulkMutationValuesItem?: boolean;
+      isBulkRelationalNestedInput?: boolean;
+      /** Resource name for relation discovery in BulkRelationalPlugin */
+      bulkMutationResourceName?: string;
     }
 
     interface SchemaOptions {
@@ -100,6 +110,7 @@ declare global {
       BulkUpsertPlugin: true;
       BulkUpdatePlugin: true;
       BulkDeletePlugin: true;
+      BulkRelationalPlugin: true;
     }
   }
 }

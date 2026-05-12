@@ -1,4 +1,7 @@
 import '../augmentations';
+
+import { pgSelectFromRecords } from '@dataplan/pg';
+import { access } from 'grafast';
 import type { GraphileConfig } from 'graphile-config';
 
 const version = '0.1.0';
@@ -47,21 +50,21 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
       add: {
         bulkInsert: {
           description: 'Enable bulk insert mutation for this resource',
-          entities: ['pgResource'],
+          entities: ['pgResource']
         },
         bulkUpsert: {
           description: 'Enable bulk upsert mutation for this resource',
-          entities: ['pgResource'],
+          entities: ['pgResource']
         },
         bulkUpdate: {
           description: 'Enable bulk update mutation for this resource',
-          entities: ['pgResource'],
+          entities: ['pgResource']
         },
         bulkDelete: {
           description: 'Enable bulk delete mutation for this resource',
-          entities: ['pgResource'],
-        },
-      },
+          entities: ['pgResource']
+        }
+      }
     },
 
     // Default: OFF. Tables must explicitly opt in via smart tags.
@@ -69,21 +72,20 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
       pgResource: {
         inferred(behavior: any) {
           return [behavior, '-bulkInsert -bulkUpsert -bulkUpdate -bulkDelete'];
-        },
-      },
+        }
+      }
     },
 
     hooks: {
       init(_, build) {
         const {
           inflection,
-          EXPORTABLE,
           options: {
             bulkInsert: enableInsert = true,
             bulkUpsert: enableUpsert = true,
             bulkUpdate: enableUpdate = true,
-            bulkDelete: enableDelete = true,
-          },
+            bulkDelete: enableDelete = true
+          }
         } = build;
 
         // Register the ConflictAction enum (shared across all tables)
@@ -95,9 +97,9 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
             values: {
               IGNORE: {
                 value: 'IGNORE',
-                description: 'Skip the conflicting row (ON CONFLICT DO NOTHING).',
-              },
-            },
+                description: 'Skip the conflicting row (ON CONFLICT DO NOTHING).'
+              }
+            }
           }),
           'ConflictAction enum for bulk mutations'
         );
@@ -149,7 +151,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                 value: unique.attributes.join(','),
                 description: unique.isPrimary
                   ? `Primary key constraint on ${resourceName}`
-                  : `Unique constraint on (${unique.attributes.join(', ')})`,
+                  : `Unique constraint on (${unique.attributes.join(', ')})`
               };
             }
 
@@ -158,7 +160,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
               { isBulkMutationConstraintEnum: true },
               () => ({
                 description: `Unique constraints on ${typeName} for ON CONFLICT targeting.`,
-                values,
+                values
               }),
               `Unique constraint enum for ${typeName}`
             );
@@ -180,7 +182,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                 .toUpperCase();
               values[enumValue] = {
                 value: attrName,
-                description: `Column ${attrName}`,
+                description: `Column ${attrName}`
               };
             }
 
@@ -189,7 +191,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
               { isBulkMutationColumnEnum: true },
               () => ({
                 description: `Columns of ${typeName} available for upsert SET clause.`,
-                values,
+                values
               }),
               `Column enum for ${typeName}`
             );
@@ -213,7 +215,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description:
                         'The unique constraint to use for conflict detection.',
-                      type: build.getTypeByName(constraintEnumName),
+                      type: build.getTypeByName(constraintEnumName)
                     })
                   ),
                   action: fieldWithHooks(
@@ -222,10 +224,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       description: 'The action to take on conflict.',
                       type: new build.graphql.GraphQLNonNull(
                         build.getTypeByName('ConflictAction')
-                      ),
+                      )
                     })
-                  ),
-                }),
+                  )
+                })
               }),
               `ON CONFLICT input for bulk insert ${typeName}`
             );
@@ -252,7 +254,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                         'The unique constraint to use for conflict detection.',
                       type: new build.graphql.GraphQLNonNull(
                         build.getTypeByName(constraintEnumName)
-                      ),
+                      )
                     })
                   ),
                   updateColumns: fieldWithHooks(
@@ -264,10 +266,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                         new build.graphql.GraphQLNonNull(
                           build.getTypeByName(columnEnumName)
                         )
-                      ),
+                      )
                     })
-                  ),
-                }),
+                  )
+                })
               }),
               `ON CONFLICT input for bulk upsert ${typeName}`
             );
@@ -281,7 +283,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
 
             build.registerInputObjectType(
               itemTypeName,
-              { isBulkMutationValuesItem: true },
+              {
+                isBulkMutationValuesItem: true,
+                bulkMutationResourceName: resourceName
+              },
               () => ({
                 description: `A single row to insert for ${typeName}.`,
                 fields: () => {
@@ -293,7 +298,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
 
                     const fieldName = inflection.attribute({
                       attributeName: attrName,
-                      codec: resource.codec,
+                      codec: resource.codec
                     });
                     const inputType = build.getGraphQLTypeByPgCodec(
                       attr.codec,
@@ -307,11 +312,11 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       description: `Value for ${attrName}`,
                       type: isRequired
                         ? new build.graphql.GraphQLNonNull(inputType)
-                        : inputType,
+                        : inputType
                     };
                   }
                   return result;
-                },
+                }
               }),
               `Values item input for bulk insert ${typeName}`
             );
@@ -323,7 +328,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
 
               build.registerInputObjectType(
                 upsertItemTypeName,
-                { isBulkMutationValuesItem: true },
+                {
+                  isBulkMutationValuesItem: true,
+                  bulkMutationResourceName: resourceName
+                },
                 () => ({
                   description: `A single row to upsert for ${typeName}.`,
                   fields: () => {
@@ -335,7 +343,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
 
                       const fieldName = inflection.attribute({
                         attributeName: attrName,
-                        codec: resource.codec,
+                        codec: resource.codec
                       });
                       const inputType = build.getGraphQLTypeByPgCodec(
                         attr.codec,
@@ -349,11 +357,11 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                         description: `Value for ${attrName}`,
                         type: isRequired
                           ? new build.graphql.GraphQLNonNull(inputType)
-                          : inputType,
+                          : inputType
                       };
                     }
                     return result;
-                  },
+                  }
                 }),
                 `Values item input for bulk upsert ${typeName}`
               );
@@ -384,7 +392,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                             build.getTypeByName(itemTypeName)
                           )
                         )
-                      ),
+                      )
                     })
                   ),
                   onConflict: fieldWithHooks(
@@ -392,10 +400,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description:
                         'Optional ON CONFLICT handling for duplicate keys.',
-                      type: build.getTypeByName(onConflictName),
+                      type: build.getTypeByName(onConflictName)
                     })
-                  ),
-                }),
+                  )
+                })
               }),
               `Input for bulk insert ${typeName}`
             );
@@ -424,7 +432,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                             build.getTypeByName(itemTypeName)
                           )
                         )
-                      ),
+                      )
                     })
                   ),
                   onConflict: fieldWithHooks(
@@ -434,10 +442,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                         'The unique constraint to target and which columns to update.',
                       type: new build.graphql.GraphQLNonNull(
                         build.getTypeByName(onConflictName)
-                      ),
+                      )
                     })
-                  ),
-                }),
+                  )
+                })
               }),
               `Input for bulk upsert ${typeName}`
             );
@@ -471,7 +479,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                           'Condition to select which rows to update.',
                         type: whereType
                           ? new build.graphql.GraphQLNonNull(whereType)
-                          : build.graphql.GraphQLString,
+                          : build.graphql.GraphQLString
                       };
                     }
                   ),
@@ -481,10 +489,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       description: 'The fields to update.',
                       type: new build.graphql.GraphQLNonNull(
                         build.getTypeByName(patchTypeName)
-                      ),
+                      )
                     })
-                  ),
-                }),
+                  )
+                })
               }),
               `Input for bulk update ${typeName}`
             );
@@ -515,11 +523,11 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                           'Condition to select which rows to delete.',
                         type: whereType
                           ? new build.graphql.GraphQLNonNull(whereType)
-                          : build.graphql.GraphQLString,
+                          : build.graphql.GraphQLString
                       };
                     }
-                  ),
-                }),
+                  )
+                })
               }),
               `Input for bulk delete ${typeName}`
             );
@@ -528,7 +536,8 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
           // Payload types
           const registerPayload = (
             payloadName: string,
-            description: string
+            description: string,
+            payloadResource: any
           ) => {
             build.registerObjectType(
               payloadName,
@@ -543,29 +552,29 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       () => ({
                         description:
                           'The exact same clientMutationId that was provided in the mutation input.',
-                        type: build.graphql.GraphQLString,
+                        type: build.graphql.GraphQLString
                       })
                     ),
                     affectedCount: fieldWithHooks(
                       {
                         fieldName: 'affectedCount',
-                        isBulkMutationPayloadAffectedCountField: true,
+                        isBulkMutationPayloadAffectedCountField: true
                       },
                       () => ({
                         description:
                           'The number of rows affected by the mutation.',
                         type: new build.graphql.GraphQLNonNull(
                           build.graphql.GraphQLInt
-                        ),
+                        )
                       })
-                    ),
+                    )
                   };
 
                   if (outputType) {
                     fields.returning = fieldWithHooks(
                       {
                         fieldName: 'returning',
-                        isBulkMutationPayloadReturningField: true,
+                        isBulkMutationPayloadReturningField: true
                       },
                       () => ({
                         description: 'The rows affected by the mutation.',
@@ -574,6 +583,16 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                             new build.graphql.GraphQLNonNull(outputType)
                           )
                         ),
+                        plan($parent: any) {
+                          const $records = access(
+                            $parent,
+                            'returning'
+                          ) as any;
+                          return pgSelectFromRecords(
+                            payloadResource,
+                            $records
+                          );
+                        }
                       })
                     );
                   }
@@ -583,12 +602,12 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description:
                         'Access the root query type. Useful for re-fetching data after a mutation.',
-                      type: build.getTypeByName('Query'),
+                      type: build.getTypeByName('Query')
                     })
                   );
 
                   return fields;
-                },
+                }
               }),
               `${description} payload`
             );
@@ -597,31 +616,35 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
           if (hasInsert) {
             registerPayload(
               inflection.bulkInsertPayloadType(typeName),
-              `The output of the bulk create ${typeName} mutation.`
+              `The output of the bulk create ${typeName} mutation.`,
+              resource
             );
           }
           if (hasUpsert) {
             registerPayload(
               inflection.bulkUpsertPayloadType(typeName),
-              `The output of the bulk upsert ${typeName} mutation.`
+              `The output of the bulk upsert ${typeName} mutation.`,
+              resource
             );
           }
           if (hasUpdate) {
             registerPayload(
               inflection.bulkUpdatePayloadType(typeName),
-              `The output of the bulk update ${typeName} mutation.`
+              `The output of the bulk update ${typeName} mutation.`,
+              resource
             );
           }
           if (hasDelete) {
             registerPayload(
               inflection.bulkDeletePayloadType(typeName),
-              `The output of the bulk delete ${typeName} mutation.`
+              `The output of the bulk delete ${typeName} mutation.`,
+              resource
             );
           }
         }
 
         return _;
-      },
-    },
-  },
+      }
+    }
+  }
 };

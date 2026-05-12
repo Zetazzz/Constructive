@@ -49,6 +49,7 @@
   },
   "peerDependencies": {
     "@dataplan/pg": "1.0.0",
+    "grafast": "1.0.0",
     "graphile-build": "5.0.0",
     "graphile-build-pg": "5.0.0",
     "graphile-config": "1.0.0",

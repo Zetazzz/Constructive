@@ -55,6 +55,32 @@ CREATE TABLE bulk_test.no_bulk (
 );
 
 -- ============================================================================
+-- ORDERS TABLE (for relational/nested insert testing)
+-- ============================================================================
+CREATE TABLE bulk_test.orders (
+  id serial PRIMARY KEY,
+  customer_name text NOT NULL,
+  status text NOT NULL DEFAULT 'pending'
+);
+
+COMMENT ON TABLE bulk_test.orders IS E'@behavior +bulkInsert';
+
+-- ============================================================================
+-- ORDER_ITEMS TABLE (child of orders, for nested insert testing)
+-- ============================================================================
+CREATE TABLE bulk_test.order_items (
+  id serial PRIMARY KEY,
+  order_id int NOT NULL REFERENCES bulk_test.orders(id),
+  product_name text NOT NULL,
+  quantity int NOT NULL DEFAULT 1,
+  unit_price numeric(10,2) NOT NULL
+);
+
+COMMENT ON TABLE bulk_test.order_items IS E'@behavior +bulkInsert';
+
+CREATE INDEX idx_order_items_order_id ON bulk_test.order_items(order_id);
+
+-- ============================================================================
 -- SEED DATA
 -- ============================================================================
 

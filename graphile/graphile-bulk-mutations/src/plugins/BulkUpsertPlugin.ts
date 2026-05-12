@@ -1,6 +1,8 @@
 import '../augmentations';
-import type { GraphileConfig } from 'graphile-config';
+
 import { sideEffectWithPgClient } from '@dataplan/pg';
+import type { GraphileConfig } from 'graphile-config';
+
 import type { ColumnSpec } from '../utils/sql-builder';
 import { buildBulkInsertSQL } from '../utils/sql-builder';
 
@@ -25,7 +27,7 @@ export const BulkUpsertPlugin: GraphileConfig.Plugin = {
     hooks: {
       GraphQLObjectType_fields(fields, build, context) {
         const {
-          scope: { isRootMutation },
+          scope: { isRootMutation }
         } = context;
         if (!isRootMutation) return fields;
 
@@ -35,8 +37,8 @@ export const BulkUpsertPlugin: GraphileConfig.Plugin = {
           graphql: { GraphQLNonNull },
           options: {
             bulkUpsert: enableUpsert = true,
-            bulkMaxRows = 1000,
-          },
+            bulkMaxRows = 1000
+          }
         } = build;
 
         if (!enableUpsert) return fields;
@@ -70,12 +72,12 @@ export const BulkUpsertPlugin: GraphileConfig.Plugin = {
             if (attr.extensions?.isInsertable === false) continue;
             const gqlFieldName = inflection.attribute({
               attributeName: attrName,
-              codec: resource.codec,
+              codec: resource.codec
             });
             fieldToAttr[gqlFieldName] = attrName;
             columnSpecs.push({
               name: attrName,
-              sqlType: sql.compile(attr.codec.sqlType).text,
+              sqlType: sql.compile(attr.codec.sqlType).text
             });
           }
 
@@ -107,8 +109,8 @@ export const BulkUpsertPlugin: GraphileConfig.Plugin = {
                   type: payloadType,
                   args: {
                     input: {
-                      type: new GraphQLNonNull(inputType),
-                    },
+                      type: new GraphQLNonNull(inputType)
+                    }
                   },
                   plan(_$root: any, args: any) {
                     const $input = args.getRaw('input');
@@ -166,7 +168,7 @@ export const BulkUpsertPlugin: GraphileConfig.Plugin = {
                           {
                             conflictColumns: (input.onConflict.constraint as string).split(','),
                             action: 'UPDATE',
-                            updateColumns,
+                            updateColumns
                           }
                         );
 
@@ -206,21 +208,21 @@ export const BulkUpsertPlugin: GraphileConfig.Plugin = {
 
                         return {
                           affectedCount: totalAffected,
-                          returning,
+                          returning
                         };
                       }
                     );
                     return $result;
-                  },
+                  }
                 }
-              ),
+              )
             },
             `Adding bulk upsert field for ${typeName}`
           );
         }
 
         return fields;
-      },
-    },
-  },
+      }
+    }
+  }
 };

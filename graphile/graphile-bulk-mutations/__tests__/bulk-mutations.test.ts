@@ -1,6 +1,7 @@
-import { join } from 'path';
-import { getConnectionsObject, seed } from 'graphile-test';
 import type { GraphQLQueryFnObj } from 'graphile-test';
+import { getConnectionsObject, seed } from 'graphile-test';
+import { join } from 'path';
+
 import { BulkMutationPreset } from '../src';
 
 const SCHEMA = 'bulk_test';
@@ -14,14 +15,14 @@ let query: QueryFn;
 
 beforeAll(async () => {
   const testPreset = {
-    extends: [BulkMutationPreset()],
+    extends: [BulkMutationPreset({ bulkRelational: true })]
   };
 
   const connections = await getConnectionsObject(
     {
       schemas: [SCHEMA],
       preset: testPreset,
-      useRoot: true,
+      useRoot: true
     },
     [seed.sqlfile([sqlFile('test-seed.sql')])]
   );
@@ -48,7 +49,7 @@ describe('Schema generation', () => {
             fields { name }
           }
         }
-      `,
+      `
     });
     fieldNames = result.data?.__type?.fields?.map((f) => f.name) ?? [];
   });
@@ -101,7 +102,7 @@ describe('Bulk insert', () => {
             affectedCount
           }
         }
-      `,
+      `
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.bulkCreateItems.affectedCount).toBe(2);
@@ -117,7 +118,7 @@ describe('Bulk insert', () => {
             affectedCount
           }
         }
-      `,
+      `
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.bulkCreateItems.affectedCount).toBe(0);
@@ -142,7 +143,7 @@ describe('Bulk insert', () => {
             affectedCount
           }
         }
-      `,
+      `
     });
     expect(result.errors).toBeUndefined();
     // Widget A already exists, should be ignored; Brand New is new
@@ -172,7 +173,7 @@ describe('Bulk upsert', () => {
             affectedCount
           }
         }
-      `,
+      `
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.bulkUpsertItems.affectedCount).toBe(2);
@@ -196,7 +197,7 @@ describe('Bulk update', () => {
             affectedCount
           }
         }
-      `,
+      `
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.bulkUpdateItems.affectedCount).toBe(1);
@@ -219,9 +220,143 @@ describe('Bulk delete', () => {
             affectedCount
           }
         }
-      `,
+      `
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.bulkDeleteItems.affectedCount).toBe(1);
+  });
+});
+
+// ============================================================================
+// RELATIONAL / NESTED INSERTS
+// ============================================================================
+describe('Relational inserts', () => {
+  it('creates parent with nested children in one mutation', async () => {
+    // First introspect the schema to find the nested field name
+    const typeResult = await query<{
+      __type: { inputFields: { name: string }[] };
+    }>({
+      query: `
+        query {
+          __type(name: "OrderBulkCreateItem") {
+            inputFields { name }
+          }
+        }
+      `
+    });
+    const fieldNames = typeResult.data?.__type?.inputFields?.map((f) => f.name) ?? [];
+    // Should have a nested field for order_items
+    const nestedField = fieldNames.find(
+      (n) => n.includes('orderItem') || n.includes('OrderItem') || n.includes('order_item')
+    );
+    expect(nestedField).toBeDefined();
+  });
+
+  it('inserts orders with nested order items', async () => {
+    // First discover the nested field name dynamically
+    const typeResult = await query<{
+      __type: { inputFields: { name: string; type: { name: string; ofType: { name: string } } }[] };
+    }>({
+      query: `
+        query {
+          __type(name: "OrderBulkCreateItem") {
+            inputFields {
+              name
+              type {
+                name
+                ofType { name }
+              }
+            }
+          }
+        }
+      `
+    });
+    const inputFields = typeResult.data?.__type?.inputFields ?? [];
+    const nestedField = inputFields.find(
+      (f) => f.name.toLowerCase().includes('orderitem')
+    );
+
+    if (!nestedField) {
+      // If we can't find nested field, skip with useful message
+      console.log('Available fields:', inputFields.map((f) => f.name));
+      throw new Error('Could not find nested order items field on OrderBulkCreateItem');
+    }
+
+    const result = await query<{
+      bulkCreateOrders: { affectedCount: number; returning: { id: number; customerName: string }[] };
+    }>({
+      query: `
+        mutation {
+          bulkCreateOrders(input: {
+            values: [
+              {
+                customerName: "Alice"
+                ${nestedField.name}: [
+                  { productName: "Widget", unitPrice: "9.99", quantity: 2 }
+                  { productName: "Gadget", unitPrice: "19.99" }
+                ]
+              }
+              {
+                customerName: "Bob"
+                ${nestedField.name}: [
+                  { productName: "Laptop", unitPrice: "999.99", quantity: 1 }
+                ]
+              }
+            ]
+          }) {
+            affectedCount
+            returning {
+              id
+              customerName
+            }
+          }
+        }
+      `
+    });
+    expect(result.errors).toBeUndefined();
+    // 2 orders + 3 order items = 5 total affected
+    expect(result.data?.bulkCreateOrders.affectedCount).toBe(5);
+    expect(result.data?.bulkCreateOrders.returning).toHaveLength(2);
+  });
+
+  it('handles empty nested array', async () => {
+    const result = await query<{
+      bulkCreateOrders: { affectedCount: number };
+    }>({
+      query: `
+        mutation {
+          bulkCreateOrders(input: {
+            values: [
+              { customerName: "Charlie" }
+            ]
+          }) {
+            affectedCount
+          }
+        }
+      `
+    });
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.bulkCreateOrders.affectedCount).toBe(1);
+  });
+
+  it('nested input type excludes FK columns', async () => {
+    // The nested input type should NOT have the FK field (order_id)
+    const typeResult = await query<{
+      __type: { inputFields: { name: string }[] } | null;
+    }>({
+      query: `
+        query {
+          __type(name: "OrderItemBulkNestedInOrderInput") {
+            inputFields { name }
+          }
+        }
+      `
+    });
+
+    const fieldNames = typeResult.data?.__type?.inputFields?.map((f) => f.name) ?? [];
+    // Should have productName, quantity, unitPrice but NOT orderId
+    expect(fieldNames).toContain('productName');
+    expect(fieldNames).toContain('unitPrice');
+    expect(fieldNames).not.toContain('orderId');
   });
 });

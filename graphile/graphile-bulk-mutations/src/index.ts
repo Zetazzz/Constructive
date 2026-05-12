@@ -28,12 +28,13 @@ export { BulkMutationPreset } from './preset';
 
 // Re-export all plugins for granular use
 export {
-  BulkInflectionPlugin,
-  BulkTypesPlugin,
-  BulkInsertPlugin,
-  BulkUpsertPlugin,
-  BulkUpdatePlugin,
   BulkDeletePlugin,
+  BulkInflectionPlugin,
+  BulkInsertPlugin,
+  BulkRelationalPlugin,
+  BulkTypesPlugin,
+  BulkUpdatePlugin,
+  BulkUpsertPlugin
 } from './plugins';
 
 // Re-export types
@@ -41,9 +42,9 @@ export type { BulkMutationOptions, BulkNamingStrategy } from './types';
 export { PG_MAX_PARAMS } from './types';
 
 // Re-export utilities
-export {
-  buildBulkInsertSQL,
-  buildBulkUpdateSQL,
-  buildBulkDeleteSQL,
-} from './utils';
 export type { ColumnSpec, InsertBatch } from './utils';
+export {
+  buildBulkDeleteSQL,
+  buildBulkInsertSQL,
+  buildBulkUpdateSQL
+} from './utils';

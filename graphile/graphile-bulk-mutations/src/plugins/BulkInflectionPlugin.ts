@@ -1,5 +1,7 @@
 import '../augmentations';
+
 import type { GraphileConfig } from 'graphile-config';
+
 import type { BulkNamingStrategy } from '../types';
 
 /**
@@ -17,13 +19,13 @@ function buildFieldName(
 ): string {
   const typeName = inflection.upperCamelCase(resourceName);
   switch (naming) {
-    case 'pluralized':
-      return inflection.camelCase(`${verb}_${inflection.pluralize(resourceName)}`);
-    case 'many':
-      return inflection.camelCase(`${verb}_many_${inflection.pluralize(resourceName)}`);
-    case 'bulk':
-    default:
-      return inflection.camelCase(`bulk_${verb}_${typeName}`);
+  case 'pluralized':
+    return inflection.camelCase(`${verb}_${inflection.pluralize(resourceName)}`);
+  case 'many':
+    return inflection.camelCase(`${verb}_many_${inflection.pluralize(resourceName)}`);
+  case 'bulk':
+  default:
+    return inflection.camelCase(`bulk_${verb}_${typeName}`);
   }
 }
 
@@ -109,6 +111,15 @@ export const BulkInflectionPlugin: GraphileConfig.Plugin = {
       bulkUpsertValuesItemType(_preset: any, typeName: string): string {
         return `${typeName}BulkUpsertItem`;
       },
-    },
-  },
+
+      // Relational nested input type names
+      bulkNestedValuesItemType(
+        _preset: any,
+        parentTypeName: string,
+        childTypeName: string
+      ): string {
+        return `${childTypeName}BulkNestedIn${parentTypeName}Input`;
+      }
+    }
+  }
 };

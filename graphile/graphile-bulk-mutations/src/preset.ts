@@ -22,16 +22,19 @@
  */
 
 import './augmentations';
+
 import type { GraphileConfig } from 'graphile-config';
-import type { BulkMutationOptions } from './types';
+
 import {
-  BulkInflectionPlugin,
-  BulkTypesPlugin,
-  BulkInsertPlugin,
-  BulkUpsertPlugin,
-  BulkUpdatePlugin,
   BulkDeletePlugin,
+  BulkInflectionPlugin,
+  BulkInsertPlugin,
+  BulkRelationalPlugin,
+  BulkTypesPlugin,
+  BulkUpdatePlugin,
+  BulkUpsertPlugin
 } from './plugins';
+import type { BulkMutationOptions } from './types';
 
 /**
  * Default schema options for bulk mutations.
@@ -46,7 +49,7 @@ const defaultSchemaOptions: BulkMutationOptions = {
   bulkReturning: true,
   bulkMaxRows: 1000,
   bulkMaxNestingDepth: 3,
-  bulkRequireWhere: true,
+  bulkRequireWhere: true
 };
 
 /**
@@ -64,7 +67,7 @@ export function BulkMutationPreset(
 
   const plugins: GraphileConfig.Plugin[] = [
     BulkInflectionPlugin,
-    BulkTypesPlugin,
+    BulkTypesPlugin
   ];
 
   if (mergedOptions.bulkInsert) {
@@ -83,9 +86,13 @@ export function BulkMutationPreset(
     plugins.push(BulkDeletePlugin);
   }
 
+  if (mergedOptions.bulkRelational) {
+    plugins.push(BulkRelationalPlugin);
+  }
+
   return {
     plugins,
-    schema: mergedOptions,
+    schema: mergedOptions
   };
 }
 
