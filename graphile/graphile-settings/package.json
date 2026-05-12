@@ -47,6 +47,7 @@
     "grafast": "1.0.0",
     "grafserv": "1.0.0",
     "graphile-bucket-provisioner-plugin": "workspace:*",
+    "graphile-bulk-mutations": "workspace:^",
     "graphile-build": "5.0.0",
     "graphile-build-pg": "5.0.0",
     "graphile-config": "1.0.0",

@@ -218,6 +218,7 @@ const DATABASE_SETTINGS_SQL = `
     ds.enable_connection_filter,
     ds.enable_ltree,
     ds.enable_llm,
+    ds.enable_bulk,
     COALESCE(aps.enable_aggregates, ds.enable_aggregates) AS resolved_enable_aggregates,
     COALESCE(aps.enable_postgis, ds.enable_postgis) AS resolved_enable_postgis,
     COALESCE(aps.enable_search, ds.enable_search) AS resolved_enable_search,
@@ -227,7 +228,8 @@ const DATABASE_SETTINGS_SQL = `
     COALESCE(aps.enable_connection_filter, ds.enable_connection_filter) AS resolved_enable_connection_filter,
     COALESCE(aps.enable_ltree, ds.enable_ltree) AS resolved_enable_ltree,
     COALESCE(aps.enable_llm, ds.enable_llm) AS resolved_enable_llm,
-    COALESCE(aps.enable_realtime, ds.enable_realtime) AS resolved_enable_realtime
+    COALESCE(aps.enable_realtime, ds.enable_realtime) AS resolved_enable_realtime,
+    COALESCE(aps.enable_bulk, ds.enable_bulk) AS resolved_enable_bulk
   FROM services_public.database_settings ds
   LEFT JOIN services_public.api_settings aps ON ds.database_id = aps.database_id AND aps.api_id = $2
   WHERE ds.database_id = $1
@@ -327,6 +329,7 @@ interface DatabaseSettingsRow {
   resolved_enable_ltree: boolean;
   resolved_enable_llm: boolean;
   resolved_enable_realtime: boolean;
+  resolved_enable_bulk: boolean;
 }
 
 interface ApiListRow {
@@ -679,6 +682,7 @@ const toDatabaseSettings = (row: DatabaseSettingsRow | null): DatabaseSettings |
     enableLtree: row.resolved_enable_ltree,
     enableLlm: row.resolved_enable_llm,
     enableRealtime: row.resolved_enable_realtime,
+    enableBulk: row.resolved_enable_bulk,
   };
 };
 
