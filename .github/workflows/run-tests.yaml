@@ -162,6 +162,8 @@ jobs:
             env: {}
           - package: graphile/graphile-ltree
             env: {}
+          - package: graphile/graphile-bulk-mutations
+            env: {}
           - package: graphql/orm-test
             env: {}
           - package: graphql/test
