@@ -236,6 +236,33 @@ const DATABASE_SETTINGS_SQL = `
   LIMIT 1
 `;
 
+const DATABASE_SETTINGS_SQL_COMPAT = `
+  SELECT
+    ds.enable_aggregates,
+    ds.enable_postgis,
+    ds.enable_search,
+    ds.enable_direct_uploads,
+    ds.enable_presigned_uploads,
+    ds.enable_many_to_many,
+    ds.enable_connection_filter,
+    ds.enable_ltree,
+    ds.enable_llm,
+    COALESCE(aps.enable_aggregates, ds.enable_aggregates) AS resolved_enable_aggregates,
+    COALESCE(aps.enable_postgis, ds.enable_postgis) AS resolved_enable_postgis,
+    COALESCE(aps.enable_search, ds.enable_search) AS resolved_enable_search,
+    COALESCE(aps.enable_direct_uploads, ds.enable_direct_uploads) AS resolved_enable_direct_uploads,
+    COALESCE(aps.enable_presigned_uploads, ds.enable_presigned_uploads) AS resolved_enable_presigned_uploads,
+    COALESCE(aps.enable_many_to_many, ds.enable_many_to_many) AS resolved_enable_many_to_many,
+    COALESCE(aps.enable_connection_filter, ds.enable_connection_filter) AS resolved_enable_connection_filter,
+    COALESCE(aps.enable_ltree, ds.enable_ltree) AS resolved_enable_ltree,
+    COALESCE(aps.enable_llm, ds.enable_llm) AS resolved_enable_llm,
+    COALESCE(aps.enable_realtime, ds.enable_realtime) AS resolved_enable_realtime
+  FROM services_public.database_settings ds
+  LEFT JOIN services_public.api_settings aps ON ds.database_id = aps.database_id AND aps.api_id = $2
+  WHERE ds.database_id = $1
+  LIMIT 1
+`;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -329,7 +356,7 @@ interface DatabaseSettingsRow {
   resolved_enable_ltree: boolean;
   resolved_enable_llm: boolean;
   resolved_enable_realtime: boolean;
-  resolved_enable_bulk: boolean;
+  resolved_enable_bulk?: boolean;
 }
 
 interface ApiListRow {
@@ -682,7 +709,7 @@ const toDatabaseSettings = (row: DatabaseSettingsRow | null): DatabaseSettings |
     enableLtree: row.resolved_enable_ltree,
     enableLlm: row.resolved_enable_llm,
     enableRealtime: row.resolved_enable_realtime,
-    enableBulk: row.resolved_enable_bulk,
+    enableBulk: row.resolved_enable_bulk ?? false,
   };
 };
 
@@ -691,6 +718,15 @@ const queryDatabaseSettings = async (pool: Pool, databaseId: string, apiId?: str
     const result = await pool.query<DatabaseSettingsRow>(DATABASE_SETTINGS_SQL, [databaseId, apiId ?? null]);
     return toDatabaseSettings(result.rows[0] ?? null);
   } catch (e: any) {
+    if (e.message?.includes('enable_bulk')) {
+      try {
+        const result = await pool.query<DatabaseSettingsRow>(DATABASE_SETTINGS_SQL_COMPAT, [databaseId, apiId ?? null]);
+        return toDatabaseSettings(result.rows[0] ?? null);
+      } catch (e2: any) {
+        log.warn(`[database-settings] Failed to load database settings: ${e2.message}`);
+        return undefined;
+      }
+    }
     log.warn(`[database-settings] Failed to load database settings: ${e.message}`);
     return undefined;
   }
