@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.13.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.12.3...@pgpmjs/export@0.13.0) (2026-05-12)
+
+### Bug Fixes
+
+- scope export to modules and provisions only ([9184cac](https://github.com/constructive-io/constructive/commit/9184cac6aba85bb54ff3a016a4f2083faf42240c))
+
+### Features
+
+- **pgpm/export:** add 19 missing module tables to export config ([e463900](https://github.com/constructive-io/constructive/commit/e4639001fb15abab6f01a984197dc651cdb49924))
+- **pgpm/export:** add spatial_relation to export config ([d29061d](https://github.com/constructive-io/constructive/commit/d29061d0b68d2896a97648b5fc02c70d51a3879d))
+
 ## [0.12.3](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.12.2...@pgpmjs/export@0.12.3) (2026-05-11)
 
 **Note:** Version bump only for package @pgpmjs/export

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.34.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.33.1...node-type-registry@0.34.0) (2026-05-12)
+
+### Features
+
+- add relational/nested insert support and DataBulk node type ([63d5371](https://github.com/constructive-io/constructive/commit/63d5371131b17953d4891aeced62001e8115ce32))
+
 ## [0.33.1](https://github.com/constructive-io/constructive/compare/node-type-registry@0.33.0...node-type-registry@0.33.1) (2026-05-11)
 
 **Note:** Version bump only for package node-type-registry
