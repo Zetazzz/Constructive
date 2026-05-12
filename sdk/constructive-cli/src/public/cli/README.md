@@ -3641,13 +3641,14 @@ CRUD operations for OrgInvite records.
 | `multiple` | Boolean |
 | `data` | JSON |
 | `profileId` | UUID |
+| `isReadOnly` | Boolean |
 | `expiresAt` | Datetime |
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 | `entityId` | UUID |
 
 **Required create fields:** `entityId`
-**Optional create fields (backend defaults):** `email`, `senderId`, `receiverId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `profileId`, `expiresAt`
+**Optional create fields (backend defaults):** `email`, `senderId`, `receiverId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `profileId`, `isReadOnly`, `expiresAt`
 
 ### `org-claimed-invite`
 

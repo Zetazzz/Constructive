@@ -2222,6 +2222,8 @@ export interface OrgInvite {
   data?: Record<string, unknown> | null;
   /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
   profileId?: string | null;
+  /** Whether the resulting membership should be read-only when this invite is claimed */
+  isReadOnly?: boolean | null;
   /** Timestamp after which this invitation can no longer be redeemed */
   expiresAt?: string | null;
   createdAt?: string | null;
@@ -7029,6 +7031,7 @@ export type OrgInviteSelect = {
   multiple?: boolean;
   data?: boolean;
   profileId?: boolean;
+  isReadOnly?: boolean;
   expiresAt?: boolean;
   createdAt?: boolean;
   updatedAt?: boolean;
@@ -12518,6 +12521,8 @@ export interface OrgInviteFilter {
   multiple?: BooleanFilter;
   /** Filter by the object’s `profileId` field. */
   profileId?: UUIDFilter;
+  /** Filter by the object’s `isReadOnly` field. */
+  isReadOnly?: BooleanFilter;
   /** Filter by the object’s `expiresAt` field. */
   expiresAt?: DatetimeFilter;
   /** Filter by the object’s `createdAt` field. */
@@ -16813,6 +16818,8 @@ export type OrgInviteOrderBy =
   | 'DATA_DESC'
   | 'PROFILE_ID_ASC'
   | 'PROFILE_ID_DESC'
+  | 'IS_READ_ONLY_ASC'
+  | 'IS_READ_ONLY_DESC'
   | 'EXPIRES_AT_ASC'
   | 'EXPIRES_AT_DESC'
   | 'CREATED_AT_ASC'
@@ -21277,6 +21284,7 @@ export interface CreateOrgInviteInput {
     multiple?: boolean;
     data?: Record<string, unknown>;
     profileId?: string;
+    isReadOnly?: boolean;
     expiresAt?: string;
     entityId: string;
   };
@@ -21292,6 +21300,7 @@ export interface OrgInvitePatch {
   multiple?: boolean | null;
   data?: Record<string, unknown> | null;
   profileId?: string | null;
+  isReadOnly?: boolean | null;
   expiresAt?: string | null;
   entityId?: string | null;
 }
@@ -29586,6 +29595,8 @@ export interface OrgInviteFilter {
   multiple?: BooleanFilter;
   /** Filter by the object’s `profileId` field. */
   profileId?: UUIDFilter;
+  /** Filter by the object’s `isReadOnly` field. */
+  isReadOnly?: BooleanFilter;
   /** Filter by the object’s `expiresAt` field. */
   expiresAt?: DatetimeFilter;
   /** Filter by the object’s `createdAt` field. */
