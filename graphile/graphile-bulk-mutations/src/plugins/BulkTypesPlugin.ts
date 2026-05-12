@@ -135,15 +135,18 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
               { value: string; description: string }
             > = {};
             for (const unique of resource.uniques) {
-              const constraintName =
-                unique.extensions?.tags?.name || unique.isPrimary
-                  ? `${resourceName}_pkey`
-                  : `${resourceName}_${unique.attributes.join('_')}_key`;
+              // Use column-based conflict targeting (ON CONFLICT (col1, col2))
+              // rather than constraint names, since PgResourceUnique doesn't
+              // store the actual PostgreSQL constraint name.
+              const enumKey = unique.isPrimary
+                ? `${resourceName}_pkey`
+                : `${resourceName}_${unique.attributes.join('_')}_key`;
               const enumValue = inflection
-                .constantCase(constraintName)
+                .constantCase(enumKey)
                 .toUpperCase();
+              // Store comma-separated column list as the enum value
               values[enumValue] = {
-                value: constraintName,
+                value: unique.attributes.join(','),
                 description: unique.isPrimary
                   ? `Primary key constraint on ${resourceName}`
                   : `Unique constraint on (${unique.attributes.join(', ')})`,
@@ -279,50 +282,10 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
             build.registerInputObjectType(
               itemTypeName,
               { isBulkMutationValuesItem: true },
-              () => {
-                const fields: Record<string, any> = {};
-                for (const [attrName, attr] of Object.entries(
-                  resource.codec.attributes
-                ) as [string, any][]) {
-                  if (attr.extensions?.isInsertable === false) continue;
-
-                  const fieldName = inflection.attribute({
-                    attributeName: attrName,
-                    codec: resource.codec,
-                  });
-                  const inputType = build.getGraphQLTypeByPgCodec(
-                    attr.codec,
-                    'input'
-                  );
-                  if (!inputType) continue;
-
-                  const isRequired =
-                    !!attr.notNull && !attr.hasDefault;
-                  fields[fieldName] = {
-                    description: `Value for ${attrName}`,
-                    type: isRequired
-                      ? new build.graphql.GraphQLNonNull(inputType)
-                      : inputType,
-                  };
-                }
-                return {
-                  description: `A single row to insert for ${typeName}.`,
-                  fields,
-                };
-              },
-              `Values item input for bulk insert ${typeName}`
-            );
-
-            // Register upsert item separately if both exist
-            if (hasInsert && hasUpsert) {
-              const upsertItemTypeName =
-                inflection.bulkUpsertValuesItemType(typeName);
-
-              build.registerInputObjectType(
-                upsertItemTypeName,
-                { isBulkMutationValuesItem: true },
-                () => {
-                  const fields: Record<string, any> = {};
+              () => ({
+                description: `A single row to insert for ${typeName}.`,
+                fields: () => {
+                  const result: Record<string, any> = {};
                   for (const [attrName, attr] of Object.entries(
                     resource.codec.attributes
                   ) as [string, any][]) {
@@ -340,18 +303,58 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
 
                     const isRequired =
                       !!attr.notNull && !attr.hasDefault;
-                    fields[fieldName] = {
+                    result[fieldName] = {
                       description: `Value for ${attrName}`,
                       type: isRequired
                         ? new build.graphql.GraphQLNonNull(inputType)
                         : inputType,
                     };
                   }
-                  return {
-                    description: `A single row to upsert for ${typeName}.`,
-                    fields,
-                  };
+                  return result;
                 },
+              }),
+              `Values item input for bulk insert ${typeName}`
+            );
+
+            // Register upsert item separately if both exist
+            if (hasInsert && hasUpsert) {
+              const upsertItemTypeName =
+                inflection.bulkUpsertValuesItemType(typeName);
+
+              build.registerInputObjectType(
+                upsertItemTypeName,
+                { isBulkMutationValuesItem: true },
+                () => ({
+                  description: `A single row to upsert for ${typeName}.`,
+                  fields: () => {
+                    const result: Record<string, any> = {};
+                    for (const [attrName, attr] of Object.entries(
+                      resource.codec.attributes
+                    ) as [string, any][]) {
+                      if (attr.extensions?.isInsertable === false) continue;
+
+                      const fieldName = inflection.attribute({
+                        attributeName: attrName,
+                        codec: resource.codec,
+                      });
+                      const inputType = build.getGraphQLTypeByPgCodec(
+                        attr.codec,
+                        'input'
+                      );
+                      if (!inputType) continue;
+
+                      const isRequired =
+                        !!attr.notNull && !attr.hasDefault;
+                      result[fieldName] = {
+                        description: `Value for ${attrName}`,
+                        type: isRequired
+                          ? new build.graphql.GraphQLNonNull(inputType)
+                          : inputType,
+                      };
+                    }
+                    return result;
+                  },
+                }),
                 `Values item input for bulk upsert ${typeName}`
               );
             }

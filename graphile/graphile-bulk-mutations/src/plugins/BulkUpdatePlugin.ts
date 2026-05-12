@@ -1,5 +1,6 @@
 import '../augmentations';
 import type { GraphileConfig } from 'graphile-config';
+import { sideEffectWithPgClient } from '@dataplan/pg';
 
 const version = '0.1.0';
 
@@ -9,6 +10,9 @@ const version = '0.1.0';
  * Registers `bulkUpdateX` mutation fields for each resource with the
  * `bulkUpdate` behavior. Uses UPDATE ... SET ... WHERE with conditions
  * from graphile-connection-filter (or PostGraphile's built-in condition type).
+ *
+ * Uses `RETURNING <pk_columns>` (not `RETURNING *`) + follow-up SELECT
+ * to respect column-level SELECT grants.
  */
 export const BulkUpdatePlugin: GraphileConfig.Plugin = {
   name: 'BulkUpdatePlugin',
@@ -27,7 +31,6 @@ export const BulkUpdatePlugin: GraphileConfig.Plugin = {
         const {
           inflection,
           sql,
-          EXPORTABLE,
           graphql: { GraphQLNonNull },
           options: {
             bulkUpdate: enableUpdate = true,
@@ -72,14 +75,23 @@ export const BulkUpdatePlugin: GraphileConfig.Plugin = {
             attrToSqlType[attrName] = sql.compile(attr.codec.sqlType).text;
           }
 
+          // Extract primary key columns for RETURNING clause
+          const primaryUnique = resource.uniques.find((u: any) => u.isPrimary) ?? resource.uniques[0];
+          const pkColumns: string[] = primaryUnique.attributes;
+          const pkReturning = pkColumns.map((c) => `"${c}"`).join(', ');
+
           const compiledFrom = sql.compile(resource.from).text;
+
+          // Capture for plan closure
+          const executor = resource.executor;
+          const requireWhere = bulkRequireWhere as boolean;
 
           fields = build.extend(
             fields,
             {
               [fieldName]: context.fieldWithHooks(
                 { fieldName },
-                () => ({
+                {
                   description: `Bulk update ${typeName} rows matching the given condition.`,
                   type: payloadType,
                   args: {
@@ -87,123 +99,150 @@ export const BulkUpdatePlugin: GraphileConfig.Plugin = {
                       type: new GraphQLNonNull(inputType),
                     },
                   },
-                  plan: EXPORTABLE(
-                    () =>
-                      function plan(_$root: any, args: any) {
-                        const $input = args.get('input');
-                        const $result = build.dataplanPg.sideEffectWithPgClient(
-                          resource.executor,
-                          $input,
-                          async (pgClient: any, input: any) => {
-                            if (bulkRequireWhere && (!input.where || Object.keys(input.where).length === 0)) {
-                              throw new Error(
-                                'Bulk update requires a non-empty where condition. Set bulkRequireWhere: false to allow unrestricted updates.'
-                              );
-                            }
+                  plan(_$root: any, args: any) {
+                    const $input = args.getRaw('input');
+                    const $result = sideEffectWithPgClient(
+                      executor,
+                      $input,
+                      async (pgClient: any, input: any) => {
+                        if (requireWhere && (!input.where || Object.keys(input.where).length === 0)) {
+                          throw new Error(
+                            'Bulk update requires a non-empty where condition. Set bulkRequireWhere: false to allow unrestricted updates.'
+                          );
+                        }
 
-                            if (!input.patch || Object.keys(input.patch).length === 0) {
-                              throw new Error('Bulk update requires a non-empty patch.');
-                            }
+                        if (!input.patch || Object.keys(input.patch).length === 0) {
+                          throw new Error('Bulk update requires a non-empty patch.');
+                        }
 
-                            // Build SET clause from patch
-                            const setClauses: string[] = [];
-                            const values: unknown[] = [];
-                            for (const [key, val] of Object.entries(input.patch)) {
-                              if (val === undefined) continue;
-                              const attrName = fieldToAttr[key];
-                              if (!attrName) continue;
-                              const sqlType = attrToSqlType[attrName];
-                              values.push(val);
-                              setClauses.push(`"${attrName}" = $${values.length}::${sqlType}`);
-                            }
+                        // Build SET clause from patch
+                        const setClauses: string[] = [];
+                        const values: unknown[] = [];
+                        for (const [key, val] of Object.entries(input.patch)) {
+                          if (val === undefined) continue;
+                          const attrName = fieldToAttr[key];
+                          if (!attrName) continue;
+                          const sqlType = attrToSqlType[attrName];
+                          values.push(val);
+                          setClauses.push(`"${attrName}" = $${values.length}::${sqlType}`);
+                        }
 
-                            if (setClauses.length === 0) {
-                              return { affectedCount: 0, returning: [] };
-                            }
+                        if (setClauses.length === 0) {
+                          return { affectedCount: 0, returning: [] };
+                        }
 
-                            // Build WHERE clause from condition
-                            const whereClauses: string[] = [];
-                            if (input.where) {
-                              for (const [key, spec] of Object.entries(input.where) as [string, any][]) {
-                                const attrName = fieldToAttr[key];
-                                if (!attrName) continue;
-                                const sqlType = attrToSqlType[attrName];
+                        // Build WHERE clause from condition
+                        // Supports both simple equality (Condition type: { name: "X" })
+                        // and operator-based (Filter type: { name: { equalTo: "X" } })
+                        const whereClauses: string[] = [];
+                        if (input.where) {
+                          for (const [key, spec] of Object.entries(input.where) as [string, any][]) {
+                            const attrName = fieldToAttr[key];
+                            if (!attrName) continue;
+                            const sqlType = attrToSqlType[attrName];
 
-                                if (spec && typeof spec === 'object') {
-                                  for (const [op, val] of Object.entries(spec) as [string, any][]) {
-                                    values.push(val);
-                                    const paramRef = `$${values.length}::${sqlType}`;
-                                    switch (op) {
-                                      case 'equalTo':
-                                        whereClauses.push(`"${attrName}" = ${paramRef}`);
-                                        break;
-                                      case 'notEqualTo':
-                                        whereClauses.push(`"${attrName}" != ${paramRef}`);
-                                        break;
-                                      case 'greaterThan':
-                                        whereClauses.push(`"${attrName}" > ${paramRef}`);
-                                        break;
-                                      case 'greaterThanOrEqualTo':
-                                        whereClauses.push(`"${attrName}" >= ${paramRef}`);
-                                        break;
-                                      case 'lessThan':
-                                        whereClauses.push(`"${attrName}" < ${paramRef}`);
-                                        break;
-                                      case 'lessThanOrEqualTo':
-                                        whereClauses.push(`"${attrName}" <= ${paramRef}`);
-                                        break;
-                                      case 'in':
-                                        if (Array.isArray(val)) {
-                                          const placeholders = val.map((v: any) => {
-                                            values.push(v);
-                                            return `$${values.length}::${sqlType}`;
-                                          });
-                                          // Remove the initial push since we're expanding
-                                          values.pop();
-                                          whereClauses.push(`"${attrName}" IN (${placeholders.join(', ')})`);
-                                        }
-                                        break;
-                                      case 'isNull':
-                                        values.pop(); // Boolean flag, not a param
-                                        if (val) {
-                                          whereClauses.push(`"${attrName}" IS NULL`);
-                                        } else {
-                                          whereClauses.push(`"${attrName}" IS NOT NULL`);
-                                        }
-                                        break;
-                                      default:
-                                        values.pop();
-                                        break;
+                            if (spec === null) {
+                              whereClauses.push(`"${attrName}" IS NULL`);
+                            } else if (spec !== undefined && typeof spec !== 'object') {
+                              // Simple equality (Condition type)
+                              values.push(spec);
+                              whereClauses.push(`"${attrName}" = $${values.length}::${sqlType}`);
+                            } else if (spec && typeof spec === 'object') {
+                              // Operator-based (Filter type)
+                              for (const [op, val] of Object.entries(spec) as [string, any][]) {
+                                values.push(val);
+                                const paramRef = `$${values.length}::${sqlType}`;
+                                switch (op) {
+                                  case 'equalTo':
+                                    whereClauses.push(`"${attrName}" = ${paramRef}`);
+                                    break;
+                                  case 'notEqualTo':
+                                    whereClauses.push(`"${attrName}" != ${paramRef}`);
+                                    break;
+                                  case 'greaterThan':
+                                    whereClauses.push(`"${attrName}" > ${paramRef}`);
+                                    break;
+                                  case 'greaterThanOrEqualTo':
+                                    whereClauses.push(`"${attrName}" >= ${paramRef}`);
+                                    break;
+                                  case 'lessThan':
+                                    whereClauses.push(`"${attrName}" < ${paramRef}`);
+                                    break;
+                                  case 'lessThanOrEqualTo':
+                                    whereClauses.push(`"${attrName}" <= ${paramRef}`);
+                                    break;
+                                  case 'in':
+                                    if (Array.isArray(val)) {
+                                      const placeholders = val.map((v: any) => {
+                                        values.push(v);
+                                        return `$${values.length}::${sqlType}`;
+                                      });
+                                      values.pop();
+                                      whereClauses.push(`"${attrName}" IN (${placeholders.join(', ')})`);
                                     }
-                                  }
+                                    break;
+                                  case 'isNull':
+                                    values.pop();
+                                    if (val) {
+                                      whereClauses.push(`"${attrName}" IS NULL`);
+                                    } else {
+                                      whereClauses.push(`"${attrName}" IS NOT NULL`);
+                                    }
+                                    break;
+                                  default:
+                                    values.pop();
+                                    break;
                                 }
                               }
                             }
-
-                            if (whereClauses.length === 0 && bulkRequireWhere) {
-                              throw new Error(
-                                'Bulk update: no valid where conditions resolved. At least one condition is required.'
-                              );
-                            }
-
-                            const whereStr = whereClauses.length > 0
-                              ? whereClauses.join(' AND ')
-                              : 'TRUE';
-
-                            const text = `UPDATE ${compiledFrom}\nSET ${setClauses.join(', ')}\nWHERE ${whereStr}\nRETURNING *`;
-                            const result = await pgClient.query(text, values);
-
-                            return {
-                              affectedCount: result.rowCount ?? 0,
-                              returning: result.rows || [],
-                            };
                           }
-                        );
-                        return $result;
-                      },
-                    []
-                  ),
-                })
+                        }
+
+                        if (whereClauses.length === 0 && requireWhere) {
+                          throw new Error(
+                            'Bulk update: no valid where conditions resolved. At least one condition is required.'
+                          );
+                        }
+
+                        const whereStr = whereClauses.length > 0
+                          ? whereClauses.join(' AND ')
+                          : 'TRUE';
+
+                        // Use RETURNING <pk_columns> instead of RETURNING *
+                        const text = `UPDATE ${compiledFrom}\nSET ${setClauses.join(', ')}\nWHERE ${whereStr}\nRETURNING ${pkReturning}`;
+                        const mutationResult = await pgClient.query(text, values);
+                        const affectedCount = mutationResult.rowCount ?? 0;
+
+                        // Follow-up SELECT using PKs to respect column-level grants
+                        let returning: unknown[] = [];
+                        if (mutationResult.rows && mutationResult.rows.length > 0) {
+                          const pkRows: Record<string, unknown>[] = mutationResult.rows;
+                          const pkConditions = pkRows.map((pkRow, rowIdx) => {
+                            return pkColumns.map((col, colIdx) => {
+                              const paramIdx = rowIdx * pkColumns.length + colIdx + 1;
+                              return `"${col}" = $${paramIdx}`;
+                            }).join(' AND ');
+                          });
+                          const selectWhere = pkConditions.map((c) => `(${c})`).join(' OR ');
+                          const selectParams = pkRows.flatMap((pkRow) =>
+                            pkColumns.map((col) => pkRow[col])
+                          );
+                          const selectResult = await pgClient.query(
+                            `SELECT * FROM ${compiledFrom} WHERE ${selectWhere}`,
+                            selectParams
+                          );
+                          returning = selectResult.rows || [];
+                        }
+
+                        return {
+                          affectedCount,
+                          returning,
+                        };
+                      }
+                    );
+                    return $result;
+                  },
+                }
               ),
             },
             `Adding bulk update field for ${typeName}`

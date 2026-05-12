@@ -4,6 +4,12 @@
  * Provides parameterized SQL generation for VALUES clauses, ON CONFLICT
  * clauses, and SET patches. Handles auto-batching when the parameter
  * count would exceed PostgreSQL's 32K limit.
+ *
+ * IMPORTANT: All mutation queries use `RETURNING <pk_columns>` instead of
+ * `RETURNING *` to respect column-level SELECT grants. The caller is
+ * responsible for doing a follow-up SELECT using the returned PKs to
+ * resolve the full row through PostGraphile's grant-aware query pipeline.
+ * See: https://github.com/pyramation/graphile-column-privileges-mutations
  */
 
 import { PG_MAX_PARAMS } from '../types';
@@ -21,16 +27,20 @@ export interface InsertBatch {
 /**
  * Builds parameterized INSERT ... VALUES SQL with optional ON CONFLICT clause.
  * Auto-splits into multiple batches when parameter count exceeds PG_MAX_PARAMS.
+ *
+ * Uses `RETURNING <returningColumns>` (typically primary key columns) instead
+ * of `RETURNING *` to avoid permission errors with column-level SELECT grants.
  */
 export function buildBulkInsertSQL(
   tableName: string,
   columns: ColumnSpec[],
   rows: Record<string, unknown>[],
+  returningColumns: string[],
   onConflict?: {
-    constraintName?: string;
+    conflictColumns?: string[];
     action: 'IGNORE';
   } | {
-    constraintName: string;
+    conflictColumns: string[];
     action: 'UPDATE';
     updateColumns?: string[];
   }
@@ -38,6 +48,10 @@ export function buildBulkInsertSQL(
   const colNames = columns.map((c) => `"${c.name}"`);
   const colsPerRow = columns.length;
   const maxRowsPerBatch = Math.floor(PG_MAX_PARAMS / colsPerRow);
+
+  const returningClause = returningColumns.length > 0
+    ? returningColumns.map((c) => `"${c}"`).join(', ')
+    : '*';
 
   const batches: InsertBatch[] = [];
   for (let offset = 0; offset < rows.length; offset += maxRowsPerBatch) {
@@ -64,8 +78,9 @@ export function buildBulkInsertSQL(
     let text = `INSERT INTO ${tableName} (${colNames.join(', ')})\nVALUES ${valuePlaceholders.join(',\n       ')}`;
 
     if (onConflict) {
-      if (onConflict.constraintName) {
-        text += `\nON CONFLICT ON CONSTRAINT "${onConflict.constraintName}"`;
+      if (onConflict.conflictColumns && onConflict.conflictColumns.length > 0) {
+        const colList = onConflict.conflictColumns.map((c) => `"${c}"`).join(', ');
+        text += `\nON CONFLICT (${colList})`;
       } else {
         text += '\nON CONFLICT';
       }
@@ -84,7 +99,7 @@ export function buildBulkInsertSQL(
       }
     }
 
-    text += '\nRETURNING *';
+    text += `\nRETURNING ${returningClause}`;
 
     batches.push({ text, values });
   }
@@ -94,11 +109,15 @@ export function buildBulkInsertSQL(
 
 /**
  * Builds a parameterized UPDATE ... SET ... WHERE SQL statement.
+ *
+ * Uses `RETURNING <returningColumns>` (typically primary key columns) instead
+ * of `RETURNING *` to avoid permission errors with column-level SELECT grants.
  */
 export function buildBulkUpdateSQL(
   tableName: string,
   patch: Record<string, unknown>,
   columns: ColumnSpec[],
+  returningColumns: string[],
   whereClause: string,
   whereParams: unknown[]
 ): { text: string; values: unknown[] } {
@@ -126,19 +145,31 @@ export function buildBulkUpdateSQL(
   );
   values.push(...whereParams);
 
-  const text = `UPDATE ${tableName}\nSET ${setClauses.join(', ')}\nWHERE ${renumberedWhere}\nRETURNING *`;
+  const returningClause = returningColumns.length > 0
+    ? returningColumns.map((c) => `"${c}"`).join(', ')
+    : '*';
+
+  const text = `UPDATE ${tableName}\nSET ${setClauses.join(', ')}\nWHERE ${renumberedWhere}\nRETURNING ${returningClause}`;
 
   return { text, values };
 }
 
 /**
  * Builds a parameterized DELETE ... WHERE SQL statement.
+ *
+ * Uses `RETURNING <returningColumns>` (typically primary key columns) instead
+ * of `RETURNING *` to avoid permission errors with column-level SELECT grants.
  */
 export function buildBulkDeleteSQL(
   tableName: string,
+  returningColumns: string[],
   whereClause: string,
   whereParams: unknown[]
 ): { text: string; values: unknown[] } {
-  const text = `DELETE FROM ${tableName}\nWHERE ${whereClause}\nRETURNING *`;
+  const returningClause = returningColumns.length > 0
+    ? returningColumns.map((c) => `"${c}"`).join(', ')
+    : '*';
+
+  const text = `DELETE FROM ${tableName}\nWHERE ${whereClause}\nRETURNING ${returningClause}`;
   return { text, values: [...whereParams] };
 }

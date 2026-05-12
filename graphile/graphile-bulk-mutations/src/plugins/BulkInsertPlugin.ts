@@ -1,5 +1,6 @@
 import '../augmentations';
 import type { GraphileConfig } from 'graphile-config';
+import { sideEffectWithPgClient } from '@dataplan/pg';
 import type { ColumnSpec } from '../utils/sql-builder';
 import { buildBulkInsertSQL } from '../utils/sql-builder';
 
@@ -11,8 +12,13 @@ const version = '0.1.0';
  * Registers `bulkCreateX` mutation fields on the root mutation type for
  * each resource that has the `bulkInsert` behavior.
  *
- * Uses `sideEffectWithPgClient` for raw SQL execution, then feeds the
- * returned records into `pgSelectFromRecords` for full type resolution.
+ * Uses `sideEffectWithPgClient` for raw SQL execution. The mutation
+ * SQL uses `RETURNING <pk_columns>` (not `RETURNING *`) to respect
+ * column-level SELECT grants. A follow-up SELECT retrieves the full
+ * rows using only the returned PKs, ensuring the query runs through
+ * the normal grant-aware pipeline.
+ *
+ * Pattern from: https://github.com/pyramation/graphile-column-privileges-mutations
  */
 export const BulkInsertPlugin: GraphileConfig.Plugin = {
   name: 'BulkInsertPlugin',
@@ -31,7 +37,6 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
         const {
           inflection,
           sql,
-          EXPORTABLE,
           graphql: { GraphQLNonNull },
           options: {
             bulkInsert: enableInsert = true,
@@ -80,15 +85,22 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
             });
           }
 
-          // Build the fully qualified table name
+          // Extract primary key columns for RETURNING clause
+          const primaryUnique = resource.uniques.find((u: any) => u.isPrimary) ?? resource.uniques[0];
+          const pkColumns: string[] = primaryUnique.attributes;
+
           const compiledFrom = sql.compile(resource.from).text;
+
+          // Capture executor for plan closure
+          const executor = resource.executor;
+          const maxRows = bulkMaxRows as number;
 
           fields = build.extend(
             fields,
             {
               [fieldName]: context.fieldWithHooks(
                 { fieldName },
-                () => ({
+                {
                   description: `Bulk insert rows into ${typeName}.`,
                   type: payloadType,
                   args: {
@@ -96,78 +108,99 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
                       type: new GraphQLNonNull(inputType),
                     },
                   },
-                  plan: EXPORTABLE(
-                    () =>
-                      function plan(_$root: any, args: any) {
-                        const $input = args.get('input');
-                        const $result = build.dataplanPg.sideEffectWithPgClient(
-                          resource.executor,
-                          $input,
-                          async (pgClient: any, input: any) => {
-                            const values = input.values;
-                            if (!values || !Array.isArray(values) || values.length === 0) {
-                              return { affectedCount: 0, returning: [] };
+                  plan(_$root: any, args: any) {
+                    const $input = args.getRaw('input');
+                    const $result = sideEffectWithPgClient(
+                      executor,
+                      $input,
+                      async (pgClient: any, input: any) => {
+                        const values = input.values;
+                        if (!values || !Array.isArray(values) || values.length === 0) {
+                          return { affectedCount: 0, returning: [] };
+                        }
+
+                        if (values.length > maxRows) {
+                          throw new Error(
+                            `Bulk insert exceeds maximum of ${maxRows} rows (got ${values.length})`
+                          );
+                        }
+
+                        // Map GraphQL field names to SQL column names
+                        const rows = values.map((row: any) => {
+                          const mapped: Record<string, unknown> = {};
+                          for (const [key, val] of Object.entries(row)) {
+                            const attrName = fieldToAttr[key];
+                            if (attrName) {
+                              mapped[attrName] = val;
                             }
-
-                            if (values.length > bulkMaxRows) {
-                              throw new Error(
-                                `Bulk insert exceeds maximum of ${bulkMaxRows} rows (got ${values.length})`
-                              );
-                            }
-
-                            // Map GraphQL field names to SQL column names
-                            const rows = values.map((row: any) => {
-                              const mapped: Record<string, unknown> = {};
-                              for (const [key, val] of Object.entries(row)) {
-                                const attrName = fieldToAttr[key];
-                                if (attrName) {
-                                  mapped[attrName] = val;
-                                }
-                              }
-                              return mapped;
-                            });
-
-                            // Build ON CONFLICT clause
-                            let onConflict: Parameters<typeof buildBulkInsertSQL>[3];
-                            if (input.onConflict) {
-                              onConflict = {
-                                constraintName: input.onConflict.constraint,
-                                action: input.onConflict.action,
-                              };
-                            }
-
-                            const batches = buildBulkInsertSQL(
-                              compiledFrom,
-                              columnSpecs,
-                              rows,
-                              onConflict
-                            );
-
-                            let totalAffected = 0;
-                            const allRows: unknown[] = [];
-
-                            for (const batch of batches) {
-                              const result = await pgClient.query(
-                                batch.text,
-                                batch.values
-                              );
-                              totalAffected += result.rowCount ?? 0;
-                              if (result.rows) {
-                                allRows.push(...result.rows);
-                              }
-                            }
-
-                            return {
-                              affectedCount: totalAffected,
-                              returning: allRows,
-                            };
                           }
+                          return mapped;
+                        });
+
+                        // Build ON CONFLICT clause
+                        // The constraint enum value is a comma-separated column list
+                        let onConflict: Parameters<typeof buildBulkInsertSQL>[4];
+                        if (input.onConflict) {
+                          const conflictColumns = input.onConflict.constraint
+                            ? (input.onConflict.constraint as string).split(',')
+                            : undefined;
+                          onConflict = {
+                            conflictColumns,
+                            action: input.onConflict.action,
+                          };
+                        }
+
+                        const batches = buildBulkInsertSQL(
+                          compiledFrom,
+                          columnSpecs,
+                          rows,
+                          pkColumns,
+                          onConflict
                         );
-                        return $result;
-                      },
-                    []
-                  ),
-                })
+
+                        let totalAffected = 0;
+                        const allPkRows: Record<string, unknown>[] = [];
+
+                        for (const batch of batches) {
+                          const result = await pgClient.query(
+                            batch.text,
+                            batch.values
+                          );
+                          totalAffected += result.rowCount ?? 0;
+                          if (result.rows) {
+                            allPkRows.push(...result.rows);
+                          }
+                        }
+
+                        // Follow-up SELECT using PKs to respect column-level grants
+                        let returning: unknown[] = [];
+                        if (allPkRows.length > 0) {
+                          const pkConditions = allPkRows.map((pkRow, rowIdx) => {
+                            return pkColumns.map((col, colIdx) => {
+                              const paramIdx = rowIdx * pkColumns.length + colIdx + 1;
+                              return `"${col}" = $${paramIdx}`;
+                            }).join(' AND ');
+                          });
+                          const whereClause = pkConditions.map((c) => `(${c})`).join(' OR ');
+                          const selectParams = allPkRows.flatMap((pkRow) =>
+                            pkColumns.map((col) => pkRow[col])
+                          );
+                          const selectResult = await pgClient.query(
+                            `SELECT * FROM ${compiledFrom} WHERE ${whereClause}`,
+                            selectParams
+                          );
+                          returning = selectResult.rows || [];
+                        }
+
+                        return {
+                          affectedCount: totalAffected,
+                          returning,
+                        };
+                      }
+                    );
+                    return $result;
+                  },
+                }
               ),
             },
             `Adding bulk insert field for ${typeName}`
