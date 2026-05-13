@@ -2,6 +2,7 @@ import {
   type AssistantMessage,
   type Context,
   createAssistantMessageEventStream,
+  injectDeferralResults,
   type Message,
   type ModelDescriptor,
   type ToolCallContent,
@@ -369,6 +370,53 @@ describe('@agentic-kit/agent — pausable tools', () => {
     agent.replaceMessages([...agent.state.messages, trailingNote]);
 
     expect(() => agent.continue()).toThrow(/non-toolResult messages have been appended/);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('injectDeferralResults + prompt() places the synthetic toolResult adjacent to its assistant block', async () => {
+    const provider = createScriptedProvider({
+      responses: [pauseResponse(), finalResponse()],
+    });
+    const execute = jest.fn(async () => ({
+      content: [{ type: 'text' as const, text: 'should not run' }],
+    }));
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([makeApprovalTool(execute)]);
+
+    await agent.prompt('approve thing');
+
+    const withDeferrals = injectDeferralResults(agent.state.messages);
+    agent.replaceMessages(withDeferrals);
+
+    const typed: Message = {
+      role: 'user',
+      content: 'never mind',
+      timestamp: Date.now(),
+    };
+    await agent.prompt(typed);
+
+    const messages = agent.state.messages;
+    const assistantIdx = messages.findIndex(
+      (m) =>
+        m.role === 'assistant' &&
+        (m as AssistantMessage).content.some(
+          (b) => b.type === 'toolCall' && b.id === 'tool_1'
+        )
+    );
+    const toolResultIdx = messages.findIndex(
+      (m) => m.role === 'toolResult' && m.toolCallId === 'tool_1'
+    );
+    const typedIdx = messages.findIndex(
+      (m) => m.role === 'user' && m.content === 'never mind'
+    );
+
+    expect(assistantIdx).toBeGreaterThanOrEqual(0);
+    expect(toolResultIdx).toBe(assistantIdx + 1);
+    expect(typedIdx).toBe(toolResultIdx + 1);
     expect(execute).not.toHaveBeenCalled();
   });
 

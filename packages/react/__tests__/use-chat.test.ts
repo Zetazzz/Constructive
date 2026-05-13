@@ -54,6 +54,49 @@ describe('useChat', () => {
     expect(result.current.executingToolCallIds.size).toBe(0);
   });
 
+  it('hydrates pendingDecisions from initialMessages when a paused tool call is present', () => {
+    const initial: Message[] = [
+      makeUser('hi'),
+      makeAssistantWithToolCall('call_pending'),
+    ];
+
+    const { result } = renderHook(() =>
+      useChat({ api: '/chat', initialMessages: initial })
+    );
+
+    expect(result.current.pendingDecisions.has('call_pending')).toBe(true);
+    expect(result.current.pendingDecisions.get('call_pending')).toMatchObject({
+      toolCallId: 'call_pending',
+      toolName: 'echo',
+    });
+  });
+
+  it('send(): two rapid synchronous sends both reach the outgoing request body', async () => {
+    const final = makeFinalAssistant('ok');
+    const fetchFn = jest.fn(
+      async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+        streamFromEvents([
+          { type: 'agent_start' },
+          { type: 'agent_end', messages: [makeUser('first'), makeUser('second'), final] },
+        ])
+    );
+
+    const { result } = renderHook(() => useChat({ api: '/chat', fetch: fetchFn }));
+
+    await act(async () => {
+      const p1 = result.current.send('first');
+      const p2 = result.current.send('second');
+      await Promise.allSettled([p1, p2]);
+    });
+
+    const lastInit = fetchFn.mock.calls.at(-1)![1] as RequestInit;
+    const sent = JSON.parse(lastInit.body as string);
+    const contents = sent.messages.map((m: Message) =>
+      typeof m.content === 'string' ? m.content : null
+    );
+    expect(contents).toEqual(['first', 'second']);
+  });
+
   it('sends, streams, and folds messages into the log', async () => {
     const final = makeFinalAssistant('world');
     const userEcho = makeUser('hello');
@@ -654,6 +697,36 @@ describe('useChat', () => {
       expect(result.current.messages).toEqual([]);
       expect(result.current.streamingMessage).toBeNull();
       expect(result.current.isStreaming).toBe(false);
+    });
+
+    it('unmount aborts the in-flight fetch', async () => {
+      let capturedSignal: AbortSignal | undefined;
+      const fetchFn = jest.fn(
+        (_url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+          capturedSignal = init?.signal ?? undefined;
+          return new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              const err = new Error('aborted');
+              err.name = 'AbortError';
+              reject(err);
+            });
+          });
+        }
+      );
+
+      const { result, unmount } = renderHook(() =>
+        useChat({ api: '/chat', fetch: fetchFn })
+      );
+
+      act(() => {
+        void result.current.send('hi');
+      });
+      await waitFor(() => expect(fetchFn).toHaveBeenCalled());
+      expect(capturedSignal?.aborted).toBe(false);
+
+      unmount();
+
+      expect(capturedSignal?.aborted).toBe(true);
     });
 
     it('drops events that arrive after abort', async () => {

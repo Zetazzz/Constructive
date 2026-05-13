@@ -94,7 +94,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
   const [isStreaming, setIsStreaming] = useState(false);
   const [pendingDecisions, setPendingDecisions] = useState<
     ReadonlyMap<string, ToolDecisionPendingEvent>
-  >(() => new Map());
+  >(() => rederivePendingDecisions(options.initialMessages ?? []));
   const [executingToolCallIds, setExecutingToolCallIds] = useState<ReadonlySet<string>>(
     () => new Set()
   );
@@ -293,6 +293,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       const userMessage: Message =
         typeof input === 'string' ? createUserMessage(input) : input;
       const requestMessages = [...messagesRef.current, userMessage];
+      messagesRef.current = requestMessages;
       await runStream(requestMessages, userMessage);
     },
     [runStream]
@@ -357,6 +358,13 @@ export function useChat(options: UseChatOptions): UseChatResult {
     },
     []
   );
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
+    };
+  }, []);
 
   const abort = useCallback(() => {
     abortControllerRef.current?.abort();
