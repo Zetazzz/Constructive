@@ -1,6 +1,6 @@
 {
   "name": "graphile-settings",
-  "version": "4.33.2",
+  "version": "5.0.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "graphile settings",
   "main": "index.js",
@@ -47,9 +47,9 @@
     "grafast": "1.0.0",
     "grafserv": "1.0.0",
     "graphile-bucket-provisioner-plugin": "workspace:*",
-    "graphile-bulk-mutations": "workspace:^",
     "graphile-build": "5.0.0",
     "graphile-build-pg": "5.0.0",
+    "graphile-bulk-mutations": "workspace:^",
     "graphile-config": "1.0.0",
     "graphile-connection-filter": "workspace:^",
     "graphile-ltree": "workspace:^",

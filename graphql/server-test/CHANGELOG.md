@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.21.6](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.5...graphql-server-test@2.21.6) (2026-05-13)
+
+### Bug Fixes
+
+- add enable_bulk column to server-test seed fixture ([c4f0f2c](https://github.com/constructive-io/constructive/commit/c4f0f2c1476003768ad57bb8e4f3196077de6859))
+
 ## [2.21.5](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.4...graphql-server-test@2.21.5) (2026-05-12)
 
 **Note:** Version bump only for package graphql-server-test

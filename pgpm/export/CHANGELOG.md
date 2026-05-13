@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.14.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.13.1...@pgpmjs/export@0.14.0) (2026-05-13)
+
+### Features
+
+- wire enable_bulk database setting into GraphQL server and graphile-settings ([d5ab604](https://github.com/constructive-io/constructive/commit/d5ab604955912f8c70a88bd9b9fe32b8f24c7981))
+
 ## [0.13.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.13.0...@pgpmjs/export@0.13.1) (2026-05-12)
 
 **Note:** Version bump only for package @pgpmjs/export
