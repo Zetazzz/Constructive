@@ -21,7 +21,7 @@ export interface PageInfo {
   endCursor?: string | null;
 }
 
-export interface FindManyArgs<TSelect, TWhere, TOrderBy = never> {
+export interface FindManyArgs<TSelect, TWhere, TOrderBy> {
   select?: TSelect;
   where?: TWhere;
   orderBy?: TOrderBy[];
