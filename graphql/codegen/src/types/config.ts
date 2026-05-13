@@ -366,13 +366,6 @@ export interface GraphQLSDKConfigTarget {
   orm?: boolean;
 
   /**
-   * @deprecated NodeHttpAdapter has been removed. The ORM client now uses
-   * @constructive-io/fetch automatically, which handles *.localhost subdomain
-   * routing in Node.js without a separate adapter.
-   */
-  nodeHttpAdapter?: boolean;
-
-  /**
    * Whether to generate React Query hooks
    * When enabled, generates React Query hooks to {output}/hooks
    * When false, only standalone fetch functions are generated (no React dependency)

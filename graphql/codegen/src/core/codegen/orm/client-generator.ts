@@ -137,7 +137,6 @@ export function generateCreateClientFile(
   tables: Table[],
   hasCustomQueries: boolean,
   hasCustomMutations: boolean,
-  options?: { nodeHttpAdapter?: boolean },
 ): GeneratedClientFile {
   const statements: t.Statement[] = [];
 

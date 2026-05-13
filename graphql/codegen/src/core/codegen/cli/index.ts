@@ -129,8 +129,6 @@ export interface GenerateMultiTargetCliOptions {
   toolName: string;
   builtinNames?: BuiltinNames;
   targets: MultiTargetCliTarget[];
-  /** @deprecated NodeHttpAdapter removed; createClient uses @constructive-io/fetch */
-  nodeHttpAdapter?: boolean;
   /** Generate a runnable index.ts entry point */
   entryPoint?: boolean;
 }

@@ -30,12 +30,7 @@ function createImportDeclaration(
   return decl;
 }
 
-export interface ExecutorOptions {
-  /** @deprecated NodeHttpAdapter has been removed; createClient uses @constructive-io/fetch automatically */
-  nodeHttpAdapter?: boolean;
-}
-
-export function generateExecutorFile(toolName: string, _options?: ExecutorOptions): GeneratedFile {
+export function generateExecutorFile(toolName: string): GeneratedFile {
   const statements: t.Statement[] = [];
 
   statements.push(
@@ -243,7 +238,6 @@ export function generateExecutorFile(toolName: string, _options?: ExecutorOption
 export function generateMultiTargetExecutorFile(
   toolName: string,
   targets: MultiTargetExecutorInput[],
-  _options?: ExecutorOptions,
 ): GeneratedFile {
   const statements: t.Statement[] = [];
 
