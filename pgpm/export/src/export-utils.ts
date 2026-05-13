@@ -596,6 +596,7 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       enable_connection_filter: 'boolean',
       enable_ltree: 'boolean',
       enable_llm: 'boolean',
+      enable_bulk: 'boolean',
       options: 'jsonb'
     }
   },
@@ -615,6 +616,7 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       enable_connection_filter: 'boolean',
       enable_ltree: 'boolean',
       enable_llm: 'boolean',
+      enable_bulk: 'boolean',
       options: 'jsonb'
     }
   },

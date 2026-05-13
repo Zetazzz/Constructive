@@ -33,6 +33,7 @@ export interface DatabaseSettings {
   enableLtree: boolean;
   enableLlm: boolean;
   enableRealtime: boolean;
+  enableBulk: boolean;
 }
 
 /**
