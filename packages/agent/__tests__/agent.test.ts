@@ -2,119 +2,44 @@ import {
   type AssistantMessage,
   type Context,
   createAssistantMessageEventStream,
+  type Message,
   type ModelDescriptor,
+  type ToolCallContent,
 } from 'agentic-kit';
+import {
+  createScriptedProvider,
+  makeFakeAssistantMessage,
+  makeFakeModel,
+} from '@test/index';
 
-import { Agent } from '../src';
-
-function createModel(): ModelDescriptor {
-  return {
-    id: 'demo',
-    name: 'Demo',
-    api: 'fake',
-    provider: 'fake',
-    baseUrl: 'http://fake.local',
-    input: ['text'],
-    reasoning: false,
-    tools: true,
-  };
-}
+import {
+  Agent,
+  type AgentEvent,
+  type AgentTool,
+  DecisionValidationError,
+} from '../src';
 
 describe('@agentic-kit/agent', () => {
   it('runs a minimal sequential tool loop', async () => {
     const responses = [
-      {
-        role: 'assistant' as const,
-        api: 'fake',
-        provider: 'fake',
-        model: 'demo',
-        usage: {
-          input: 1,
-          output: 1,
-          cacheRead: 0,
-          cacheWrite: 0,
-          totalTokens: 2,
-          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-        },
-        stopReason: 'toolUse' as const,
-        timestamp: Date.now(),
+      makeFakeAssistantMessage({
+        usage: makeUsage(),
+        stopReason: 'toolUse',
         content: [
-          { type: 'toolCall' as const, id: 'tool_1', name: 'echo', arguments: { text: 'hello' } },
+          { type: 'toolCall', id: 'tool_1', name: 'echo', arguments: { text: 'hello' } },
         ],
-      },
-      {
-        role: 'assistant' as const,
-        api: 'fake',
-        provider: 'fake',
-        model: 'demo',
-        usage: {
-          input: 1,
-          output: 1,
-          cacheRead: 0,
-          cacheWrite: 0,
-          totalTokens: 2,
-          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-        },
-        stopReason: 'stop' as const,
-        timestamp: Date.now(),
-        content: [{ type: 'text' as const, text: 'done' }],
-      },
+      }),
+      makeFakeAssistantMessage({
+        usage: makeUsage(),
+        stopReason: 'stop',
+        content: [{ type: 'text', text: 'done' }],
+      }),
     ];
 
-    let callIndex = 0;
-    const streamFn = (_model: ModelDescriptor, _context: Context) => {
-      const stream = createAssistantMessageEventStream();
-      const response = responses[callIndex++];
-
-      queueMicrotask(() => {
-        stream.push({ type: 'start', partial: response });
-        if (response.content[0].type === 'toolCall') {
-          stream.push({
-            type: 'toolcall_start',
-            contentIndex: 0,
-            partial: response,
-          });
-          stream.push({
-            type: 'toolcall_end',
-            contentIndex: 0,
-            toolCall: response.content[0],
-            partial: response,
-          });
-        } else {
-          stream.push({
-            type: 'text_start',
-            contentIndex: 0,
-            partial: response,
-          });
-          stream.push({
-            type: 'text_delta',
-            contentIndex: 0,
-            delta: 'done',
-            partial: response,
-          });
-          stream.push({
-            type: 'text_end',
-            contentIndex: 0,
-            content: 'done',
-            partial: response,
-          });
-        }
-        stream.push({
-          type: 'done',
-          reason: response.stopReason === 'toolUse' ? 'toolUse' : 'stop',
-          message: response,
-        });
-        stream.end(response);
-      });
-
-      return stream;
-    };
-
+    const provider = createScriptedProvider({ responses });
     const agent = new Agent({
-      initialState: {
-        model: createModel(),
-      },
-      streamFn,
+      initialState: { model: makeFakeModel({ id: 'demo', name: 'Demo' }) },
+      streamFn: provider.stream,
     });
 
     agent.setTools([
@@ -129,7 +54,7 @@ describe('@agentic-kit/agent', () => {
           },
           required: ['text'],
         },
-        execute: async (_toolCallId, params) => ({
+        execute: async (_toolCallId, params, _decision) => ({
           content: [{ type: 'text', text: String(params.text) }],
         }),
       },
@@ -155,20 +80,20 @@ describe('@agentic-kit/agent', () => {
 
   it('turns tool argument validation failures into error tool results and continues', async () => {
     const responses = [
-      createAssistantResponse({
+      makeFakeAssistantMessage({
         stopReason: 'toolUse',
         content: [{ type: 'toolCall', id: 'tool_1', name: 'echo', arguments: {} }],
       }),
-      createAssistantResponse({
+      makeFakeAssistantMessage({
         stopReason: 'stop',
         content: [{ type: 'text', text: 'recovered' }],
       }),
     ];
 
-    let callIndex = 0;
+    const provider = createScriptedProvider({ responses });
     const agent = new Agent({
-      initialState: { model: createModel() },
-      streamFn: () => streamMessage(responses[callIndex++]),
+      initialState: { model: makeFakeModel({ id: 'demo', name: 'Demo' }) },
+      streamFn: provider.stream,
     });
 
     const execute = jest.fn(async () => ({
@@ -211,10 +136,10 @@ describe('@agentic-kit/agent', () => {
 
   it('records aborted assistant turns when the active stream is cancelled', async () => {
     const agent = new Agent({
-      initialState: { model: createModel() },
+      initialState: { model: makeFakeModel({ id: 'demo', name: 'Demo' }) },
       streamFn: (_model: ModelDescriptor, _context: Context, options) => {
         const stream = createAssistantMessageEventStream();
-        const partial = createAssistantResponse({
+        const partial = makeFakeAssistantMessage({
           stopReason: 'stop',
           content: [{ type: 'text', text: '' }],
         });
@@ -225,7 +150,7 @@ describe('@agentic-kit/agent', () => {
           options?.signal?.addEventListener(
             'abort',
             () => {
-              const aborted = createAssistantResponse({
+              const aborted: AssistantMessage = makeFakeAssistantMessage({
                 stopReason: 'aborted',
                 errorMessage: 'aborted by test',
                 content: [],
@@ -256,76 +181,510 @@ describe('@agentic-kit/agent', () => {
   });
 });
 
-function createAssistantResponse(overrides: Partial<AssistantMessage>): AssistantMessage {
+function makeUsage() {
   return {
-    ...createAssistantResponseBase(),
-    ...overrides,
+    input: 1,
+    output: 1,
+    cacheRead: 0,
+    cacheWrite: 0,
+    totalTokens: 2,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
   };
 }
 
-function createAssistantResponseBase(): AssistantMessage {
-  return {
-    role: 'assistant' as const,
-    api: 'fake',
-    provider: 'fake',
-    model: 'demo',
-    usage: {
-      input: 1,
-      output: 1,
-      cacheRead: 0,
-      cacheWrite: 0,
-      totalTokens: 2,
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-    },
-    stopReason: 'stop' as const,
-    timestamp: Date.now(),
-    content: [] as AssistantMessage['content'],
-  };
-}
+describe('@agentic-kit/agent — pausable tools', () => {
+  function makeApprovalTool(execute: AgentTool['execute']): AgentTool {
+    return {
+      name: 'approve',
+      label: 'Approve',
+      description: 'Tool that requires explicit approval',
+      parameters: {
+        type: 'object',
+        properties: { target: { type: 'string' } },
+        required: ['target'],
+      },
+      decision: {
+        type: 'object',
+        properties: { approved: { type: 'boolean' } },
+        required: ['approved'],
+      },
+      execute,
+    };
+  }
 
-function streamMessage(message: AssistantMessage) {
-  const stream = createAssistantMessageEventStream();
-
-  queueMicrotask(() => {
-    stream.push({ type: 'start', partial: message });
-    if (message.content[0]?.type === 'toolCall') {
-      stream.push({
-        type: 'toolcall_start',
-        contentIndex: 0,
-        partial: message,
-      });
-      stream.push({
-        type: 'toolcall_end',
-        contentIndex: 0,
-        toolCall: message.content[0],
-        partial: message,
-      });
-    } else {
-      stream.push({
-        type: 'text_start',
-        contentIndex: 0,
-        partial: message,
-      });
-      stream.push({
-        type: 'text_delta',
-        contentIndex: 0,
-        delta: message.content[0]?.type === 'text' ? message.content[0].text : '',
-        partial: message,
-      });
-      stream.push({
-        type: 'text_end',
-        contentIndex: 0,
-        content: message.content[0]?.type === 'text' ? message.content[0].text : '',
-        partial: message,
-      });
-    }
-    stream.push({
-      type: 'done',
-      reason: message.stopReason === 'toolUse' ? 'toolUse' : 'stop',
-      message,
+  function pauseResponse() {
+    return makeFakeAssistantMessage({
+      stopReason: 'toolUse',
+      content: [
+        { type: 'toolCall', id: 'tool_1', name: 'approve', arguments: { target: 'thing' } },
+      ],
     });
-    stream.end(message);
+  }
+
+  function finalResponse() {
+    return makeFakeAssistantMessage({
+      stopReason: 'stop',
+      content: [{ type: 'text', text: 'finalized' }],
+    });
+  }
+
+  function attachDecision(agent: Agent, toolCallId: string, decision: unknown): void {
+    const messages = agent.state.messages;
+    const last = messages[messages.length - 1] as AssistantMessage;
+    const updatedContent = last.content.map((block) =>
+      block.type === 'toolCall' && block.id === toolCallId
+        ? ({ ...block, decision } as ToolCallContent)
+        : block
+    );
+    const updated: AssistantMessage = { ...last, content: updatedContent };
+    agent.replaceMessages([...messages.slice(0, -1), updated]);
+  }
+
+  it('pauses on a decision-bearing tool and emits tool_decision_pending without runId', async () => {
+    const provider = createScriptedProvider({ responses: [pauseResponse()] });
+    const execute = jest.fn();
+    const events: AgentEvent[] = [];
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.subscribe((event) => events.push(event));
+    agent.setTools([makeApprovalTool(execute)]);
+
+    await agent.prompt('approve thing');
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(agent.state.isStreaming).toBe(false);
+    expect(events.some((e) => e.type === 'agent_end')).toBe(false);
+
+    const pendingEvent = events.find((e) => e.type === 'tool_decision_pending');
+    expect(pendingEvent).toEqual({
+      type: 'tool_decision_pending',
+      toolCallId: 'tool_1',
+      toolName: 'approve',
+      input: { target: 'thing' },
+      schema: expect.objectContaining({ type: 'object' }),
+    });
+    expect(pendingEvent).not.toHaveProperty('runId');
+
+    const lastMessage = agent.state.messages.at(-1);
+    expect(lastMessage).toMatchObject({ role: 'assistant', stopReason: 'toolUse' });
+    const toolResults = agent.state.messages.filter((m) => m.role === 'toolResult');
+    expect(toolResults).toHaveLength(0);
   });
 
-  return stream;
-}
+  it('continue() invokes execute with the decision attached to the tool call and continues the loop', async () => {
+    const provider = createScriptedProvider({ responses: [pauseResponse(), finalResponse()] });
+    const execute = jest.fn(
+      async (_id: string, _params: Record<string, unknown>, decision: unknown) => ({
+        content: [{ type: 'text' as const, text: `decision=${JSON.stringify(decision)}` }],
+      })
+    );
+    const events: AgentEvent[] = [];
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.subscribe((event) => events.push(event));
+    agent.setTools([makeApprovalTool(execute)]);
+
+    await agent.prompt('approve thing');
+
+    attachDecision(agent, 'tool_1', { approved: true });
+
+    await agent.continue();
+
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(execute.mock.calls[0]?.[2]).toEqual({ approved: true });
+
+    expect(agent.state.messages.at(-1)).toMatchObject({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'finalized' }],
+    });
+    expect(events.some((e) => e.type === 'agent_end')).toBe(true);
+  });
+
+  it('continue() throws DecisionValidationError synchronously on a malformed decision', async () => {
+    const provider = createScriptedProvider({ responses: [pauseResponse(), finalResponse()] });
+    const execute = jest.fn(async () => ({
+      content: [{ type: 'text' as const, text: 'ok' }],
+    }));
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([makeApprovalTool(execute)]);
+
+    await agent.prompt('approve thing');
+
+    attachDecision(agent, 'tool_1', { approved: 'yes' });
+
+    expect(() => agent.continue()).toThrow(DecisionValidationError);
+    expect(execute).not.toHaveBeenCalled();
+    const toolResults = agent.state.messages.filter((m) => m.role === 'toolResult');
+    expect(toolResults).toHaveLength(0);
+
+    attachDecision(agent, 'tool_1', { approved: true });
+    await agent.continue();
+
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('continue() rejects when the trailing assistant has tool calls but no decisions attached', async () => {
+    const provider = createScriptedProvider({ responses: [pauseResponse()] });
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([makeApprovalTool(jest.fn())]);
+
+    await agent.prompt('approve thing');
+
+    expect(() => agent.continue()).toThrow(/no tool calls awaiting a decision/);
+  });
+
+  it('continue() rejects when non-toolResult messages have been appended after the pending assistant', async () => {
+    const provider = createScriptedProvider({ responses: [pauseResponse()] });
+    const execute = jest.fn();
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([makeApprovalTool(execute)]);
+
+    await agent.prompt('approve thing');
+
+    attachDecision(agent, 'tool_1', { approved: true });
+
+    const trailingNote: Message = {
+      role: 'user',
+      content: 'side note injected by an external queue while paused',
+      timestamp: Date.now(),
+    };
+    agent.replaceMessages([...agent.state.messages, trailingNote]);
+
+    expect(() => agent.continue()).toThrow(/non-toolResult messages have been appended/);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('abort() while paused stops further work without throwing', async () => {
+    const provider = createScriptedProvider({ responses: [pauseResponse()] });
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([makeApprovalTool(jest.fn())]);
+
+    await agent.prompt('approve thing');
+
+    expect(() => agent.abort()).not.toThrow();
+    expect(agent.state.isStreaming).toBe(false);
+  });
+
+  it('flushes prior tool results before the args-validation error tool_result on a mixed batch', async () => {
+    const provider = createScriptedProvider({
+      responses: [
+        makeFakeAssistantMessage({
+          stopReason: 'toolUse',
+          content: [
+            { type: 'toolCall', id: 'tool_regular', name: 'echo', arguments: { text: 'first' } },
+            { type: 'toolCall', id: 'tool_approve', name: 'approve', arguments: {} },
+          ],
+        }),
+        makeFakeAssistantMessage({
+          stopReason: 'stop',
+          content: [{ type: 'text', text: 'recovered' }],
+        }),
+      ],
+    });
+
+    const regularExecute = jest.fn(async () => ({
+      content: [{ type: 'text' as const, text: 'first-result' }],
+    }));
+    const approveExecute = jest.fn(async () => ({
+      content: [{ type: 'text' as const, text: 'should not run' }],
+    }));
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([
+      {
+        name: 'echo',
+        label: 'Echo',
+        description: 'Echo text',
+        parameters: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+          required: ['text'],
+        },
+        execute: regularExecute,
+      },
+      makeApprovalTool(approveExecute),
+    ]);
+
+    await agent.prompt('go');
+
+    expect(regularExecute).toHaveBeenCalledTimes(1);
+    expect(approveExecute).not.toHaveBeenCalled();
+
+    const messages = agent.state.messages;
+    expect(messages[1]).toMatchObject({ role: 'assistant', stopReason: 'toolUse' });
+    expect(messages[2]).toMatchObject({
+      role: 'toolResult',
+      toolCallId: 'tool_regular',
+      toolName: 'echo',
+      content: [{ type: 'text', text: 'first-result' }],
+    });
+    expect(messages[3]).toMatchObject({
+      role: 'toolResult',
+      toolCallId: 'tool_approve',
+      toolName: 'approve',
+      isError: true,
+    });
+    expect(messages[3].content[0]).toMatchObject({
+      type: 'text',
+      text: expect.stringContaining('Tool argument validation failed'),
+    });
+    expect(messages[4]).toMatchObject({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'recovered' }],
+    });
+  });
+
+  it('abort() during tool execution stops the loop and does not invoke the model again', async () => {
+    const provider = createScriptedProvider({
+      responses: [
+        makeFakeAssistantMessage({
+          stopReason: 'toolUse',
+          content: [
+            { type: 'toolCall', id: 'tool_slow', name: 'slow', arguments: {} },
+          ],
+        }),
+        makeFakeAssistantMessage({
+          stopReason: 'stop',
+          content: [{ type: 'text', text: 'should never reach here' }],
+        }),
+      ],
+    });
+
+    const streamCalls = jest.fn(provider.stream);
+    let abortAgent: (() => void) | undefined;
+    const slowExecute = jest.fn<
+      ReturnType<AgentTool['execute']>,
+      Parameters<AgentTool['execute']>
+    >((_id, _params, _decision, signal) => {
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener(
+          'abort',
+          () => reject(new Error('aborted')),
+          { once: true }
+        );
+        queueMicrotask(() => abortAgent?.());
+      });
+    });
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: streamCalls,
+    });
+    abortAgent = () => agent.abort();
+    agent.setTools([
+      {
+        name: 'slow',
+        label: 'Slow',
+        description: 'Slow tool',
+        parameters: { type: 'object', properties: {} },
+        execute: slowExecute,
+      },
+    ]);
+
+    const events: AgentEvent[] = [];
+    agent.subscribe((e) => events.push(e));
+
+    await agent.prompt('go');
+
+    expect(streamCalls).toHaveBeenCalledTimes(1);
+    expect(slowExecute).toHaveBeenCalledTimes(1);
+    const end = events.find(
+      (e): e is Extract<AgentEvent, { type: 'agent_end' }> => e.type === 'agent_end'
+    );
+    expect(end?.stopReason).toBe('aborted');
+    expect(agent.state.isStreaming).toBe(false);
+  });
+
+  it('regression: a tool without a decision schema runs without pausing', async () => {
+    const provider = createScriptedProvider({
+      responses: [
+        makeFakeAssistantMessage({
+          stopReason: 'toolUse',
+          content: [
+            { type: 'toolCall', id: 'tool_1', name: 'echo', arguments: { text: 'hi' } },
+          ],
+        }),
+        makeFakeAssistantMessage({
+          stopReason: 'stop',
+          content: [{ type: 'text', text: 'done' }],
+        }),
+      ],
+    });
+    const execute = jest.fn(async () => ({
+      content: [{ type: 'text' as const, text: 'hi' }],
+    }));
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([
+      {
+        name: 'echo',
+        label: 'Echo',
+        description: 'Echo text',
+        parameters: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+          required: ['text'],
+        },
+        execute,
+      },
+    ]);
+
+    const events: AgentEvent[] = [];
+    agent.subscribe((e) => events.push(e));
+
+    await agent.prompt('go');
+
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(events.some((e) => e.type === 'tool_decision_pending')).toBe(false);
+    expect(events.some((e) => e.type === 'agent_end')).toBe(true);
+  });
+});
+
+describe('@agentic-kit/agent — maxSteps', () => {
+  function makeEchoTool(): AgentTool {
+    return {
+      name: 'echo',
+      label: 'Echo',
+      description: 'Echo text',
+      parameters: {
+        type: 'object',
+        properties: { text: { type: 'string' } },
+        required: ['text'],
+      },
+      execute: async (_id, params) => ({
+        content: [{ type: 'text', text: String(params.text) }],
+      }),
+    };
+  }
+
+  function toolThenText(toolText = 'one', finalText = 'done') {
+    return [
+      makeFakeAssistantMessage({
+        stopReason: 'toolUse',
+        content: [
+          { type: 'toolCall', id: 'tool_1', name: 'echo', arguments: { text: toolText } },
+        ],
+      }),
+      makeFakeAssistantMessage({
+        stopReason: 'stop',
+        content: [{ type: 'text', text: finalText }],
+      }),
+    ];
+  }
+
+  it('halts after the configured number of model calls and emits agent_end with stopReason=max_steps', async () => {
+    const provider = createScriptedProvider({ responses: toolThenText() });
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+      maxSteps: 1,
+    });
+    agent.setTools([makeEchoTool()]);
+
+    const events: AgentEvent[] = [];
+    agent.subscribe((e) => events.push(e));
+
+    await agent.prompt('go');
+
+    expect(agent.state.stepCount).toBe(1);
+    // Tool ran for the first turn, but no second model call.
+    const toolResults = agent.state.messages.filter((m) => m.role === 'toolResult');
+    expect(toolResults).toHaveLength(1);
+    const assistants = agent.state.messages.filter((m) => m.role === 'assistant');
+    expect(assistants).toHaveLength(1);
+
+    const end = events.find((e) => e.type === 'agent_end');
+    expect(end).toMatchObject({ type: 'agent_end', stopReason: 'max_steps' });
+  });
+
+  it('does not enforce a cap when maxSteps is undefined (no behavior change)', async () => {
+    const provider = createScriptedProvider({ responses: toolThenText() });
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([makeEchoTool()]);
+
+    const events: AgentEvent[] = [];
+    agent.subscribe((e) => events.push(e));
+
+    await agent.prompt('go');
+
+    expect(agent.state.stepCount).toBe(2);
+    expect(agent.state.messages.at(-1)).toMatchObject({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'done' }],
+    });
+    const end = events.find((e) => e.type === 'agent_end');
+    expect(end).toMatchObject({ stopReason: 'completed' });
+  });
+
+  it('per-call maxSteps overrides the constructor default', async () => {
+    const provider = createScriptedProvider({ responses: toolThenText() });
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+      maxSteps: 1, // would cap; per-call override allows the second call
+    });
+    agent.setTools([makeEchoTool()]);
+
+    await agent.prompt('go', { maxSteps: 5 });
+
+    expect(agent.state.stepCount).toBe(2);
+    expect(agent.state.messages.at(-1)).toMatchObject({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'done' }],
+    });
+  });
+
+  it('prompt() resets stepCount; continue() preserves it across turns', async () => {
+    // Two prompt rounds: first one consumes 2 steps; second prompt resets to 0.
+    const responses = [
+      ...toolThenText('first', 'first-done'),
+      makeFakeAssistantMessage({
+        stopReason: 'stop',
+        content: [{ type: 'text', text: 'second-done' }],
+      }),
+    ];
+    const provider = createScriptedProvider({ responses });
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([makeEchoTool()]);
+
+    await agent.prompt('first');
+    expect(agent.state.stepCount).toBe(2);
+
+    await agent.prompt('second');
+    expect(agent.state.stepCount).toBe(1);
+  });
+});

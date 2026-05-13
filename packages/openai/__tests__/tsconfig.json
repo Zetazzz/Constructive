@@ -2,9 +2,19 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": "..",
+    "rootDir": "../../..",
+    "baseUrl": "../../..",
+    "paths": {
+      "@test/*": ["tools/test/*"],
+      "agentic-kit": ["packages/agentic-kit/src"],
+      "@agentic-kit/agent": ["packages/agent/src"]
+    },
     "types": ["jest", "node"]
   },
-  "include": ["./**/*.ts", "../src/**/*.ts"],
+  "include": [
+    "./**/*.ts",
+    "../src/**/*.ts",
+    "../../../tools/test/**/*.ts"
+  ],
   "exclude": ["../dist", "../node_modules"]
 }

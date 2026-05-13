@@ -1,4 +1,4 @@
-import fetch from 'cross-fetch';
+const fetch: typeof globalThis.fetch = globalThis.fetch.bind(globalThis);
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];

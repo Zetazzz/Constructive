@@ -1,47 +1,28 @@
 import {
+  createScriptedProvider,
+  makeFakeAssistantMessage,
+  makeFakeModel,
+} from '@test/index';
+
+import {
   AgentKit,
   type AssistantMessage,
-  createAssistantMessageEventStream,
   getMessageText,
   type ModelDescriptor,
-  type ProviderAdapter,
   transformMessages,
 } from '../src';
 
 function createFakeModel(): ModelDescriptor {
-  return {
-    id: 'demo',
-    name: 'Demo',
-    api: 'fake-api',
-    provider: 'fake',
-    baseUrl: 'http://fake.local',
-    input: ['text'],
-    reasoning: false,
-    tools: true,
-  };
+  return makeFakeModel({ name: 'Demo' });
 }
 
 function createAssistantMessage(
   overrides: Partial<AssistantMessage> = {}
 ): AssistantMessage {
-  return {
-    role: 'assistant',
-    api: 'fake-api',
-    provider: 'fake',
-    model: 'demo',
-    usage: {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-      totalTokens: 0,
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-    },
-    stopReason: 'stop',
-    timestamp: Date.now(),
+  return makeFakeAssistantMessage({
     content: [{ type: 'text', text: 'hello world' }],
     ...overrides,
-  };
+  });
 }
 
 describe('agentic-kit core', () => {
@@ -236,43 +217,11 @@ describe('agentic-kit core', () => {
   });
 
   it('keeps the legacy AgentKit generate API working through structured streams', async () => {
-    const provider: ProviderAdapter & { name: string } = {
-      api: 'fake-api',
-      provider: 'fake',
-      name: 'fake',
-      createModel: () => createFakeModel(),
-      stream: () => {
-        const stream = createAssistantMessageEventStream();
-        const message = createAssistantMessage();
-
-        queueMicrotask(() => {
-          stream.push({ type: 'start', partial: { ...message, content: [{ type: 'text', text: '' }] } });
-          stream.push({
-            type: 'text_start',
-            contentIndex: 0,
-            partial: { ...message, content: [{ type: 'text', text: '' }] },
-          });
-          stream.push({
-            type: 'text_delta',
-            contentIndex: 0,
-            delta: 'hello world',
-            partial: message,
-          });
-          stream.push({
-            type: 'text_end',
-            contentIndex: 0,
-            content: 'hello world',
-            partial: message,
-          });
-          stream.push({ type: 'done', reason: 'stop', message });
-          stream.end(message);
-        });
-
-        return stream;
-      },
-    };
-
-    const kit = new AgentKit().addProvider(provider);
+    const kit = new AgentKit().addProvider(
+      createScriptedProvider({
+        responses: [createAssistantMessage(), createAssistantMessage()],
+      })
+    );
     const chunks: string[] = [];
     await kit.generate(
       { model: 'demo', prompt: 'hi', stream: true },
@@ -284,29 +233,17 @@ describe('agentic-kit core', () => {
   });
 
   it('rejects legacy generate when a provider returns a terminal error in non-stream mode', async () => {
-    const provider: ProviderAdapter & { name: string } = {
-      api: 'fake-api',
-      provider: 'fake',
-      name: 'fake',
-      createModel: () => createFakeModel(),
-      stream: () => {
-        const stream = createAssistantMessageEventStream();
-        const failure = createAssistantMessage({
-          stopReason: 'error',
-          errorMessage: 'provider failed',
-          content: [{ type: 'text', text: '' }],
-        });
-
-        queueMicrotask(() => {
-          stream.push({ type: 'error', reason: 'error', error: failure });
-          stream.end(failure);
-        });
-
-        return stream;
-      },
-    };
-
-    const kit = new AgentKit().addProvider(provider);
+    const kit = new AgentKit().addProvider(
+      createScriptedProvider({
+        responses: [
+          createAssistantMessage({
+            stopReason: 'error',
+            errorMessage: 'provider failed',
+            content: [{ type: 'text', text: '' }],
+          }),
+        ],
+      })
+    );
     const onComplete = jest.fn();
     const onError = jest.fn();
     const onStateChange = jest.fn();
@@ -324,44 +261,17 @@ describe('agentic-kit core', () => {
   });
 
   it('rejects legacy generate when a provider returns a terminal error in stream mode', async () => {
-    const provider: ProviderAdapter & { name: string } = {
-      api: 'fake-api',
-      provider: 'fake',
-      name: 'fake',
-      createModel: () => createFakeModel(),
-      stream: () => {
-        const stream = createAssistantMessageEventStream();
-        const partial = createAssistantMessage({
-          content: [{ type: 'text', text: 'partial' }],
-        });
-        const failure = createAssistantMessage({
-          stopReason: 'error',
-          errorMessage: 'provider failed',
-          content: [{ type: 'text', text: 'partial' }],
-        });
-
-        queueMicrotask(() => {
-          stream.push({ type: 'start', partial: { ...partial, content: [{ type: 'text', text: '' }] } });
-          stream.push({
-            type: 'text_start',
-            contentIndex: 0,
-            partial: { ...partial, content: [{ type: 'text', text: '' }] },
-          });
-          stream.push({
-            type: 'text_delta',
-            contentIndex: 0,
-            delta: 'partial',
-            partial,
-          });
-          stream.push({ type: 'error', reason: 'error', error: failure });
-          stream.end(failure);
-        });
-
-        return stream;
-      },
-    };
-
-    const kit = new AgentKit().addProvider(provider);
+    const kit = new AgentKit().addProvider(
+      createScriptedProvider({
+        responses: [
+          createAssistantMessage({
+            stopReason: 'error',
+            errorMessage: 'provider failed',
+            content: [{ type: 'text', text: 'partial' }],
+          }),
+        ],
+      })
+    );
     const chunks: string[] = [];
     const onComplete = jest.fn();
     const onError = jest.fn();

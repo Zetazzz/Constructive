@@ -1,8 +1,9 @@
-import fetch from 'cross-fetch';
 import { PassThrough } from 'stream';
 import { TextEncoder } from 'util';
 
 import OllamaClient, { OllamaAdapter } from '../src';
+
+const fetch = global.fetch as jest.Mock;
 
 function createLineResponse(lines: string[]) {
   const encoded = new TextEncoder().encode(lines.join('\n'));

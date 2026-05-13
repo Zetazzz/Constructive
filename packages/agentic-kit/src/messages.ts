@@ -95,6 +95,56 @@ export function getMessageText(message: AssistantMessage): string {
     .join('');
 }
 
+const DEFAULT_DEFERRAL_TEXT = 'User did not respond. Continue.';
+
+export interface InjectDeferralResultsOptions {
+  /** Text body for synthesized results. Defaults to a generic continue prompt. */
+  deferralText?: string;
+  /** Stamped onto each synthesized result's `details` field — typically `{ deferred: true }` so renderers can hide a "Done" badge. */
+  details?: unknown;
+}
+
+/**
+ * Synthesize toolResult messages for every toolCall that lacks both a decision
+ * and a paired toolResult. Returns input unchanged (referentially equal) when
+ * nothing needs synthesizing.
+ *
+ * Use case: user types a message instead of clicking approve/deny on a paused
+ * tool. The agent can't resume on text alone — every dangling toolCall needs
+ * a result before the next request. Compose with sendMessages to forward the
+ * conversation cleanly:
+ *
+ *   await sendMessages([...injectDeferralResults(messages), createUserMessage(text)]);
+ */
+export function injectDeferralResults(
+  messages: Message[],
+  optionsOrText: InjectDeferralResultsOptions | string = {}
+): Message[] {
+  const opts: InjectDeferralResultsOptions =
+    typeof optionsOrText === 'string' ? { deferralText: optionsOrText } : optionsOrText;
+  const deferralText = opts.deferralText ?? DEFAULT_DEFERRAL_TEXT;
+  const completed = new Set<string>();
+  for (const m of messages) {
+    if (m.role === 'toolResult') completed.add(m.toolCallId);
+  }
+  const synthetic: ToolResultMessage[] = [];
+  for (const m of messages) {
+    if (m.role !== 'assistant') continue;
+    for (const block of m.content) {
+      if (block.type !== 'toolCall') continue;
+      if (completed.has(block.id)) continue;
+      if ('decision' in block && block.decision !== undefined) continue;
+      const result = createToolResultMessage(block.id, block.name, [
+        { type: 'text', text: deferralText },
+      ]);
+      if (opts.details !== undefined) result.details = opts.details;
+      synthetic.push(result);
+    }
+  }
+  if (synthetic.length === 0) return messages;
+  return [...messages, ...synthetic];
+}
+
 export function cloneMessage<TMessage extends Message>(message: TMessage): TMessage {
   return JSON.parse(JSON.stringify(message)) as TMessage;
 }

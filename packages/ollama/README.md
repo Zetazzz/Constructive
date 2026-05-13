@@ -62,8 +62,9 @@ await client.deleteModel('mistral');
 
 - `new OllamaClient(baseUrl?: string)` – defaults to `http://localhost:11434`
 - `.listModels(): Promise<string[]>`
+- `.showModel(model: string): Promise<{ capabilities?: string[] } | null>`
 - `.generate(input: GenerateInput, onChunk?: (chunk: string) => void): Promise<string | void>`
-- `.generateEmbedding(text: string): Promise<number[]>`
+- `.generateEmbedding(text: string, model?: string): Promise<number[]>` — defaults to `nomic-embed-text`
 - `.pullModel(model: string): Promise<void>`
 - `.deleteModel(model: string): Promise<void>`
 
@@ -107,10 +108,16 @@ Notes:
 ```ts
 interface GenerateInput {
   model: string;
-  prompt: string;
+  prompt?: string;
+  messages?: ChatMessage[];
+  system?: string;
   stream?: boolean;
+  temperature?: number;
+  maxTokens?: number;
 }
 ```
+
+Either `prompt` (single-turn) or `messages` (multi-turn) must be set.
 
 ## Contributing
 

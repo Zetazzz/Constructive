@@ -67,10 +67,41 @@ for await (const event of result) {
 - `stream(model: ModelDescriptor, context: Context, options?: StreamOptions)`
 - `complete(model: ModelDescriptor, context: Context, options?: StreamOptions)`
 - `completeText(model: ModelDescriptor, context: Context, options?: StreamOptions)`
-- `registerModel(model: ModelDescriptor): void`
-- `registerProvider(provider: ProviderAdapter): void`
-- `getModel(provider: string, modelId: string): ModelDescriptor | undefined`
-- `getModels(provider?: string): ModelDescriptor[]`
+
+### Registry
+
+- `registerModel(model)`, `registerModels(models)`, `clearModels()`
+- `registerProvider(provider, sourceId?)`, `unregisterProviders(sourceId)`, `clearProviders()`
+- `getModel(provider, modelId)`, `getModels(provider?)`, `getModelProviders()`
+- `getProvider(api)`, `getRegisteredProviders()`
+
+The package pre-registers `OpenAIAdapter`, `AnthropicAdapter`, and
+`OllamaAdapter` (with empty credentials) plus the built-in model catalogs
+from each adapter package. Re-register an adapter with your own API key to
+activate it.
+
+### Message helpers
+
+- `createUserMessage(content)`, `createAssistantMessage(model)`,
+  `createToolResultMessage(toolCallId, toolName, content, isError?)`
+- `createTextContent(text?)`, `createImageContent(data, mimeType)`,
+  `createToolCall(id, name)`
+- `getMessageText(assistant)` — concatenate text blocks.
+- `cloneMessage(message)` — deep clone.
+- `normalizeContext(context)` — apply per-message normalization.
+- `injectDeferralResults(messages, options?)` — synthesize stand-in
+  `toolResult` messages for every `toolCall` that lacks both a decision and
+  a paired result. Useful when the user types a new message instead of
+  responding to a paused tool — the next request needs a well-formed
+  transcript.
+- `transformMessages(messages, model)` — cross-provider normalization for
+  replay across different providers.
+
+### Adapter re-exports
+
+- `OpenAIAdapter`, `AnthropicAdapter`, `OllamaAdapter`
+- Types: `OpenAIOptions`, `AnthropicOptions`
+- `OllamaClient` for direct Ollama HTTP access.
 
 ### Legacy Compatibility API
 

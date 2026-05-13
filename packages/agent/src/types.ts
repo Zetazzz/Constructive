@@ -21,9 +21,11 @@ export type AgentToolUpdateCallback<TDetails = unknown> = (
 
 export interface AgentTool<TDetails = unknown> extends ToolDefinition {
   label: string;
+  decision?: JsonSchema;
   execute: (
     toolCallId: string,
     params: Record<string, unknown>,
+    decision: unknown,
     signal?: AbortSignal,
     onUpdate?: AgentToolUpdateCallback<TDetails>
   ) => Promise<AgentToolResult<TDetails>>;
@@ -34,6 +36,7 @@ export interface AgentState {
   isStreaming: boolean;
   messages: Message[];
   model: ModelDescriptor;
+  stepCount: number;
   streamMessage: AssistantMessage | null;
   streamOptions?: Omit<StreamOptions, 'signal'>;
   systemPrompt: string;
@@ -46,7 +49,7 @@ export interface AgentEventBase {
 
 export type AgentEvent =
   | { type: 'agent_start' }
-  | { type: 'agent_end'; messages: Message[] }
+  | { type: 'agent_end'; messages: Message[]; stopReason?: 'completed' | 'max_steps' | 'aborted' }
   | { type: 'turn_start' }
   | { type: 'turn_end'; message: AssistantMessage; toolResults: ToolResultMessage[] }
   | { type: 'message_start'; message: Message }
@@ -66,10 +69,23 @@ export type AgentEvent =
       toolName: string;
       result: AgentToolResult;
       isError: boolean;
+    }
+  | {
+      type: 'tool_decision_pending';
+      toolCallId: string;
+      toolName: string;
+      input: Record<string, unknown>;
+      schema: JsonSchema;
     };
 
 export interface AgentOptions {
   initialState: Pick<AgentState, 'model'> & Partial<Omit<AgentState, 'model'>>;
+  /**
+   * Maximum number of model invocations the agent will perform per run.
+   * One model call counts as one step. Counter persists across `continue()`
+   * — it only resets in `prompt()`. Default: unlimited.
+   */
+  maxSteps?: number;
   streamFn?: (
     model: ModelDescriptor,
     context: Context,

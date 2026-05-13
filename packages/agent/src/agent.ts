@@ -6,8 +6,14 @@ import {
   type Message,
   stream,
   type StreamOptions,
+  type ToolCallContent,
 } from 'agentic-kit';
 
+import {
+  type AgentRunHandle,
+  DefaultAgentRunHandle,
+  type RunChannelPush,
+} from './run-handle.js';
 import type {
   AgentEvent,
   AgentOptions,
@@ -15,15 +21,22 @@ import type {
   AgentTool,
   AgentToolResult,
 } from './types.js';
-import { validateToolArguments as defaultValidateToolArguments } from './validation.js';
+import {
+  DecisionValidationError,
+  validateSchema,
+  validateToolArguments as defaultValidateToolArguments,
+} from './validation.js';
 
 export class Agent {
   private readonly listeners = new Set<(event: AgentEvent) => void>();
   private readonly transformContext?: AgentOptions['transformContext'];
   private readonly streamFn: NonNullable<AgentOptions['streamFn']>;
   private readonly validateToolArguments: NonNullable<AgentOptions['validateToolArguments']>;
+  private readonly defaultMaxSteps?: number;
   private abortController?: AbortController;
   private running?: Promise<void>;
+  private runChannel?: { push: RunChannelPush };
+  private outstandingHandle?: AgentRunHandle;
 
   private _state: AgentState;
 
@@ -33,6 +46,7 @@ export class Agent {
       tools: [],
       messages: [],
       isStreaming: false,
+      stepCount: 0,
       streamMessage: null,
       streamOptions: undefined,
       ...options.initialState,
@@ -40,6 +54,7 @@ export class Agent {
     this.streamFn = options.streamFn ?? stream;
     this.transformContext = options.transformContext;
     this.validateToolArguments = options.validateToolArguments ?? defaultValidateToolArguments;
+    this.defaultMaxSteps = options.maxSteps;
   }
 
   get state(): AgentState {
@@ -89,90 +104,232 @@ export class Agent {
 
   abort(): void {
     this.abortController?.abort();
+    this.outstandingHandle = undefined;
   }
 
   waitForIdle(): Promise<void> {
     return this.running ?? Promise.resolve();
   }
 
-  async prompt(input: string | Message): Promise<void> {
-    if (this._state.isStreaming) {
-      throw new Error('Agent is already processing a prompt');
-    }
+  prompt(input: string | Message, opts?: { maxSteps?: number }): AgentRunHandle {
+    this.assertIdle('prompt');
 
     const message = typeof input === 'string' ? createUserMessage(input) : input;
-    await this.runLoop([message]);
+    this._state.stepCount = 0;
+
+    const handle: AgentRunHandle = new DefaultAgentRunHandle(async (push, signal) => {
+      if (this.outstandingHandle === handle) {
+        this.outstandingHandle = undefined;
+      }
+      return this.runLoop({
+        initialMessages: [message],
+        externalPush: push ?? undefined,
+        externalAbortSignal: signal,
+        maxSteps: opts?.maxSteps ?? this.defaultMaxSteps,
+      });
+    });
+    this.outstandingHandle = handle;
+    return handle;
   }
 
-  async continue(): Promise<void> {
-    if (this._state.isStreaming) {
-      throw new Error('Agent is already processing');
-    }
+  continue(opts?: { maxSteps?: number }): AgentRunHandle {
+    this.assertIdle('continue');
 
-    const lastMessage = this._state.messages[this._state.messages.length - 1];
-    if (!lastMessage) {
+    if (this._state.messages.length === 0) {
       throw new Error('No messages to continue from');
     }
-    if (lastMessage.role === 'assistant') {
-      throw new Error('Cannot continue from message role: assistant');
+
+    const pendingMessage = this.findMostRecentPendingAssistant();
+    if (pendingMessage) {
+      const pendingIndex = this._state.messages.indexOf(pendingMessage);
+      const trailing = this._state.messages.slice(pendingIndex + 1);
+      const hasNonToolResultTrailing = trailing.some((m) => m.role !== 'toolResult');
+      if (hasNonToolResultTrailing) {
+        throw new Error(
+          'Cannot continue() with a pending decision when non-toolResult messages have been appended after the pending assistant. Use injectDeferralResults() + prompt() instead — see the agentic-kit deferral docs.'
+        );
+      }
+      const pendingDecisions = this.findPendingDecisions(pendingMessage);
+      for (const { tool, decision } of pendingDecisions) {
+        const errors = validateSchema(tool.decision!, decision, 'root');
+        if (errors.length > 0) {
+          throw new DecisionValidationError(tool.name, errors);
+        }
+      }
+    } else {
+      const lastMessage = this._state.messages[this._state.messages.length - 1];
+      if (lastMessage.role === 'assistant') {
+        throw new Error(
+          'Cannot continue from trailing assistant message: no tool calls awaiting a decision'
+        );
+      }
     }
 
-    await this.runLoop();
+    const handle: AgentRunHandle = new DefaultAgentRunHandle(async (push, signal) => {
+      if (this.outstandingHandle === handle) {
+        this.outstandingHandle = undefined;
+      }
+      return this.runLoop({
+        externalPush: push ?? undefined,
+        externalAbortSignal: signal,
+        maxSteps: opts?.maxSteps ?? this.defaultMaxSteps,
+      });
+    });
+    this.outstandingHandle = handle;
+    return handle;
   }
 
-  private async runLoop(initialMessages?: Message[]): Promise<void> {
+  private assertIdle(method: 'prompt' | 'continue'): void {
+    if (this._state.isStreaming) {
+      throw new Error(`Agent is already processing; cannot call ${method}() while a run is active`);
+    }
+    if (this.outstandingHandle) {
+      throw new Error(
+        `Agent has an unconsumed run handle from a previous ${method}()/prompt()/continue() call; consume it (events / toReadableStream / toResponse / wait) or abort the agent before issuing another`
+      );
+    }
+  }
+
+  private findMostRecentPendingAssistant(): AssistantMessage | undefined {
+    for (let i = this._state.messages.length - 1; i >= 0; i--) {
+      const msg = this._state.messages[i];
+      if (msg.role !== 'assistant') continue;
+      const pending = this.findPendingDecisions(msg);
+      if (pending.length > 0) return msg;
+    }
+    return undefined;
+  }
+
+  private findPendingDecisions(
+    message: AssistantMessage
+  ): Array<{ toolCall: ToolCallContent; tool: AgentTool; decision: unknown }> {
+    const completedToolCallIds = new Set(
+      this._state.messages
+        .filter((m): m is Extract<Message, { role: 'toolResult' }> => m.role === 'toolResult')
+        .map((m) => m.toolCallId)
+    );
+
+    const pending: Array<{ toolCall: ToolCallContent; tool: AgentTool; decision: unknown }> = [];
+    for (const block of message.content) {
+      if (block.type !== 'toolCall') {
+        continue;
+      }
+      if (completedToolCallIds.has(block.id)) {
+        continue;
+      }
+      if (!('decision' in block) || block.decision === undefined) {
+        continue;
+      }
+      const tool = this._state.tools.find((t) => t.name === block.name);
+      if (!tool || !tool.decision) {
+        continue;
+      }
+      pending.push({ toolCall: block, tool, decision: block.decision });
+    }
+    return pending;
+  }
+
+  private async runLoop(opts: {
+    initialMessages?: Message[];
+    externalPush?: RunChannelPush;
+    externalAbortSignal?: AbortSignal;
+    maxSteps?: number;
+  }): Promise<void> {
     this.running = (async () => {
       this.abortController = new AbortController();
+      const localAbortController = this.abortController;
       this._state.isStreaming = true;
       this._state.streamMessage = null;
       this._state.error = undefined;
+      if (opts.externalPush) {
+        this.runChannel = { push: opts.externalPush };
+      }
+
+      const onExternalAbort = () => localAbortController.abort();
+      if (opts.externalAbortSignal) {
+        if (opts.externalAbortSignal.aborted) {
+          localAbortController.abort();
+        } else {
+          opts.externalAbortSignal.addEventListener('abort', onExternalAbort, { once: true });
+        }
+      }
+
+      let stopReason: 'completed' | 'max_steps' | 'aborted' = 'completed';
 
       try {
-        this.emit({ type: 'agent_start' });
+        await this.emit({ type: 'agent_start' });
 
-        if (initialMessages && initialMessages.length > 0) {
-          for (const message of initialMessages) {
-            this.emit({ type: 'message_start', message });
+        if (opts.initialMessages && opts.initialMessages.length > 0) {
+          for (const message of opts.initialMessages) {
+            await this.emit({ type: 'message_start', message });
             this.appendMessage(message);
-            this.emit({ type: 'message_end', message });
+            await this.emit({ type: 'message_end', message });
           }
         }
+
+        let resumeAssistant: AssistantMessage | undefined =
+          this.findMostRecentPendingAssistant();
 
         while (true) {
-          this.emit({ type: 'turn_start' });
+          let assistantMessage: AssistantMessage;
 
-          const assistantMessage = await this.generateAssistantMessage(this.abortController.signal);
-          this.appendMessage(assistantMessage);
-          this.emit({ type: 'message_end', message: assistantMessage });
+          if (resumeAssistant) {
+            assistantMessage = resumeAssistant;
+            resumeAssistant = undefined;
+          } else {
+            if (
+              opts.maxSteps !== undefined &&
+              this._state.stepCount >= opts.maxSteps
+            ) {
+              stopReason = 'max_steps';
+              break;
+            }
+            this._state.stepCount += 1;
 
-          if (assistantMessage.stopReason === 'error' || assistantMessage.stopReason === 'aborted') {
-            this._state.error = assistantMessage.errorMessage;
-            this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [] });
-            break;
+            await this.emit({ type: 'turn_start' });
+            assistantMessage = await this.generateAssistantMessage(localAbortController.signal);
+            this.appendMessage(assistantMessage);
+            await this.emit({ type: 'message_end', message: assistantMessage });
+
+            if (assistantMessage.stopReason === 'error' || assistantMessage.stopReason === 'aborted') {
+              this._state.error = assistantMessage.errorMessage;
+              await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [] });
+              break;
+            }
           }
 
-          const toolCalls = assistantMessage.content.filter((block) => block.type === 'toolCall');
+          const toolCalls = assistantMessage.content.filter(
+            (block): block is ToolCallContent => block.type === 'toolCall'
+          );
           if (toolCalls.length === 0) {
-            this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [] });
+            await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [] });
             break;
           }
 
-          const toolResults = await this.executeToolCalls(toolCalls, this.abortController.signal);
-          for (const toolResult of toolResults) {
-            this.emit({ type: 'message_start', message: toolResult });
-            this.appendMessage(toolResult);
-            this.emit({ type: 'message_end', message: toolResult });
+          const outcome = await this.executeToolCalls(toolCalls, localAbortController.signal);
+
+          if (outcome.status === 'paused') {
+            return;
           }
 
-          this.emit({ type: 'turn_end', message: assistantMessage, toolResults });
+          await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: outcome.results });
+
+          if (localAbortController.signal.aborted) {
+            stopReason = 'aborted';
+            break;
+          }
         }
 
-        this.emit({ type: 'agent_end', messages: [...this._state.messages] });
+        await this.emit({ type: 'agent_end', messages: [...this._state.messages], stopReason });
       } finally {
+        if (opts.externalAbortSignal) {
+          opts.externalAbortSignal.removeEventListener('abort', onExternalAbort);
+        }
         this._state.isStreaming = false;
         this._state.streamMessage = null;
         this.abortController = undefined;
         this.running = undefined;
+        this.runChannel = undefined;
       }
     })();
 
@@ -199,7 +356,7 @@ export class Agent {
       switch (event.type) {
       case 'start':
         this._state.streamMessage = event.partial;
-        this.emit({ type: 'message_start', message: event.partial });
+        await this.emit({ type: 'message_start', message: event.partial });
         break;
       case 'text_start':
       case 'text_delta':
@@ -211,7 +368,7 @@ export class Agent {
       case 'toolcall_delta':
       case 'toolcall_end':
         this._state.streamMessage = event.partial;
-        this.emit({
+        await this.emit({
           type: 'message_update',
           message: event.partial,
           assistantMessageEvent: event,
@@ -228,73 +385,175 @@ export class Agent {
   }
 
   private async executeToolCalls(
-    toolCalls: Array<Extract<AssistantMessage['content'][number], { type: 'toolCall' }>>,
+    toolCalls: ToolCallContent[],
     signal: AbortSignal
-  ) {
-    const results = [];
+  ): Promise<
+    | { status: 'completed'; results: ReturnType<typeof createToolResultMessage>[] }
+    | { status: 'paused' }
+  > {
+    const completedToolCallIds = new Set(
+      this._state.messages
+        .filter((m): m is Extract<Message, { role: 'toolResult' }> => m.role === 'toolResult')
+        .map((m) => m.toolCallId)
+    );
+
+    const results: ReturnType<typeof createToolResultMessage>[] = [];
 
     for (const toolCall of toolCalls) {
+      if (completedToolCallIds.has(toolCall.id)) {
+        continue;
+      }
+
+      if (signal.aborted) {
+        break;
+      }
+
       const tool = this._state.tools.find((candidate) => candidate.name === toolCall.name);
-      this.emit({
-        type: 'tool_execution_start',
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        args: toolCall.arguments as Record<string, unknown>,
-      });
+      const args = toolCall.arguments as Record<string, unknown>;
+      const decisionAttached = 'decision' in toolCall && toolCall.decision !== undefined;
 
-      let result: AgentToolResult;
-      let isError = false;
+      if (tool?.decision && !decisionAttached) {
+        let validatedArgs: Record<string, unknown>;
+        try {
+          validatedArgs = this.validateToolArguments(tool.parameters, args);
+        } catch (error) {
+          for (const prior of results) {
+            await this.appendMessageWithEvents(prior);
+          }
+          results.length = 0;
 
-      try {
-        if (!tool) {
-          throw new Error(`Tool '${toolCall.name}' not found`);
+          const result: AgentToolResult = {
+            content: [
+              {
+                type: 'text',
+                text: error instanceof Error ? error.message : String(error),
+              },
+            ],
+          };
+          await this.emit({
+            type: 'tool_execution_start',
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            args,
+          });
+          await this.emit({
+            type: 'tool_execution_end',
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            result,
+            isError: true,
+          });
+          const toolResult = createToolResultMessage(toolCall.id, toolCall.name, result.content, true);
+          await this.appendMessageWithEvents(toolResult);
+          continue;
         }
 
-        const validatedArgs = this.validateToolArguments(
-          tool.parameters,
-          toolCall.arguments as Record<string, unknown>
-        );
+        for (const toolResult of results) {
+          await this.appendMessageWithEvents(toolResult);
+        }
 
-        result = await tool.execute(toolCall.id, validatedArgs, signal, (partialResult) => {
-          this.emit({
+        await this.emit({
+          type: 'tool_decision_pending',
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+          input: validatedArgs,
+          schema: tool.decision,
+        });
+        return { status: 'paused' };
+      }
+
+      const decisionForExecute = decisionAttached ? toolCall.decision : undefined;
+      const toolResult = await this.executeOneTool(
+        tool,
+        toolCall,
+        args,
+        decisionForExecute,
+        signal
+      );
+      results.push(toolResult);
+    }
+
+    for (const toolResult of results) {
+      await this.appendMessageWithEvents(toolResult);
+    }
+
+    return { status: 'completed', results };
+  }
+
+  private async executeOneTool(
+    tool: AgentTool | undefined,
+    toolCall: ToolCallContent,
+    args: Record<string, unknown>,
+    decision: unknown,
+    signal: AbortSignal
+  ): Promise<ReturnType<typeof createToolResultMessage>> {
+    await this.emit({
+      type: 'tool_execution_start',
+      toolCallId: toolCall.id,
+      toolName: toolCall.name,
+      args,
+    });
+
+    let result: AgentToolResult;
+    let isError = false;
+
+    try {
+      if (!tool) {
+        throw new Error(`Tool '${toolCall.name}' not found`);
+      }
+
+      const validatedArgs = this.validateToolArguments(tool.parameters, args);
+
+      result = await tool.execute(
+        toolCall.id,
+        validatedArgs,
+        decision,
+        signal,
+        (partialResult) => {
+          void this.emit({
             type: 'tool_execution_update',
             toolCallId: toolCall.id,
             toolName: toolCall.name,
             args: validatedArgs,
             partialResult,
           });
-        });
-      } catch (error) {
-        result = {
-          content: [
-            {
-              type: 'text',
-              text: error instanceof Error ? error.message : String(error),
-            },
-          ],
-        };
-        isError = true;
-      }
-
-      this.emit({
-        type: 'tool_execution_end',
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        result,
-        isError,
-      });
-
-      results.push(
-        createToolResultMessage(toolCall.id, toolCall.name, result.content, isError)
+        }
       );
+    } catch (error) {
+      result = {
+        content: [
+          {
+            type: 'text',
+            text: error instanceof Error ? error.message : String(error),
+          },
+        ],
+      };
+      isError = true;
     }
 
-    return results;
+    await this.emit({
+      type: 'tool_execution_end',
+      toolCallId: toolCall.id,
+      toolName: toolCall.name,
+      result,
+      isError,
+    });
+
+    return createToolResultMessage(toolCall.id, toolCall.name, result.content, isError);
   }
 
-  private emit(event: AgentEvent): void {
+  private async appendMessageWithEvents(message: Message): Promise<void> {
+    await this.emit({ type: 'message_start', message });
+    this.appendMessage(message);
+    await this.emit({ type: 'message_end', message });
+  }
+
+  private async emit(event: AgentEvent): Promise<void> {
     for (const listener of this.listeners) {
       listener(event);
+    }
+    if (this.runChannel) {
+      await this.runChannel.push(event);
     }
   }
 }

@@ -1,4 +1,7 @@
-import fetch from 'cross-fetch';
+// Use the runtime's native fetch. Node 18.17+ (engine requirement),
+// browsers, Bun, and Deno all provide it with a Web ReadableStream body —
+// which is what SSE parsing here requires.
+const fetch: typeof globalThis.fetch = globalThis.fetch.bind(globalThis);
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];

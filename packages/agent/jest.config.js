@@ -17,6 +17,7 @@ module.exports = {
   modulePathIgnorePatterns: ['dist/*'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^@test/(.*)$': '<rootDir>/../../tools/test/$1',
     '^agentic-kit$': '<rootDir>/../agentic-kit/src',
     '^@agentic-kit/(.*)$': '<rootDir>/../$1/src',
   },

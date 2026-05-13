@@ -1,7 +1,8 @@
-import fetch from 'cross-fetch';
 import { TextEncoder } from 'util';
 
 import { AnthropicAdapter } from '../src';
+
+const fetch = global.fetch as jest.Mock;
 
 function createStreamingResponse(frames: string[]) {
   const encoded = new TextEncoder().encode(frames.join('\n\n'));

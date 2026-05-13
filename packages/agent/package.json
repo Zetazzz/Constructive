@@ -6,6 +6,14 @@
   "main": "index.js",
   "module": "esm/index.js",
   "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./index.d.ts",
+      "import": "./esm/index.js",
+      "require": "./index.js"
+    }
+  },
   "homepage": "https://github.com/constructive-io/agentic-kit",
   "license": "SEE LICENSE IN LICENSE",
   "publishConfig": {

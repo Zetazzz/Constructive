@@ -1,7 +1,8 @@
-import fetch from 'cross-fetch';
 import { TextEncoder } from 'util';
 
 import { OpenAIAdapter } from '../src';
+
+const fetch = global.fetch as jest.Mock;
 
 function createStreamingResponse(lines: string[]) {
   const payload = lines.join('\n');

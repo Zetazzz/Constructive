@@ -89,6 +89,7 @@ export interface ToolCallContent {
   name: string;
   arguments: Record<string, JsonValue | undefined>;
   rawArguments?: string;
+  decision?: unknown;
 }
 
 export interface Usage {

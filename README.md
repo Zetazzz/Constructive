@@ -45,6 +45,52 @@ const message = await complete(model!, {
 console.log(message.content);
 ```
 
+## Consuming from webpack / Next.js
+
+The packages publish ESM with `.js`-suffixed relative imports (e.g.
+`from './foo.js'`), which is the correct ESM-with-TS pattern. Webpack does not
+auto-rewrite `.js` → `.ts` when reading TypeScript sources directly (e.g. when
+linking the workspace from `apps/`), so add an `extensionAlias` to your
+`next.config.mjs`:
+
+```js
+// next.config.mjs
+export default {
+  transpilePackages: [
+    'agentic-kit',
+    '@agentic-kit/agent',
+    '@agentic-kit/react',
+    '@agentic-kit/openai',
+    '@agentic-kit/anthropic',
+    '@agentic-kit/ollama',
+  ],
+  webpack: (config) => {
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs'],
+    };
+    return config;
+  },
+};
+```
+
+Once a published artifact is installed (`npm install agentic-kit`), the
+compiled `dist/` is what resolves and no `extensionAlias` is required — this
+workaround only matters when reading TypeScript source through webpack.
+
+Vite, Bun, and esbuild handle `.js` → `.ts` natively. Vite users who want to
+consume the workspace TypeScript source via the package `"source"` condition
+can opt in with:
+
+```js
+// vite.config.ts
+export default {
+  resolve: {
+    conditions: ['source', 'import', 'module', 'browser', 'default'],
+  },
+};
+```
+
 ## Contributing
 
 See individual package READMEs for docs and local dev instructions.
