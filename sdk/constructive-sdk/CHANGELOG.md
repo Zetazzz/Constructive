@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.7](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.21.6...@constructive-io/sdk@0.21.7) (2026-05-13)
+
+### Bug Fixes
+
+- **types:** remove = never default from FindFirstArgs TOrderBy param ([d7aea85](https://github.com/constructive-io/constructive/commit/d7aea8590862cbecc4c6c6cf92f1135050da8ee9))
+
 ## [0.21.6](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.21.5...@constructive-io/sdk@0.21.6) (2026-05-13)
 
 **Note:** Version bump only for package @constructive-io/sdk

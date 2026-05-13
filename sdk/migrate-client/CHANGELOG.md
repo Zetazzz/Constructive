@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.6](https://github.com/constructive-io/constructive/compare/@pgpmjs/migrate-client@0.12.5...@pgpmjs/migrate-client@0.12.6) (2026-05-13)
+
+### Bug Fixes
+
+- **types:** remove = never default from FindFirstArgs TOrderBy param ([d7aea85](https://github.com/constructive-io/constructive/commit/d7aea8590862cbecc4c6c6cf92f1135050da8ee9))
+
 ## [0.12.5](https://github.com/constructive-io/constructive/compare/@pgpmjs/migrate-client@0.12.4...@pgpmjs/migrate-client@0.12.5) (2026-05-13)
 
 **Note:** Version bump only for package @pgpmjs/migrate-client

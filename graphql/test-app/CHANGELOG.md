@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.18.7](https://github.com/constructive-io/constructive/compare/@constructive-io/test-codegen-app@1.18.6...@constructive-io/test-codegen-app@1.18.7) (2026-05-13)
+
+### Bug Fixes
+
+- **codegen:** findFirst/findOne return single object ([#752](https://github.com/constructive-io/constructive/issues/752)) ([006b869](https://github.com/constructive-io/constructive/commit/006b869ef305dffc568a463789f428c8b0733958))
+
 ## [1.18.6](https://github.com/constructive-io/constructive/compare/@constructive-io/test-codegen-app@1.18.5...@constructive-io/test-codegen-app@1.18.6) (2026-05-13)
 
 **Note:** Version bump only for package @constructive-io/test-codegen-app

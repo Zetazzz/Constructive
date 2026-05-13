@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.21.7](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.6...graphql-server-test@2.21.7) (2026-05-13)
+
+### Bug Fixes
+
+- **codegen:** findFirst/findOne return single object ([#752](https://github.com/constructive-io/constructive/issues/752)) ([006b869](https://github.com/constructive-io/constructive/commit/006b869ef305dffc568a463789f428c8b0733958))
+
 ## [2.21.6](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.5...graphql-server-test@2.21.6) (2026-05-13)
 
 ### Bug Fixes
