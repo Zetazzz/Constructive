@@ -53,6 +53,34 @@ export interface DeleteArgs<TWhere, TSelect = undefined> {
   select?: TSelect;
 }
 
+export interface BulkInsertArgs<TSelect, TData, TOnConflict = unknown> {
+  data: TData[];
+  select?: TSelect;
+  onConflict?: TOnConflict;
+}
+
+export interface BulkUpsertArgs<TSelect, TData, TOnConflict = unknown> {
+  data: TData[];
+  select?: TSelect;
+  onConflict: TOnConflict;
+}
+
+export interface BulkUpdateArgs<TSelect, TWhere, TData> {
+  where: TWhere;
+  data: TData;
+  select?: TSelect;
+}
+
+export interface BulkDeleteArgs<TSelect, TWhere> {
+  where: TWhere;
+  select?: TSelect;
+}
+
+export interface BulkMutationResult<T> {
+  affectedCount: number;
+  returning: T[];
+}
+
 type DepthLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 type DecrementDepth = {
   0: 0;
