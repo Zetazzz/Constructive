@@ -224,7 +224,7 @@ export interface FindManyArgs<TSelect, TWhere, TOrderBy> {
 /**
  * Arguments for findFirst/findUnique operations
  */
-export interface FindFirstArgs<TSelect, TWhere, TOrderBy = never> {
+export interface FindFirstArgs<TSelect, TWhere, TOrderBy> {
   select?: TSelect;
   where?: TWhere;
   orderBy?: TOrderBy[];
