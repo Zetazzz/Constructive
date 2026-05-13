@@ -212,6 +212,13 @@ export function generateModelFile(
     return jt?.query?.delete != null;
   });
 
+  // Detect which bulk mutations are available for this table
+  const bulkInsertMutationName = table.query?.bulkInsert ?? null;
+  const bulkUpsertMutationName = table.query?.bulkUpsert ?? null;
+  const bulkUpdateMutationName = table.query?.bulkUpdate ?? null;
+  const bulkDeleteMutationName = table.query?.bulkDelete ?? null;
+  const hasBulk = !!(bulkInsertMutationName || bulkUpsertMutationName || bulkUpdateMutationName || bulkDeleteMutationName);
+
   const queryBuilderImports = [
     'QueryBuilder',
     'buildFindManyDocument',
@@ -221,6 +228,10 @@ export function generateModelFile(
     'buildUpdateByPkDocument',
     'buildDeleteByPkDocument',
     ...(needsJunctionRemove ? ['buildJunctionRemoveDocument'] : []),
+    ...(bulkInsertMutationName ? ['buildBulkInsertDocument'] : []),
+    ...(bulkUpsertMutationName ? ['buildBulkUpsertDocument'] : []),
+    ...(bulkUpdateMutationName ? ['buildBulkUpdateDocument'] : []),
+    ...(bulkDeleteMutationName ? ['buildBulkDeleteDocument'] : []),
   ];
   statements.push(
     createImportDeclaration('../query-builder', queryBuilderImports),
@@ -235,6 +246,7 @@ export function generateModelFile(
         'CreateArgs',
         'UpdateArgs',
         'DeleteArgs',
+        ...(hasBulk ? ['BulkInsertArgs', 'BulkUpsertArgs', 'BulkUpdateArgs', 'BulkDeleteArgs', 'BulkMutationResult'] : []),
         'InferSelectResult',
         'StrictSelect',
       ],
@@ -965,6 +977,290 @@ export function generateModelFile(
           'mutation',
           typeName,
           deleteMutationName,
+        ),
+      ),
+    );
+  }
+
+  // ── bulkCreate ──────────────────────────────────────────────────────────
+  if (bulkInsertMutationName) {
+    const bulkInsertInputTypeName = `BulkCreate${typeName}Input`;
+    const dataType = () =>
+      t.tsIndexedAccessType(
+        t.tsTypeReference(t.identifier(createInputTypeName)),
+        t.tsLiteralType(t.stringLiteral(singularName)),
+      );
+    const argsType = (sel: t.TSType) =>
+      t.tsTypeReference(
+        t.identifier('BulkInsertArgs'),
+        t.tsTypeParameterInstantiation([sel, dataType()]),
+      );
+    const retType = (sel: t.TSType) =>
+      t.tsTypeAnnotation(
+        t.tsTypeReference(
+          t.identifier('QueryBuilder'),
+          t.tsTypeParameterInstantiation([
+            t.tsTypeReference(
+              t.identifier('BulkMutationResult'),
+              t.tsTypeParameterInstantiation([
+                t.tsTypeReference(
+                  t.identifier('InferSelectResult'),
+                  t.tsTypeParameterInstantiation([
+                    t.tsTypeReference(t.identifier(relationTypeName)),
+                    sel,
+                  ]),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      );
+
+    const implParam = t.identifier('args');
+    implParam.typeAnnotation = t.tsTypeAnnotation(
+      t.tsIntersectionType([
+        argsType(sRef()),
+        t.tsTypeLiteral([requiredSelectProp()]),
+        strictSelectGuard(selectTypeName),
+      ]),
+    );
+    const selectExpr = t.memberExpression(
+      t.identifier('args'),
+      t.identifier('select'),
+    );
+    const bodyArgs = [
+      t.stringLiteral(typeName),
+      t.stringLiteral(bulkInsertMutationName),
+      selectExpr,
+      t.memberExpression(t.identifier('args'), t.identifier('data')),
+      t.stringLiteral(bulkInsertInputTypeName),
+      t.memberExpression(t.identifier('args'), t.identifier('onConflict')),
+      t.identifier('connectionFieldsMap'),
+    ];
+    classBody.push(
+      createClassMethod(
+        'bulkCreate',
+        createTypeParam(selectTypeName),
+        [implParam],
+        retType(sRef()),
+        buildMethodBody(
+          'buildBulkInsertDocument',
+          bodyArgs,
+          'mutation',
+          typeName,
+          bulkInsertMutationName,
+        ),
+      ),
+    );
+  }
+
+  // ── bulkUpsert ─────────────────────────────────────────────────────────
+  if (bulkUpsertMutationName) {
+    const bulkUpsertInputTypeName = `BulkUpsert${typeName}Input`;
+    const dataType = () =>
+      t.tsIndexedAccessType(
+        t.tsTypeReference(t.identifier(createInputTypeName)),
+        t.tsLiteralType(t.stringLiteral(singularName)),
+      );
+    const argsType = (sel: t.TSType) =>
+      t.tsTypeReference(
+        t.identifier('BulkUpsertArgs'),
+        t.tsTypeParameterInstantiation([sel, dataType()]),
+      );
+    const retType = (sel: t.TSType) =>
+      t.tsTypeAnnotation(
+        t.tsTypeReference(
+          t.identifier('QueryBuilder'),
+          t.tsTypeParameterInstantiation([
+            t.tsTypeReference(
+              t.identifier('BulkMutationResult'),
+              t.tsTypeParameterInstantiation([
+                t.tsTypeReference(
+                  t.identifier('InferSelectResult'),
+                  t.tsTypeParameterInstantiation([
+                    t.tsTypeReference(t.identifier(relationTypeName)),
+                    sel,
+                  ]),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      );
+
+    const implParam = t.identifier('args');
+    implParam.typeAnnotation = t.tsTypeAnnotation(
+      t.tsIntersectionType([
+        argsType(sRef()),
+        t.tsTypeLiteral([requiredSelectProp()]),
+        strictSelectGuard(selectTypeName),
+      ]),
+    );
+    const selectExpr = t.memberExpression(
+      t.identifier('args'),
+      t.identifier('select'),
+    );
+    const bodyArgs = [
+      t.stringLiteral(typeName),
+      t.stringLiteral(bulkUpsertMutationName),
+      selectExpr,
+      t.memberExpression(t.identifier('args'), t.identifier('data')),
+      t.stringLiteral(bulkUpsertInputTypeName),
+      t.memberExpression(t.identifier('args'), t.identifier('onConflict')),
+      t.identifier('connectionFieldsMap'),
+    ];
+    classBody.push(
+      createClassMethod(
+        'bulkUpsert',
+        createTypeParam(selectTypeName),
+        [implParam],
+        retType(sRef()),
+        buildMethodBody(
+          'buildBulkUpsertDocument',
+          bodyArgs,
+          'mutation',
+          typeName,
+          bulkUpsertMutationName,
+        ),
+      ),
+    );
+  }
+
+  // ── bulkUpdate ─────────────────────────────────────────────────────────
+  if (bulkUpdateMutationName) {
+    const bulkUpdateInputTypeName = `BulkUpdate${typeName}Input`;
+    const argsType = (sel: t.TSType) =>
+      t.tsTypeReference(
+        t.identifier('BulkUpdateArgs'),
+        t.tsTypeParameterInstantiation([
+          sel,
+          t.tsTypeReference(t.identifier(whereTypeName)),
+          t.tsTypeReference(t.identifier(patchTypeName)),
+        ]),
+      );
+    const retType = (sel: t.TSType) =>
+      t.tsTypeAnnotation(
+        t.tsTypeReference(
+          t.identifier('QueryBuilder'),
+          t.tsTypeParameterInstantiation([
+            t.tsTypeReference(
+              t.identifier('BulkMutationResult'),
+              t.tsTypeParameterInstantiation([
+                t.tsTypeReference(
+                  t.identifier('InferSelectResult'),
+                  t.tsTypeParameterInstantiation([
+                    t.tsTypeReference(t.identifier(relationTypeName)),
+                    sel,
+                  ]),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      );
+
+    const implParam = t.identifier('args');
+    implParam.typeAnnotation = t.tsTypeAnnotation(
+      t.tsIntersectionType([
+        argsType(sRef()),
+        t.tsTypeLiteral([requiredSelectProp()]),
+        strictSelectGuard(selectTypeName),
+      ]),
+    );
+    const selectExpr = t.memberExpression(
+      t.identifier('args'),
+      t.identifier('select'),
+    );
+    const bodyArgs = [
+      t.stringLiteral(typeName),
+      t.stringLiteral(bulkUpdateMutationName),
+      selectExpr,
+      t.memberExpression(t.identifier('args'), t.identifier('where')),
+      t.memberExpression(t.identifier('args'), t.identifier('data')),
+      t.stringLiteral(bulkUpdateInputTypeName),
+      t.identifier('connectionFieldsMap'),
+    ];
+    classBody.push(
+      createClassMethod(
+        'bulkUpdate',
+        createTypeParam(selectTypeName),
+        [implParam],
+        retType(sRef()),
+        buildMethodBody(
+          'buildBulkUpdateDocument',
+          bodyArgs,
+          'mutation',
+          typeName,
+          bulkUpdateMutationName,
+        ),
+      ),
+    );
+  }
+
+  // ── bulkDelete ─────────────────────────────────────────────────────────
+  if (bulkDeleteMutationName) {
+    const bulkDeleteInputTypeName = `BulkDelete${typeName}Input`;
+    const argsType = (sel: t.TSType) =>
+      t.tsTypeReference(
+        t.identifier('BulkDeleteArgs'),
+        t.tsTypeParameterInstantiation([
+          sel,
+          t.tsTypeReference(t.identifier(whereTypeName)),
+        ]),
+      );
+    const retType = (sel: t.TSType) =>
+      t.tsTypeAnnotation(
+        t.tsTypeReference(
+          t.identifier('QueryBuilder'),
+          t.tsTypeParameterInstantiation([
+            t.tsTypeReference(
+              t.identifier('BulkMutationResult'),
+              t.tsTypeParameterInstantiation([
+                t.tsTypeReference(
+                  t.identifier('InferSelectResult'),
+                  t.tsTypeParameterInstantiation([
+                    t.tsTypeReference(t.identifier(relationTypeName)),
+                    sel,
+                  ]),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      );
+
+    const implParam = t.identifier('args');
+    implParam.typeAnnotation = t.tsTypeAnnotation(
+      t.tsIntersectionType([
+        argsType(sRef()),
+        t.tsTypeLiteral([requiredSelectProp()]),
+        strictSelectGuard(selectTypeName),
+      ]),
+    );
+    const selectExpr = t.memberExpression(
+      t.identifier('args'),
+      t.identifier('select'),
+    );
+    const bodyArgs = [
+      t.stringLiteral(typeName),
+      t.stringLiteral(bulkDeleteMutationName),
+      selectExpr,
+      t.memberExpression(t.identifier('args'), t.identifier('where')),
+      t.stringLiteral(bulkDeleteInputTypeName),
+      t.identifier('connectionFieldsMap'),
+    ];
+    classBody.push(
+      createClassMethod(
+        'bulkDelete',
+        createTypeParam(selectTypeName),
+        [implParam],
+        retType(sRef()),
+        buildMethodBody(
+          'buildBulkDeleteDocument',
+          bodyArgs,
+          'mutation',
+          typeName,
+          bulkDeleteMutationName,
         ),
       ),
     );
