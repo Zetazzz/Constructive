@@ -1,32 +1,32 @@
 import type { NodeTypeDefinition } from '../types';
 
 /**
- * Image-specific preset of DataFileEmbedding.
+ * Image-specific preset of ProcessFileEmbedding.
  *
  * At the SQL layer, data_image_embedding delegates entirely to
  * data_file_embedding, merging image-specific defaults before forwarding.
- * The parameter schema here is intentionally identical to DataFileEmbedding;
+ * The parameter schema here is intentionally identical to ProcessFileEmbedding;
  * only the defaults differ (dimensions: 512, task: process_image_embedding,
  * mime_patterns: ['image/%']).
  *
  * Kept as a separate node type for backward compatibility — existing
- * blueprints that reference DataImageEmbedding continue to work unchanged.
+ * blueprints that reference ProcessImageEmbedding continue to work unchanged.
  */
-export const DataImageEmbedding: NodeTypeDefinition = {
-  name: 'DataImageEmbedding',
+export const ProcessImageEmbedding: NodeTypeDefinition = {
+  name: 'ProcessImageEmbedding',
   slug: 'data_image_embedding',
-  category: 'data',
+  category: 'process',
   display_name: 'Image Embedding',
   description:
-    'Image-specific preset of DataFileEmbedding. Delegates to DataFileEmbedding ' +
+    'Image-specific preset of ProcessFileEmbedding. Delegates to ProcessFileEmbedding ' +
     'with image-oriented defaults: dimensions=512 (CLIP), mime_patterns=[\'image/%\'], ' +
     'task_identifier=\'process_image_embedding\', direct mode (no extraction). ' +
-    'Accepts all DataFileEmbedding parameters — any overrides are forwarded through.',
+    'Accepts all ProcessFileEmbedding parameters — any overrides are forwarded through.',
   parameter_schema: {
     type: 'object',
     properties: {
 
-      // ── Vector config (passed through to DataFileEmbedding) ──────────
+      // ── Vector config (passed through to ProcessFileEmbedding) ──────────
       field_name: {
         type: 'string',
         format: 'column-ref',
@@ -103,7 +103,7 @@ export const DataImageEmbedding: NodeTypeDefinition = {
       extraction: {
         type: 'object',
         description:
-          'Text extraction configuration. Forwarded to DataFileEmbedding. ' +
+          'Text extraction configuration. Forwarded to ProcessFileEmbedding. ' +
           'When present, enables extract mode (e.g., OCR for images).',
         properties: {
           text_field: {
@@ -121,11 +121,11 @@ export const DataImageEmbedding: NodeTypeDefinition = {
         }
       },
 
-      // ── Chunking config (optional — forwarded to DataFileEmbedding) ─
+      // ── Chunking config (optional — forwarded to ProcessFileEmbedding) ─
       chunks: {
         type: 'object',
         description:
-          'Chunking configuration. Forwarded to DataFileEmbedding. ' +
+          'Chunking configuration. Forwarded to ProcessFileEmbedding. ' +
           'Only meaningful when extraction is also provided.',
         properties: {
           content_field_name: {

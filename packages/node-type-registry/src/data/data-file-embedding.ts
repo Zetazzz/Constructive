@@ -1,16 +1,16 @@
 import type { NodeTypeDefinition } from '../types';
 
-export const DataFileEmbedding: NodeTypeDefinition = {
-  name: 'DataFileEmbedding',
+export const ProcessFileEmbedding: NodeTypeDefinition = {
+  name: 'ProcessFileEmbedding',
   slug: 'data_file_embedding',
-  category: 'data',
+  category: 'process',
   display_name: 'File Embedding',
   description:
     'Generic, MIME-scoped embedding node for file tables. Supports two modes: ' +
     'direct (whole-file to single vector, e.g. CLIP for images) when extraction ' +
     'is omitted, or extract (file to text to chunks to per-chunk vectors) when ' +
-    'extraction config is provided. Composes SearchVector + DataJobTrigger + ' +
-    'DataChunks (enabled by default in extract mode) internally. Multiple ' +
+    'extraction config is provided. Composes SearchVector + JobTrigger + ' +
+    'ProcessChunks (enabled by default in extract mode) internally. Multiple ' +
     'instances can coexist on the same table with different MIME scopes, field ' +
     'names, and embedding strategies.',
   parameter_schema: {
@@ -122,14 +122,14 @@ export const DataFileEmbedding: NodeTypeDefinition = {
       include_chunks: {
         type: 'boolean',
         description:
-          'Whether to create a chunks table via DataChunks. Defaults to true ' +
+          'Whether to create a chunks table via ProcessChunks. Defaults to true ' +
           'when extraction is provided, false in direct mode. Set explicitly ' +
           'to override.',
       },
       chunks: {
         type: 'object',
         description:
-          'Chunking configuration passed through to DataChunks. When ' +
+          'Chunking configuration passed through to ProcessChunks. When ' +
           'include_chunks is true (or defaults to true in extract mode), these ' +
           'params configure the chunks table, embedding dimensions, strategy, etc.',
         properties: {
