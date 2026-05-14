@@ -37,10 +37,100 @@ export interface TriggerCondition {
 }
 /**
  * ===========================================================================
+ * Check node type parameters
+ * ===========================================================================
+ */
+;
+/** Adds a CHECK constraint that validates a column value is greater than a threshold (single-column: column > value) or that one column is greater than another (cross-column: columns[0] > columns[1]). Compiled via AST helpers. */
+export interface CheckGreaterThanParams {
+  /* Single column to compare against value (mutually exclusive with columns) */
+  column?: string;
+  /* Threshold value for single-column comparison (column > value) */
+  value?: number;
+  /* Two columns for cross-column comparison (columns[0] > columns[1]) */
+  columns?: string[];
+}
+/** Adds a CHECK constraint that validates a column value is less than a threshold (single-column: column < value) or that one column is less than another (cross-column: columns[0] < columns[1]). Compiled via AST helpers. */
+export interface CheckLessThanParams {
+  /* Single column to compare against value (mutually exclusive with columns) */
+  column?: string;
+  /* Threshold value for single-column comparison (column < value) */
+  value?: number;
+  /* Two columns for cross-column comparison (columns[0] < columns[1]) */
+  columns?: string[];
+}
+/** Adds a CHECK constraint that validates two columns are not equal (columns[0] != columns[1]). Useful for preventing self-referencing rows. Compiled via AST helpers. */
+export interface CheckNotEqualParams {
+  /* Two columns that must not be equal */
+  columns: string[];
+}
+/** Adds a CHECK constraint that validates a column value is one of an allowed set (e.g. tier IN ('free', 'paid', 'custom')). Compiled to column = ANY(ARRAY[...]) via AST helpers. */
+export interface CheckOneOfParams {
+  /* Column to validate against the allowed values */
+  column: string;
+  /* Array of allowed values for the column */
+  values: string[];
+}
+/**
+ * ===========================================================================
  * Data node type parameters
  * ===========================================================================
  */
 ;
+/** Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database. */
+export interface DataAggregateLimitCounterParams {
+  /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
+  limit_name: string;
+  /* Column on the target table that holds the entity id for aggregate limit lookup */
+  entity_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
+export interface DataBillingMeterParams {
+  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
+  meter_slug: string;
+  /* Column on the target table that holds the entity id for billing */
+  entity_field?: string;
+  /* Units to record per event (default 1) */
+  quantity?: number;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/** Enables bulk mutation smart tags on a table. When provisioned, adds @behavior tags for the selected bulk operations (insert, upsert, update, delete). Requires the graphile-bulk-mutations plugin. */
+export interface DataBulkParams {
+  /* Enable bulk insert (+bulkInsert) */
+  insert?: boolean;
+  /* Enable bulk upsert (+bulkUpsert) */
+  upsert?: boolean;
+  /* Enable bulk update (+bulkUpdate) */
+  update?: boolean;
+  /* Enable bulk delete (+bulkDelete) */
+  delete?: boolean;
+}
+/** Creates a chunked-embedding child table for any parent table. Provisions the chunks table with content, chunk_index, embedding vector, metadata, HNSW index, inherited RLS, and optional job trigger for automatic text splitting. Composed internally by DataFileEmbedding (enabled by default in extract mode) but can also be used standalone. */
+export interface DataChunksParams {
+  /* Name of the text content column in the chunks table */
+  content_field_name?: string;
+  /* Maximum number of characters per chunk */
+  chunk_size?: number;
+  /* Number of overlapping characters between consecutive chunks */
+  chunk_overlap?: number;
+  /* Strategy for splitting text into chunks */
+  chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+  /* Vector dimensions for per-chunk embeddings */
+  dimensions?: number;
+  /* Distance metric for the HNSW index on chunk embeddings */
+  metric?: 'cosine' | 'l2' | 'ip';
+  /* Override the chunks table name. Defaults to {parent_table}_chunks. */
+  chunks_table_name?: string;
+  /* Field names from the parent table to copy into chunk metadata */
+  metadata_fields?: string[];
+  /* Whether to create a job trigger that auto-enqueues chunking on parent INSERT/UPDATE */
+  enqueue_chunking_job?: boolean;
+  /* Task identifier for the chunking job queue */
+  chunking_task_name?: string;
+}
 /** Creates a derived text field that automatically concatenates multiple source fields via BEFORE INSERT/UPDATE triggers. Used to produce a unified text representation (e.g., embedding_text) from multiple columns on a table. The trigger fires with '_000' prefix to run before Search* triggers alphabetically. */
 export interface DataCompositeFieldParams {
   /* Name of the derived text field to create (default: 'embedding_text') */
@@ -68,6 +158,50 @@ export interface DataEntityMembershipParams {
   /* If true, adds a foreign key constraint from entity_id to the users table */
   include_user_fk?: boolean;
 }
+/** Generic, MIME-scoped embedding node for file tables. Supports two modes: direct (whole-file to single vector, e.g. CLIP for images) when extraction is omitted, or extract (file to text to chunks to per-chunk vectors) when extraction config is provided. Composes SearchVector + DataJobTrigger + DataChunks (enabled by default in extract mode) internally. Multiple instances can coexist on the same table with different MIME scopes, field names, and embedding strategies. */
+export interface DataFileEmbeddingParams {
+  /* Name of the vector embedding column */
+  field_name?: string;
+  /* Vector dimensions (e.g. 512 for CLIP, 768 for nomic, 1536 for ada-002) */
+  dimensions?: number;
+  /* Index type for similarity search */
+  index_method?: 'hnsw' | 'ivfflat';
+  /* Distance metric */
+  metric?: 'cosine' | 'l2' | 'ip';
+  /* Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}. */
+  index_options?: {
+    [key: string]: unknown;
+  };
+  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['image/%'], ['application/pdf', 'text/%'], ['audio/%']. */
+  mime_patterns?: string[];
+  /* Job task identifier for the worker. In direct mode this is the embedding worker; in extract mode this is the extraction worker. */
+  task_identifier?: string;
+  /* Trigger events that fire the job */
+  events?: ('INSERT' | 'UPDATE')[];
+  /* Custom payload key-to-column mapping for the job trigger */
+  payload_custom?: {
+    [key: string]: unknown;
+  };
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks, field guards, etc. */
+  trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Text extraction configuration. When present, the generator creates extraction output fields on the table and configures SearchVector with source_fields + stale tracking. When absent, the node operates in direct mode (single vector per file, no text extraction). */
+  extraction?: {
+    /* Field to store extracted text/markdown */text_field?: string;
+    /* JSONB field for extraction metadata (page count, language, etc.) */metadata_field?: string;
+  };
+  /* Whether to create a chunks table via DataChunks. Defaults to true when extraction is provided, false in direct mode. Set explicitly to override. */
+  include_chunks?: boolean;
+  /* Chunking configuration passed through to DataChunks. When include_chunks is true (or defaults to true in extract mode), these params configure the chunks table, embedding dimensions, strategy, etc. */
+  chunks?: {
+    /* Name of the text content column in the chunks table */content_field_name?: string;
+    /* Maximum number of characters per chunk */chunk_size?: number;
+    /* Number of overlapping characters between consecutive chunks */chunk_overlap?: number;
+    /* Strategy for splitting text into chunks */chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+    /* Field names from parent to copy into chunk metadata */metadata_fields?: string[];
+    /* Whether to auto-enqueue a chunking job on insert/update */enqueue_chunking_job?: boolean;
+    /* Task identifier for the chunking job queue */chunking_task_name?: string;
+  };
+}
 /** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
 export interface DataFeatureFlagParams {
   /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
@@ -87,23 +221,48 @@ export interface DataIdParams {
   /* Column name for the primary key */
   field_name?: string;
 }
-/** Composition wrapper that creates a vector embedding field with HNSW/IVFFlat index (via SearchVector) and a job trigger with compound conditions (via DataJobTrigger) that fires on INSERT for image files matching mime_type patterns. Designed for storage file tables. */
+/** Image-specific preset of DataFileEmbedding. Delegates to DataFileEmbedding with image-oriented defaults: dimensions=512 (CLIP), mime_patterns=['image/%'], task_identifier='process_image_embedding', direct mode (no extraction). Accepts all DataFileEmbedding parameters — any overrides are forwarded through. */
 export interface DataImageEmbeddingParams {
   /* Name of the vector embedding column */
   field_name?: string;
-  /* Vector dimensions */
+  /* Vector dimensions (default 512 for CLIP-style image embeddings) */
   dimensions?: number;
   /* Index type for similarity search */
   index_method?: 'hnsw' | 'ivfflat';
   /* Distance metric */
   metric?: 'cosine' | 'l2' | 'ip';
-  /* Job task identifier for the embedding worker */
-  task_identifier?: string;
-  /* MIME type LIKE patterns to match (e.g., image/%, video/%). Multiple patterns are OR'd together. */
+  /* Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}. */
+  index_options?: {
+    [key: string]: unknown;
+  };
+  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. */
   mime_patterns?: string[];
+  /* Job task identifier for the image embedding worker */
+  task_identifier?: string;
+  /* Trigger events that fire the job */
+  events?: ('INSERT' | 'UPDATE')[];
   /* Custom payload key-to-column mapping for the job trigger */
   payload_custom?: {
     [key: string]: unknown;
+  };
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
+  trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Text extraction configuration. Forwarded to DataFileEmbedding. When present, enables extract mode (e.g., OCR for images). */
+  extraction?: {
+    /* Field to store extracted text */text_field?: string;
+    /* JSONB field for extraction metadata */metadata_field?: string;
+  };
+  /* Chunking configuration. Forwarded to DataFileEmbedding. Only meaningful when extraction is also provided. */
+  chunks?: {
+    content_field_name?: string;
+    chunk_size?: number;
+    chunk_overlap?: number;
+    chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+    metadata_fields?: {
+      [key: string]: unknown;
+    };
+    enqueue_chunking_job?: boolean;
+    chunking_task_name?: string;
   };
 }
 /** BEFORE UPDATE trigger that prevents changes to a list of specified fields after INSERT. Raises an exception if any of the listed fields have changed. Unlike FieldImmutable (single-field), this handles multiple fields in a single trigger for efficiency. */
@@ -225,6 +384,13 @@ export interface DataPublishableParams {
   published_at_field?: string;
   /* If true, also adds a UUID primary key column with auto-generation */
   include_id?: boolean;
+}
+/** Creates per-table subscriber tables in subscriptions_public with RLS policies derived from source table SELECT policies. Attaches statement-level triggers to emit changes to subscribers. */
+export interface DataRealtimeParams {
+  /* Which DML operations to track with emit_change triggers */
+  operations?: ('INSERT' | 'UPDATE' | 'DELETE')[];
+  /* Custom name for the subscriber table (defaults to {source_table}_subscriber) */
+  subscriber_table_name?: string;
 }
 /** Auto-generates URL-friendly slugs from field values on insert/update. Attaches BEFORE INSERT and BEFORE UPDATE triggers that call inflection.slugify() on the target field. References fields by name in data jsonb. */
 export interface DataSlugParams {
@@ -407,7 +573,7 @@ export interface SearchUnifiedParams {
     /* Decay rate for recency boost (0-1, lower = faster decay) */boost_recency_decay?: number;
   };
 }
-/** Adds a vector embedding column with HNSW or IVFFlat index for similarity search. Supports configurable dimensions, distance metrics (cosine, l2, ip), stale tracking strategies (column, null, hash), and automatic job enqueue triggers for embedding generation. */
+/** Adds a vector embedding column with HNSW or IVFFlat index for similarity search. Supports configurable dimensions, distance metrics (cosine, l2, ip), per-field {field_name}_updated_at timestamp tracking (read-only in GraphQL), and automatic job enqueue triggers for embedding generation. */
 export interface SearchVectorParams {
   /* Name of the vector column */
   field_name?: string;
@@ -421,16 +587,12 @@ export interface SearchVectorParams {
   index_options?: {
     [key: string]: unknown;
   };
-  /* When stale_strategy is column, adds an embedding_stale boolean field */
-  include_stale_field?: boolean;
   /* Column names that feed the embedding. Used by stale trigger to detect content changes. */
   source_fields?: string[];
   /* Auto-create trigger that enqueues embedding generation jobs */
   enqueue_job?: boolean;
   /* Task identifier for the job queue */
   job_task_name?: string;
-  /* Strategy for tracking embedding staleness. column: embedding_stale boolean. null: set embedding to NULL. hash: md5 hash of source fields. */
-  stale_strategy?: 'column' | 'null' | 'hash';
   /* Chunking configuration for long-text embedding. Creates an embedding_chunks record that drives automatic text splitting and per-chunk embedding. Omit to skip chunking. */
   chunks?: {
     /* Name of the text content column in the chunks table */content_field_name?: string;
@@ -475,6 +637,23 @@ export interface AuthzCompositeParams {
 }
 /** Denies all access. Generates FALSE expression. */
 export type AuthzDenyAllParams = {};
+/** Path-scoped file sharing via ltree containment. Grants access when a path_shares row matches the current user, bucket, and an ancestor path with the required permission. */
+export interface AuthzFilePathParams {
+  /* Schema of the path_shares table */
+  shares_schema: string;
+  /* Name of the path_shares table */
+  shares_table: string;
+  /* Schema of the files table (used to qualify column references inside the EXISTS subquery) */
+  files_schema?: string;
+  /* Name of the files table (used to qualify column references inside the EXISTS subquery) */
+  files_table: string;
+  /* Boolean column on the path_shares table that grants the required permission (e.g. can_read, can_write) */
+  permission_field: string;
+  /* Column on the files table referencing the bucket */
+  bucket_field?: string;
+  /* Ltree column on the files table representing the file path */
+  path_field?: string;
+}
 /** Direct equality comparison between a table column and the current user ID. Simplest authorization pattern with no subqueries. */
 export interface AuthzDirectOwnerParams {
   /* Column name containing the owner user ID (e.g., owner_id) */
@@ -825,7 +1004,7 @@ export interface BlueprintField {
 /** An RLS policy entry for a blueprint table. Uses $type to match the blueprint JSON convention. */
 export interface BlueprintPolicy {
   /** Authz* policy type name (e.g., "AuthzDirectOwner", "AuthzAllowAll"). */
-  $type: 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
+  $type: 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
   /** Privileges this policy applies to (e.g., ["select"], ["insert", "update", "delete"]). */
   privileges?: string[];
   /** Whether this policy is permissive (true) or restrictive (false). Defaults to true. */
@@ -949,6 +1128,10 @@ export interface BlueprintStorageConfig {
   default_max_file_size?: number;
   /** CORS allowed origins for the storage module. */
   allowed_origins?: string[];
+  /** Enable deferred upload confirmation via HeadObject. When true, creates SECURITY DEFINER status transition functions (confirm_uploaded, mark_processed) and an AFTER INSERT trigger that enqueues a storage:confirm_upload job. The job verifies the file exists in S3 before transitioning status from requested to uploaded. Defaults to false. */
+  has_confirm_upload?: boolean;
+  /** Delay before the first upload confirmation attempt (PostgreSQL interval string, e.g. "30 seconds"). Only used when has_confirm_upload is true. Defaults to "30 seconds". */
+  confirm_upload_delay?: string;
   /** Per-table overrides for storage tables. Each key targets a specific storage table (files, buckets) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision targeting the corresponding table. When a key includes policies[], those REPLACE the default storage policies for that table; tables without a key still get defaults. */
   provisions?: {
     files?: BlueprintEntityTableProvision;
@@ -1009,7 +1192,7 @@ export interface BlueprintEntityType {
  */
 ;
 /** String shorthand -- just the node type name. */
-export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'DataImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJobTrigger' | 'DataLimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
+export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'DataAggregateLimitCounter' | 'DataBillingMeter' | 'DataBulk' | 'DataChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataFileEmbedding' | 'DataFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'DataImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJobTrigger' | 'DataLimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
 /** Object form -- { $type, data } with typed parameters. */
 export type BlueprintNodeObject = {
   $type: 'AuthzAllowAll';
@@ -1023,6 +1206,9 @@ export type BlueprintNodeObject = {
 } | {
   $type: 'AuthzDenyAll';
   data?: Record<string, never>;
+} | {
+  $type: 'AuthzFilePath';
+  data: AuthzFilePathParams;
 } | {
   $type: 'AuthzDirectOwner';
   data: AuthzDirectOwnerParams;
@@ -1060,6 +1246,30 @@ export type BlueprintNodeObject = {
   $type: 'AuthzTemporal';
   data: AuthzTemporalParams;
 } | {
+  $type: 'CheckGreaterThan';
+  data: CheckGreaterThanParams;
+} | {
+  $type: 'CheckLessThan';
+  data: CheckLessThanParams;
+} | {
+  $type: 'CheckNotEqual';
+  data: CheckNotEqualParams;
+} | {
+  $type: 'CheckOneOf';
+  data: CheckOneOfParams;
+} | {
+  $type: 'DataAggregateLimitCounter';
+  data: DataAggregateLimitCounterParams;
+} | {
+  $type: 'DataBillingMeter';
+  data: DataBillingMeterParams;
+} | {
+  $type: 'DataBulk';
+  data: DataBulkParams;
+} | {
+  $type: 'DataChunks';
+  data: DataChunksParams;
+} | {
   $type: 'DataCompositeField';
   data: DataCompositeFieldParams;
 } | {
@@ -1068,6 +1278,9 @@ export type BlueprintNodeObject = {
 } | {
   $type: 'DataEntityMembership';
   data: DataEntityMembershipParams;
+} | {
+  $type: 'DataFileEmbedding';
+  data: DataFileEmbeddingParams;
 } | {
   $type: 'DataFeatureFlag';
   data: DataFeatureFlagParams;
@@ -1110,6 +1323,9 @@ export type BlueprintNodeObject = {
 } | {
   $type: 'DataPublishable';
   data: DataPublishableParams;
+} | {
+  $type: 'DataRealtime';
+  data: DataRealtimeParams;
 } | {
   $type: 'DataSlug';
   data: DataSlugParams;
