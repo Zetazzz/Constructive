@@ -62,7 +62,8 @@ export const PresetB2b: ModulePreset = {
     'profiles_module:org',
     'hierarchy_module:org',
     'invites_module:app',
-    'invites_module:org'
+    'invites_module:org',
+    'devices_module'
   ],
   includes_notes: {
     'memberships_module:org': 'Org-scoped membership rows — every user in an org gets one.',
@@ -76,7 +77,8 @@ export const PresetB2b: ModulePreset = {
     'profiles_module:org': 'Org-scoped user profile (per org a user belongs to).',
     'hierarchy_module:org': 'Nested org structures (parent / child orgs).',
     'invites_module:app': 'App-level invites (rare — usually platform admin adds another admin).',
-    'invites_module:org': 'Org-level invites (the common case — invite a teammate into a workspace).'
+    'invites_module:org': 'Org-level invites (the common case — invite a teammate into a workspace).',
+    devices_module: 'Device tracking and trusted-device MFA bypass.'
   },
   omits_notes: {
     storage_module: 'Add separately if you need file uploads tied to orgs.',
