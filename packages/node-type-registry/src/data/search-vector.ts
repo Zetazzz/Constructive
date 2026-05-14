@@ -44,9 +44,9 @@ export const SearchVector: NodeTypeDefinition = {
         description: 'Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}.',
         default: {}
       },
-      include_stale_field: {
+      include_updated_at_field: {
         type: 'boolean',
-        description: 'When stale_strategy is column, adds an embedding_stale boolean field',
+        description: 'When stale_strategy is column, adds a per-field {field_name}_updated_at timestamptz column (read-only in GraphQL). NULL means needs computation; set by the worker on completion.',
         default: true
       },
       source_fields: {
@@ -74,7 +74,7 @@ export const SearchVector: NodeTypeDefinition = {
           'null',
           'hash'
         ],
-        description: 'Strategy for tracking embedding staleness. column: embedding_stale boolean. null: set embedding to NULL. hash: md5 hash of source fields.',
+        description: 'Strategy for tracking embedding staleness. column: {field_name}_updated_at timestamptz (NULL = needs computation). null: set embedding to NULL. hash: {field_name}_source_hash md5 of source fields.',
         default: 'column'
       },
       chunks: {
