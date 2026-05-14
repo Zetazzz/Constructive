@@ -101,6 +101,10 @@ export interface Table {
   pluralName: string | null;
   singularName: string | null;
   tags: string[] | null;
+  partitioned: boolean | null;
+  partitionStrategy: string | null;
+  partitionKeyNames: string[] | null;
+  partitionKeyTypes: string[] | null;
   inheritsId: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -161,19 +165,6 @@ export interface SpatialRelation {
   module: string | null;
   scope: number | null;
   tags: string[] | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
-export interface Partition {
-  id: string | null;
-  databaseId: string | null;
-  tableId: string | null;
-  strategy: string | null;
-  partitionKeyId: string | null;
-  interval: string | null;
-  retention: string | null;
-  lookahead: number | null;
-  namingPattern: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -543,6 +534,19 @@ export interface DatabaseTransfer {
   createdAt: string | null;
   updatedAt: string | null;
   completedAt: string | null;
+}
+export interface Partition {
+  id: string | null;
+  databaseId: string | null;
+  tableId: string | null;
+  strategy: string | null;
+  partitionKeyIds: string[] | null;
+  interval: string | null;
+  retention: string | null;
+  lookahead: number | null;
+  namingPattern: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 export interface Api {
   id: string | null;

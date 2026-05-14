@@ -39,7 +39,6 @@ csdk auth set-token <your-token>
 | `check-constraint` | checkConstraint CRUD operations |
 | `field` | field CRUD operations |
 | `spatial-relation` | spatialRelation CRUD operations |
-| `partition` | partition CRUD operations |
 | `foreign-key-constraint` | foreignKeyConstraint CRUD operations |
 | `full-text-search` | fullTextSearch CRUD operations |
 | `index` | index CRUD operations |
@@ -71,6 +70,7 @@ csdk auth set-token <your-token>
 | `cors-setting` | corsSetting CRUD operations |
 | `trigger-function` | triggerFunction CRUD operations |
 | `database-transfer` | databaseTransfer CRUD operations |
+| `partition` | partition CRUD operations |
 | `api` | api CRUD operations |
 | `site` | site CRUD operations |
 | `app` | app CRUD operations |
@@ -577,12 +577,16 @@ CRUD operations for Table records.
 | `pluralName` | String |
 | `singularName` | String |
 | `tags` | String |
+| `partitioned` | Boolean |
+| `partitionStrategy` | String |
+| `partitionKeyNames` | String |
+| `partitionKeyTypes` | String |
 | `inheritsId` | UUID |
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
 **Required create fields:** `schemaId`, `name`
-**Optional create fields (backend defaults):** `databaseId`, `label`, `description`, `smartTags`, `category`, `module`, `scope`, `useRls`, `timestamps`, `peoplestamps`, `pluralName`, `singularName`, `tags`, `inheritsId`
+**Optional create fields (backend defaults):** `databaseId`, `label`, `description`, `smartTags`, `category`, `module`, `scope`, `useRls`, `timestamps`, `peoplestamps`, `pluralName`, `singularName`, `tags`, `partitioned`, `partitionStrategy`, `partitionKeyNames`, `partitionKeyTypes`, `inheritsId`
 
 ### `check-constraint`
 
@@ -699,38 +703,6 @@ CRUD operations for SpatialRelation records.
 
 **Required create fields:** `tableId`, `fieldId`, `refTableId`, `refFieldId`, `name`, `operator`
 **Optional create fields (backend defaults):** `databaseId`, `paramName`, `category`, `module`, `scope`, `tags`
-
-### `partition`
-
-CRUD operations for Partition records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all partition records |
-| `find-first` | Find first matching partition record |
-| `get` | Get a partition by id |
-| `create` | Create a new partition |
-| `update` | Update an existing partition |
-| `delete` | Delete a partition |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `databaseId` | UUID |
-| `tableId` | UUID |
-| `strategy` | String |
-| `partitionKeyId` | UUID |
-| `interval` | String |
-| `retention` | String |
-| `lookahead` | Int |
-| `namingPattern` | String |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-
-**Required create fields:** `databaseId`, `tableId`, `strategy`, `partitionKeyId`
-**Optional create fields (backend defaults):** `interval`, `retention`, `lookahead`, `namingPattern`
 
 ### `foreign-key-constraint`
 
@@ -1682,6 +1654,38 @@ CRUD operations for DatabaseTransfer records.
 
 **Required create fields:** `databaseId`, `targetOwnerId`, `initiatedBy`
 **Optional create fields (backend defaults):** `sourceApproved`, `targetApproved`, `sourceApprovedAt`, `targetApprovedAt`, `status`, `notes`, `expiresAt`, `completedAt`
+
+### `partition`
+
+CRUD operations for Partition records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all partition records |
+| `find-first` | Find first matching partition record |
+| `get` | Get a partition by id |
+| `create` | Create a new partition |
+| `update` | Update an existing partition |
+| `delete` | Delete a partition |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `databaseId` | UUID |
+| `tableId` | UUID |
+| `strategy` | String |
+| `partitionKeyIds` | UUID |
+| `interval` | String |
+| `retention` | String |
+| `lookahead` | Int |
+| `namingPattern` | String |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+
+**Required create fields:** `databaseId`, `tableId`, `strategy`, `partitionKeyIds`
+**Optional create fields (backend defaults):** `interval`, `retention`, `lookahead`, `namingPattern`
 
 ### `api`
 
@@ -5858,6 +5862,7 @@ signUp
   | `--input.rememberMe` | Boolean |
   | `--input.credentialKind` | String |
   | `--input.csrfToken` | String |
+  | `--input.deviceToken` | String |
 
 ### `request-cross-origin-token`
 

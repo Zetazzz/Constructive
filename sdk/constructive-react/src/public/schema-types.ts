@@ -249,33 +249,6 @@ export type SpatialRelationOrderBy =
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
   | 'UPDATED_AT_DESC';
-/** Methods to use when ordering `Partition`. */
-export type PartitionOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'DATABASE_ID_ASC'
-  | 'DATABASE_ID_DESC'
-  | 'TABLE_ID_ASC'
-  | 'TABLE_ID_DESC'
-  | 'STRATEGY_ASC'
-  | 'STRATEGY_DESC'
-  | 'PARTITION_KEY_ID_ASC'
-  | 'PARTITION_KEY_ID_DESC'
-  | 'INTERVAL_ASC'
-  | 'INTERVAL_DESC'
-  | 'RETENTION_ASC'
-  | 'RETENTION_DESC'
-  | 'LOOKAHEAD_ASC'
-  | 'LOOKAHEAD_DESC'
-  | 'NAMING_PATTERN_ASC'
-  | 'NAMING_PATTERN_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC';
 /** Methods to use when ordering `Field`. */
 export type FieldOrderBy =
   | 'NATURAL'
@@ -900,6 +873,14 @@ export type TableOrderBy =
   | 'SINGULAR_NAME_DESC'
   | 'TAGS_ASC'
   | 'TAGS_DESC'
+  | 'PARTITIONED_ASC'
+  | 'PARTITIONED_DESC'
+  | 'PARTITION_STRATEGY_ASC'
+  | 'PARTITION_STRATEGY_DESC'
+  | 'PARTITION_KEY_NAMES_ASC'
+  | 'PARTITION_KEY_NAMES_DESC'
+  | 'PARTITION_KEY_TYPES_ASC'
+  | 'PARTITION_KEY_TYPES_DESC'
   | 'INHERITS_ID_ASC'
   | 'INHERITS_ID_DESC'
   | 'CREATED_AT_ASC'
@@ -1170,6 +1151,33 @@ export type DatabaseTransferOrderBy =
   | 'UPDATED_AT_DESC'
   | 'COMPLETED_AT_ASC'
   | 'COMPLETED_AT_DESC';
+/** Methods to use when ordering `Partition`. */
+export type PartitionOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'DATABASE_ID_ASC'
+  | 'DATABASE_ID_DESC'
+  | 'TABLE_ID_ASC'
+  | 'TABLE_ID_DESC'
+  | 'STRATEGY_ASC'
+  | 'STRATEGY_DESC'
+  | 'PARTITION_KEY_IDS_ASC'
+  | 'PARTITION_KEY_IDS_DESC'
+  | 'INTERVAL_ASC'
+  | 'INTERVAL_DESC'
+  | 'RETENTION_ASC'
+  | 'RETENTION_DESC'
+  | 'LOOKAHEAD_ASC'
+  | 'LOOKAHEAD_DESC'
+  | 'NAMING_PATTERN_ASC'
+  | 'NAMING_PATTERN_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC';
 /** Methods to use when ordering `Api`. */
 export type ApiOrderBy =
   | 'NATURAL'
@@ -6666,6 +6674,14 @@ export interface TableFilter {
   singularName?: StringFilter;
   /** Filter by the object’s `tags` field. */
   tags?: StringListFilter;
+  /** Filter by the object’s `partitioned` field. */
+  partitioned?: BooleanFilter;
+  /** Filter by the object’s `partitionStrategy` field. */
+  partitionStrategy?: StringFilter;
+  /** Filter by the object’s `partitionKeyNames` field. */
+  partitionKeyNames?: StringListFilter;
+  /** Filter by the object’s `partitionKeyTypes` field. */
+  partitionKeyTypes?: StringListFilter;
   /** Filter by the object’s `inheritsId` field. */
   inheritsId?: UUIDFilter;
   /** Filter by the object’s `createdAt` field. */
@@ -6877,10 +6893,6 @@ export interface FieldFilter {
   spatialRelationsByRefFieldId?: FieldToManySpatialRelationFilter;
   /** `spatialRelationsByRefFieldId` exist. */
   spatialRelationsByRefFieldIdExist?: boolean;
-  /** Filter by the object’s `partitionsByPartitionKeyId` relation. */
-  partitionsByPartitionKeyId?: FieldToManyPartitionFilter;
-  /** `partitionsByPartitionKeyId` exist. */
-  partitionsByPartitionKeyIdExist?: boolean;
 }
 /** A filter to be used against many `SpatialRelation` object types. All fields are combined with a logical ‘and.’ */
 export interface FieldToManySpatialRelationFilter {
@@ -6937,52 +6949,6 @@ export interface SpatialRelationFilter {
   refField?: FieldFilter;
   /** Filter by the object’s `refTable` relation. */
   refTable?: TableFilter;
-  /** Filter by the object’s `table` relation. */
-  table?: TableFilter;
-}
-/** A filter to be used against many `Partition` object types. All fields are combined with a logical ‘and.’ */
-export interface FieldToManyPartitionFilter {
-  /** Filters to entities where at least one related entity matches. */
-  some?: PartitionFilter;
-  /** Filters to entities where every related entity matches. */
-  every?: PartitionFilter;
-  /** Filters to entities where no related entity matches. */
-  none?: PartitionFilter;
-}
-/** A filter to be used against `Partition` object types. All fields are combined with a logical ‘and.’ */
-export interface PartitionFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `databaseId` field. */
-  databaseId?: UUIDFilter;
-  /** Filter by the object’s `tableId` field. */
-  tableId?: UUIDFilter;
-  /** Filter by the object’s `strategy` field. */
-  strategy?: StringFilter;
-  /** Filter by the object’s `partitionKeyId` field. */
-  partitionKeyId?: UUIDFilter;
-  /** Filter by the object’s `interval` field. */
-  interval?: StringFilter;
-  /** Filter by the object’s `retention` field. */
-  retention?: StringFilter;
-  /** Filter by the object’s `lookahead` field. */
-  lookahead?: IntFilter;
-  /** Filter by the object’s `namingPattern` field. */
-  namingPattern?: StringFilter;
-  /** Filter by the object’s `createdAt` field. */
-  createdAt?: DatetimeFilter;
-  /** Filter by the object’s `updatedAt` field. */
-  updatedAt?: DatetimeFilter;
-  /** Checks for all expressions in this list. */
-  and?: PartitionFilter[];
-  /** Checks for any expressions in this list. */
-  or?: PartitionFilter[];
-  /** Negates the expression. */
-  not?: PartitionFilter;
-  /** Filter by the object’s `database` relation. */
-  database?: DatabaseFilter;
-  /** Filter by the object’s `partitionKey` relation. */
-  partitionKey?: FieldFilter;
   /** Filter by the object’s `table` relation. */
   table?: TableFilter;
 }
@@ -7645,6 +7611,41 @@ export interface TableToManySpatialRelationFilter {
   every?: SpatialRelationFilter;
   /** Filters to entities where no related entity matches. */
   none?: SpatialRelationFilter;
+}
+/** A filter to be used against `Partition` object types. All fields are combined with a logical ‘and.’ */
+export interface PartitionFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `databaseId` field. */
+  databaseId?: UUIDFilter;
+  /** Filter by the object’s `tableId` field. */
+  tableId?: UUIDFilter;
+  /** Filter by the object’s `strategy` field. */
+  strategy?: StringFilter;
+  /** Filter by the object’s `partitionKeyIds` field. */
+  partitionKeyIds?: UUIDListFilter;
+  /** Filter by the object’s `interval` field. */
+  interval?: StringFilter;
+  /** Filter by the object’s `retention` field. */
+  retention?: StringFilter;
+  /** Filter by the object’s `lookahead` field. */
+  lookahead?: IntFilter;
+  /** Filter by the object’s `namingPattern` field. */
+  namingPattern?: StringFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Filter by the object’s `updatedAt` field. */
+  updatedAt?: DatetimeFilter;
+  /** Checks for all expressions in this list. */
+  and?: PartitionFilter[];
+  /** Checks for any expressions in this list. */
+  or?: PartitionFilter[];
+  /** Negates the expression. */
+  not?: PartitionFilter;
+  /** Filter by the object’s `database` relation. */
+  database?: DatabaseFilter;
+  /** Filter by the object’s `table` relation. */
+  table?: TableFilter;
 }
 /** A filter to be used against many `SecureTableProvision` object types. All fields are combined with a logical ‘and.’ */
 export interface TableToManySecureTableProvisionFilter {
@@ -12310,6 +12311,7 @@ export interface SignUpInput {
   rememberMe?: boolean;
   credentialKind?: string;
   csrfToken?: string;
+  deviceToken?: string;
 }
 export interface RequestCrossOriginTokenInput {
   clientMutationId?: string;
@@ -13794,7 +13796,7 @@ export interface PartitionInput {
   databaseId: string;
   tableId: string;
   strategy: string;
-  partitionKeyId: string;
+  partitionKeyIds: string[];
   interval?: string;
   retention?: string;
   lookahead?: number;
@@ -15182,33 +15184,6 @@ export interface ForeignKeyConstraintInput {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface CreateTableInput {
-  clientMutationId?: string;
-  /** The `Table` to be created by this mutation. */
-  table: TableInput;
-}
-/** An input for mutations affecting `Table` */
-export interface TableInput {
-  id?: string;
-  databaseId?: string;
-  schemaId: string;
-  name: string;
-  label?: string;
-  description?: string;
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  useRls?: boolean;
-  timestamps?: boolean;
-  peoplestamps?: boolean;
-  pluralName?: string;
-  singularName?: string;
-  tags?: string[];
-  inheritsId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 export interface CreateRelationProvisionInput {
   clientMutationId?: string;
   /** The `RelationProvision` to be created by this mutation. */
@@ -15629,6 +15604,37 @@ export interface FieldInput {
   category?: ObjectCategory;
   module?: string;
   scope?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface CreateTableInput {
+  clientMutationId?: string;
+  /** The `Table` to be created by this mutation. */
+  table: TableInput;
+}
+/** An input for mutations affecting `Table` */
+export interface TableInput {
+  id?: string;
+  databaseId?: string;
+  schemaId: string;
+  name: string;
+  label?: string;
+  description?: string;
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  useRls?: boolean;
+  timestamps?: boolean;
+  peoplestamps?: boolean;
+  pluralName?: string;
+  singularName?: string;
+  tags?: string[];
+  partitioned?: boolean;
+  partitionStrategy?: string;
+  partitionKeyNames?: string[];
+  partitionKeyTypes?: string[];
+  inheritsId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -17208,7 +17214,7 @@ export interface PartitionPatch {
   databaseId?: string;
   tableId?: string;
   strategy?: string;
-  partitionKeyId?: string;
+  partitionKeyIds?: string[];
   interval?: string;
   retention?: string;
   lookahead?: number;
@@ -18629,34 +18635,6 @@ export interface ForeignKeyConstraintPatch {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface UpdateTableInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `Table` being updated. */
-  tablePatch: TablePatch;
-}
-/** Represents an update to a `Table`. Fields that are set will be updated. */
-export interface TablePatch {
-  id?: string;
-  databaseId?: string;
-  schemaId?: string;
-  name?: string;
-  label?: string;
-  description?: string;
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  useRls?: boolean;
-  timestamps?: boolean;
-  peoplestamps?: boolean;
-  pluralName?: string;
-  singularName?: string;
-  tags?: string[];
-  inheritsId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 export interface UpdateRelationProvisionInput {
   clientMutationId?: string;
   /** Unique identifier for this relation provision row. */
@@ -19084,6 +19062,38 @@ export interface FieldPatch {
   category?: ObjectCategory;
   module?: string;
   scope?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface UpdateTableInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `Table` being updated. */
+  tablePatch: TablePatch;
+}
+/** Represents an update to a `Table`. Fields that are set will be updated. */
+export interface TablePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  name?: string;
+  label?: string;
+  description?: string;
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  useRls?: boolean;
+  timestamps?: boolean;
+  peoplestamps?: boolean;
+  pluralName?: string;
+  singularName?: string;
+  tags?: string[];
+  partitioned?: boolean;
+  partitionStrategy?: string;
+  partitionKeyNames?: string[];
+  partitionKeyTypes?: string[];
+  inheritsId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -19754,10 +19764,6 @@ export interface DeleteForeignKeyConstraintInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteTableInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface DeleteRelationProvisionInput {
   clientMutationId?: string;
   /** Unique identifier for this relation provision row. */
@@ -19777,6 +19783,10 @@ export interface DeleteUserAuthModuleInput {
   id: string;
 }
 export interface DeleteFieldInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteTableInput {
   clientMutationId?: string;
   id: string;
 }
@@ -20781,13 +20791,6 @@ export interface ForeignKeyConstraintConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `Table` values. */
-export interface TableConnection {
-  nodes: Table[];
-  edges: TableEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `RelationProvision` values. */
 export interface RelationProvisionConnection {
   nodes: RelationProvision[];
@@ -20820,6 +20823,13 @@ export interface UserAuthModuleConnection {
 export interface FieldConnection {
   nodes: Field[];
   edges: FieldEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `Table` values. */
+export interface TableConnection {
+  nodes: Table[];
+  edges: TableEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -21846,12 +21856,6 @@ export interface CreateForeignKeyConstraintPayload {
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface CreateTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was created by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface CreateRelationProvisionPayload {
   clientMutationId?: string | null;
   /** The `RelationProvision` that was created by this mutation. */
@@ -21881,6 +21885,12 @@ export interface CreateFieldPayload {
   /** The `Field` that was created by this mutation. */
   field?: Field | null;
   fieldEdge?: FieldEdge | null;
+}
+export interface CreateTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was created by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface CreateLimitsModulePayload {
   clientMutationId?: string | null;
@@ -22680,12 +22690,6 @@ export interface UpdateForeignKeyConstraintPayload {
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface UpdateTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was updated by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface UpdateRelationProvisionPayload {
   clientMutationId?: string | null;
   /** The `RelationProvision` that was updated by this mutation. */
@@ -22715,6 +22719,12 @@ export interface UpdateFieldPayload {
   /** The `Field` that was updated by this mutation. */
   field?: Field | null;
   fieldEdge?: FieldEdge | null;
+}
+export interface UpdateTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was updated by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface UpdateLimitsModulePayload {
   clientMutationId?: string | null;
@@ -23514,12 +23524,6 @@ export interface DeleteForeignKeyConstraintPayload {
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface DeleteTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was deleted by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface DeleteRelationProvisionPayload {
   clientMutationId?: string | null;
   /** The `RelationProvision` that was deleted by this mutation. */
@@ -23549,6 +23553,12 @@ export interface DeleteFieldPayload {
   /** The `Field` that was deleted by this mutation. */
   field?: Field | null;
   fieldEdge?: FieldEdge | null;
+}
+export interface DeleteTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was deleted by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface DeleteLimitsModulePayload {
   clientMutationId?: string | null;
@@ -24433,12 +24443,6 @@ export interface ForeignKeyConstraintEdge {
   /** The `ForeignKeyConstraint` at the end of the edge. */
   node?: ForeignKeyConstraint | null;
 }
-/** A `Table` edge in the connection. */
-export interface TableEdge {
-  cursor?: string | null;
-  /** The `Table` at the end of the edge. */
-  node?: Table | null;
-}
 /** A `RelationProvision` edge in the connection. */
 export interface RelationProvisionEdge {
   cursor?: string | null;
@@ -24468,6 +24472,12 @@ export interface FieldEdge {
   cursor?: string | null;
   /** The `Field` at the end of the edge. */
   node?: Field | null;
+}
+/** A `Table` edge in the connection. */
+export interface TableEdge {
+  cursor?: string | null;
+  /** The `Table` at the end of the edge. */
+  node?: Table | null;
 }
 /** A `LimitsModule` edge in the connection. */
 export interface LimitsModuleEdge {

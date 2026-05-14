@@ -28,7 +28,6 @@ import {
   checkConstraintKeys,
   fieldKeys,
   spatialRelationKeys,
-  partitionKeys,
   foreignKeyConstraintKeys,
   fullTextSearchKeys,
   indexKeys,
@@ -60,6 +59,7 @@ import {
   corsSettingKeys,
   triggerFunctionKeys,
   databaseTransferKeys,
+  partitionKeys,
   apiKeys,
   siteKeys,
   appKeys,
@@ -389,23 +389,6 @@ export const invalidate = {
     ) =>
       queryClient.invalidateQueries({
         queryKey: spatialRelationKeys.detail(id),
-      }),
-  },
-  /** Invalidate partition queries */ partition: {
-    /** Invalidate all partition queries */ all: (queryClient: QueryClient) =>
-      queryClient.invalidateQueries({
-        queryKey: partitionKeys.all,
-      }),
-    /** Invalidate partition list queries */ lists: (queryClient: QueryClient) =>
-      queryClient.invalidateQueries({
-        queryKey: partitionKeys.lists(),
-      }),
-    /** Invalidate a specific partition */ detail: (
-      queryClient: QueryClient,
-      id: string | number
-    ) =>
-      queryClient.invalidateQueries({
-        queryKey: partitionKeys.detail(id),
       }),
   },
   /** Invalidate foreignKeyConstraint queries */ foreignKeyConstraint: {
@@ -909,6 +892,23 @@ export const invalidate = {
     ) =>
       queryClient.invalidateQueries({
         queryKey: databaseTransferKeys.detail(id),
+      }),
+  },
+  /** Invalidate partition queries */ partition: {
+    /** Invalidate all partition queries */ all: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: partitionKeys.all,
+      }),
+    /** Invalidate partition list queries */ lists: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: partitionKeys.lists(),
+      }),
+    /** Invalidate a specific partition */ detail: (
+      queryClient: QueryClient,
+      id: string | number
+    ) =>
+      queryClient.invalidateQueries({
+        queryKey: partitionKeys.detail(id),
       }),
   },
   /** Invalidate api queries */ api: {
@@ -2733,11 +2733,6 @@ export const remove = {
       queryKey: spatialRelationKeys.detail(id),
     });
   },
-  /** Remove partition from cache */ partition: (queryClient: QueryClient, id: string | number) => {
-    queryClient.removeQueries({
-      queryKey: partitionKeys.detail(id),
-    });
-  },
   /** Remove foreignKeyConstraint from cache */ foreignKeyConstraint: (
     queryClient: QueryClient,
     id: string | number
@@ -2945,6 +2940,11 @@ export const remove = {
   ) => {
     queryClient.removeQueries({
       queryKey: databaseTransferKeys.detail(id),
+    });
+  },
+  /** Remove partition from cache */ partition: (queryClient: QueryClient, id: string | number) => {
+    queryClient.removeQueries({
+      queryKey: partitionKeys.detail(id),
     });
   },
   /** Remove api from cache */ api: (queryClient: QueryClient, id: string | number) => {

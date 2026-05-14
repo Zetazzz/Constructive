@@ -88,11 +88,6 @@ function App() {
 | `useCreateSpatialRelationMutation` | Mutation | Create a spatialRelation |
 | `useUpdateSpatialRelationMutation` | Mutation | Update a spatialRelation |
 | `useDeleteSpatialRelationMutation` | Mutation | Delete a spatialRelation |
-| `usePartitionsQuery` | Query | List all partitions |
-| `usePartitionQuery` | Query | Get one partition |
-| `useCreatePartitionMutation` | Mutation | Create a partition |
-| `useUpdatePartitionMutation` | Mutation | Update a partition |
-| `useDeletePartitionMutation` | Mutation | Delete a partition |
 | `useForeignKeyConstraintsQuery` | Query | List all foreignKeyConstraints |
 | `useForeignKeyConstraintQuery` | Query | Get one foreignKeyConstraint |
 | `useCreateForeignKeyConstraintMutation` | Mutation | Create a foreignKeyConstraint |
@@ -283,6 +278,11 @@ function App() {
 | `useCreateDatabaseTransferMutation` | Mutation | Create a databaseTransfer |
 | `useUpdateDatabaseTransferMutation` | Mutation | Update a databaseTransfer |
 | `useDeleteDatabaseTransferMutation` | Mutation | Delete a databaseTransfer |
+| `usePartitionsQuery` | Query | List all partitions |
+| `usePartitionQuery` | Query | Get one partition |
+| `useCreatePartitionMutation` | Mutation | Create a partition |
+| `useUpdatePartitionMutation` | Mutation | Update a partition |
+| `useDeletePartitionMutation` | Mutation | Delete a partition |
 | `useApisQuery` | Query | API endpoint configurations: each record defines a PostGraphile/PostgREST API with its database role and public access settings |
 | `useApiQuery` | Query | API endpoint configurations: each record defines a PostGraphile/PostgREST API with its database role and public access settings |
 | `useCreateApiMutation` | Mutation | API endpoint configurations: each record defines a PostGraphile/PostgREST API with its database role and public access settings |
@@ -1098,20 +1098,20 @@ create({ databaseId: '<UUID>', name: '<String>', schemaName: '<String>', label: 
 ```typescript
 // List all tables
 const { data, isLoading } = useTablesQuery({
-  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } },
+  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } },
 });
 
 // Get one table
 const { data: item } = useTableQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } },
+  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } },
 });
 
 // Create a table
 const { mutate: create } = useCreateTableMutation({
   selection: { fields: { id: true } },
 });
-create({ databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', inheritsId: '<UUID>' });
+create({ databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', partitioned: '<Boolean>', partitionStrategy: '<String>', partitionKeyNames: '<String>', partitionKeyTypes: '<String>', inheritsId: '<UUID>' });
 ```
 
 ### CheckConstraint
@@ -1175,27 +1175,6 @@ const { mutate: create } = useCreateSpatialRelationMutation({
   selection: { fields: { id: true } },
 });
 create({ databaseId: '<UUID>', tableId: '<UUID>', fieldId: '<UUID>', refTableId: '<UUID>', refFieldId: '<UUID>', name: '<String>', operator: '<String>', paramName: '<String>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', tags: '<String>' });
-```
-
-### Partition
-
-```typescript
-// List all partitions
-const { data, isLoading } = usePartitionsQuery({
-  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
-});
-
-// Get one partition
-const { data: item } = usePartitionQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
-});
-
-// Create a partition
-const { mutate: create } = useCreatePartitionMutation({
-  selection: { fields: { id: true } },
-});
-create({ databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyId: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' });
 ```
 
 ### ForeignKeyConstraint
@@ -1847,6 +1826,27 @@ const { mutate: create } = useCreateDatabaseTransferMutation({
   selection: { fields: { id: true } },
 });
 create({ databaseId: '<UUID>', targetOwnerId: '<UUID>', sourceApproved: '<Boolean>', targetApproved: '<Boolean>', sourceApprovedAt: '<Datetime>', targetApprovedAt: '<Datetime>', status: '<String>', initiatedBy: '<UUID>', notes: '<String>', expiresAt: '<Datetime>', completedAt: '<Datetime>' });
+```
+
+### Partition
+
+```typescript
+// List all partitions
+const { data, isLoading } = usePartitionsQuery({
+  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
+});
+
+// Get one partition
+const { data: item } = usePartitionQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
+});
+
+// Create a partition
+const { mutate: create } = useCreatePartitionMutation({
+  selection: { fields: { id: true } },
+});
+create({ databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyIds: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' });
 ```
 
 ### Api

@@ -133,14 +133,6 @@ export const spatialRelationMutationKeys = {
   /** Delete spatialRelation mutation key */ delete: (id: string | number) =>
     ['mutation', 'spatialrelation', 'delete', id] as const,
 } as const;
-export const partitionMutationKeys = {
-  /** All partition mutation keys */ all: ['mutation', 'partition'] as const,
-  /** Create partition mutation key */ create: () => ['mutation', 'partition', 'create'] as const,
-  /** Update partition mutation key */ update: (id: string | number) =>
-    ['mutation', 'partition', 'update', id] as const,
-  /** Delete partition mutation key */ delete: (id: string | number) =>
-    ['mutation', 'partition', 'delete', id] as const,
-} as const;
 export const foreignKeyConstraintMutationKeys = {
   /** All foreignKeyConstraint mutation keys */ all: ['mutation', 'foreignkeyconstraint'] as const,
   /** Create foreignKeyConstraint mutation key */ create: () =>
@@ -407,6 +399,14 @@ export const databaseTransferMutationKeys = {
     ['mutation', 'databasetransfer', 'update', id] as const,
   /** Delete databaseTransfer mutation key */ delete: (id: string | number) =>
     ['mutation', 'databasetransfer', 'delete', id] as const,
+} as const;
+export const partitionMutationKeys = {
+  /** All partition mutation keys */ all: ['mutation', 'partition'] as const,
+  /** Create partition mutation key */ create: () => ['mutation', 'partition', 'create'] as const,
+  /** Update partition mutation key */ update: (id: string | number) =>
+    ['mutation', 'partition', 'update', id] as const,
+  /** Delete partition mutation key */ delete: (id: string | number) =>
+    ['mutation', 'partition', 'delete', id] as const,
 } as const;
 export const apiMutationKeys = {
   /** All api mutation keys */ all: ['mutation', 'api'] as const,
@@ -1597,7 +1597,6 @@ export const mutationKeys = {
   checkConstraint: checkConstraintMutationKeys,
   field: fieldMutationKeys,
   spatialRelation: spatialRelationMutationKeys,
-  partition: partitionMutationKeys,
   foreignKeyConstraint: foreignKeyConstraintMutationKeys,
   fullTextSearch: fullTextSearchMutationKeys,
   index: indexMutationKeys,
@@ -1629,6 +1628,7 @@ export const mutationKeys = {
   corsSetting: corsSettingMutationKeys,
   triggerFunction: triggerFunctionMutationKeys,
   databaseTransfer: databaseTransferMutationKeys,
+  partition: partitionMutationKeys,
   api: apiMutationKeys,
   site: siteMutationKeys,
   app: appMutationKeys,
