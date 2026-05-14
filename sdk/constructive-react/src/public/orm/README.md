@@ -34,7 +34,6 @@ const db = createClient({
 | `checkConstraint` | findMany, findOne, create, update, delete |
 | `field` | findMany, findOne, create, update, delete |
 | `spatialRelation` | findMany, findOne, create, update, delete |
-| `partition` | findMany, findOne, create, update, delete |
 | `foreignKeyConstraint` | findMany, findOne, create, update, delete |
 | `fullTextSearch` | findMany, findOne, create, update, delete |
 | `index` | findMany, findOne, create, update, delete |
@@ -66,6 +65,7 @@ const db = createClient({
 | `corsSetting` | findMany, findOne, create, update, delete |
 | `triggerFunction` | findMany, findOne, create, update, delete |
 | `databaseTransfer` | findMany, findOne, create, update, delete |
+| `partition` | findMany, findOne, create, update, delete |
 | `api` | findMany, findOne, create, update, delete |
 | `site` | findMany, findOne, create, update, delete |
 | `app` | findMany, findOne, create, update, delete |
@@ -503,6 +503,10 @@ CRUD operations for Table records.
 | `pluralName` | String | Yes |
 | `singularName` | String | Yes |
 | `tags` | String | Yes |
+| `partitioned` | Boolean | Yes |
+| `partitionStrategy` | String | Yes |
+| `partitionKeyNames` | String | Yes |
+| `partitionKeyTypes` | String | Yes |
 | `inheritsId` | UUID | Yes |
 | `createdAt` | Datetime | No |
 | `updatedAt` | Datetime | No |
@@ -511,13 +515,13 @@ CRUD operations for Table records.
 
 ```typescript
 // List all table records
-const items = await db.table.findMany({ select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
+const items = await db.table.findMany({ select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Get one by id
-const item = await db.table.findOne({ id: '<UUID>', select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
+const item = await db.table.findOne({ id: '<UUID>', select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Create
-const created = await db.table.create({ data: { databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', inheritsId: '<UUID>' }, select: { id: true } }).execute();
+const created = await db.table.create({ data: { databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', partitioned: '<Boolean>', partitionStrategy: '<String>', partitionKeyNames: '<String>', partitionKeyTypes: '<String>', inheritsId: '<UUID>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.table.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
@@ -661,45 +665,6 @@ const updated = await db.spatialRelation.update({ where: { id: '<UUID>' }, data:
 
 // Delete
 const deleted = await db.spatialRelation.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.partition`
-
-CRUD operations for Partition records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `databaseId` | UUID | Yes |
-| `tableId` | UUID | Yes |
-| `strategy` | String | Yes |
-| `partitionKeyId` | UUID | Yes |
-| `interval` | String | Yes |
-| `retention` | String | Yes |
-| `lookahead` | Int | Yes |
-| `namingPattern` | String | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-
-**Operations:**
-
-```typescript
-// List all partition records
-const items = await db.partition.findMany({ select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
-
-// Get one by id
-const item = await db.partition.findOne({ id: '<UUID>', select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
-
-// Create
-const created = await db.partition.create({ data: { databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyId: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.partition.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.partition.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.foreignKeyConstraint`
@@ -1873,6 +1838,45 @@ const updated = await db.databaseTransfer.update({ where: { id: '<UUID>' }, data
 
 // Delete
 const deleted = await db.databaseTransfer.delete({ where: { id: '<UUID>' } }).execute();
+```
+
+### `db.partition`
+
+CRUD operations for Partition records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `databaseId` | UUID | Yes |
+| `tableId` | UUID | Yes |
+| `strategy` | String | Yes |
+| `partitionKeyIds` | UUID | Yes |
+| `interval` | String | Yes |
+| `retention` | String | Yes |
+| `lookahead` | Int | Yes |
+| `namingPattern` | String | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+
+**Operations:**
+
+```typescript
+// List all partition records
+const items = await db.partition.findMany({ select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
+
+// Get one by id
+const item = await db.partition.findOne({ id: '<UUID>', select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
+
+// Create
+const created = await db.partition.create({ data: { databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyIds: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.partition.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.partition.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.api`
@@ -6891,7 +6895,7 @@ signUp
   | `input` | SignUpInput (required) |
 
 ```typescript
-const result = await db.mutation.signUp({ input: { email: '<String>', password: '<String>', rememberMe: '<Boolean>', credentialKind: '<String>', csrfToken: '<String>' } }).execute();
+const result = await db.mutation.signUp({ input: '<SignUpInput>' }).execute();
 ```
 
 ### `db.mutation.requestCrossOriginToken`

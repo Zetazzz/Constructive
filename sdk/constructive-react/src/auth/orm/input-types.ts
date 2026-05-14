@@ -1313,6 +1313,7 @@ export interface SignUpInput {
   rememberMe?: boolean;
   credentialKind?: string;
   csrfToken?: string;
+  deviceToken?: string;
 }
 export interface RequestCrossOriginTokenInput {
   clientMutationId?: string;

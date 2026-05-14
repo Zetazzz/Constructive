@@ -136,15 +136,6 @@ export const spatialRelationKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...spatialRelationKeys.details(), id] as const,
 } as const;
-export const partitionKeys = {
-  /** All partition queries */ all: ['partition'] as const,
-  /** List query keys */ lists: () => [...partitionKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...partitionKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...partitionKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...partitionKeys.details(), id] as const,
-} as const;
 export const foreignKeyConstraintKeys = {
   /** All foreignKeyConstraint queries */ all: ['foreignkeyconstraint'] as const,
   /** List query keys */ lists: () => [...foreignKeyConstraintKeys.all, 'list'] as const,
@@ -423,6 +414,15 @@ export const databaseTransferKeys = {
   /** Detail query keys */ details: () => [...databaseTransferKeys.all, 'detail'] as const,
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...databaseTransferKeys.details(), id] as const,
+} as const;
+export const partitionKeys = {
+  /** All partition queries */ all: ['partition'] as const,
+  /** List query keys */ lists: () => [...partitionKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...partitionKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...partitionKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...partitionKeys.details(), id] as const,
 } as const;
 export const apiKeys = {
   /** All api queries */ all: ['api'] as const,
@@ -1446,7 +1446,6 @@ export const queryKeys = {
   checkConstraint: checkConstraintKeys,
   field: fieldKeys,
   spatialRelation: spatialRelationKeys,
-  partition: partitionKeys,
   foreignKeyConstraint: foreignKeyConstraintKeys,
   fullTextSearch: fullTextSearchKeys,
   index: indexKeys,
@@ -1478,6 +1477,7 @@ export const queryKeys = {
   corsSetting: corsSettingKeys,
   triggerFunction: triggerFunctionKeys,
   databaseTransfer: databaseTransferKeys,
+  partition: partitionKeys,
   api: apiKeys,
   site: siteKeys,
   app: appKeys,
