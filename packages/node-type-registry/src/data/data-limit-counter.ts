@@ -1,9 +1,9 @@
 import type { NodeTypeDefinition } from '../types';
 
-export const DataLimitCounter: NodeTypeDefinition = {
-  name: 'DataLimitCounter',
+export const LimitCounter: NodeTypeDefinition = {
+  name: 'LimitCounter',
   slug: 'data_limit_counter',
-  category: 'data',
+  category: 'limit',
   display_name: 'Limit Counter',
   description:
     'Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope.',

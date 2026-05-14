@@ -37,6 +37,23 @@ export interface TriggerCondition {
 }
 /**
  * ===========================================================================
+ * Billing node type parameters
+ * ===========================================================================
+ */
+;
+/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
+export interface BillingMeterParams {
+  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
+  meter_slug: string;
+  /* Column on the target table that holds the entity id for billing */
+  entity_field?: string;
+  /* Units to record per event (default 1) */
+  quantity?: number;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/**
+ * ===========================================================================
  * Check node type parameters
  * ===========================================================================
  */
@@ -77,26 +94,6 @@ export interface CheckOneOfParams {
  * ===========================================================================
  */
 ;
-/** Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database. */
-export interface DataAggregateLimitCounterParams {
-  /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
-  limit_name: string;
-  /* Column on the target table that holds the entity id for aggregate limit lookup */
-  entity_field?: string;
-  /* Which DML events to attach triggers for */
-  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
-}
-/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
-export interface DataBillingMeterParams {
-  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
-  meter_slug: string;
-  /* Column on the target table that holds the entity id for billing */
-  entity_field?: string;
-  /* Units to record per event (default 1) */
-  quantity?: number;
-  /* Which DML events to attach triggers for */
-  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
-}
 /** Enables bulk mutation smart tags on a table. When provisioned, adds @behavior tags for the selected bulk operations (insert, upsert, update, delete). Requires the graphile-bulk-mutations plugin. */
 export interface DataBulkParams {
   /* Enable bulk insert (+bulkInsert) */
@@ -135,15 +132,6 @@ export interface DataEntityMembershipParams {
   /* If true, adds a foreign key constraint from entity_id to the users table */
   include_user_fk?: boolean;
 }
-/** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
-export interface DataFeatureFlagParams {
-  /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
-  feature_name: string;
-  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
-  scope?: 'app' | 'org';
-  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
-  entity_field?: string;
-}
 /** BEFORE INSERT trigger that forces a field to the value of jwt_public.current_user_id(). Prevents clients from spoofing the actor/uploader identity. The field value is always overwritten regardless of what the client provides. */
 export interface DataForceCurrentUserParams {
   /* Name of the field to force to current_user_id() */
@@ -176,17 +164,6 @@ export interface DataInheritFromParentParams {
   parent_table?: string;
   /* Parent table schema (optional, defaults to same schema as child table) */
   parent_schema?: string;
-}
-/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
-export interface DataLimitCounterParams {
-  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
-  limit_name: string;
-  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
-  scope?: 'app' | 'org';
-  /* Column on the target table that holds the actor or entity id used for limit lookup */
-  actor_field?: string;
-  /* Which DML events to attach triggers for */
-  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
 }
 /** Adds a JSONB column with optional GIN index for containment queries (@>, ?, ?|, ?&). Standard pattern for semi-structured metadata. */
 export interface DataJsonbParams {
@@ -297,6 +274,41 @@ export type TableOrganizationSettingsParams = {};
 export type TableUserProfilesParams = {};
 /** Creates a user settings table for user-specific configuration. Uses AuthzDirectOwner for access control. */
 export type TableUserSettingsParams = {};
+/**
+ * ===========================================================================
+ * Limit node type parameters
+ * ===========================================================================
+ */
+;
+/** Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database. */
+export interface LimitAggregateParams {
+  /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
+  limit_name: string;
+  /* Column on the target table that holds the entity id for aggregate limit lookup */
+  entity_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
+export interface LimitFeatureFlagParams {
+  /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
+  feature_name: string;
+  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
+  entity_field?: string;
+}
+/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
+export interface LimitCounterParams {
+  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
+  limit_name: string;
+  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the actor or entity id used for limit lookup */
+  actor_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
 /**
  * ===========================================================================
  * Search node type parameters
@@ -1255,7 +1267,7 @@ export interface BlueprintEntityType {
  */
 ;
 /** String shorthand -- just the node type name. */
-export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'DataAggregateLimitCounter' | 'DataBillingMeter' | 'DataBulk' | 'ProcessChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'ProcessFileEmbedding' | 'DataFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'ProcessImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'JobTrigger' | 'DataLimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'ProcessExtraction' | 'ProcessImageVersions' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
+export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'LimitAggregate' | 'BillingMeter' | 'DataBulk' | 'ProcessChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'ProcessFileEmbedding' | 'LimitFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'ProcessImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'JobTrigger' | 'LimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'ProcessExtraction' | 'ProcessImageVersions' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
 /** Object form -- { $type, data } with typed parameters. */
 export type BlueprintNodeObject = {
   $type: 'AuthzAllowAll';
@@ -1321,11 +1333,11 @@ export type BlueprintNodeObject = {
   $type: 'CheckOneOf';
   data: CheckOneOfParams;
 } | {
-  $type: 'DataAggregateLimitCounter';
-  data: DataAggregateLimitCounterParams;
+  $type: 'LimitAggregate';
+  data: LimitAggregateParams;
 } | {
-  $type: 'DataBillingMeter';
-  data: DataBillingMeterParams;
+  $type: 'BillingMeter';
+  data: BillingMeterParams;
 } | {
   $type: 'DataBulk';
   data: DataBulkParams;
@@ -1345,8 +1357,8 @@ export type BlueprintNodeObject = {
   $type: 'ProcessFileEmbedding';
   data: ProcessFileEmbeddingParams;
 } | {
-  $type: 'DataFeatureFlag';
-  data: DataFeatureFlagParams;
+  $type: 'LimitFeatureFlag';
+  data: LimitFeatureFlagParams;
 } | {
   $type: 'DataForceCurrentUser';
   data: DataForceCurrentUserParams;
@@ -1369,8 +1381,8 @@ export type BlueprintNodeObject = {
   $type: 'JobTrigger';
   data: JobTriggerParams;
 } | {
-  $type: 'DataLimitCounter';
-  data: DataLimitCounterParams;
+  $type: 'LimitCounter';
+  data: LimitCounterParams;
 } | {
   $type: 'DataJsonb';
   data: DataJsonbParams;
