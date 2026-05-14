@@ -232,7 +232,7 @@ export interface DataRealtimeParams {
 /** Auto-generates URL-friendly slugs from field values on insert/update. Attaches BEFORE INSERT and BEFORE UPDATE triggers that call inflection.slugify() on the target field. References fields by name in data jsonb. */
 export interface DataSlugParams {
   /* Name of the field to slugify */
-  field_name: string;
+  field_name?: string;
   /* Optional source field name (defaults to field_name) */
   source_field_name?: string;
 }
@@ -432,6 +432,10 @@ export interface SearchUnifiedParams {
       /* Task identifier for the chunking job queue */chunking_task_name?: string;
     };
   };
+  /* Name of the composite text field created for embedding input */
+  embedding_text_field?: string;
+  /* Output format for the composite text field */
+  composite_format?: 'labeled' | 'plain';
   /* Field names to tag with @trgmSearch for fuzzy/typo-tolerant matching */
   trgm_fields?: string[];
   /* Unified search score configuration written to @searchConfig smart tag */

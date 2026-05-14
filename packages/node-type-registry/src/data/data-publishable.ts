@@ -9,13 +9,13 @@ export const DataPublishable: NodeTypeDefinition = {
   parameter_schema: {
     type: 'object',
     properties: {
-      is_published_field: {
+      is_published_field_name: {
         type: 'string',
         format: 'column-ref',
         description: 'Column name for the published boolean flag',
         default: 'is_published'
       },
-      published_at_field: {
+      published_at_field_name: {
         type: 'string',
         format: 'column-ref',
         description: 'Column name for the publish timestamp',

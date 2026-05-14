@@ -12,7 +12,8 @@ export const DataSlug: NodeTypeDefinition = {
       field_name: {
         type: 'string',
         format: 'column-ref',
-        description: 'Name of the field to slugify'
+        description: 'Name of the field to slugify',
+        default: 'slug'
       },
       source_field_name: {
         type: 'string',
@@ -20,9 +21,7 @@ export const DataSlug: NodeTypeDefinition = {
         description: 'Optional source field name (defaults to field_name)'
       }
     },
-    required: [
-      'field_name'
-    ]
+    required: []
   },
   tags: [
     'transform',

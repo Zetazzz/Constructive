@@ -132,6 +132,7 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
           'Chunking configuration passed through to ProcessChunks. When ' +
           'include_chunks is true (or defaults to true in extract mode), these ' +
           'params configure the chunks table, embedding dimensions, strategy, etc.',
+        default: {},
         properties: {
           content_field_name: {
             type: 'string',
