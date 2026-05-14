@@ -657,8 +657,8 @@ export interface ProcessExtractionParams {
 }
 /** Creates a job trigger for image variant generation. Fires when an image file is uploaded (status = 'uploaded') or on INSERT. The external worker generates resized, cropped, or reformatted versions (thumbnails, previews, WebP conversions, etc.) and stores them as new file records linked to the source image. */
 export interface ProcessImageVersionsParams {
-  /* Array of version definitions. Each version specifies dimensions, format, and quality for a generated image variant. */
-  versions?: {
+  /* Array of version definitions. Each version specifies dimensions, format, and quality for a generated image variant. Required — the blueprint must explicitly define what variants to generate. */
+  versions: {
     /* Version identifier (e.g., "thumb", "preview", "hero") */name: string;
     /* Target width in pixels */width?: number;
     /* Target height in pixels */height?: number;
