@@ -26,6 +26,7 @@ export const ProcessImageVersions: NodeTypeDefinition = {
     'file records linked to the source image.',
   parameter_schema: {
     type: 'object',
+    required: ['versions'],
     properties: {
 
       // ── Version definitions ───────────────────────────────────────
@@ -68,11 +69,9 @@ export const ProcessImageVersions: NodeTypeDefinition = {
         },
         description:
           'Array of version definitions. Each version specifies dimensions, ' +
-          'format, and quality for a generated image variant.',
-        default: [
-          { name: 'thumb', width: 150, height: 150, fit: 'cover', format: 'webp', quality: 80 },
-          { name: 'preview', width: 800, height: 600, fit: 'inside', format: 'webp', quality: 85 }
-        ]
+          'format, and quality for a generated image variant. ' +
+          'Required — the blueprint must explicitly define what variants to generate.',
+        minItems: 1
       },
 
       // ── MIME scoping ──────────────────────────────────────────────
