@@ -21226,6 +21226,12 @@ input StorageModuleFilter {
   """Filter by the object’s `hasAuditLog` field."""
   hasAuditLog: BooleanFilter
 
+  """Filter by the object’s `hasConfirmUpload` field."""
+  hasConfirmUpload: BooleanFilter
+
+  """Filter by the object’s `confirmUploadDelay` field."""
+  confirmUploadDelay: IntervalFilter
+
   """Filter by the object’s `fileEventsTableId` field."""
   fileEventsTableId: UUIDFilter
 
@@ -28826,6 +28832,8 @@ type StorageModule {
   hasContentHash: Boolean!
   hasCustomKeys: Boolean!
   hasAuditLog: Boolean!
+  hasConfirmUpload: Boolean!
+  confirmUploadDelay: Interval!
   fileEventsTableId: UUID
 
   """Reads a single `Table` that is related to this `StorageModule`."""
@@ -28927,6 +28935,10 @@ enum StorageModuleOrderBy {
   HAS_CUSTOM_KEYS_DESC
   HAS_AUDIT_LOG_ASC
   HAS_AUDIT_LOG_DESC
+  HAS_CONFIRM_UPLOAD_ASC
+  HAS_CONFIRM_UPLOAD_DESC
+  CONFIRM_UPLOAD_DELAY_ASC
+  CONFIRM_UPLOAD_DELAY_DESC
   FILE_EVENTS_TABLE_ID_ASC
   FILE_EVENTS_TABLE_ID_DESC
 }
@@ -50347,6 +50359,8 @@ input StorageModuleInput {
   hasContentHash: Boolean
   hasCustomKeys: Boolean
   hasAuditLog: Boolean
+  hasConfirmUpload: Boolean
+  confirmUploadDelay: IntervalInput
   fileEventsTableId: UUID
 }
 
@@ -59526,6 +59540,8 @@ input StorageModulePatch {
   hasContentHash: Boolean
   hasCustomKeys: Boolean
   hasAuditLog: Boolean
+  hasConfirmUpload: Boolean
+  confirmUploadDelay: IntervalInput
   fileEventsTableId: UUID
 }
 

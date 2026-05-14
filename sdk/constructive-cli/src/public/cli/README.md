@@ -2617,10 +2617,12 @@ CRUD operations for StorageModule records.
 | `hasContentHash` | Boolean |
 | `hasCustomKeys` | Boolean |
 | `hasAuditLog` | Boolean |
+| `hasConfirmUpload` | Boolean |
+| `confirmUploadDelay` | Interval |
 | `fileEventsTableId` | UUID |
 
 **Required create fields:** `databaseId`
-**Optional create fields (backend defaults):** `schemaId`, `privateSchemaId`, `bucketsTableId`, `filesTableId`, `bucketsTableName`, `filesTableName`, `membershipType`, `policies`, `skipDefaultPolicyTables`, `entityTableId`, `endpoint`, `publicUrlPrefix`, `provider`, `allowedOrigins`, `restrictReads`, `hasPathShares`, `pathSharesTableId`, `uploadUrlExpirySeconds`, `downloadUrlExpirySeconds`, `defaultMaxFileSize`, `maxFilenameLength`, `cacheTtlSeconds`, `maxBulkFiles`, `maxBulkTotalSize`, `hasVersioning`, `hasContentHash`, `hasCustomKeys`, `hasAuditLog`, `fileEventsTableId`
+**Optional create fields (backend defaults):** `schemaId`, `privateSchemaId`, `bucketsTableId`, `filesTableId`, `bucketsTableName`, `filesTableName`, `membershipType`, `policies`, `skipDefaultPolicyTables`, `entityTableId`, `endpoint`, `publicUrlPrefix`, `provider`, `allowedOrigins`, `restrictReads`, `hasPathShares`, `pathSharesTableId`, `uploadUrlExpirySeconds`, `downloadUrlExpirySeconds`, `defaultMaxFileSize`, `maxFilenameLength`, `cacheTtlSeconds`, `maxBulkFiles`, `maxBulkTotalSize`, `hasVersioning`, `hasContentHash`, `hasCustomKeys`, `hasAuditLog`, `hasConfirmUpload`, `confirmUploadDelay`, `fileEventsTableId`
 
 ### `entity-type-provision`
 

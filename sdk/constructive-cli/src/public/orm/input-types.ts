@@ -1473,6 +1473,8 @@ export interface StorageModule {
   hasContentHash?: boolean | null;
   hasCustomKeys?: boolean | null;
   hasAuditLog?: boolean | null;
+  hasConfirmUpload?: boolean | null;
+  confirmUploadDelay?: string | null;
   fileEventsTableId?: string | null;
 }
 /**
@@ -6386,6 +6388,8 @@ export type StorageModuleSelect = {
   hasContentHash?: boolean;
   hasCustomKeys?: boolean;
   hasAuditLog?: boolean;
+  hasConfirmUpload?: boolean;
+  confirmUploadDelay?: boolean;
   fileEventsTableId?: boolean;
   bucketsTable?: {
     select: TableSelect;
@@ -11402,6 +11406,10 @@ export interface StorageModuleFilter {
   hasCustomKeys?: BooleanFilter;
   /** Filter by the object’s `hasAuditLog` field. */
   hasAuditLog?: BooleanFilter;
+  /** Filter by the object’s `hasConfirmUpload` field. */
+  hasConfirmUpload?: BooleanFilter;
+  /** Filter by the object’s `confirmUploadDelay` field. */
+  confirmUploadDelay?: IntervalFilter;
   /** Filter by the object’s `fileEventsTableId` field. */
   fileEventsTableId?: UUIDFilter;
   /** Checks for all expressions in this list. */
@@ -16065,6 +16073,10 @@ export type StorageModuleOrderBy =
   | 'HAS_CUSTOM_KEYS_DESC'
   | 'HAS_AUDIT_LOG_ASC'
   | 'HAS_AUDIT_LOG_DESC'
+  | 'HAS_CONFIRM_UPLOAD_ASC'
+  | 'HAS_CONFIRM_UPLOAD_DESC'
+  | 'CONFIRM_UPLOAD_DELAY_ASC'
+  | 'CONFIRM_UPLOAD_DELAY_DESC'
   | 'FILE_EVENTS_TABLE_ID_ASC'
   | 'FILE_EVENTS_TABLE_ID_DESC';
 export type EntityTypeProvisionOrderBy =
@@ -20260,6 +20272,8 @@ export interface CreateStorageModuleInput {
     hasContentHash?: boolean;
     hasCustomKeys?: boolean;
     hasAuditLog?: boolean;
+    hasConfirmUpload?: boolean;
+    confirmUploadDelay?: IntervalInput;
     fileEventsTableId?: string;
   };
 }
@@ -20293,6 +20307,8 @@ export interface StorageModulePatch {
   hasContentHash?: boolean | null;
   hasCustomKeys?: boolean | null;
   hasAuditLog?: boolean | null;
+  hasConfirmUpload?: boolean | null;
+  confirmUploadDelay?: IntervalInput | null;
   fileEventsTableId?: string | null;
 }
 export interface UpdateStorageModuleInput {
@@ -27873,6 +27889,10 @@ export interface StorageModuleFilter {
   hasCustomKeys?: BooleanFilter;
   /** Filter by the object’s `hasAuditLog` field. */
   hasAuditLog?: BooleanFilter;
+  /** Filter by the object’s `hasConfirmUpload` field. */
+  hasConfirmUpload?: BooleanFilter;
+  /** Filter by the object’s `confirmUploadDelay` field. */
+  confirmUploadDelay?: IntervalFilter;
   /** Filter by the object’s `fileEventsTableId` field. */
   fileEventsTableId?: UUIDFilter;
   /** Checks for all expressions in this list. */
