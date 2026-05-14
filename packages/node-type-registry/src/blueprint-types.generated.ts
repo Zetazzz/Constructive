@@ -107,11 +107,11 @@ export interface DataBulkParams {
 }
 /** Creates a derived text field that automatically concatenates multiple source fields via BEFORE INSERT/UPDATE triggers. Used to produce a unified text representation (e.g., embedding_text) from multiple columns on a table. The trigger fires with '_000' prefix to run before Search* triggers alphabetically. */
 export interface DataCompositeFieldParams {
-  /* Name of the derived text field to create (default: 'embedding_text') */
+  /* Name of the derived text field to create */
   target?: string;
   /* Array of source field names to concatenate into the target field */
   source_fields: string[];
-  /* Output format: 'labeled' (field_name: value) or 'plain' (values only). Default: 'labeled' */
+  /* Output format: 'labeled' (field_name: value) or 'plain' (values only) */
   format?: 'labeled' | 'plain';
 }
 /** Adds ownership column for direct user ownership. Enables AuthzDirectOwner authorization. */
@@ -122,6 +122,8 @@ export interface DataDirectOwnerParams {
   include_id?: boolean;
   /* If true, adds a foreign key constraint from owner_id to the users table */
   include_user_fk?: boolean;
+  /* If true, creates a B-tree index on the owner column */
+  create_index?: boolean;
 }
 /** Adds entity reference for organization/group scoping. Enables AuthzEntityMembership, AuthzMembership, AuthzOrgHierarchy authorization. */
 export interface DataEntityMembershipParams {
@@ -131,6 +133,8 @@ export interface DataEntityMembershipParams {
   include_id?: boolean;
   /* If true, adds a foreign key constraint from entity_id to the users table */
   include_user_fk?: boolean;
+  /* If true, creates a B-tree index on the entity column */
+  create_index?: boolean;
 }
 /** BEFORE INSERT trigger that forces a field to the value of jwt_public.current_user_id(). Prevents clients from spoofing the actor/uploader identity. The field value is always overwritten regardless of what the client provides. */
 export interface DataForceCurrentUserParams {
@@ -193,6 +197,8 @@ export interface DataOwnershipInEntityParams {
   include_id?: boolean;
   /* If true, adds foreign key constraints from owner_id and entity_id to the users table */
   include_user_fk?: boolean;
+  /* If true, creates B-tree indexes on the owner and entity columns */
+  create_index?: boolean;
 }
 /** Adds user tracking for creates/updates with created_by and updated_by columns. */
 export interface DataPeoplestampsParams {
@@ -204,6 +210,8 @@ export interface DataPeoplestampsParams {
   include_id?: boolean;
   /* If true, adds foreign key constraints from created_by and updated_by to the users table */
   include_user_fk?: boolean;
+  /* If true, creates B-tree indexes on the peoplestamp columns */
+  create_index?: boolean;
 }
 /** Adds publish state columns (is_published, published_at) for content visibility. Enables AuthzPublishable and AuthzTemporal authorization. */
 export interface DataPublishableParams {
