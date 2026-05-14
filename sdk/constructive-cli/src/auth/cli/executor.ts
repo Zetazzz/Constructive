@@ -29,6 +29,6 @@ export function getClient(contextName?: string) {
   }
   return createClient({
     endpoint: ctx.endpoint,
-    headers,
+    headers: headers,
   });
 }
