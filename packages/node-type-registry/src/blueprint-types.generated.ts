@@ -37,6 +37,23 @@ export interface TriggerCondition {
 }
 /**
  * ===========================================================================
+ * Billing node type parameters
+ * ===========================================================================
+ */
+;
+/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
+export interface BillingMeterParams {
+  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
+  meter_slug: string;
+  /* Column on the target table that holds the entity id for billing */
+  entity_field?: string;
+  /* Units to record per event (default 1) */
+  quantity?: number;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/**
+ * ===========================================================================
  * Check node type parameters
  * ===========================================================================
  */
@@ -77,26 +94,6 @@ export interface CheckOneOfParams {
  * ===========================================================================
  */
 ;
-/** Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database. */
-export interface DataAggregateLimitCounterParams {
-  /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
-  limit_name: string;
-  /* Column on the target table that holds the entity id for aggregate limit lookup */
-  entity_field?: string;
-  /* Which DML events to attach triggers for */
-  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
-}
-/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
-export interface DataBillingMeterParams {
-  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
-  meter_slug: string;
-  /* Column on the target table that holds the entity id for billing */
-  entity_field?: string;
-  /* Units to record per event (default 1) */
-  quantity?: number;
-  /* Which DML events to attach triggers for */
-  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
-}
 /** Enables bulk mutation smart tags on a table. When provisioned, adds @behavior tags for the selected bulk operations (insert, upsert, update, delete). Requires the graphile-bulk-mutations plugin. */
 export interface DataBulkParams {
   /* Enable bulk insert (+bulkInsert) */
@@ -107,29 +104,6 @@ export interface DataBulkParams {
   update?: boolean;
   /* Enable bulk delete (+bulkDelete) */
   delete?: boolean;
-}
-/** Creates a chunked-embedding child table for any parent table. Provisions the chunks table with content, chunk_index, embedding vector, metadata, HNSW index, inherited RLS, and optional job trigger for automatic text splitting. Composed internally by DataFileEmbedding (enabled by default in extract mode) but can also be used standalone. */
-export interface DataChunksParams {
-  /* Name of the text content column in the chunks table */
-  content_field_name?: string;
-  /* Maximum number of characters per chunk */
-  chunk_size?: number;
-  /* Number of overlapping characters between consecutive chunks */
-  chunk_overlap?: number;
-  /* Strategy for splitting text into chunks */
-  chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
-  /* Vector dimensions for per-chunk embeddings */
-  dimensions?: number;
-  /* Distance metric for the HNSW index on chunk embeddings */
-  metric?: 'cosine' | 'l2' | 'ip';
-  /* Override the chunks table name. Defaults to {parent_table}_chunks. */
-  chunks_table_name?: string;
-  /* Field names from the parent table to copy into chunk metadata */
-  metadata_fields?: string[];
-  /* Whether to create a job trigger that auto-enqueues chunking on parent INSERT/UPDATE */
-  enqueue_chunking_job?: boolean;
-  /* Task identifier for the chunking job queue */
-  chunking_task_name?: string;
 }
 /** Creates a derived text field that automatically concatenates multiple source fields via BEFORE INSERT/UPDATE triggers. Used to produce a unified text representation (e.g., embedding_text) from multiple columns on a table. The trigger fires with '_000' prefix to run before Search* triggers alphabetically. */
 export interface DataCompositeFieldParams {
@@ -158,59 +132,6 @@ export interface DataEntityMembershipParams {
   /* If true, adds a foreign key constraint from entity_id to the users table */
   include_user_fk?: boolean;
 }
-/** Generic, MIME-scoped embedding node for file tables. Supports two modes: direct (whole-file to single vector, e.g. CLIP for images) when extraction is omitted, or extract (file to text to chunks to per-chunk vectors) when extraction config is provided. Composes SearchVector + DataJobTrigger + DataChunks (enabled by default in extract mode) internally. Multiple instances can coexist on the same table with different MIME scopes, field names, and embedding strategies. */
-export interface DataFileEmbeddingParams {
-  /* Name of the vector embedding column */
-  field_name?: string;
-  /* Vector dimensions (e.g. 512 for CLIP, 768 for nomic, 1536 for ada-002) */
-  dimensions?: number;
-  /* Index type for similarity search */
-  index_method?: 'hnsw' | 'ivfflat';
-  /* Distance metric */
-  metric?: 'cosine' | 'l2' | 'ip';
-  /* Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}. */
-  index_options?: {
-    [key: string]: unknown;
-  };
-  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['image/%'], ['application/pdf', 'text/%'], ['audio/%']. */
-  mime_patterns?: string[];
-  /* Job task identifier for the worker. In direct mode this is the embedding worker; in extract mode this is the extraction worker. */
-  task_identifier?: string;
-  /* Trigger events that fire the job */
-  events?: ('INSERT' | 'UPDATE')[];
-  /* Custom payload key-to-column mapping for the job trigger */
-  payload_custom?: {
-    [key: string]: unknown;
-  };
-  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks, field guards, etc. */
-  trigger_conditions?: TriggerCondition | TriggerCondition[];
-  /* Text extraction configuration. When present, the generator creates extraction output fields on the table and configures SearchVector with source_fields + stale tracking. When absent, the node operates in direct mode (single vector per file, no text extraction). */
-  extraction?: {
-    /* Field to store extracted text/markdown */text_field?: string;
-    /* JSONB field for extraction metadata (page count, language, etc.) */metadata_field?: string;
-  };
-  /* Whether to create a chunks table via DataChunks. Defaults to true when extraction is provided, false in direct mode. Set explicitly to override. */
-  include_chunks?: boolean;
-  /* Chunking configuration passed through to DataChunks. When include_chunks is true (or defaults to true in extract mode), these params configure the chunks table, embedding dimensions, strategy, etc. */
-  chunks?: {
-    /* Name of the text content column in the chunks table */content_field_name?: string;
-    /* Maximum number of characters per chunk */chunk_size?: number;
-    /* Number of overlapping characters between consecutive chunks */chunk_overlap?: number;
-    /* Strategy for splitting text into chunks */chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
-    /* Field names from parent to copy into chunk metadata */metadata_fields?: string[];
-    /* Whether to auto-enqueue a chunking job on insert/update */enqueue_chunking_job?: boolean;
-    /* Task identifier for the chunking job queue */chunking_task_name?: string;
-  };
-}
-/** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
-export interface DataFeatureFlagParams {
-  /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
-  feature_name: string;
-  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
-  scope?: 'app' | 'org';
-  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
-  entity_field?: string;
-}
 /** BEFORE INSERT trigger that forces a field to the value of jwt_public.current_user_id(). Prevents clients from spoofing the actor/uploader identity. The field value is always overwritten regardless of what the client provides. */
 export interface DataForceCurrentUserParams {
   /* Name of the field to force to current_user_id() */
@@ -220,50 +141,6 @@ export interface DataForceCurrentUserParams {
 export interface DataIdParams {
   /* Column name for the primary key */
   field_name?: string;
-}
-/** Image-specific preset of DataFileEmbedding. Delegates to DataFileEmbedding with image-oriented defaults: dimensions=512 (CLIP), mime_patterns=['image/%'], task_identifier='process_image_embedding', direct mode (no extraction). Accepts all DataFileEmbedding parameters — any overrides are forwarded through. */
-export interface DataImageEmbeddingParams {
-  /* Name of the vector embedding column */
-  field_name?: string;
-  /* Vector dimensions (default 512 for CLIP-style image embeddings) */
-  dimensions?: number;
-  /* Index type for similarity search */
-  index_method?: 'hnsw' | 'ivfflat';
-  /* Distance metric */
-  metric?: 'cosine' | 'l2' | 'ip';
-  /* Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}. */
-  index_options?: {
-    [key: string]: unknown;
-  };
-  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. */
-  mime_patterns?: string[];
-  /* Job task identifier for the image embedding worker */
-  task_identifier?: string;
-  /* Trigger events that fire the job */
-  events?: ('INSERT' | 'UPDATE')[];
-  /* Custom payload key-to-column mapping for the job trigger */
-  payload_custom?: {
-    [key: string]: unknown;
-  };
-  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
-  trigger_conditions?: TriggerCondition | TriggerCondition[];
-  /* Text extraction configuration. Forwarded to DataFileEmbedding. When present, enables extract mode (e.g., OCR for images). */
-  extraction?: {
-    /* Field to store extracted text */text_field?: string;
-    /* JSONB field for extraction metadata */metadata_field?: string;
-  };
-  /* Chunking configuration. Forwarded to DataFileEmbedding. Only meaningful when extraction is also provided. */
-  chunks?: {
-    content_field_name?: string;
-    chunk_size?: number;
-    chunk_overlap?: number;
-    chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
-    metadata_fields?: {
-      [key: string]: unknown;
-    };
-    enqueue_chunking_job?: boolean;
-    chunking_task_name?: string;
-  };
 }
 /** BEFORE UPDATE trigger that prevents changes to a list of specified fields after INSERT. Raises an exception if any of the listed fields have changed. Unlike FieldImmutable (single-field), this handles multiple fields in a single trigger for efficiency. */
 export interface DataImmutableFieldsParams {
@@ -287,54 +164,6 @@ export interface DataInheritFromParentParams {
   parent_table?: string;
   /* Parent table schema (optional, defaults to same schema as child table) */
   parent_schema?: string;
-}
-/** Dynamically creates PostgreSQL triggers that enqueue jobs via app_jobs.add_job() when table rows are inserted, updated, or deleted. Supports configurable payload strategies (full row, row ID, selected fields, or custom mapping), conditional firing via WHEN clauses, watched field changes, and extended job options (queue, priority, delay, max attempts). */
-export interface DataJobTriggerParams {
-  /* Job task identifier passed to add_job (e.g., process_invoice, sync_to_stripe) */
-  task_identifier: string;
-  /* How to build the job payload: row (full NEW/OLD), row_id (just id), fields (selected columns), custom (mapped columns) */
-  payload_strategy?: 'row' | 'row_id' | 'fields' | 'custom';
-  /* Column names to include in payload (only for fields strategy) */
-  payload_fields?: string[];
-  /* Key-to-column mapping for custom payload (e.g., {"invoice_id": "id", "total": "amount"}) */
-  payload_custom?: {
-    [key: string]: unknown;
-  };
-  /* Trigger events to create */
-  events?: ('INSERT' | 'UPDATE' | 'DELETE')[];
-  /* Include OLD row in payload (for UPDATE triggers) */
-  include_old?: boolean;
-  /* Include table/schema metadata in payload */
-  include_meta?: boolean;
-  /* Column name for conditional WHEN clause (fires only when field equals condition_value) */
-  condition_field?: string;
-  /* Value to compare against condition_field in WHEN clause */
-  condition_value?: string;
-  /* Compound conditions for the trigger WHEN clause. Accepts a single leaf condition, an array of conditions (implicitly AND), or a nested combinator tree ({AND: [...], OR: [...], NOT: {...}}). Each leaf is {field, op, value?, row?, ref?}. Column types are resolved automatically from the table schema. Cannot be combined with condition_field or watch_fields. */
-  conditions?: TriggerCondition | TriggerCondition[];
-  /* For UPDATE triggers, only fire when these fields change (uses DISTINCT FROM) */
-  watch_fields?: string[];
-  /* Static job key for upsert semantics (prevents duplicate jobs) */
-  job_key?: string;
-  /* Job queue name for routing to specific workers */
-  queue_name?: string;
-  /* Job priority (lower = higher priority) */
-  priority?: number;
-  /* Delay before job runs as PostgreSQL interval (e.g., 30 seconds, 5 minutes) */
-  run_at_delay?: string;
-  /* Maximum retry attempts for the job */
-  max_attempts?: number;
-}
-/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
-export interface DataLimitCounterParams {
-  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
-  limit_name: string;
-  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
-  scope?: 'app' | 'org';
-  /* Column on the target table that holds the actor or entity id used for limit lookup */
-  actor_field?: string;
-  /* Which DML events to attach triggers for */
-  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
 }
 /** Adds a JSONB column with optional GIN index for containment queries (@>, ?, ?|, ?&). Standard pattern for semi-structured metadata. */
 export interface DataJsonbParams {
@@ -445,6 +274,41 @@ export type TableOrganizationSettingsParams = {};
 export type TableUserProfilesParams = {};
 /** Creates a user settings table for user-specific configuration. Uses AuthzDirectOwner for access control. */
 export type TableUserSettingsParams = {};
+/**
+ * ===========================================================================
+ * Limit node type parameters
+ * ===========================================================================
+ */
+;
+/** Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database. */
+export interface LimitAggregateParams {
+  /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
+  limit_name: string;
+  /* Column on the target table that holds the entity id for aggregate limit lookup */
+  entity_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
+export interface LimitFeatureFlagParams {
+  /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
+  feature_name: string;
+  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
+  entity_field?: string;
+}
+/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
+export interface LimitCounterParams {
+  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
+  limit_name: string;
+  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the actor or entity id used for limit lookup */
+  actor_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
 /**
  * ===========================================================================
  * Search node type parameters
@@ -605,6 +469,221 @@ export interface SearchVectorParams {
     /* Whether to auto-enqueue a chunking job on insert/update */enqueue_chunking_job?: boolean;
     /* Task identifier for the chunking job queue */chunking_task_name?: string;
   };
+}
+/**
+ * ===========================================================================
+ * Job node type parameters
+ * ===========================================================================
+ */
+;
+/** Dynamically creates PostgreSQL triggers that enqueue jobs via app_jobs.add_job() when table rows are inserted, updated, or deleted. Supports configurable payload strategies (full row, row ID, selected fields, or custom mapping), conditional firing via WHEN clauses, watched field changes, and extended job options (queue, priority, delay, max attempts). */
+export interface JobTriggerParams {
+  /* Job task identifier passed to add_job (e.g., process_invoice, sync_to_stripe) */
+  task_identifier: string;
+  /* How to build the job payload: row (full NEW/OLD), row_id (just id), fields (selected columns), custom (mapped columns) */
+  payload_strategy?: 'row' | 'row_id' | 'fields' | 'custom';
+  /* Column names to include in payload (only for fields strategy) */
+  payload_fields?: string[];
+  /* Key-to-column mapping for custom payload (e.g., {"invoice_id": "id", "total": "amount"}) */
+  payload_custom?: {
+    [key: string]: unknown;
+  };
+  /* Trigger events to create */
+  events?: ('INSERT' | 'UPDATE' | 'DELETE')[];
+  /* Include OLD row in payload (for UPDATE triggers) */
+  include_old?: boolean;
+  /* Include table/schema metadata in payload */
+  include_meta?: boolean;
+  /* Column name for conditional WHEN clause (fires only when field equals condition_value) */
+  condition_field?: string;
+  /* Value to compare against condition_field in WHEN clause */
+  condition_value?: string;
+  /* Compound conditions for the trigger WHEN clause. Accepts a single leaf condition, an array of conditions (implicitly AND), or a nested combinator tree ({AND: [...], OR: [...], NOT: {...}}). Each leaf is {field, op, value?, row?, ref?}. Column types are resolved automatically from the table schema. Cannot be combined with condition_field or watch_fields. */
+  conditions?: TriggerCondition | TriggerCondition[];
+  /* For UPDATE triggers, only fire when these fields change (uses DISTINCT FROM) */
+  watch_fields?: string[];
+  /* Static job key for upsert semantics (prevents duplicate jobs) */
+  job_key?: string;
+  /* Job queue name for routing to specific workers */
+  queue_name?: string;
+  /* Job priority (lower = higher priority) */
+  priority?: number;
+  /* Delay before job runs as PostgreSQL interval (e.g., 30 seconds, 5 minutes) */
+  run_at_delay?: string;
+  /* Maximum retry attempts for the job */
+  max_attempts?: number;
+}
+/**
+ * ===========================================================================
+ * Process node type parameters
+ * ===========================================================================
+ */
+;
+/** Creates a chunked-embedding child table for any parent table. Provisions the chunks table with content, chunk_index, embedding vector, metadata, HNSW index, inherited RLS, and optional job trigger for automatic text splitting. Composed internally by ProcessFileEmbedding (enabled by default in extract mode) but can also be used standalone. */
+export interface ProcessChunksParams {
+  /* Name of the text content column in the chunks table */
+  content_field_name?: string;
+  /* Maximum number of characters per chunk */
+  chunk_size?: number;
+  /* Number of overlapping characters between consecutive chunks */
+  chunk_overlap?: number;
+  /* Strategy for splitting text into chunks */
+  chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+  /* Vector dimensions for per-chunk embeddings */
+  dimensions?: number;
+  /* Distance metric for the HNSW index on chunk embeddings */
+  metric?: 'cosine' | 'l2' | 'ip';
+  /* Override the chunks table name. Defaults to {parent_table}_chunks. */
+  chunks_table_name?: string;
+  /* Field names from the parent table to copy into chunk metadata */
+  metadata_fields?: string[];
+  /* Whether to create a job trigger that auto-enqueues chunking on parent INSERT/UPDATE */
+  enqueue_chunking_job?: boolean;
+  /* Task identifier for the chunking job queue */
+  chunking_task_name?: string;
+}
+/** Generic, MIME-scoped embedding node for file tables. Supports two modes: direct (whole-file to single vector, e.g. CLIP for images) when extraction is omitted, or extract (file to text to chunks to per-chunk vectors) when extraction config is provided. Composes SearchVector + JobTrigger + ProcessChunks (enabled by default in extract mode) internally. Multiple instances can coexist on the same table with different MIME scopes, field names, and embedding strategies. */
+export interface ProcessFileEmbeddingParams {
+  /* Name of the vector embedding column */
+  field_name?: string;
+  /* Vector dimensions (e.g. 512 for CLIP, 768 for nomic, 1536 for ada-002) */
+  dimensions?: number;
+  /* Index type for similarity search */
+  index_method?: 'hnsw' | 'ivfflat';
+  /* Distance metric */
+  metric?: 'cosine' | 'l2' | 'ip';
+  /* Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}. */
+  index_options?: {
+    [key: string]: unknown;
+  };
+  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['image/%'], ['application/pdf', 'text/%'], ['audio/%']. */
+  mime_patterns?: string[];
+  /* Job task identifier for the worker. In direct mode this is the embedding worker; in extract mode this is the extraction worker. */
+  task_identifier?: string;
+  /* Trigger events that fire the job */
+  events?: ('INSERT' | 'UPDATE')[];
+  /* Custom payload key-to-column mapping for the job trigger */
+  payload_custom?: {
+    [key: string]: unknown;
+  };
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks, field guards, etc. */
+  trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Text extraction configuration. When present, the generator creates extraction output fields on the table and configures SearchVector with source_fields + stale tracking. When absent, the node operates in direct mode (single vector per file, no text extraction). */
+  extraction?: {
+    /* Field to store extracted text/markdown */text_field?: string;
+    /* JSONB field for extraction metadata (page count, language, etc.) */metadata_field?: string;
+  };
+  /* Whether to create a chunks table via ProcessChunks. Defaults to true when extraction is provided, false in direct mode. Set explicitly to override. */
+  include_chunks?: boolean;
+  /* Chunking configuration passed through to ProcessChunks. When include_chunks is true (or defaults to true in extract mode), these params configure the chunks table, embedding dimensions, strategy, etc. */
+  chunks?: {
+    /* Name of the text content column in the chunks table */content_field_name?: string;
+    /* Maximum number of characters per chunk */chunk_size?: number;
+    /* Number of overlapping characters between consecutive chunks */chunk_overlap?: number;
+    /* Strategy for splitting text into chunks */chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+    /* Field names from parent to copy into chunk metadata */metadata_fields?: string[];
+    /* Whether to auto-enqueue a chunking job on insert/update */enqueue_chunking_job?: boolean;
+    /* Task identifier for the chunking job queue */chunking_task_name?: string;
+  };
+}
+/** Image-specific preset of ProcessFileEmbedding. Delegates to ProcessFileEmbedding with image-oriented defaults: dimensions=512 (CLIP), mime_patterns=['image/%'], task_identifier='process_image_embedding', direct mode (no extraction). Accepts all ProcessFileEmbedding parameters — any overrides are forwarded through. */
+export interface ProcessImageEmbeddingParams {
+  /* Name of the vector embedding column */
+  field_name?: string;
+  /* Vector dimensions (default 512 for CLIP-style image embeddings) */
+  dimensions?: number;
+  /* Index type for similarity search */
+  index_method?: 'hnsw' | 'ivfflat';
+  /* Distance metric */
+  metric?: 'cosine' | 'l2' | 'ip';
+  /* Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}. */
+  index_options?: {
+    [key: string]: unknown;
+  };
+  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. */
+  mime_patterns?: string[];
+  /* Job task identifier for the image embedding worker */
+  task_identifier?: string;
+  /* Trigger events that fire the job */
+  events?: ('INSERT' | 'UPDATE')[];
+  /* Custom payload key-to-column mapping for the job trigger */
+  payload_custom?: {
+    [key: string]: unknown;
+  };
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
+  trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Text extraction configuration. Forwarded to ProcessFileEmbedding. When present, enables extract mode (e.g., OCR for images). */
+  extraction?: {
+    /* Field to store extracted text */text_field?: string;
+    /* JSONB field for extraction metadata */metadata_field?: string;
+  };
+  /* Chunking configuration. Forwarded to ProcessFileEmbedding. Only meaningful when extraction is also provided. */
+  chunks?: {
+    content_field_name?: string;
+    chunk_size?: number;
+    chunk_overlap?: number;
+    chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+    metadata_fields?: {
+      [key: string]: unknown;
+    };
+    enqueue_chunking_job?: boolean;
+    chunking_task_name?: string;
+  };
+}
+/** Creates extraction output fields and a job trigger for file text extraction. Fires when a file is uploaded (status = 'uploaded') or on INSERT. The external worker extracts text/metadata from the file (PDF, DOCX, HTML, etc.) and writes the result back to the configured output fields. Typically used upstream of ProcessFileEmbedding or ProcessChunks. */
+export interface ProcessExtractionParams {
+  /* Field to store extracted text/markdown */
+  text_field?: string;
+  /* JSONB field for extraction metadata (page count, language, etc.) */
+  metadata_field?: string;
+  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['application/pdf', 'text/%'], ['application/vnd.openxmlformats%']. */
+  mime_patterns?: string[];
+  /* Job task identifier for the extraction worker */
+  task_identifier?: string;
+  /* Trigger events that fire the job */
+  events?: ('INSERT' | 'UPDATE')[];
+  /* Custom payload key-to-column mapping for the job trigger */
+  payload_custom?: {
+    [key: string]: unknown;
+  };
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks (e.g., status = 'uploaded'). */
+  trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Job queue name for extraction tasks */
+  queue_name?: string;
+  /* Maximum number of retry attempts */
+  max_attempts?: number;
+  /* Job priority (lower = higher priority) */
+  priority?: number;
+}
+/** Creates a job trigger for image variant generation. Fires when an image file is uploaded (status = 'uploaded') or on INSERT. The external worker generates resized, cropped, or reformatted versions (thumbnails, previews, WebP conversions, etc.) and stores them as new file records linked to the source image. */
+export interface ProcessImageVersionsParams {
+  /* Array of version definitions. Each version specifies dimensions, format, and quality for a generated image variant. Required — the blueprint must explicitly define what variants to generate. */
+  versions: {
+    /* Version identifier (e.g., "thumb", "preview", "hero") */name: string;
+    /* Target width in pixels */width?: number;
+    /* Target height in pixels */height?: number;
+    /* Resize fitting strategy */fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
+    /* Output image format */format?: 'jpeg' | 'png' | 'webp' | 'avif';
+    /* Output quality (1-100) */quality?: number;
+  }[];
+  /* MIME type LIKE patterns to match. Defaults to all image types. */
+  mime_patterns?: string[];
+  /* Job task identifier for the image processing worker */
+  task_identifier?: string;
+  /* Trigger events that fire the job */
+  events?: ('INSERT' | 'UPDATE')[];
+  /* Custom payload key-to-column mapping for the job trigger */
+  payload_custom?: {
+    [key: string]: unknown;
+  };
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
+  trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Job queue name for image processing tasks */
+  queue_name?: string;
+  /* Maximum number of retry attempts */
+  max_attempts?: number;
+  /* Job priority (lower = higher priority) */
+  priority?: number;
 }
 /**
  * ===========================================================================
@@ -1192,7 +1271,7 @@ export interface BlueprintEntityType {
  */
 ;
 /** String shorthand -- just the node type name. */
-export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'DataAggregateLimitCounter' | 'DataBillingMeter' | 'DataBulk' | 'DataChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataFileEmbedding' | 'DataFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'DataImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJobTrigger' | 'DataLimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
+export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'LimitAggregate' | 'BillingMeter' | 'DataBulk' | 'ProcessChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'ProcessFileEmbedding' | 'LimitFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'ProcessImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'JobTrigger' | 'LimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'ProcessExtraction' | 'ProcessImageVersions' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
 /** Object form -- { $type, data } with typed parameters. */
 export type BlueprintNodeObject = {
   $type: 'AuthzAllowAll';
@@ -1258,17 +1337,17 @@ export type BlueprintNodeObject = {
   $type: 'CheckOneOf';
   data: CheckOneOfParams;
 } | {
-  $type: 'DataAggregateLimitCounter';
-  data: DataAggregateLimitCounterParams;
+  $type: 'LimitAggregate';
+  data: LimitAggregateParams;
 } | {
-  $type: 'DataBillingMeter';
-  data: DataBillingMeterParams;
+  $type: 'BillingMeter';
+  data: BillingMeterParams;
 } | {
   $type: 'DataBulk';
   data: DataBulkParams;
 } | {
-  $type: 'DataChunks';
-  data: DataChunksParams;
+  $type: 'ProcessChunks';
+  data: ProcessChunksParams;
 } | {
   $type: 'DataCompositeField';
   data: DataCompositeFieldParams;
@@ -1279,11 +1358,11 @@ export type BlueprintNodeObject = {
   $type: 'DataEntityMembership';
   data: DataEntityMembershipParams;
 } | {
-  $type: 'DataFileEmbedding';
-  data: DataFileEmbeddingParams;
+  $type: 'ProcessFileEmbedding';
+  data: ProcessFileEmbeddingParams;
 } | {
-  $type: 'DataFeatureFlag';
-  data: DataFeatureFlagParams;
+  $type: 'LimitFeatureFlag';
+  data: LimitFeatureFlagParams;
 } | {
   $type: 'DataForceCurrentUser';
   data: DataForceCurrentUserParams;
@@ -1291,8 +1370,8 @@ export type BlueprintNodeObject = {
   $type: 'DataId';
   data: DataIdParams;
 } | {
-  $type: 'DataImageEmbedding';
-  data: DataImageEmbeddingParams;
+  $type: 'ProcessImageEmbedding';
+  data: ProcessImageEmbeddingParams;
 } | {
   $type: 'DataImmutableFields';
   data: DataImmutableFieldsParams;
@@ -1303,17 +1382,23 @@ export type BlueprintNodeObject = {
   $type: 'DataInheritFromParent';
   data: DataInheritFromParentParams;
 } | {
-  $type: 'DataJobTrigger';
-  data: DataJobTriggerParams;
+  $type: 'JobTrigger';
+  data: JobTriggerParams;
 } | {
-  $type: 'DataLimitCounter';
-  data: DataLimitCounterParams;
+  $type: 'LimitCounter';
+  data: LimitCounterParams;
 } | {
   $type: 'DataJsonb';
   data: DataJsonbParams;
 } | {
   $type: 'DataOwnedFields';
   data: DataOwnedFieldsParams;
+} | {
+  $type: 'ProcessExtraction';
+  data: ProcessExtractionParams;
+} | {
+  $type: 'ProcessImageVersions';
+  data: ProcessImageVersionsParams;
 } | {
   $type: 'DataOwnershipInEntity';
   data: DataOwnershipInEntityParams;

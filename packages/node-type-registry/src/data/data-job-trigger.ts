@@ -26,10 +26,10 @@ const triggerConditionSchema = {
   }
 };
 
-export const DataJobTrigger: NodeTypeDefinition = {
-  name: 'DataJobTrigger',
+export const JobTrigger: NodeTypeDefinition = {
+  name: 'JobTrigger',
   slug: 'data_job_trigger',
-  category: 'data',
+  category: 'job',
   display_name: 'Job Trigger',
   description: 'Dynamically creates PostgreSQL triggers that enqueue jobs via app_jobs.add_job() when table rows are inserted, updated, or deleted. Supports configurable payload strategies (full row, row ID, selected fields, or custom mapping), conditional firing via WHEN clauses, watched field changes, and extended job options (queue, priority, delay, max attempts).',
   parameter_schema: {

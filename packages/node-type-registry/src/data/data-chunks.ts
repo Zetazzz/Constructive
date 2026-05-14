@@ -12,20 +12,20 @@ import type { NodeTypeDefinition } from '../types';
  * - RLS policies inherited from parent
  * - Optional job trigger for automatic chunking on INSERT/UPDATE
  *
- * This node is also composed internally by DataFileEmbedding (enabled by
+ * This node is also composed internally by ProcessFileEmbedding (enabled by
  * default in extract mode). Use it standalone when you want a chunks table
  * without the full file-embedding pipeline.
  */
-export const DataChunks: NodeTypeDefinition = {
-  name: 'DataChunks',
+export const ProcessChunks: NodeTypeDefinition = {
+  name: 'ProcessChunks',
   slug: 'data_chunks',
-  category: 'data',
+  category: 'process',
   display_name: 'Chunks',
   description:
     'Creates a chunked-embedding child table for any parent table. ' +
     'Provisions the chunks table with content, chunk_index, embedding vector, ' +
     'metadata, HNSW index, inherited RLS, and optional job trigger for ' +
-    'automatic text splitting. Composed internally by DataFileEmbedding ' +
+    'automatic text splitting. Composed internally by ProcessFileEmbedding ' +
     '(enabled by default in extract mode) but can also be used standalone.',
   parameter_schema: {
     type: 'object',

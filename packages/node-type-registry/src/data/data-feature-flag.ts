@@ -1,9 +1,9 @@
 import type { NodeTypeDefinition } from '../types';
 
-export const DataFeatureFlag: NodeTypeDefinition = {
-  name: 'DataFeatureFlag',
+export const LimitFeatureFlag: NodeTypeDefinition = {
+  name: 'LimitFeatureFlag',
   slug: 'data_feature_flag',
-  category: 'data',
+  category: 'limit',
   display_name: 'Feature Flag',
   description:
     'Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0).',
