@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/constructive-io/constructive/compare/graphile-realtime-test@0.4.0...graphile-realtime-test@0.6.0) (2026-05-14)
+
+### Features
+
+- **graphile-realtime-test:** add deep getConnections() API for realtime E2E tests ([6b50e22](https://github.com/constructive-io/constructive/commit/6b50e22af615bbe9188e0a7d5569a159e2fa6f10))
+- **graphile-realtime-test:** export WebSocket test helpers and server factory ([1a59c4a](https://github.com/constructive-io/constructive/commit/1a59c4a77ac34bf1b2b847db5eff11b9f6592d21))
+
 # [0.4.0](https://github.com/constructive-io/constructive/compare/graphile-realtime-test@0.3.0...graphile-realtime-test@0.4.0) (2026-05-14)
 
 ### Features

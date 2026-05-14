@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.35.0...node-type-registry@0.36.0) (2026-05-14)
+
+### Bug Fixes
+
+- align parameter_schema key names with SQL generators ([dd7f177](https://github.com/constructive-io/constructive/commit/dd7f17750a76957f4d6001a47cd7f08afd6b112f))
+
+### Features
+
+- add missing parameter_schema defaults for centralized default normalization ([b36b55b](https://github.com/constructive-io/constructive/commit/b36b55b2ee2bb861820741c3a03e0cf70f124dde))
+
 # [0.35.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.34.0...node-type-registry@0.35.0) (2026-05-14)
 
 ### Features
