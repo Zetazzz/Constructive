@@ -49,7 +49,8 @@ export const PresetAuthHardened: ModulePreset = {
     'identity_providers_module',
     'webauthn_credentials_module',
     'webauthn_auth_module',
-    'phone_numbers_module'
+    'phone_numbers_module',
+    'devices_module'
   ],
   includes_notes: {
     rate_limits_module: 'Throttling for sign-in, password reset, sign-up, and IP-based gates.',
@@ -58,7 +59,8 @@ export const PresetAuthHardened: ModulePreset = {
     webauthn_credentials_module: 'Per-user passkey storage.',
     webauthn_auth_module: 'Passkey challenge + assertion runtime.',
     session_secrets_module: 'Nonces for magic links, email OTP, and WebAuthn challenges.',
-    phone_numbers_module: 'SMS sign-in / MFA support.'
+    phone_numbers_module: 'SMS sign-in / MFA support.',
+    devices_module: 'Device tracking and trusted-device MFA bypass.'
   },
   omits_notes: {
     'memberships_module:org': 'No orgs / teams — use `b2b` when you need multi-tenancy.',
