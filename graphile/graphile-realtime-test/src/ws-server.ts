@@ -85,7 +85,7 @@ export async function createWsTestServer(
   });
 
   const addr = httpServer.address() as AddressInfo;
-  const serverUrl = `ws://127.0.0.1:\${addr.port}/graphql`;
+  const serverUrl = `ws://127.0.0.1:${addr.port}/graphql`;
 
   const clients: GqlWsClient[] = [];
 

@@ -22,3 +22,10 @@ export { nextEvent, collectWsEvents, delay } from './ws-helpers.js';
 
 export { createWsTestServer } from './ws-server.js';
 export type { WsTestServerInput, WsTestServer } from './ws-server.js';
+
+export { getConnections } from './get-connections.js';
+export type {
+  GetConnectionsInput,
+  GetConnectionsResult,
+  WsHandle,
+} from './get-connections.js';

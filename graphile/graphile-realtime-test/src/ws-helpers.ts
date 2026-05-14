@@ -16,7 +16,7 @@ export function nextEvent<T = Record<string, unknown>>(
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
       unsubscribe();
-      reject(new Error(`nextEvent timed out after \${timeoutMs}ms`));
+      reject(new Error(`nextEvent timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
     const unsubscribe = client.subscribe(
