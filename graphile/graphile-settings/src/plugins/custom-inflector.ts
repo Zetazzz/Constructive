@@ -86,11 +86,94 @@ function arraysMatch<T>(
   return true;
 }
 
+/**
+ * Handle @listSuffix smart tag for per-table control of Connection/List suffix.
+ * When @listSuffix is "omit", connections get a "Connection" suffix and lists are bare.
+ * When @listSuffix is "include" (or absent), default behavior applies.
+ */
+let globalPgOmitListSuffix: boolean | null = null;
+
+function overrideListSuffix<T>(listSuffix: unknown, cb: () => T): T {
+  if (listSuffix == null) {
+    return cb();
+  }
+  if (listSuffix !== 'include' && listSuffix !== 'omit') {
+    throw new Error(`Unrecognized @listSuffix value "${String(listSuffix)}". Must be "omit" or "include".`);
+  }
+  const old = globalPgOmitListSuffix;
+  try {
+    globalPgOmitListSuffix = listSuffix === 'omit';
+    return cb();
+  } finally {
+    globalPgOmitListSuffix = old;
+  }
+}
+
 export const InflektPlugin: GraphileConfig.Plugin = {
   name: 'InflektPlugin',
   version: '1.0.0',
 
   inflection: {
+    add: {
+      /**
+       * Pluralize ensuring the result differs from the singular.
+       * Registered as an inflection method so other plugins can call this.distinctPluralize().
+       */
+      distinctPluralize(_preset: GraphileConfig.ResolvedPreset, str: string) {
+        return distinctPluralize(str);
+      },
+
+      /**
+       * Extract base name from FK attribute names (e.g. "author_id" -> "author").
+       * Registered so other plugins can call this._getBaseName().
+       */
+      _getBaseName(_preset: GraphileConfig.ResolvedPreset, attributeName: string) {
+        return getBaseName(attributeName);
+      },
+
+      /**
+       * Check if a base name matches another name when singularized.
+       * Registered so other plugins can call this._baseNameMatches().
+       */
+      _baseNameMatches(_preset: GraphileConfig.ResolvedPreset, baseName: string, otherName: string) {
+        return baseNameMatches(baseName, otherName);
+      },
+
+      /**
+       * Get the opposite name for a relation base name (e.g. "parent" -> "child").
+       * Registered so other plugins can call this._getOppositeBaseName().
+       */
+      _getOppositeBaseName(_preset: GraphileConfig.ResolvedPreset, baseName: string) {
+        return getOppositeBaseName(baseName);
+      },
+
+      /**
+       * Extract base name from composite FK keys.
+       * Handles single-key (delegates to getBaseName) and multi-key
+       * (joins base names with hyphens) FK relations.
+       */
+      _getBaseNameFromKeys(preset: GraphileConfig.ResolvedPreset, detailedKeys: { codec: any; attributeName: string }[]) {
+        if (detailedKeys.length === 1) {
+          const key = detailedKeys[0];
+          const attributeName = (this as any)._attributeName({
+            ...key,
+            skipRowId: true,
+          });
+          return getBaseName(attributeName);
+        }
+        if ((preset.schema as any)?.pgSimplifyMultikeyRelations) {
+          const attributeNames = detailedKeys.map((key: { codec: any; attributeName: string }) =>
+            (this as any)._attributeName({ ...key, skipRowId: true })
+          );
+          const baseNames = attributeNames.map((attr: string) => getBaseName(attr));
+          if (baseNames.every((n: string | null) => n)) {
+            return baseNames.join('-');
+          }
+        }
+        return null;
+      },
+    } as any,
+
     replace: {
       /**
        * Remove schema prefixes from all schemas.
@@ -200,23 +283,106 @@ export const InflektPlugin: GraphileConfig.Plugin = {
       },
 
       /**
+       * Connection field suffix — respects @listSuffix smart tag.
+       * When pgOmitListSuffix is true, connections get "Connection" suffix.
+       */
+      connectionField(_prev, options, baseName) {
+        return (globalPgOmitListSuffix ?? (options.schema as any)?.pgOmitListSuffix)
+          ? baseName + 'Connection'
+          : baseName;
+      },
+
+      /**
+       * List field suffix — respects @listSuffix smart tag.
+       * When pgOmitListSuffix is true, lists are bare (no suffix).
+       */
+      listField(_prev, options, baseName) {
+        return (globalPgOmitListSuffix ?? (options.schema as any)?.pgOmitListSuffix)
+          ? baseName
+          : baseName + 'List';
+      },
+
+      /**
        * Simplify root query connection fields (allUsers -> users)
+       * Supports @listSuffix smart tag per-table.
        */
       allRowsConnection(_previous, _options, resource) {
-        const resourceName = this._singularizedResourceName(resource);
-        return toCamelCase(distinctPluralize(resourceName));
+        const listSuffix = resource.extensions?.tags?.listSuffix;
+        return overrideListSuffix(listSuffix, () => {
+          const resourceName = this._singularizedResourceName(resource);
+          return this.connectionField(toCamelCase(distinctPluralize(resourceName)));
+        });
       },
 
       /**
-       * Simplify root query list fields
+       * Simplify root query list fields.
+       * Supports @listSuffix smart tag per-table.
        */
       allRowsList(_previous, _options, resource) {
-        const resourceName = this._singularizedResourceName(resource);
-        return toCamelCase(distinctPluralize(resourceName)) + 'List';
+        const listSuffix = resource.extensions?.tags?.listSuffix;
+        return overrideListSuffix(listSuffix, () => {
+          const resourceName = this._singularizedResourceName(resource);
+          return this.listField(toCamelCase(distinctPluralize(resourceName)));
+        });
       },
 
       /**
-       * Simplify single relation field names (userByAuthorId -> author)
+       * @listSuffix passthrough for many-relation connection fields
+       */
+      manyRelationConnection(previous, _options, details) {
+        const { registry, codec, relationName } = details;
+        const relation = registry.pgRelations[codec.name]?.[relationName];
+        const listSuffix = (relation?.extensions?.tags?.listSuffix ??
+          relation?.remoteResource?.extensions?.tags?.listSuffix) as string | undefined;
+        return overrideListSuffix(listSuffix, () => previous!(details));
+      },
+
+      /**
+       * @listSuffix passthrough for many-relation list fields
+       */
+      manyRelationList(previous, _options, details) {
+        const { registry, codec, relationName } = details;
+        const relation = registry.pgRelations[codec.name]?.[relationName];
+        const listSuffix = (relation?.extensions?.tags?.listSuffix ??
+          relation?.remoteResource?.extensions?.tags?.listSuffix) as string | undefined;
+        return overrideListSuffix(listSuffix, () => previous!(details));
+      },
+
+      /**
+       * @listSuffix passthrough for custom query connection fields
+       */
+      customQueryConnectionField(previous, _options, details) {
+        const listSuffix = details.resource?.extensions?.tags?.listSuffix;
+        return overrideListSuffix(listSuffix, () => previous!(details));
+      },
+
+      /**
+       * @listSuffix passthrough for custom query list fields
+       */
+      customQueryListField(previous, _options, details) {
+        const listSuffix = details.resource?.extensions?.tags?.listSuffix;
+        return overrideListSuffix(listSuffix, () => previous!(details));
+      },
+
+      /**
+       * @listSuffix passthrough for computed attribute connection fields
+       */
+      computedAttributeConnectionField(previous, _options, details) {
+        const listSuffix = details.resource?.extensions?.tags?.listSuffix;
+        return overrideListSuffix(listSuffix, () => previous!(details));
+      },
+
+      /**
+       * @listSuffix passthrough for computed attribute list fields
+       */
+      computedAttributeListField(previous, _options, details) {
+        const listSuffix = details.resource?.extensions?.tags?.listSuffix;
+        return overrideListSuffix(listSuffix, () => previous!(details));
+      },
+
+      /**
+       * Simplify single relation field names (userByAuthorId -> author).
+       * Uses _getBaseNameFromKeys for composite FK support.
        */
       singleRelation(previous, _options, details) {
         const { registry, codec, relationName } = details;
@@ -228,7 +394,10 @@ export const InflektPlugin: GraphileConfig.Plugin = {
           return relation.extensions.tags.fieldName;
         }
 
-        // Try to extract base name from the local attribute
+        const detailedKeys = relation.localAttributes.map((attributeName: string) => ({
+          codec,
+          attributeName,
+        }));
         if (relation.localAttributes.length === 1) {
           const attributeName = relation.localAttributes[0];
           const baseName = getBaseName(attributeName);
@@ -253,7 +422,8 @@ export const InflektPlugin: GraphileConfig.Plugin = {
       },
 
       /**
-       * Simplify backwards single relation field names
+       * Simplify backwards single relation field names.
+       * Uses _getBaseNameFromKeys for composite FK support.
        */
       singleRelationBackwards(previous, _options, details) {
         const { registry, codec, relationName } = details;
@@ -270,7 +440,6 @@ export const InflektPlugin: GraphileConfig.Plugin = {
           return relation.extensions.tags.foreignFieldName;
         }
 
-        // Try to extract base name from the remote attribute
         if (relation.remoteAttributes.length === 1) {
           const attributeName = relation.remoteAttributes[0];
           const baseName = getBaseName(attributeName);
@@ -293,7 +462,8 @@ export const InflektPlugin: GraphileConfig.Plugin = {
       },
 
       /**
-       * Simplify many relation field names (postsByAuthorId -> posts)
+       * Simplify many relation field names (postsByAuthorId -> posts).
+       * Uses _getBaseNameFromKeys for composite FK support.
        */
       _manyRelation(previous, _options, details) {
         const { registry, codec, relationName } = details;
@@ -306,7 +476,6 @@ export const InflektPlugin: GraphileConfig.Plugin = {
           return baseOverride;
         }
 
-        // Try to extract base name from the remote attribute
         if (relation.remoteAttributes.length === 1) {
           const attributeName = relation.remoteAttributes[0];
           const baseName = getBaseName(attributeName);
