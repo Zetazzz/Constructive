@@ -30,6 +30,11 @@ export const DataOwnershipInEntity: NodeTypeDefinition = {
         type: 'boolean',
         description: 'If true, adds foreign key constraints from owner_id and entity_id to the users table',
         default: true
+      },
+      create_index: {
+        type: 'boolean',
+        description: 'If true, creates B-tree indexes on the owner and entity columns',
+        default: true
       }
     }
   },

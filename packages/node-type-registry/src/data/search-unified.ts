@@ -163,6 +163,18 @@ export const SearchUnified: NodeTypeDefinition = {
           }
         }
       },
+      embedding_text_field: {
+        type: 'string',
+        format: 'column-ref',
+        description: 'Name of the composite text field created for embedding input',
+        default: 'embedding_text'
+      },
+      composite_format: {
+        type: 'string',
+        enum: ['labeled', 'plain'],
+        description: 'Output format for the composite text field',
+        default: 'labeled'
+      },
       trgm_fields: {
         type: 'array',
         items: {

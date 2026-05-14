@@ -30,6 +30,11 @@ export const DataPeoplestamps: NodeTypeDefinition = {
         type: 'boolean',
         description: 'If true, adds foreign key constraints from created_by and updated_by to the users table',
         default: false
+      },
+      create_index: {
+        type: 'boolean',
+        description: 'If true, creates B-tree indexes on the peoplestamp columns',
+        default: true
       }
     }
   },
