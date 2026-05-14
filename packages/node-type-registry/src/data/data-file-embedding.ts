@@ -114,12 +114,6 @@ export const DataFileEmbedding: NodeTypeDefinition = {
             format: 'column-ref',
             description: 'JSONB field for extraction metadata (page count, language, etc.)',
             default: 'extracted_metadata'
-          },
-          status_field: {
-            type: 'string',
-            format: 'column-ref',
-            description: 'Extraction lifecycle status field',
-            default: 'extraction_status'
           }
         }
       },
