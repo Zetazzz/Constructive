@@ -17,3 +17,8 @@ export {
   buildPayload,
   buildInvalidatePayload,
 } from './notify.js';
+
+export { nextEvent, collectWsEvents, delay } from './ws-helpers.js';
+
+export { createWsTestServer } from './ws-server.js';
+export type { WsTestServerInput, WsTestServer } from './ws-server.js';

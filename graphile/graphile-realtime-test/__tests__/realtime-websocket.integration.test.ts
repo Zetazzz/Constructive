@@ -37,71 +37,7 @@ import { useServer } from 'graphql-ws/use/ws';
 import { makeRealtimeSmartTagsPlugin } from '../src/smart-tags';
 import { createRealtimeSubscriptionsPlugin } from 'graphile-realtime-subscriptions';
 import { notify, notifyChange, notifyInvalidate } from '../src/notify';
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/**
- * Collect the next event from a graphql-ws subscription.
- * Returns a promise that resolves with the first `next` payload,
- * or rejects on error / timeout.
- */
-function nextEvent<T = Record<string, unknown>>(
-  client: GqlWsClient,
-  query: string,
-  variables?: Record<string, unknown>,
-  timeoutMs = 10000,
-): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      unsubscribe();
-      reject(new Error(`nextEvent timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    const unsubscribe = client.subscribe(
-      { query, variables },
-      {
-        next(value) {
-          clearTimeout(timer);
-          unsubscribe();
-          resolve(value.data as T);
-        },
-        error(err) {
-          clearTimeout(timer);
-          unsubscribe();
-          reject(Array.isArray(err) ? err[0] : err);
-        },
-        complete() {
-          clearTimeout(timer);
-          reject(new Error('Subscription completed without yielding a value'));
-        },
-      },
-    );
-  });
-}
-
-/**
- * Subscribe and collect events into an array until unsubscribe is called.
- */
-function collectWsEvents<T = Record<string, unknown>>(
-  client: GqlWsClient,
-  query: string,
-  variables?: Record<string, unknown>,
-): { events: T[]; unsubscribe: () => void } {
-  const events: T[] = [];
-  const unsubscribe = client.subscribe(
-    { query, variables },
-    {
-      next(value) {
-        events.push(value.data as T);
-      },
-      error() { /* swallow */ },
-      complete() { /* done */ },
-    },
-  );
-  return { events, unsubscribe };
-}
+import { nextEvent, collectWsEvents, delay } from '../src/ws-helpers';
 
 // ─── Test Suite ─────────────────────────────────────────────────────────────
 
