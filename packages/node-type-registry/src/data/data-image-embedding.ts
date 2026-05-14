@@ -150,24 +150,6 @@ export const DataImageEmbedding: NodeTypeDefinition = {
           enqueue_chunking_job: { type: 'boolean', default: true },
           chunking_task_name: { type: 'string', default: 'generate_chunks' }
         }
-      },
-
-      // ── Stale tracking (forwarded to DataFileEmbedding) ────────────
-      stale_strategy: {
-        type: 'string',
-        enum: ['column', 'null', 'hash'],
-        description:
-          'Strategy for tracking embedding staleness in extract mode. ' +
-          'column: {field_name}_updated_at timestamptz. null: set embedding to NULL. ' +
-          'hash: {field_name}_source_hash md5.',
-        default: 'column'
-      },
-      include_updated_at_field: {
-        type: 'boolean',
-        description:
-          'Whether to include the {field_name}_updated_at timestamptz column ' +
-          '(read-only in GraphQL, set by worker on completion).',
-        default: true
       }
     }
   },

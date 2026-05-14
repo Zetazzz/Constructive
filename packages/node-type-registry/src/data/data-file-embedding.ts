@@ -177,24 +177,6 @@ export const DataFileEmbedding: NodeTypeDefinition = {
             default: 'generate_chunks'
           }
         }
-      },
-
-      // ── Stale tracking (meaningful in extract mode) ────────────────
-      stale_strategy: {
-        type: 'string',
-        enum: ['column', 'null', 'hash'],
-        description:
-          'Strategy for tracking embedding staleness when extraction is enabled. ' +
-          'column: {field_name}_updated_at timestamptz (NULL = needs computation). ' +
-          'null: set embedding to NULL. hash: {field_name}_source_hash md5.',
-        default: 'column'
-      },
-      include_updated_at_field: {
-        type: 'boolean',
-        description:
-          'Whether to include the {field_name}_updated_at timestamptz column ' +
-          '(read-only in GraphQL, set by worker on completion). Extract mode only.',
-        default: true
       }
     }
   },
