@@ -117,12 +117,6 @@ export const DataImageEmbedding: NodeTypeDefinition = {
             format: 'column-ref',
             description: 'JSONB field for extraction metadata',
             default: 'extracted_metadata'
-          },
-          status_field: {
-            type: 'string',
-            format: 'column-ref',
-            description: 'Extraction lifecycle status field',
-            default: 'extraction_status'
           }
         }
       },
