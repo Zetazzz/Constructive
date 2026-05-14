@@ -46,6 +46,8 @@ const fieldSchema: FieldSchema = {
   hasContentHash: 'boolean',
   hasCustomKeys: 'boolean',
   hasAuditLog: 'boolean',
+  hasConfirmUpload: 'boolean',
+  confirmUploadDelay: 'string',
   fileEventsTableId: 'uuid',
 };
 const usage =
@@ -129,6 +131,8 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       hasContentHash: true,
       hasCustomKeys: true,
       hasAuditLog: true,
+      hasConfirmUpload: true,
+      confirmUploadDelay: true,
       fileEventsTableId: true,
     };
     const findManyArgs = parseFindManyArgs<
@@ -180,6 +184,8 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       hasContentHash: true,
       hasCustomKeys: true,
       hasAuditLog: true,
+      hasConfirmUpload: true,
+      confirmUploadDelay: true,
       fileEventsTableId: true,
     };
     const findFirstArgs = parseFindFirstArgs<
@@ -243,6 +249,8 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           hasContentHash: true,
           hasCustomKeys: true,
           hasAuditLog: true,
+          hasConfirmUpload: true,
+          confirmUploadDelay: true,
           fileEventsTableId: true,
         },
       })
@@ -462,6 +470,20 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'hasConfirmUpload',
+        message: 'hasConfirmUpload',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'confirmUploadDelay',
+        message: 'confirmUploadDelay',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'text',
         name: 'fileEventsTableId',
         message: 'fileEventsTableId',
@@ -507,6 +529,8 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: cleanedData.hasContentHash,
           hasCustomKeys: cleanedData.hasCustomKeys,
           hasAuditLog: cleanedData.hasAuditLog,
+          hasConfirmUpload: cleanedData.hasConfirmUpload,
+          confirmUploadDelay: cleanedData.confirmUploadDelay,
           fileEventsTableId: cleanedData.fileEventsTableId,
         },
         select: {
@@ -540,6 +564,8 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: true,
           hasCustomKeys: true,
           hasAuditLog: true,
+          hasConfirmUpload: true,
+          confirmUploadDelay: true,
           fileEventsTableId: true,
         },
       })
@@ -765,6 +791,20 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'hasConfirmUpload',
+        message: 'hasConfirmUpload',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'confirmUploadDelay',
+        message: 'confirmUploadDelay',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'text',
         name: 'fileEventsTableId',
         message: 'fileEventsTableId',
@@ -810,6 +850,8 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: cleanedData.hasContentHash,
           hasCustomKeys: cleanedData.hasCustomKeys,
           hasAuditLog: cleanedData.hasAuditLog,
+          hasConfirmUpload: cleanedData.hasConfirmUpload,
+          confirmUploadDelay: cleanedData.confirmUploadDelay,
           fileEventsTableId: cleanedData.fileEventsTableId,
         },
         select: {
@@ -843,6 +885,8 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: true,
           hasCustomKeys: true,
           hasAuditLog: true,
+          hasConfirmUpload: true,
+          confirmUploadDelay: true,
           fileEventsTableId: true,
         },
       })

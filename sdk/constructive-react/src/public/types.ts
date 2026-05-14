@@ -969,6 +969,8 @@ export interface StorageModule {
   hasContentHash: boolean | null;
   hasCustomKeys: boolean | null;
   hasAuditLog: boolean | null;
+  hasConfirmUpload: boolean | null;
+  confirmUploadDelay: string | null;
   fileEventsTableId: string | null;
 }
 export interface EntityTypeProvision {

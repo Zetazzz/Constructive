@@ -2049,6 +2049,10 @@ export type StorageModuleOrderBy =
   | 'HAS_CUSTOM_KEYS_DESC'
   | 'HAS_AUDIT_LOG_ASC'
   | 'HAS_AUDIT_LOG_DESC'
+  | 'HAS_CONFIRM_UPLOAD_ASC'
+  | 'HAS_CONFIRM_UPLOAD_DESC'
+  | 'CONFIRM_UPLOAD_DELAY_ASC'
+  | 'CONFIRM_UPLOAD_DELAY_DESC'
   | 'FILE_EVENTS_TABLE_ID_ASC'
   | 'FILE_EVENTS_TABLE_ID_DESC';
 /** Methods to use when ordering `EntityTypeProvision`. */
@@ -10882,6 +10886,10 @@ export interface StorageModuleFilter {
   hasCustomKeys?: BooleanFilter;
   /** Filter by the object’s `hasAuditLog` field. */
   hasAuditLog?: BooleanFilter;
+  /** Filter by the object’s `hasConfirmUpload` field. */
+  hasConfirmUpload?: BooleanFilter;
+  /** Filter by the object’s `confirmUploadDelay` field. */
+  confirmUploadDelay?: IntervalFilter;
   /** Filter by the object’s `fileEventsTableId` field. */
   fileEventsTableId?: UUIDFilter;
   /** Checks for all expressions in this list. */
@@ -15711,6 +15719,8 @@ export interface StorageModuleInput {
   hasContentHash?: boolean;
   hasCustomKeys?: boolean;
   hasAuditLog?: boolean;
+  hasConfirmUpload?: boolean;
+  confirmUploadDelay?: IntervalInput;
   fileEventsTableId?: string;
 }
 export interface CreateMembershipsModuleInput {
@@ -19172,6 +19182,8 @@ export interface StorageModulePatch {
   hasContentHash?: boolean;
   hasCustomKeys?: boolean;
   hasAuditLog?: boolean;
+  hasConfirmUpload?: boolean;
+  confirmUploadDelay?: IntervalInput;
   fileEventsTableId?: string;
 }
 export interface UpdateMembershipsModuleInput {
