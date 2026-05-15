@@ -1,6 +1,6 @@
 {
   "name": "@constructive-io/graphql-realtime-test",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Constructive Realtime GraphQL Testing with all plugins loaded",
   "main": "index.js",
@@ -29,10 +29,10 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@constructive-io/graphql-test": "workspace:^",
     "graphile-realtime-test": "workspace:^",
     "graphile-settings": "workspace:^",
-    "graphile-test": "workspace:^",
-    "@constructive-io/graphql-test": "workspace:^"
+    "graphile-test": "workspace:^"
   },
   "peerDependencies": {
     "grafast": "1.0.0",

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [5.2.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.1.1...graphile-settings@5.2.0) (2026-05-15)
+
+### Features
+
+- **inflekt:** add [@list](https://github.com/list)Suffix, composite FK naming, and inflection helpers ([826fb9a](https://github.com/constructive-io/constructive/commit/826fb9a2cec6f390a48c60f675b9ca5b99ba9f5b))
+
 ## [5.1.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.1.0...graphile-settings@5.1.1) (2026-05-14)
 
 **Note:** Version bump only for package graphile-settings
