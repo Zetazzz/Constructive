@@ -101,6 +101,10 @@ export interface Table {
   pluralName: string | null;
   singularName: string | null;
   tags: string[] | null;
+  partitioned: boolean | null;
+  partitionStrategy: string | null;
+  partitionKeyNames: string[] | null;
+  partitionKeyTypes: string[] | null;
   inheritsId: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -161,19 +165,6 @@ export interface SpatialRelation {
   module: string | null;
   scope: number | null;
   tags: string[] | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
-export interface Partition {
-  id: string | null;
-  databaseId: string | null;
-  tableId: string | null;
-  strategy: string | null;
-  partitionKeyId: string | null;
-  interval: string | null;
-  retention: string | null;
-  lookahead: number | null;
-  namingPattern: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -544,6 +535,19 @@ export interface DatabaseTransfer {
   updatedAt: string | null;
   completedAt: string | null;
 }
+export interface Partition {
+  id: string | null;
+  databaseId: string | null;
+  tableId: string | null;
+  strategy: string | null;
+  partitionKeyIds: string[] | null;
+  interval: string | null;
+  retention: string | null;
+  lookahead: number | null;
+  namingPattern: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
 export interface Api {
   id: string | null;
   databaseId: string | null;
@@ -589,6 +593,7 @@ export interface ApiSetting {
   enableLtree: boolean | null;
   enableLlm: boolean | null;
   enableRealtime: boolean | null;
+  enableBulk: boolean | null;
   options: unknown | null;
 }
 export interface ConnectedAccountsModule {
@@ -964,6 +969,8 @@ export interface StorageModule {
   hasContentHash: boolean | null;
   hasCustomKeys: boolean | null;
   hasAuditLog: boolean | null;
+  hasConfirmUpload: boolean | null;
+  confirmUploadDelay: string | null;
   fileEventsTableId: string | null;
 }
 export interface EntityTypeProvision {
@@ -1350,6 +1357,7 @@ export interface OrgInvite {
   multiple: boolean | null;
   data: unknown | null;
   profileId: string | null;
+  isReadOnly: boolean | null;
   expiresAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -1625,21 +1633,6 @@ export interface RlsModule {
   currentRole: string | null;
   currentRoleId: string | null;
 }
-export interface DatabaseSetting {
-  id: string | null;
-  databaseId: string | null;
-  enableAggregates: boolean | null;
-  enablePostgis: boolean | null;
-  enableSearch: boolean | null;
-  enableDirectUploads: boolean | null;
-  enablePresignedUploads: boolean | null;
-  enableManyToMany: boolean | null;
-  enableConnectionFilter: boolean | null;
-  enableLtree: boolean | null;
-  enableLlm: boolean | null;
-  enableRealtime: boolean | null;
-  options: unknown | null;
-}
 export interface PlansModule {
   id: string | null;
   databaseId: string | null;
@@ -1669,6 +1662,22 @@ export interface SqlAction {
   action: string | null;
   actionId: string | null;
   actorId: string | null;
+}
+export interface DatabaseSetting {
+  id: string | null;
+  databaseId: string | null;
+  enableAggregates: boolean | null;
+  enablePostgis: boolean | null;
+  enableSearch: boolean | null;
+  enableDirectUploads: boolean | null;
+  enablePresignedUploads: boolean | null;
+  enableManyToMany: boolean | null;
+  enableConnectionFilter: boolean | null;
+  enableLtree: boolean | null;
+  enableLlm: boolean | null;
+  enableRealtime: boolean | null;
+  enableBulk: boolean | null;
+  options: unknown | null;
 }
 export interface BillingModule {
   id: string | null;

@@ -88,11 +88,6 @@ function App() {
 | `useCreateSpatialRelationMutation` | Mutation | Create a spatialRelation |
 | `useUpdateSpatialRelationMutation` | Mutation | Update a spatialRelation |
 | `useDeleteSpatialRelationMutation` | Mutation | Delete a spatialRelation |
-| `usePartitionsQuery` | Query | List all partitions |
-| `usePartitionQuery` | Query | Get one partition |
-| `useCreatePartitionMutation` | Mutation | Create a partition |
-| `useUpdatePartitionMutation` | Mutation | Update a partition |
-| `useDeletePartitionMutation` | Mutation | Delete a partition |
 | `useForeignKeyConstraintsQuery` | Query | List all foreignKeyConstraints |
 | `useForeignKeyConstraintQuery` | Query | Get one foreignKeyConstraint |
 | `useCreateForeignKeyConstraintMutation` | Mutation | Create a foreignKeyConstraint |
@@ -283,6 +278,11 @@ function App() {
 | `useCreateDatabaseTransferMutation` | Mutation | Create a databaseTransfer |
 | `useUpdateDatabaseTransferMutation` | Mutation | Update a databaseTransfer |
 | `useDeleteDatabaseTransferMutation` | Mutation | Delete a databaseTransfer |
+| `usePartitionsQuery` | Query | List all partitions |
+| `usePartitionQuery` | Query | Get one partition |
+| `useCreatePartitionMutation` | Mutation | Create a partition |
+| `useUpdatePartitionMutation` | Mutation | Update a partition |
+| `useDeletePartitionMutation` | Mutation | Delete a partition |
 | `useApisQuery` | Query | API endpoint configurations: each record defines a PostGraphile/PostgREST API with its database role and public access settings |
 | `useApiQuery` | Query | API endpoint configurations: each record defines a PostGraphile/PostgREST API with its database role and public access settings |
 | `useCreateApiMutation` | Mutation | API endpoint configurations: each record defines a PostGraphile/PostgREST API with its database role and public access settings |
@@ -774,11 +774,6 @@ function App() {
 | `useCreateRlsModuleMutation` | Mutation | Create a rlsModule |
 | `useUpdateRlsModuleMutation` | Mutation | Update a rlsModule |
 | `useDeleteRlsModuleMutation` | Mutation | Delete a rlsModule |
-| `useDatabaseSettingsQuery` | Query | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
-| `useDatabaseSettingQuery` | Query | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
-| `useCreateDatabaseSettingMutation` | Mutation | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
-| `useUpdateDatabaseSettingMutation` | Mutation | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
-| `useDeleteDatabaseSettingMutation` | Mutation | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
 | `usePlansModulesQuery` | Query | List all plansModules |
 | `usePlansModuleQuery` | Query | Get one plansModule |
 | `useCreatePlansModuleMutation` | Mutation | Create a plansModule |
@@ -789,6 +784,11 @@ function App() {
 | `useCreateSqlActionMutation` | Mutation | Create a sqlAction |
 | `useUpdateSqlActionMutation` | Mutation | Update a sqlAction |
 | `useDeleteSqlActionMutation` | Mutation | Delete a sqlAction |
+| `useDatabaseSettingsQuery` | Query | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
+| `useDatabaseSettingQuery` | Query | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
+| `useCreateDatabaseSettingMutation` | Mutation | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
+| `useUpdateDatabaseSettingMutation` | Mutation | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
+| `useDeleteDatabaseSettingMutation` | Mutation | Database-wide feature flags and settings; controls which platform features are available to all APIs in this database |
 | `useBillingModulesQuery` | Query | List all billingModules |
 | `useBillingModuleQuery` | Query | Get one billingModule |
 | `useCreateBillingModuleMutation` | Mutation | Create a billingModule |
@@ -1098,20 +1098,20 @@ create({ databaseId: '<UUID>', name: '<String>', schemaName: '<String>', label: 
 ```typescript
 // List all tables
 const { data, isLoading } = useTablesQuery({
-  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } },
+  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } },
 });
 
 // Get one table
 const { data: item } = useTableQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } },
+  selection: { fields: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } },
 });
 
 // Create a table
 const { mutate: create } = useCreateTableMutation({
   selection: { fields: { id: true } },
 });
-create({ databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', inheritsId: '<UUID>' });
+create({ databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', partitioned: '<Boolean>', partitionStrategy: '<String>', partitionKeyNames: '<String>', partitionKeyTypes: '<String>', inheritsId: '<UUID>' });
 ```
 
 ### CheckConstraint
@@ -1175,27 +1175,6 @@ const { mutate: create } = useCreateSpatialRelationMutation({
   selection: { fields: { id: true } },
 });
 create({ databaseId: '<UUID>', tableId: '<UUID>', fieldId: '<UUID>', refTableId: '<UUID>', refFieldId: '<UUID>', name: '<String>', operator: '<String>', paramName: '<String>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', tags: '<String>' });
-```
-
-### Partition
-
-```typescript
-// List all partitions
-const { data, isLoading } = usePartitionsQuery({
-  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
-});
-
-// Get one partition
-const { data: item } = usePartitionQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
-});
-
-// Create a partition
-const { mutate: create } = useCreatePartitionMutation({
-  selection: { fields: { id: true } },
-});
-create({ databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyId: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' });
 ```
 
 ### ForeignKeyConstraint
@@ -1849,6 +1828,27 @@ const { mutate: create } = useCreateDatabaseTransferMutation({
 create({ databaseId: '<UUID>', targetOwnerId: '<UUID>', sourceApproved: '<Boolean>', targetApproved: '<Boolean>', sourceApprovedAt: '<Datetime>', targetApprovedAt: '<Datetime>', status: '<String>', initiatedBy: '<UUID>', notes: '<String>', expiresAt: '<Datetime>', completedAt: '<Datetime>' });
 ```
 
+### Partition
+
+```typescript
+// List all partitions
+const { data, isLoading } = usePartitionsQuery({
+  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
+});
+
+// Get one partition
+const { data: item } = usePartitionQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } },
+});
+
+// Create a partition
+const { mutate: create } = useCreatePartitionMutation({
+  selection: { fields: { id: true } },
+});
+create({ databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyIds: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' });
+```
+
 ### Api
 
 ```typescript
@@ -1917,20 +1917,20 @@ create({ databaseId: '<UUID>', siteId: '<UUID>', name: '<String>', appImage: '<I
 ```typescript
 // List all apiSettings
 const { data, isLoading } = useApiSettingsQuery({
-  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
+  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } },
 });
 
 // Get one apiSetting
 const { data: item } = useApiSettingQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
+  selection: { fields: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } },
 });
 
 // Create a apiSetting
 const { mutate: create } = useCreateApiSettingMutation({
   selection: { fields: { id: true } },
 });
-create({ databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' });
+create({ databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', enableBulk: '<Boolean>', options: '<JSON>' });
 ```
 
 ### ConnectedAccountsModule
@@ -2400,20 +2400,20 @@ create({ blueprintId: '<UUID>', databaseId: '<UUID>', schemaId: '<UUID>', status
 ```typescript
 // List all storageModules
 const { data, isLoading } = useStorageModulesQuery({
-  selection: { fields: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, fileEventsTableId: true } },
+  selection: { fields: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, hasConfirmUpload: true, confirmUploadDelay: true, fileEventsTableId: true } },
 });
 
 // Get one storageModule
 const { data: item } = useStorageModuleQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, fileEventsTableId: true } },
+  selection: { fields: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, hasConfirmUpload: true, confirmUploadDelay: true, fileEventsTableId: true } },
 });
 
 // Create a storageModule
 const { mutate: create } = useCreateStorageModuleMutation({
   selection: { fields: { id: true } },
 });
-create({ databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', bucketsTableId: '<UUID>', filesTableId: '<UUID>', bucketsTableName: '<String>', filesTableName: '<String>', membershipType: '<Int>', policies: '<JSON>', skipDefaultPolicyTables: '<String>', entityTableId: '<UUID>', endpoint: '<String>', publicUrlPrefix: '<String>', provider: '<String>', allowedOrigins: '<String>', restrictReads: '<Boolean>', hasPathShares: '<Boolean>', pathSharesTableId: '<UUID>', uploadUrlExpirySeconds: '<Int>', downloadUrlExpirySeconds: '<Int>', defaultMaxFileSize: '<BigInt>', maxFilenameLength: '<Int>', cacheTtlSeconds: '<Int>', maxBulkFiles: '<Int>', maxBulkTotalSize: '<BigInt>', hasVersioning: '<Boolean>', hasContentHash: '<Boolean>', hasCustomKeys: '<Boolean>', hasAuditLog: '<Boolean>', fileEventsTableId: '<UUID>' });
+create({ databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', bucketsTableId: '<UUID>', filesTableId: '<UUID>', bucketsTableName: '<String>', filesTableName: '<String>', membershipType: '<Int>', policies: '<JSON>', skipDefaultPolicyTables: '<String>', entityTableId: '<UUID>', endpoint: '<String>', publicUrlPrefix: '<String>', provider: '<String>', allowedOrigins: '<String>', restrictReads: '<Boolean>', hasPathShares: '<Boolean>', pathSharesTableId: '<UUID>', uploadUrlExpirySeconds: '<Int>', downloadUrlExpirySeconds: '<Int>', defaultMaxFileSize: '<BigInt>', maxFilenameLength: '<Int>', cacheTtlSeconds: '<Int>', maxBulkFiles: '<Int>', maxBulkTotalSize: '<BigInt>', hasVersioning: '<Boolean>', hasContentHash: '<Boolean>', hasCustomKeys: '<Boolean>', hasAuditLog: '<Boolean>', hasConfirmUpload: '<Boolean>', confirmUploadDelay: '<Interval>', fileEventsTableId: '<UUID>' });
 ```
 
 ### EntityTypeProvision
@@ -3114,20 +3114,20 @@ create({ data: '<JSON>', senderId: '<UUID>', receiverId: '<UUID>' });
 ```typescript
 // List all orgInvites
 const { data, isLoading } = useOrgInvitesQuery({
-  selection: { fields: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
+  selection: { fields: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
 });
 
 // Get one orgInvite
 const { data: item } = useOrgInviteQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
+  selection: { fields: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
 });
 
 // Create a orgInvite
 const { mutate: create } = useCreateOrgInviteMutation({
   selection: { fields: { id: true } },
 });
-create({ email: '<Email>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', expiresAt: '<Datetime>', entityId: '<UUID>' });
+create({ email: '<Email>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', isReadOnly: '<Boolean>', expiresAt: '<Datetime>', entityId: '<UUID>' });
 ```
 
 ### OrgClaimedInvite
@@ -3784,27 +3784,6 @@ const { mutate: create } = useCreateRlsModuleMutation({
 create({ databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', sessionCredentialsTableId: '<UUID>', sessionsTableId: '<UUID>', usersTableId: '<UUID>', authenticate: '<String>', authenticateStrict: '<String>', currentRole: '<String>', currentRoleId: '<String>' });
 ```
 
-### DatabaseSetting
-
-```typescript
-// List all databaseSettings
-const { data, isLoading } = useDatabaseSettingsQuery({
-  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
-});
-
-// Get one databaseSetting
-const { data: item } = useDatabaseSettingQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } },
-});
-
-// Create a databaseSetting
-const { mutate: create } = useCreateDatabaseSettingMutation({
-  selection: { fields: { id: true } },
-});
-create({ databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' });
-```
-
 ### PlansModule
 
 ```typescript
@@ -3845,6 +3824,27 @@ const { mutate: create } = useCreateSqlActionMutation({
   selection: { fields: { id: true } },
 });
 create({ name: '<String>', databaseId: '<UUID>', deploy: '<String>', deps: '<String>', payload: '<JSON>', content: '<String>', revert: '<String>', verify: '<String>', action: '<String>', actionId: '<UUID>', actorId: '<UUID>' });
+```
+
+### DatabaseSetting
+
+```typescript
+// List all databaseSettings
+const { data, isLoading } = useDatabaseSettingsQuery({
+  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } },
+});
+
+// Get one databaseSetting
+const { data: item } = useDatabaseSettingQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } },
+});
+
+// Create a databaseSetting
+const { mutate: create } = useCreateDatabaseSettingMutation({
+  selection: { fields: { id: true } },
+});
+create({ databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', enableBulk: '<Boolean>', options: '<JSON>' });
 ```
 
 ### BillingModule

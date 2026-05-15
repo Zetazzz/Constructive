@@ -32,12 +32,16 @@ const fieldSchema: FieldSchema = {
   pluralName: 'string',
   singularName: 'string',
   tags: 'string',
+  partitioned: 'boolean',
+  partitionStrategy: 'string',
+  partitionKeyNames: 'string',
+  partitionKeyTypes: 'string',
   inheritsId: 'uuid',
   createdAt: 'string',
   updatedAt: 'string',
 };
 const usage =
-  '\ntable <command>\n\nCommands:\n  list                  List table records\n  find-first            Find first matching table record\n  get                   Get a table by ID\n  create                Create a new table\n  update                Update an existing table\n  delete                Delete a table\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\ntable <command>\n\nCommands:\n  list                  List table records\n  find-first            Find first matching table record\n  get                   Get a table by ID\n  create                Create a new table\n  update                Update an existing table\n  delete                Delete a table\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -103,6 +107,10 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       pluralName: true,
       singularName: true,
       tags: true,
+      partitioned: true,
+      partitionStrategy: true,
+      partitionKeyNames: true,
+      partitionKeyTypes: true,
       inheritsId: true,
       createdAt: true,
       updatedAt: true,
@@ -142,12 +150,16 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       pluralName: true,
       singularName: true,
       tags: true,
+      partitioned: true,
+      partitionStrategy: true,
+      partitionKeyNames: true,
+      partitionKeyTypes: true,
       inheritsId: true,
       createdAt: true,
       updatedAt: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<TableSelect, TableFilter> & {
+      FindFirstArgs<TableSelect, TableFilter, TableOrderBy> & {
         select: TableSelect;
       }
     >(argv, defaultSelect);
@@ -193,6 +205,10 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           pluralName: true,
           singularName: true,
           tags: true,
+          partitioned: true,
+          partitionStrategy: true,
+          partitionKeyNames: true,
+          partitionKeyTypes: true,
           inheritsId: true,
           createdAt: true,
           updatedAt: true,
@@ -315,6 +331,34 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'partitioned',
+        message: 'partitioned',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'partitionStrategy',
+        message: 'partitionStrategy',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'partitionKeyNames',
+        message: 'partitionKeyNames',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'partitionKeyTypes',
+        message: 'partitionKeyTypes',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'text',
         name: 'inheritsId',
         message: 'inheritsId',
@@ -343,6 +387,10 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           pluralName: cleanedData.pluralName,
           singularName: cleanedData.singularName,
           tags: cleanedData.tags,
+          partitioned: cleanedData.partitioned,
+          partitionStrategy: cleanedData.partitionStrategy,
+          partitionKeyNames: cleanedData.partitionKeyNames,
+          partitionKeyTypes: cleanedData.partitionKeyTypes,
           inheritsId: cleanedData.inheritsId,
         },
         select: {
@@ -362,6 +410,10 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           pluralName: true,
           singularName: true,
           tags: true,
+          partitioned: true,
+          partitionStrategy: true,
+          partitionKeyNames: true,
+          partitionKeyTypes: true,
           inheritsId: true,
           createdAt: true,
           updatedAt: true,
@@ -490,6 +542,34 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'partitioned',
+        message: 'partitioned',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'partitionStrategy',
+        message: 'partitionStrategy',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'partitionKeyNames',
+        message: 'partitionKeyNames',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'partitionKeyTypes',
+        message: 'partitionKeyTypes',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'text',
         name: 'inheritsId',
         message: 'inheritsId',
@@ -521,6 +601,10 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           pluralName: cleanedData.pluralName,
           singularName: cleanedData.singularName,
           tags: cleanedData.tags,
+          partitioned: cleanedData.partitioned,
+          partitionStrategy: cleanedData.partitionStrategy,
+          partitionKeyNames: cleanedData.partitionKeyNames,
+          partitionKeyTypes: cleanedData.partitionKeyTypes,
           inheritsId: cleanedData.inheritsId,
         },
         select: {
@@ -540,6 +624,10 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           pluralName: true,
           singularName: true,
           tags: true,
+          partitioned: true,
+          partitionStrategy: true,
+          partitionKeyNames: true,
+          partitionKeyTypes: true,
           inheritsId: true,
           createdAt: true,
           updatedAt: true,

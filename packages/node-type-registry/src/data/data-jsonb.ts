@@ -17,7 +17,8 @@ export const DataJsonb: NodeTypeDefinition = {
       },
       default_value: {
         type: 'string',
-        description: 'Default value expression'
+        description: 'Default value expression',
+        default: "'{}'::jsonb"
       },
       is_required: {
         type: 'boolean',

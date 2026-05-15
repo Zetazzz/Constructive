@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.7.0](https://github.com/constructive-io/constructive/compare/graphile-realtime-subscriptions@0.6.0...graphile-realtime-subscriptions@0.7.0) (2026-05-14)
+
+### Features
+
+- add real WebSocket E2E integration test for realtime subscriptions ([50eb5d6](https://github.com/constructive-io/constructive/commit/50eb5d6cb2fd18b24af05e8b0605c98a1a9879dc))
+
+# [0.6.0](https://github.com/constructive-io/constructive/compare/graphile-realtime-subscriptions@0.5.2...graphile-realtime-subscriptions@0.6.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-realtime-subscriptions
+
 ## [0.5.2](https://github.com/constructive-io/constructive/compare/graphile-realtime-subscriptions@0.5.1...graphile-realtime-subscriptions@0.5.2) (2026-05-11)
 
 **Note:** Version bump only for package graphile-realtime-subscriptions

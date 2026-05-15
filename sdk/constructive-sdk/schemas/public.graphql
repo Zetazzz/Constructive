@@ -2885,35 +2885,6 @@ type Query {
     orderBy: [RealtimeModuleOrderBy!] = [PRIMARY_KEY_ASC]
   ): RealtimeModuleConnection
 
-  """Reads and enables pagination through a set of `DatabaseSetting`."""
-  databaseSettings(
-    """Only read the first `n` values of the set."""
-    first: Int
-
-    """Only read the last `n` values of the set."""
-    last: Int
-
-    """
-    Skip the first `n` values from our `after` cursor, an alternative to cursor
-    based pagination. May not be used with `last`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: DatabaseSettingFilter
-
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!] = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingConnection
-
   """Reads and enables pagination through a set of `PlansModule`."""
   plansModules(
     """Only read the first `n` values of the set."""
@@ -3059,8 +3030,8 @@ type Query {
     orderBy: [DatabaseTransferOrderBy!] = [PRIMARY_KEY_ASC]
   ): DatabaseTransferConnection
 
-  """Reads and enables pagination through a set of `ApiSetting`."""
-  apiSettings(
+  """Reads and enables pagination through a set of `DatabaseSetting`."""
+  databaseSettings(
     """Only read the first `n` values of the set."""
     first: Int
 
@@ -3082,11 +3053,11 @@ type Query {
     """
     A filter to be used in determining which values should be returned by the collection.
     """
-    where: ApiSettingFilter
+    where: DatabaseSettingFilter
 
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!] = [PRIMARY_KEY_ASC]
-  ): ApiSettingConnection
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!] = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingConnection
 
   """Reads and enables pagination through a set of `BillingModule`."""
   billingModules(
@@ -3321,6 +3292,35 @@ type Query {
     """The method to use when ordering `AstMigration`."""
     orderBy: [AstMigrationOrderBy!] = [NATURAL]
   ): AstMigrationConnection
+
+  """Reads and enables pagination through a set of `ApiSetting`."""
+  apiSettings(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: ApiSettingFilter
+
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!] = [PRIMARY_KEY_ASC]
+  ): ApiSettingConnection
 
   """Reads and enables pagination through a set of `Enum`."""
   enums(
@@ -3873,35 +3873,6 @@ type Query {
     orderBy: [WebauthnSettingOrderBy!] = [PRIMARY_KEY_ASC]
   ): WebauthnSettingConnection
 
-  """Reads and enables pagination through a set of `OrgInvite`."""
-  orgInvites(
-    """Only read the first `n` values of the set."""
-    first: Int
-
-    """Only read the last `n` values of the set."""
-    last: Int
-
-    """
-    Skip the first `n` values from our `after` cursor, an alternative to cursor
-    based pagination. May not be used with `last`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: OrgInviteFilter
-
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!] = [PRIMARY_KEY_ASC]
-  ): OrgInviteConnection
-
   """Reads and enables pagination through a set of `AppMembership`."""
   appMemberships(
     """Only read the first `n` values of the set."""
@@ -3988,6 +3959,35 @@ type Query {
     """The method to use when ordering `Index`."""
     orderBy: [IndexOrderBy!] = [PRIMARY_KEY_ASC]
   ): IndexConnection
+
+  """Reads and enables pagination through a set of `OrgInvite`."""
+  orgInvites(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: OrgInviteFilter
+
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!] = [PRIMARY_KEY_ASC]
+  ): OrgInviteConnection
 
   """Reads and enables pagination through a set of `BillingProviderModule`."""
   billingProviderModules(
@@ -4163,35 +4163,6 @@ type Query {
     orderBy: [ForeignKeyConstraintOrderBy!] = [PRIMARY_KEY_ASC]
   ): ForeignKeyConstraintConnection
 
-  """Reads and enables pagination through a set of `Table`."""
-  tables(
-    """Only read the first `n` values of the set."""
-    first: Int
-
-    """Only read the last `n` values of the set."""
-    last: Int
-
-    """
-    Skip the first `n` values from our `after` cursor, an alternative to cursor
-    based pagination. May not be used with `last`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: TableFilter
-
-    """The method to use when ordering `Table`."""
-    orderBy: [TableOrderBy!] = [PRIMARY_KEY_ASC]
-  ): TableConnection
-
   """Reads and enables pagination through a set of `RelationProvision`."""
   relationProvisions(
     """Only read the first `n` values of the set."""
@@ -4336,6 +4307,35 @@ type Query {
     """The method to use when ordering `Field`."""
     orderBy: [FieldOrderBy!] = [PRIMARY_KEY_ASC]
   ): FieldConnection
+
+  """Reads and enables pagination through a set of `Table`."""
+  tables(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: TableFilter
+
+    """The method to use when ordering `Table`."""
+    orderBy: [TableOrderBy!] = [PRIMARY_KEY_ASC]
+  ): TableConnection
 
   """Reads and enables pagination through a set of `LimitsModule`."""
   limitsModules(
@@ -8964,6 +8964,10 @@ type Table {
   pluralName: String
   singularName: String
   tags: [String]!
+  partitioned: Boolean!
+  partitionStrategy: String
+  partitionKeyNames: [String]
+  partitionKeyTypes: [String]
   inheritsId: UUID
   createdAt: Datetime
   updatedAt: Datetime
@@ -13920,6 +13924,9 @@ input OrgInviteFilter {
   """Filter by the object’s `profileId` field."""
   profileId: UUIDFilter
 
+  """Filter by the object’s `isReadOnly` field."""
+  isReadOnly: BooleanFilter
+
   """Filter by the object’s `expiresAt` field."""
   expiresAt: DatetimeFilter
 
@@ -14711,6 +14718,18 @@ input TableFilter {
   """Filter by the object’s `tags` field."""
   tags: StringListFilter
 
+  """Filter by the object’s `partitioned` field."""
+  partitioned: BooleanFilter
+
+  """Filter by the object’s `partitionStrategy` field."""
+  partitionStrategy: StringFilter
+
+  """Filter by the object’s `partitionKeyNames` field."""
+  partitionKeyNames: StringListFilter
+
+  """Filter by the object’s `partitionKeyTypes` field."""
+  partitionKeyTypes: StringListFilter
+
   """Filter by the object’s `inheritsId` field."""
   inheritsId: UUIDFilter
 
@@ -15034,12 +15053,6 @@ input FieldFilter {
 
   """`spatialRelationsByRefFieldId` exist."""
   spatialRelationsByRefFieldIdExist: Boolean
-
-  """Filter by the object’s `partitionsByPartitionKeyId` relation."""
-  partitionsByPartitionKeyId: FieldToManyPartitionFilter
-
-  """`partitionsByPartitionKeyId` exist."""
-  partitionsByPartitionKeyIdExist: Boolean
 }
 
 """
@@ -15167,76 +15180,6 @@ input SpatialRelationFilter {
 
   """Filter by the object’s `refTable` relation."""
   refTable: TableFilter
-
-  """Filter by the object’s `table` relation."""
-  table: TableFilter
-}
-
-"""
-A filter to be used against many `Partition` object types. All fields are combined with a logical ‘and.’
-"""
-input FieldToManyPartitionFilter {
-  """Filters to entities where at least one related entity matches."""
-  some: PartitionFilter
-
-  """Filters to entities where every related entity matches."""
-  every: PartitionFilter
-
-  """Filters to entities where no related entity matches."""
-  none: PartitionFilter
-}
-
-"""
-A filter to be used against `Partition` object types. All fields are combined with a logical ‘and.’
-"""
-input PartitionFilter {
-  """Filter by the object’s `id` field."""
-  id: UUIDFilter
-
-  """Filter by the object’s `databaseId` field."""
-  databaseId: UUIDFilter
-
-  """Filter by the object’s `tableId` field."""
-  tableId: UUIDFilter
-
-  """Filter by the object’s `strategy` field."""
-  strategy: StringFilter
-
-  """Filter by the object’s `partitionKeyId` field."""
-  partitionKeyId: UUIDFilter
-
-  """Filter by the object’s `interval` field."""
-  interval: StringFilter
-
-  """Filter by the object’s `retention` field."""
-  retention: StringFilter
-
-  """Filter by the object’s `lookahead` field."""
-  lookahead: IntFilter
-
-  """Filter by the object’s `namingPattern` field."""
-  namingPattern: StringFilter
-
-  """Filter by the object’s `createdAt` field."""
-  createdAt: DatetimeFilter
-
-  """Filter by the object’s `updatedAt` field."""
-  updatedAt: DatetimeFilter
-
-  """Checks for all expressions in this list."""
-  and: [PartitionFilter!]
-
-  """Checks for any expressions in this list."""
-  or: [PartitionFilter!]
-
-  """Negates the expression."""
-  not: PartitionFilter
-
-  """Filter by the object’s `database` relation."""
-  database: DatabaseFilter
-
-  """Filter by the object’s `partitionKey` relation."""
-  partitionKey: FieldFilter
 
   """Filter by the object’s `table` relation."""
   table: TableFilter
@@ -16244,6 +16187,59 @@ input TableToManySpatialRelationFilter {
 
   """Filters to entities where no related entity matches."""
   none: SpatialRelationFilter
+}
+
+"""
+A filter to be used against `Partition` object types. All fields are combined with a logical ‘and.’
+"""
+input PartitionFilter {
+  """Filter by the object’s `id` field."""
+  id: UUIDFilter
+
+  """Filter by the object’s `databaseId` field."""
+  databaseId: UUIDFilter
+
+  """Filter by the object’s `tableId` field."""
+  tableId: UUIDFilter
+
+  """Filter by the object’s `strategy` field."""
+  strategy: StringFilter
+
+  """Filter by the object’s `partitionKeyIds` field."""
+  partitionKeyIds: UUIDListFilter
+
+  """Filter by the object’s `interval` field."""
+  interval: StringFilter
+
+  """Filter by the object’s `retention` field."""
+  retention: StringFilter
+
+  """Filter by the object’s `lookahead` field."""
+  lookahead: IntFilter
+
+  """Filter by the object’s `namingPattern` field."""
+  namingPattern: StringFilter
+
+  """Filter by the object’s `createdAt` field."""
+  createdAt: DatetimeFilter
+
+  """Filter by the object’s `updatedAt` field."""
+  updatedAt: DatetimeFilter
+
+  """Checks for all expressions in this list."""
+  and: [PartitionFilter!]
+
+  """Checks for any expressions in this list."""
+  or: [PartitionFilter!]
+
+  """Negates the expression."""
+  not: PartitionFilter
+
+  """Filter by the object’s `database` relation."""
+  database: DatabaseFilter
+
+  """Filter by the object’s `table` relation."""
+  table: TableFilter
 }
 
 """
@@ -17888,6 +17884,9 @@ input ApiSettingFilter {
   """Filter by the object’s `enableRealtime` field."""
   enableRealtime: BooleanFilter
 
+  """Filter by the object’s `enableBulk` field."""
+  enableBulk: BooleanFilter
+
   """Filter by the object’s `options` field."""
   options: JSONFilter
 
@@ -18579,6 +18578,9 @@ input DatabaseSettingFilter {
 
   """Filter by the object’s `enableRealtime` field."""
   enableRealtime: BooleanFilter
+
+  """Filter by the object’s `enableBulk` field."""
+  enableBulk: BooleanFilter
 
   """Filter by the object’s `options` field."""
   options: JSONFilter
@@ -21224,6 +21226,12 @@ input StorageModuleFilter {
   """Filter by the object’s `hasAuditLog` field."""
   hasAuditLog: BooleanFilter
 
+  """Filter by the object’s `hasConfirmUpload` field."""
+  hasConfirmUpload: BooleanFilter
+
+  """Filter by the object’s `confirmUploadDelay` field."""
+  confirmUploadDelay: IntervalFilter
+
   """Filter by the object’s `fileEventsTableId` field."""
   fileEventsTableId: UUIDFilter
 
@@ -22322,35 +22330,6 @@ type Field {
     """The method to use when ordering `SpatialRelation`."""
     orderBy: [SpatialRelationOrderBy!] = [PRIMARY_KEY_ASC]
   ): SpatialRelationConnection!
-
-  """Reads and enables pagination through a set of `Partition`."""
-  partitionsByPartitionKeyId(
-    """Only read the first `n` values of the set."""
-    first: Int
-
-    """Only read the last `n` values of the set."""
-    last: Int
-
-    """
-    Skip the first `n` values from our `after` cursor, an alternative to cursor
-    based pagination. May not be used with `last`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: PartitionFilter
-
-    """The method to use when ordering `Partition`."""
-    orderBy: [PartitionOrderBy!] = [PRIMARY_KEY_ASC]
-  ): PartitionConnection!
 }
 
 """A connection to a list of `SpatialRelation` values."""
@@ -22445,84 +22424,6 @@ enum SpatialRelationOrderBy {
   SCOPE_DESC
   TAGS_ASC
   TAGS_DESC
-  CREATED_AT_ASC
-  CREATED_AT_DESC
-  UPDATED_AT_ASC
-  UPDATED_AT_DESC
-}
-
-"""A connection to a list of `Partition` values."""
-type PartitionConnection {
-  """A list of `Partition` objects."""
-  nodes: [Partition]!
-
-  """
-  A list of edges which contains the `Partition` and cursor to aid in pagination.
-  """
-  edges: [PartitionEdge]!
-
-  """Information to aid in pagination."""
-  pageInfo: PageInfo!
-
-  """The count of *all* `Partition` you could get from the connection."""
-  totalCount: Int!
-}
-
-type Partition {
-  id: UUID!
-  databaseId: UUID!
-  tableId: UUID!
-  strategy: String!
-  partitionKeyId: UUID!
-  interval: String
-  retention: String
-  lookahead: Int!
-  namingPattern: String!
-  createdAt: Datetime!
-  updatedAt: Datetime!
-
-  """Reads a single `Database` that is related to this `Partition`."""
-  database: Database
-
-  """Reads a single `Field` that is related to this `Partition`."""
-  partitionKey: Field
-
-  """Reads a single `Table` that is related to this `Partition`."""
-  table: Table
-}
-
-"""A `Partition` edge in the connection."""
-type PartitionEdge {
-  """A cursor for use in pagination."""
-  cursor: Cursor
-
-  """The `Partition` at the end of the edge."""
-  node: Partition
-}
-
-"""Methods to use when ordering `Partition`."""
-enum PartitionOrderBy {
-  NATURAL
-  PRIMARY_KEY_ASC
-  PRIMARY_KEY_DESC
-  ID_ASC
-  ID_DESC
-  DATABASE_ID_ASC
-  DATABASE_ID_DESC
-  TABLE_ID_ASC
-  TABLE_ID_DESC
-  STRATEGY_ASC
-  STRATEGY_DESC
-  PARTITION_KEY_ID_ASC
-  PARTITION_KEY_ID_DESC
-  INTERVAL_ASC
-  INTERVAL_DESC
-  RETENTION_ASC
-  RETENTION_DESC
-  LOOKAHEAD_ASC
-  LOOKAHEAD_DESC
-  NAMING_PATTERN_ASC
-  NAMING_PATTERN_DESC
   CREATED_AT_ASC
   CREATED_AT_DESC
   UPDATED_AT_ASC
@@ -23748,6 +23649,26 @@ enum EmbeddingChunkOrderBy {
   UPDATED_AT_DESC
 }
 
+type Partition {
+  id: UUID!
+  databaseId: UUID!
+  tableId: UUID!
+  strategy: String!
+  partitionKeyIds: [UUID]!
+  interval: String
+  retention: String
+  lookahead: Int!
+  namingPattern: String!
+  createdAt: Datetime!
+  updatedAt: Datetime!
+
+  """Reads a single `Database` that is related to this `Partition`."""
+  database: Database
+
+  """Reads a single `Table` that is related to this `Partition`."""
+  table: Table
+}
+
 """A connection to a list of `SecureTableProvision` values."""
 type SecureTableProvisionConnection {
   """A list of `SecureTableProvision` objects."""
@@ -24446,6 +24367,14 @@ enum TableOrderBy {
   SINGULAR_NAME_DESC
   TAGS_ASC
   TAGS_DESC
+  PARTITIONED_ASC
+  PARTITIONED_DESC
+  PARTITION_STRATEGY_ASC
+  PARTITION_STRATEGY_DESC
+  PARTITION_KEY_NAMES_ASC
+  PARTITION_KEY_NAMES_DESC
+  PARTITION_KEY_TYPES_ASC
+  PARTITION_KEY_TYPES_DESC
   INHERITS_ID_ASC
   INHERITS_ID_DESC
   CREATED_AT_ASC
@@ -25530,6 +25459,11 @@ type ApiSetting {
   enableRealtime: Boolean
 
   """
+  Override: enable bulk mutations (NULL = inherit from database_settings)
+  """
+  enableBulk: Boolean
+
+  """
   Extensible JSON for additional per-API settings that do not have dedicated columns
   """
   options: JSON!
@@ -25800,6 +25734,61 @@ enum DatabaseTransferOrderBy {
   COMPLETED_AT_DESC
 }
 
+"""A connection to a list of `Partition` values."""
+type PartitionConnection {
+  """A list of `Partition` objects."""
+  nodes: [Partition]!
+
+  """
+  A list of edges which contains the `Partition` and cursor to aid in pagination.
+  """
+  edges: [PartitionEdge]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* `Partition` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A `Partition` edge in the connection."""
+type PartitionEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `Partition` at the end of the edge."""
+  node: Partition
+}
+
+"""Methods to use when ordering `Partition`."""
+enum PartitionOrderBy {
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+  ID_ASC
+  ID_DESC
+  DATABASE_ID_ASC
+  DATABASE_ID_DESC
+  TABLE_ID_ASC
+  TABLE_ID_DESC
+  STRATEGY_ASC
+  STRATEGY_DESC
+  PARTITION_KEY_IDS_ASC
+  PARTITION_KEY_IDS_DESC
+  INTERVAL_ASC
+  INTERVAL_DESC
+  RETENTION_ASC
+  RETENTION_DESC
+  LOOKAHEAD_ASC
+  LOOKAHEAD_DESC
+  NAMING_PATTERN_ASC
+  NAMING_PATTERN_DESC
+  CREATED_AT_ASC
+  CREATED_AT_DESC
+  UPDATED_AT_ASC
+  UPDATED_AT_DESC
+}
+
 """A connection to a list of `Api` values."""
 type ApiConnection {
   """A list of `Api` objects."""
@@ -25994,6 +25983,11 @@ type DatabaseSetting {
   enableRealtime: Boolean!
 
   """
+  Enable bulk mutation operations (insert, upsert, update, delete) in the GraphQL API
+  """
+  enableBulk: Boolean!
+
+  """
   Extensible JSON for additional settings that do not have dedicated columns
   """
   options: JSON!
@@ -26059,6 +26053,8 @@ enum ApiSettingOrderBy {
   ENABLE_LLM_DESC
   ENABLE_REALTIME_ASC
   ENABLE_REALTIME_DESC
+  ENABLE_BULK_ASC
+  ENABLE_BULK_DESC
   OPTIONS_ASC
   OPTIONS_DESC
 }
@@ -28836,6 +28832,8 @@ type StorageModule {
   hasContentHash: Boolean!
   hasCustomKeys: Boolean!
   hasAuditLog: Boolean!
+  hasConfirmUpload: Boolean!
+  confirmUploadDelay: Interval!
   fileEventsTableId: UUID
 
   """Reads a single `Table` that is related to this `StorageModule`."""
@@ -28937,6 +28935,10 @@ enum StorageModuleOrderBy {
   HAS_CUSTOM_KEYS_DESC
   HAS_AUDIT_LOG_ASC
   HAS_AUDIT_LOG_DESC
+  HAS_CONFIRM_UPLOAD_ASC
+  HAS_CONFIRM_UPLOAD_DESC
+  CONFIRM_UPLOAD_DELAY_ASC
+  CONFIRM_UPLOAD_DELAY_DESC
   FILE_EVENTS_TABLE_ID_ASC
   FILE_EVENTS_TABLE_ID_DESC
 }
@@ -32639,6 +32641,11 @@ type OrgInvite {
   """
   profileId: UUID
 
+  """
+  Whether the resulting membership should be read-only when this invite is claimed
+  """
+  isReadOnly: Boolean!
+
   """Timestamp after which this invitation can no longer be redeemed"""
   expiresAt: Datetime!
   createdAt: Datetime
@@ -32691,6 +32698,8 @@ enum OrgInviteOrderBy {
   DATA_DESC
   PROFILE_ID_ASC
   PROFILE_ID_DESC
+  IS_READ_ONLY_ASC
+  IS_READ_ONLY_DESC
   EXPIRES_AT_ASC
   EXPIRES_AT_DESC
   CREATED_AT_ASC
@@ -35536,67 +35545,6 @@ enum RlsModuleOrderBy {
   CURRENT_ROLE_ID_DESC
 }
 
-"""A connection to a list of `DatabaseSetting` values."""
-type DatabaseSettingConnection {
-  """A list of `DatabaseSetting` objects."""
-  nodes: [DatabaseSetting]!
-
-  """
-  A list of edges which contains the `DatabaseSetting` and cursor to aid in pagination.
-  """
-  edges: [DatabaseSettingEdge]!
-
-  """Information to aid in pagination."""
-  pageInfo: PageInfo!
-
-  """
-  The count of *all* `DatabaseSetting` you could get from the connection.
-  """
-  totalCount: Int!
-}
-
-"""A `DatabaseSetting` edge in the connection."""
-type DatabaseSettingEdge {
-  """A cursor for use in pagination."""
-  cursor: Cursor
-
-  """The `DatabaseSetting` at the end of the edge."""
-  node: DatabaseSetting
-}
-
-"""Methods to use when ordering `DatabaseSetting`."""
-enum DatabaseSettingOrderBy {
-  NATURAL
-  PRIMARY_KEY_ASC
-  PRIMARY_KEY_DESC
-  ID_ASC
-  ID_DESC
-  DATABASE_ID_ASC
-  DATABASE_ID_DESC
-  ENABLE_AGGREGATES_ASC
-  ENABLE_AGGREGATES_DESC
-  ENABLE_POSTGIS_ASC
-  ENABLE_POSTGIS_DESC
-  ENABLE_SEARCH_ASC
-  ENABLE_SEARCH_DESC
-  ENABLE_DIRECT_UPLOADS_ASC
-  ENABLE_DIRECT_UPLOADS_DESC
-  ENABLE_PRESIGNED_UPLOADS_ASC
-  ENABLE_PRESIGNED_UPLOADS_DESC
-  ENABLE_MANY_TO_MANY_ASC
-  ENABLE_MANY_TO_MANY_DESC
-  ENABLE_CONNECTION_FILTER_ASC
-  ENABLE_CONNECTION_FILTER_DESC
-  ENABLE_LTREE_ASC
-  ENABLE_LTREE_DESC
-  ENABLE_LLM_ASC
-  ENABLE_LLM_DESC
-  ENABLE_REALTIME_ASC
-  ENABLE_REALTIME_DESC
-  OPTIONS_ASC
-  OPTIONS_DESC
-}
-
 """A connection to a list of `PlansModule` values."""
 type PlansModuleConnection {
   """A list of `PlansModule` objects."""
@@ -35777,6 +35725,69 @@ enum SqlActionOrderBy {
   ACTION_ID_DESC
   ACTOR_ID_ASC
   ACTOR_ID_DESC
+}
+
+"""A connection to a list of `DatabaseSetting` values."""
+type DatabaseSettingConnection {
+  """A list of `DatabaseSetting` objects."""
+  nodes: [DatabaseSetting]!
+
+  """
+  A list of edges which contains the `DatabaseSetting` and cursor to aid in pagination.
+  """
+  edges: [DatabaseSettingEdge]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """
+  The count of *all* `DatabaseSetting` you could get from the connection.
+  """
+  totalCount: Int!
+}
+
+"""A `DatabaseSetting` edge in the connection."""
+type DatabaseSettingEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `DatabaseSetting` at the end of the edge."""
+  node: DatabaseSetting
+}
+
+"""Methods to use when ordering `DatabaseSetting`."""
+enum DatabaseSettingOrderBy {
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+  ID_ASC
+  ID_DESC
+  DATABASE_ID_ASC
+  DATABASE_ID_DESC
+  ENABLE_AGGREGATES_ASC
+  ENABLE_AGGREGATES_DESC
+  ENABLE_POSTGIS_ASC
+  ENABLE_POSTGIS_DESC
+  ENABLE_SEARCH_ASC
+  ENABLE_SEARCH_DESC
+  ENABLE_DIRECT_UPLOADS_ASC
+  ENABLE_DIRECT_UPLOADS_DESC
+  ENABLE_PRESIGNED_UPLOADS_ASC
+  ENABLE_PRESIGNED_UPLOADS_DESC
+  ENABLE_MANY_TO_MANY_ASC
+  ENABLE_MANY_TO_MANY_DESC
+  ENABLE_CONNECTION_FILTER_ASC
+  ENABLE_CONNECTION_FILTER_DESC
+  ENABLE_LTREE_ASC
+  ENABLE_LTREE_DESC
+  ENABLE_LLM_ASC
+  ENABLE_LLM_DESC
+  ENABLE_REALTIME_ASC
+  ENABLE_REALTIME_DESC
+  ENABLE_BULK_ASC
+  ENABLE_BULK_DESC
+  OPTIONS_ASC
+  OPTIONS_DESC
 }
 
 """A connection to a list of `BillingModule` values."""
@@ -37595,14 +37606,6 @@ type Mutation {
     input: CreateRealtimeModuleInput!
   ): CreateRealtimeModulePayload
 
-  """Creates a single `DatabaseSetting`."""
-  createDatabaseSetting(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateDatabaseSettingInput!
-  ): CreateDatabaseSettingPayload
-
   """Creates a single `PlansModule`."""
   createPlansModule(
     """
@@ -37643,13 +37646,13 @@ type Mutation {
     input: CreateDatabaseTransferInput!
   ): CreateDatabaseTransferPayload
 
-  """Creates a single `ApiSetting`."""
-  createApiSetting(
+  """Creates a single `DatabaseSetting`."""
+  createDatabaseSetting(
     """
     The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     """
-    input: CreateApiSettingInput!
-  ): CreateApiSettingPayload
+    input: CreateDatabaseSettingInput!
+  ): CreateDatabaseSettingPayload
 
   """Creates a single `BillingModule`."""
   createBillingModule(
@@ -37714,6 +37717,14 @@ type Mutation {
     """
     input: CreateAstMigrationInput!
   ): CreateAstMigrationPayload
+
+  """Creates a single `ApiSetting`."""
+  createApiSetting(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateApiSettingInput!
+  ): CreateApiSettingPayload
 
   """Creates a single `Enum`."""
   createEnum(
@@ -37867,14 +37878,6 @@ type Mutation {
     input: CreateWebauthnSettingInput!
   ): CreateWebauthnSettingPayload
 
-  """Creates a single `OrgInvite`."""
-  createOrgInvite(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateOrgInviteInput!
-  ): CreateOrgInvitePayload
-
   """Creates a single `AppMembership`."""
   createAppMembership(
     """
@@ -37898,6 +37901,14 @@ type Mutation {
     """
     input: CreateIndexInput!
   ): CreateIndexPayload
+
+  """Creates a single `OrgInvite`."""
+  createOrgInvite(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateOrgInviteInput!
+  ): CreateOrgInvitePayload
 
   """Creates a single `BillingProviderModule`."""
   createBillingProviderModule(
@@ -37947,14 +37958,6 @@ type Mutation {
     input: CreateForeignKeyConstraintInput!
   ): CreateForeignKeyConstraintPayload
 
-  """Creates a single `Table`."""
-  createTable(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateTableInput!
-  ): CreateTablePayload
-
   """Creates a single `RelationProvision`."""
   createRelationProvision(
     """
@@ -37994,6 +37997,14 @@ type Mutation {
     """
     input: CreateFieldInput!
   ): CreateFieldPayload
+
+  """Creates a single `Table`."""
+  createTable(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateTableInput!
+  ): CreateTablePayload
 
   """Creates a single `LimitsModule`."""
   createLimitsModule(
@@ -38753,14 +38764,6 @@ type Mutation {
     input: UpdateRealtimeModuleInput!
   ): UpdateRealtimeModulePayload
 
-  """Updates a single `DatabaseSetting` using a unique key and a patch."""
-  updateDatabaseSetting(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateDatabaseSettingInput!
-  ): UpdateDatabaseSettingPayload
-
   """Updates a single `PlansModule` using a unique key and a patch."""
   updatePlansModule(
     """
@@ -38793,13 +38796,13 @@ type Mutation {
     input: UpdateDatabaseTransferInput!
   ): UpdateDatabaseTransferPayload
 
-  """Updates a single `ApiSetting` using a unique key and a patch."""
-  updateApiSetting(
+  """Updates a single `DatabaseSetting` using a unique key and a patch."""
+  updateDatabaseSetting(
     """
     The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     """
-    input: UpdateApiSettingInput!
-  ): UpdateApiSettingPayload
+    input: UpdateDatabaseSettingInput!
+  ): UpdateDatabaseSettingPayload
 
   """Updates a single `BillingModule` using a unique key and a patch."""
   updateBillingModule(
@@ -38860,6 +38863,14 @@ type Mutation {
     """
     input: UpdateOrgLimitInput!
   ): UpdateOrgLimitPayload
+
+  """Updates a single `ApiSetting` using a unique key and a patch."""
+  updateApiSetting(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateApiSettingInput!
+  ): UpdateApiSettingPayload
 
   """Updates a single `Enum` using a unique key and a patch."""
   updateEnum(
@@ -39017,14 +39028,6 @@ type Mutation {
     input: UpdateWebauthnSettingInput!
   ): UpdateWebauthnSettingPayload
 
-  """Updates a single `OrgInvite` using a unique key and a patch."""
-  updateOrgInvite(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateOrgInviteInput!
-  ): UpdateOrgInvitePayload
-
   """Updates a single `AppMembership` using a unique key and a patch."""
   updateAppMembership(
     """
@@ -39048,6 +39051,14 @@ type Mutation {
     """
     input: UpdateIndexInput!
   ): UpdateIndexPayload
+
+  """Updates a single `OrgInvite` using a unique key and a patch."""
+  updateOrgInvite(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateOrgInviteInput!
+  ): UpdateOrgInvitePayload
 
   """
   Updates a single `BillingProviderModule` using a unique key and a patch.
@@ -39101,14 +39112,6 @@ type Mutation {
     input: UpdateForeignKeyConstraintInput!
   ): UpdateForeignKeyConstraintPayload
 
-  """Updates a single `Table` using a unique key and a patch."""
-  updateTable(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateTableInput!
-  ): UpdateTablePayload
-
   """Updates a single `RelationProvision` using a unique key and a patch."""
   updateRelationProvision(
     """
@@ -39148,6 +39151,14 @@ type Mutation {
     """
     input: UpdateFieldInput!
   ): UpdateFieldPayload
+
+  """Updates a single `Table` using a unique key and a patch."""
+  updateTable(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateTableInput!
+  ): UpdateTablePayload
 
   """Updates a single `LimitsModule` using a unique key and a patch."""
   updateLimitsModule(
@@ -39877,14 +39888,6 @@ type Mutation {
     input: DeleteRealtimeModuleInput!
   ): DeleteRealtimeModulePayload
 
-  """Deletes a single `DatabaseSetting` using a unique key."""
-  deleteDatabaseSetting(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteDatabaseSettingInput!
-  ): DeleteDatabaseSettingPayload
-
   """Deletes a single `PlansModule` using a unique key."""
   deletePlansModule(
     """
@@ -39917,13 +39920,13 @@ type Mutation {
     input: DeleteDatabaseTransferInput!
   ): DeleteDatabaseTransferPayload
 
-  """Deletes a single `ApiSetting` using a unique key."""
-  deleteApiSetting(
+  """Deletes a single `DatabaseSetting` using a unique key."""
+  deleteDatabaseSetting(
     """
     The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     """
-    input: DeleteApiSettingInput!
-  ): DeleteApiSettingPayload
+    input: DeleteDatabaseSettingInput!
+  ): DeleteDatabaseSettingPayload
 
   """Deletes a single `BillingModule` using a unique key."""
   deleteBillingModule(
@@ -39980,6 +39983,14 @@ type Mutation {
     """
     input: DeleteOrgLimitInput!
   ): DeleteOrgLimitPayload
+
+  """Deletes a single `ApiSetting` using a unique key."""
+  deleteApiSetting(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteApiSettingInput!
+  ): DeleteApiSettingPayload
 
   """Deletes a single `Enum` using a unique key."""
   deleteEnum(
@@ -40133,14 +40144,6 @@ type Mutation {
     input: DeleteWebauthnSettingInput!
   ): DeleteWebauthnSettingPayload
 
-  """Deletes a single `OrgInvite` using a unique key."""
-  deleteOrgInvite(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteOrgInviteInput!
-  ): DeleteOrgInvitePayload
-
   """Deletes a single `AppMembership` using a unique key."""
   deleteAppMembership(
     """
@@ -40164,6 +40167,14 @@ type Mutation {
     """
     input: DeleteIndexInput!
   ): DeleteIndexPayload
+
+  """Deletes a single `OrgInvite` using a unique key."""
+  deleteOrgInvite(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteOrgInviteInput!
+  ): DeleteOrgInvitePayload
 
   """Deletes a single `BillingProviderModule` using a unique key."""
   deleteBillingProviderModule(
@@ -40213,14 +40224,6 @@ type Mutation {
     input: DeleteForeignKeyConstraintInput!
   ): DeleteForeignKeyConstraintPayload
 
-  """Deletes a single `Table` using a unique key."""
-  deleteTable(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteTableInput!
-  ): DeleteTablePayload
-
   """Deletes a single `RelationProvision` using a unique key."""
   deleteRelationProvision(
     """
@@ -40260,6 +40263,14 @@ type Mutation {
     """
     input: DeleteFieldInput!
   ): DeleteFieldPayload
+
+  """Deletes a single `Table` using a unique key."""
+  deleteTable(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteTableInput!
+  ): DeleteTablePayload
 
   """Deletes a single `LimitsModule` using a unique key."""
   deleteLimitsModule(
@@ -41565,6 +41576,7 @@ input SignUpInput {
   rememberMe: Boolean
   credentialKind: String
   csrfToken: String
+  deviceToken: String
 }
 
 """The output of our `requestCrossOriginToken` mutation."""
@@ -46075,7 +46087,7 @@ input PartitionInput {
   databaseId: UUID!
   tableId: UUID!
   strategy: String!
-  partitionKeyId: UUID!
+  partitionKeyIds: [UUID]!
   interval: String
   retention: String
   lookahead: Int
@@ -46562,89 +46574,6 @@ input RealtimeModuleInput {
   notifyChannel: String
 }
 
-"""The output of our create `DatabaseSetting` mutation."""
-type CreateDatabaseSettingPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` that was created by this mutation."""
-  databaseSetting: DatabaseSetting
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
-  databaseSettingEdge(
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingEdge
-}
-
-"""All input for the create `DatabaseSetting` mutation."""
-input CreateDatabaseSettingInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` to be created by this mutation."""
-  databaseSetting: DatabaseSettingInput!
-}
-
-"""An input for mutations affecting `DatabaseSetting`"""
-input DatabaseSettingInput {
-  """Unique identifier for this settings record"""
-  id: UUID
-
-  """Reference to the metaschema database these settings apply to"""
-  databaseId: UUID!
-
-  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
-  enableAggregates: Boolean
-
-  """Enable PostGIS spatial types and operators in the GraphQL API"""
-  enablePostgis: Boolean
-
-  """
-  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
-  """
-  enableSearch: Boolean
-
-  """Enable direct (multipart) file upload mutations in the GraphQL API"""
-  enableDirectUploads: Boolean
-
-  """Enable presigned URL upload flow for S3/MinIO storage"""
-  enablePresignedUploads: Boolean
-
-  """Enable many-to-many relationship queries in the GraphQL API"""
-  enableManyToMany: Boolean
-
-  """Enable connection filter (where argument) in the GraphQL API"""
-  enableConnectionFilter: Boolean
-
-  """Enable ltree hierarchical data type support in the GraphQL API"""
-  enableLtree: Boolean
-
-  """Enable LLM/AI integration features in the GraphQL API"""
-  enableLlm: Boolean
-
-  """
-  Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API
-  """
-  enableRealtime: Boolean
-
-  """
-  Extensible JSON for additional settings that do not have dedicated columns
-  """
-  options: JSON
-}
-
 """The output of our create `PlansModule` mutation."""
 type CreatePlansModulePayload {
   """
@@ -46946,104 +46875,90 @@ input DatabaseTransferInput {
   completedAt: Datetime
 }
 
-"""The output of our create `ApiSetting` mutation."""
-type CreateApiSettingPayload {
+"""The output of our create `DatabaseSetting` mutation."""
+type CreateDatabaseSettingPayload {
   """
   The exact same `clientMutationId` that was provided in the mutation input,
   unchanged and unused. May be used by a client to track mutations.
   """
   clientMutationId: String
 
-  """The `ApiSetting` that was created by this mutation."""
-  apiSetting: ApiSetting
+  """The `DatabaseSetting` that was created by this mutation."""
+  databaseSetting: DatabaseSetting
 
   """
   Our root query field type. Allows us to run any query from our mutation payload.
   """
   query: Query
 
-  """An edge for our `ApiSetting`. May be used by Relay 1."""
-  apiSettingEdge(
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): ApiSettingEdge
+  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
+  databaseSettingEdge(
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingEdge
 }
 
-"""All input for the create `ApiSetting` mutation."""
-input CreateApiSettingInput {
+"""All input for the create `DatabaseSetting` mutation."""
+input CreateDatabaseSettingInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
 
-  """The `ApiSetting` to be created by this mutation."""
-  apiSetting: ApiSettingInput!
+  """The `DatabaseSetting` to be created by this mutation."""
+  databaseSetting: DatabaseSettingInput!
 }
 
-"""An input for mutations affecting `ApiSetting`"""
-input ApiSettingInput {
-  """Unique identifier for this API settings record"""
+"""An input for mutations affecting `DatabaseSetting`"""
+input DatabaseSettingInput {
+  """Unique identifier for this settings record"""
   id: UUID
 
-  """Reference to the metaschema database"""
+  """Reference to the metaschema database these settings apply to"""
   databaseId: UUID!
 
-  """API these settings override for"""
-  apiId: UUID!
-
-  """
-  Override: enable aggregate queries (NULL = inherit from database_settings)
-  """
+  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
   enableAggregates: Boolean
 
-  """
-  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
-  """
+  """Enable PostGIS spatial types and operators in the GraphQL API"""
   enablePostgis: Boolean
 
   """
-  Override: enable unified search (NULL = inherit from database_settings)
+  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
   """
   enableSearch: Boolean
 
-  """
-  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
-  """
+  """Enable direct (multipart) file upload mutations in the GraphQL API"""
   enableDirectUploads: Boolean
 
-  """
-  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
-  """
+  """Enable presigned URL upload flow for S3/MinIO storage"""
   enablePresignedUploads: Boolean
 
-  """
-  Override: enable many-to-many relationships (NULL = inherit from database_settings)
-  """
+  """Enable many-to-many relationship queries in the GraphQL API"""
   enableManyToMany: Boolean
 
-  """
-  Override: enable connection filter (NULL = inherit from database_settings)
-  """
+  """Enable connection filter (where argument) in the GraphQL API"""
   enableConnectionFilter: Boolean
 
-  """
-  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
-  """
+  """Enable ltree hierarchical data type support in the GraphQL API"""
   enableLtree: Boolean
 
-  """
-  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
-  """
+  """Enable LLM/AI integration features in the GraphQL API"""
   enableLlm: Boolean
 
   """
-  Override: enable realtime subscriptions (NULL = inherit from database_settings)
+  Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API
   """
   enableRealtime: Boolean
 
   """
-  Extensible JSON for additional per-API settings that do not have dedicated columns
+  Enable bulk mutation operations (insert, upsert, update, delete) in the GraphQL API
+  """
+  enableBulk: Boolean
+
+  """
+  Extensible JSON for additional settings that do not have dedicated columns
   """
   options: JSON
 }
@@ -47581,6 +47496,113 @@ input AstMigrationInput {
   action: String
   actionId: UUID
   actorId: UUID
+}
+
+"""The output of our create `ApiSetting` mutation."""
+type CreateApiSettingPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` that was created by this mutation."""
+  apiSetting: ApiSetting
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `ApiSetting`. May be used by Relay 1."""
+  apiSettingEdge(
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): ApiSettingEdge
+}
+
+"""All input for the create `ApiSetting` mutation."""
+input CreateApiSettingInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` to be created by this mutation."""
+  apiSetting: ApiSettingInput!
+}
+
+"""An input for mutations affecting `ApiSetting`"""
+input ApiSettingInput {
+  """Unique identifier for this API settings record"""
+  id: UUID
+
+  """Reference to the metaschema database"""
+  databaseId: UUID!
+
+  """API these settings override for"""
+  apiId: UUID!
+
+  """
+  Override: enable aggregate queries (NULL = inherit from database_settings)
+  """
+  enableAggregates: Boolean
+
+  """
+  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
+  """
+  enablePostgis: Boolean
+
+  """
+  Override: enable unified search (NULL = inherit from database_settings)
+  """
+  enableSearch: Boolean
+
+  """
+  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
+  """
+  enableDirectUploads: Boolean
+
+  """
+  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
+  """
+  enablePresignedUploads: Boolean
+
+  """
+  Override: enable many-to-many relationships (NULL = inherit from database_settings)
+  """
+  enableManyToMany: Boolean
+
+  """
+  Override: enable connection filter (NULL = inherit from database_settings)
+  """
+  enableConnectionFilter: Boolean
+
+  """
+  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
+  """
+  enableLtree: Boolean
+
+  """
+  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
+  """
+  enableLlm: Boolean
+
+  """
+  Override: enable realtime subscriptions (NULL = inherit from database_settings)
+  """
+  enableRealtime: Boolean
+
+  """
+  Override: enable bulk mutations (NULL = inherit from database_settings)
+  """
+  enableBulk: Boolean
+
+  """
+  Extensible JSON for additional per-API settings that do not have dedicated columns
+  """
+  options: JSON
 }
 
 """The output of our create `Enum` mutation."""
@@ -48763,84 +48785,6 @@ input WebauthnSettingInput {
   challengeExpirySeconds: BigInt
 }
 
-"""The output of our create `OrgInvite` mutation."""
-type CreateOrgInvitePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` that was created by this mutation."""
-  orgInvite: OrgInvite
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `OrgInvite`. May be used by Relay 1."""
-  orgInviteEdge(
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): OrgInviteEdge
-}
-
-"""All input for the create `OrgInvite` mutation."""
-input CreateOrgInviteInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` to be created by this mutation."""
-  orgInvite: OrgInviteInput!
-}
-
-"""An input for mutations affecting `OrgInvite`"""
-input OrgInviteInput {
-  id: UUID
-
-  """Email address of the invited recipient"""
-  email: ConstructiveInternalTypeEmail
-
-  """User ID of the member who sent this invitation"""
-  senderId: UUID
-
-  """User ID of the intended recipient, if targeting a specific user"""
-  receiverId: UUID
-
-  """Unique random hex token used to redeem this invitation"""
-  inviteToken: String
-
-  """Whether this invitation is still valid and can be redeemed"""
-  inviteValid: Boolean
-
-  """Maximum number of times this invite can be claimed; -1 means unlimited"""
-  inviteLimit: Int
-
-  """Running count of how many times this invite has been claimed"""
-  inviteCount: Int
-
-  """Whether this invite can be claimed by multiple recipients"""
-  multiple: Boolean
-
-  """Optional JSON payload of additional invite metadata"""
-  data: JSON
-
-  """
-  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
-  """
-  profileId: UUID
-
-  """Timestamp after which this invitation can no longer be redeemed"""
-  expiresAt: Datetime
-  createdAt: Datetime
-  updatedAt: Datetime
-  entityId: UUID!
-}
-
 """The output of our create `AppMembership` mutation."""
 type CreateAppMembershipPayload {
   """
@@ -49031,6 +48975,89 @@ input IndexInput {
   tags: [String]
   createdAt: Datetime
   updatedAt: Datetime
+}
+
+"""The output of our create `OrgInvite` mutation."""
+type CreateOrgInvitePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` that was created by this mutation."""
+  orgInvite: OrgInvite
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `OrgInvite`. May be used by Relay 1."""
+  orgInviteEdge(
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): OrgInviteEdge
+}
+
+"""All input for the create `OrgInvite` mutation."""
+input CreateOrgInviteInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` to be created by this mutation."""
+  orgInvite: OrgInviteInput!
+}
+
+"""An input for mutations affecting `OrgInvite`"""
+input OrgInviteInput {
+  id: UUID
+
+  """Email address of the invited recipient"""
+  email: ConstructiveInternalTypeEmail
+
+  """User ID of the member who sent this invitation"""
+  senderId: UUID
+
+  """User ID of the intended recipient, if targeting a specific user"""
+  receiverId: UUID
+
+  """Unique random hex token used to redeem this invitation"""
+  inviteToken: String
+
+  """Whether this invitation is still valid and can be redeemed"""
+  inviteValid: Boolean
+
+  """Maximum number of times this invite can be claimed; -1 means unlimited"""
+  inviteLimit: Int
+
+  """Running count of how many times this invite has been claimed"""
+  inviteCount: Int
+
+  """Whether this invite can be claimed by multiple recipients"""
+  multiple: Boolean
+
+  """Optional JSON payload of additional invite metadata"""
+  data: JSON
+
+  """
+  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
+  """
+  profileId: UUID
+
+  """
+  Whether the resulting membership should be read-only when this invite is claimed
+  """
+  isReadOnly: Boolean
+
+  """Timestamp after which this invitation can no longer be redeemed"""
+  expiresAt: Datetime
+  createdAt: Datetime
+  updatedAt: Datetime
+  entityId: UUID!
 }
 
 """The output of our create `BillingProviderModule` mutation."""
@@ -49476,64 +49503,6 @@ input ForeignKeyConstraintInput {
   module: String
   scope: Int
   tags: [String]
-  createdAt: Datetime
-  updatedAt: Datetime
-}
-
-"""The output of our create `Table` mutation."""
-type CreateTablePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `Table` that was created by this mutation."""
-  table: Table
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `Table`. May be used by Relay 1."""
-  tableEdge(
-    """The method to use when ordering `Table`."""
-    orderBy: [TableOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): TableEdge
-}
-
-"""All input for the create `Table` mutation."""
-input CreateTableInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """The `Table` to be created by this mutation."""
-  table: TableInput!
-}
-
-"""An input for mutations affecting `Table`"""
-input TableInput {
-  id: UUID
-  databaseId: UUID
-  schemaId: UUID!
-  name: String!
-  label: String
-  description: String
-  smartTags: JSON
-  category: ObjectCategory
-  module: String
-  scope: Int
-  useRls: Boolean
-  timestamps: Boolean
-  peoplestamps: Boolean
-  pluralName: String
-  singularName: String
-  tags: [String]
-  inheritsId: UUID
   createdAt: Datetime
   updatedAt: Datetime
 }
@@ -50194,6 +50163,68 @@ input FieldInput {
   updatedAt: Datetime
 }
 
+"""The output of our create `Table` mutation."""
+type CreateTablePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Table` that was created by this mutation."""
+  table: Table
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Table`. May be used by Relay 1."""
+  tableEdge(
+    """The method to use when ordering `Table`."""
+    orderBy: [TableOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): TableEdge
+}
+
+"""All input for the create `Table` mutation."""
+input CreateTableInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `Table` to be created by this mutation."""
+  table: TableInput!
+}
+
+"""An input for mutations affecting `Table`"""
+input TableInput {
+  id: UUID
+  databaseId: UUID
+  schemaId: UUID!
+  name: String!
+  label: String
+  description: String
+  smartTags: JSON
+  category: ObjectCategory
+  module: String
+  scope: Int
+  useRls: Boolean
+  timestamps: Boolean
+  peoplestamps: Boolean
+  pluralName: String
+  singularName: String
+  tags: [String]
+  partitioned: Boolean
+  partitionStrategy: String
+  partitionKeyNames: [String]
+  partitionKeyTypes: [String]
+  inheritsId: UUID
+  createdAt: Datetime
+  updatedAt: Datetime
+}
+
 """The output of our create `LimitsModule` mutation."""
 type CreateLimitsModulePayload {
   """
@@ -50328,6 +50359,8 @@ input StorageModuleInput {
   hasContentHash: Boolean
   hasCustomKeys: Boolean
   hasAuditLog: Boolean
+  hasConfirmUpload: Boolean
+  confirmUploadDelay: IntervalInput
   fileEventsTableId: UUID
 }
 
@@ -55001,7 +55034,7 @@ input PartitionPatch {
   databaseId: UUID
   tableId: UUID
   strategy: String
-  partitionKeyId: UUID
+  partitionKeyIds: [UUID]
   interval: String
   retention: String
   lookahead: Int
@@ -55535,96 +55568,6 @@ input RealtimeModulePatch {
   notifyChannel: String
 }
 
-"""The output of our update `DatabaseSetting` mutation."""
-type UpdateDatabaseSettingPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` that was updated by this mutation."""
-  databaseSetting: DatabaseSetting
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
-  databaseSettingEdge(
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingEdge
-}
-
-"""All input for the `updateDatabaseSetting` mutation."""
-input UpdateDatabaseSettingInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """Unique identifier for this settings record"""
-  id: UUID!
-
-  """
-  An object where the defined keys will be set on the `DatabaseSetting` being updated.
-  """
-  databaseSettingPatch: DatabaseSettingPatch!
-}
-
-"""
-Represents an update to a `DatabaseSetting`. Fields that are set will be updated.
-"""
-input DatabaseSettingPatch {
-  """Unique identifier for this settings record"""
-  id: UUID
-
-  """Reference to the metaschema database these settings apply to"""
-  databaseId: UUID
-
-  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
-  enableAggregates: Boolean
-
-  """Enable PostGIS spatial types and operators in the GraphQL API"""
-  enablePostgis: Boolean
-
-  """
-  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
-  """
-  enableSearch: Boolean
-
-  """Enable direct (multipart) file upload mutations in the GraphQL API"""
-  enableDirectUploads: Boolean
-
-  """Enable presigned URL upload flow for S3/MinIO storage"""
-  enablePresignedUploads: Boolean
-
-  """Enable many-to-many relationship queries in the GraphQL API"""
-  enableManyToMany: Boolean
-
-  """Enable connection filter (where argument) in the GraphQL API"""
-  enableConnectionFilter: Boolean
-
-  """Enable ltree hierarchical data type support in the GraphQL API"""
-  enableLtree: Boolean
-
-  """Enable LLM/AI integration features in the GraphQL API"""
-  enableLlm: Boolean
-
-  """
-  Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API
-  """
-  enableRealtime: Boolean
-
-  """
-  Extensible JSON for additional settings that do not have dedicated columns
-  """
-  options: JSON
-}
-
 """The output of our update `PlansModule` mutation."""
 type UpdatePlansModulePayload {
   """
@@ -55903,111 +55846,97 @@ input DatabaseTransferPatch {
   completedAt: Datetime
 }
 
-"""The output of our update `ApiSetting` mutation."""
-type UpdateApiSettingPayload {
+"""The output of our update `DatabaseSetting` mutation."""
+type UpdateDatabaseSettingPayload {
   """
   The exact same `clientMutationId` that was provided in the mutation input,
   unchanged and unused. May be used by a client to track mutations.
   """
   clientMutationId: String
 
-  """The `ApiSetting` that was updated by this mutation."""
-  apiSetting: ApiSetting
+  """The `DatabaseSetting` that was updated by this mutation."""
+  databaseSetting: DatabaseSetting
 
   """
   Our root query field type. Allows us to run any query from our mutation payload.
   """
   query: Query
 
-  """An edge for our `ApiSetting`. May be used by Relay 1."""
-  apiSettingEdge(
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): ApiSettingEdge
+  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
+  databaseSettingEdge(
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingEdge
 }
 
-"""All input for the `updateApiSetting` mutation."""
-input UpdateApiSettingInput {
+"""All input for the `updateDatabaseSetting` mutation."""
+input UpdateDatabaseSettingInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
 
-  """Unique identifier for this API settings record"""
+  """Unique identifier for this settings record"""
   id: UUID!
 
   """
-  An object where the defined keys will be set on the `ApiSetting` being updated.
+  An object where the defined keys will be set on the `DatabaseSetting` being updated.
   """
-  apiSettingPatch: ApiSettingPatch!
+  databaseSettingPatch: DatabaseSettingPatch!
 }
 
 """
-Represents an update to a `ApiSetting`. Fields that are set will be updated.
+Represents an update to a `DatabaseSetting`. Fields that are set will be updated.
 """
-input ApiSettingPatch {
-  """Unique identifier for this API settings record"""
+input DatabaseSettingPatch {
+  """Unique identifier for this settings record"""
   id: UUID
 
-  """Reference to the metaschema database"""
+  """Reference to the metaschema database these settings apply to"""
   databaseId: UUID
 
-  """API these settings override for"""
-  apiId: UUID
-
-  """
-  Override: enable aggregate queries (NULL = inherit from database_settings)
-  """
+  """Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API"""
   enableAggregates: Boolean
 
-  """
-  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
-  """
+  """Enable PostGIS spatial types and operators in the GraphQL API"""
   enablePostgis: Boolean
 
   """
-  Override: enable unified search (NULL = inherit from database_settings)
+  Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API
   """
   enableSearch: Boolean
 
-  """
-  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
-  """
+  """Enable direct (multipart) file upload mutations in the GraphQL API"""
   enableDirectUploads: Boolean
 
-  """
-  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
-  """
+  """Enable presigned URL upload flow for S3/MinIO storage"""
   enablePresignedUploads: Boolean
 
-  """
-  Override: enable many-to-many relationships (NULL = inherit from database_settings)
-  """
+  """Enable many-to-many relationship queries in the GraphQL API"""
   enableManyToMany: Boolean
 
-  """
-  Override: enable connection filter (NULL = inherit from database_settings)
-  """
+  """Enable connection filter (where argument) in the GraphQL API"""
   enableConnectionFilter: Boolean
 
-  """
-  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
-  """
+  """Enable ltree hierarchical data type support in the GraphQL API"""
   enableLtree: Boolean
 
-  """
-  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
-  """
+  """Enable LLM/AI integration features in the GraphQL API"""
   enableLlm: Boolean
 
   """
-  Override: enable realtime subscriptions (NULL = inherit from database_settings)
+  Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API
   """
   enableRealtime: Boolean
 
   """
-  Extensible JSON for additional per-API settings that do not have dedicated columns
+  Enable bulk mutation operations (insert, upsert, update, delete) in the GraphQL API
+  """
+  enableBulk: Boolean
+
+  """
+  Extensible JSON for additional settings that do not have dedicated columns
   """
   options: JSON
 }
@@ -56536,6 +56465,120 @@ input OrgLimitPatch {
   """
   periodCredits: BigInt
   entityId: UUID
+}
+
+"""The output of our update `ApiSetting` mutation."""
+type UpdateApiSettingPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` that was updated by this mutation."""
+  apiSetting: ApiSetting
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `ApiSetting`. May be used by Relay 1."""
+  apiSettingEdge(
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): ApiSettingEdge
+}
+
+"""All input for the `updateApiSetting` mutation."""
+input UpdateApiSettingInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """Unique identifier for this API settings record"""
+  id: UUID!
+
+  """
+  An object where the defined keys will be set on the `ApiSetting` being updated.
+  """
+  apiSettingPatch: ApiSettingPatch!
+}
+
+"""
+Represents an update to a `ApiSetting`. Fields that are set will be updated.
+"""
+input ApiSettingPatch {
+  """Unique identifier for this API settings record"""
+  id: UUID
+
+  """Reference to the metaschema database"""
+  databaseId: UUID
+
+  """API these settings override for"""
+  apiId: UUID
+
+  """
+  Override: enable aggregate queries (NULL = inherit from database_settings)
+  """
+  enableAggregates: Boolean
+
+  """
+  Override: enable PostGIS spatial types (NULL = inherit from database_settings)
+  """
+  enablePostgis: Boolean
+
+  """
+  Override: enable unified search (NULL = inherit from database_settings)
+  """
+  enableSearch: Boolean
+
+  """
+  Override: enable direct (multipart) file uploads (NULL = inherit from database_settings)
+  """
+  enableDirectUploads: Boolean
+
+  """
+  Override: enable presigned URL upload flow (NULL = inherit from database_settings)
+  """
+  enablePresignedUploads: Boolean
+
+  """
+  Override: enable many-to-many relationships (NULL = inherit from database_settings)
+  """
+  enableManyToMany: Boolean
+
+  """
+  Override: enable connection filter (NULL = inherit from database_settings)
+  """
+  enableConnectionFilter: Boolean
+
+  """
+  Override: enable ltree hierarchical data type (NULL = inherit from database_settings)
+  """
+  enableLtree: Boolean
+
+  """
+  Override: enable LLM/AI integration features (NULL = inherit from database_settings)
+  """
+  enableLlm: Boolean
+
+  """
+  Override: enable realtime subscriptions (NULL = inherit from database_settings)
+  """
+  enableRealtime: Boolean
+
+  """
+  Override: enable bulk mutations (NULL = inherit from database_settings)
+  """
+  enableBulk: Boolean
+
+  """
+  Extensible JSON for additional per-API settings that do not have dedicated columns
+  """
+  options: JSON
 }
 
 """The output of our update `Enum` mutation."""
@@ -57827,89 +57870,6 @@ input WebauthnSettingPatch {
   challengeExpirySeconds: BigInt
 }
 
-"""The output of our update `OrgInvite` mutation."""
-type UpdateOrgInvitePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` that was updated by this mutation."""
-  orgInvite: OrgInvite
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `OrgInvite`. May be used by Relay 1."""
-  orgInviteEdge(
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): OrgInviteEdge
-}
-
-"""All input for the `updateOrgInvite` mutation."""
-input UpdateOrgInviteInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  id: UUID!
-
-  """
-  An object where the defined keys will be set on the `OrgInvite` being updated.
-  """
-  orgInvitePatch: OrgInvitePatch!
-}
-
-"""
-Represents an update to a `OrgInvite`. Fields that are set will be updated.
-"""
-input OrgInvitePatch {
-  id: UUID
-
-  """Email address of the invited recipient"""
-  email: ConstructiveInternalTypeEmail
-
-  """User ID of the member who sent this invitation"""
-  senderId: UUID
-
-  """User ID of the intended recipient, if targeting a specific user"""
-  receiverId: UUID
-
-  """Unique random hex token used to redeem this invitation"""
-  inviteToken: String
-
-  """Whether this invitation is still valid and can be redeemed"""
-  inviteValid: Boolean
-
-  """Maximum number of times this invite can be claimed; -1 means unlimited"""
-  inviteLimit: Int
-
-  """Running count of how many times this invite has been claimed"""
-  inviteCount: Int
-
-  """Whether this invite can be claimed by multiple recipients"""
-  multiple: Boolean
-
-  """Optional JSON payload of additional invite metadata"""
-  data: JSON
-
-  """
-  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
-  """
-  profileId: UUID
-
-  """Timestamp after which this invitation can no longer be redeemed"""
-  expiresAt: Datetime
-  createdAt: Datetime
-  updatedAt: Datetime
-  entityId: UUID
-}
-
 """The output of our update `AppMembership` mutation."""
 type UpdateAppMembershipPayload {
   """
@@ -58115,6 +58075,94 @@ input IndexPatch {
   tags: [String]
   createdAt: Datetime
   updatedAt: Datetime
+}
+
+"""The output of our update `OrgInvite` mutation."""
+type UpdateOrgInvitePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` that was updated by this mutation."""
+  orgInvite: OrgInvite
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `OrgInvite`. May be used by Relay 1."""
+  orgInviteEdge(
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): OrgInviteEdge
+}
+
+"""All input for the `updateOrgInvite` mutation."""
+input UpdateOrgInviteInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: UUID!
+
+  """
+  An object where the defined keys will be set on the `OrgInvite` being updated.
+  """
+  orgInvitePatch: OrgInvitePatch!
+}
+
+"""
+Represents an update to a `OrgInvite`. Fields that are set will be updated.
+"""
+input OrgInvitePatch {
+  id: UUID
+
+  """Email address of the invited recipient"""
+  email: ConstructiveInternalTypeEmail
+
+  """User ID of the member who sent this invitation"""
+  senderId: UUID
+
+  """User ID of the intended recipient, if targeting a specific user"""
+  receiverId: UUID
+
+  """Unique random hex token used to redeem this invitation"""
+  inviteToken: String
+
+  """Whether this invitation is still valid and can be redeemed"""
+  inviteValid: Boolean
+
+  """Maximum number of times this invite can be claimed; -1 means unlimited"""
+  inviteLimit: Int
+
+  """Running count of how many times this invite has been claimed"""
+  inviteCount: Int
+
+  """Whether this invite can be claimed by multiple recipients"""
+  multiple: Boolean
+
+  """Optional JSON payload of additional invite metadata"""
+  data: JSON
+
+  """
+  Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites.
+  """
+  profileId: UUID
+
+  """
+  Whether the resulting membership should be read-only when this invite is claimed
+  """
+  isReadOnly: Boolean
+
+  """Timestamp after which this invitation can no longer be redeemed"""
+  expiresAt: Datetime
+  createdAt: Datetime
+  updatedAt: Datetime
+  entityId: UUID
 }
 
 """The output of our update `BillingProviderModule` mutation."""
@@ -58592,69 +58640,6 @@ input ForeignKeyConstraintPatch {
   module: String
   scope: Int
   tags: [String]
-  createdAt: Datetime
-  updatedAt: Datetime
-}
-
-"""The output of our update `Table` mutation."""
-type UpdateTablePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `Table` that was updated by this mutation."""
-  table: Table
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `Table`. May be used by Relay 1."""
-  tableEdge(
-    """The method to use when ordering `Table`."""
-    orderBy: [TableOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): TableEdge
-}
-
-"""All input for the `updateTable` mutation."""
-input UpdateTableInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  id: UUID!
-
-  """
-  An object where the defined keys will be set on the `Table` being updated.
-  """
-  tablePatch: TablePatch!
-}
-
-"""
-Represents an update to a `Table`. Fields that are set will be updated.
-"""
-input TablePatch {
-  id: UUID
-  databaseId: UUID
-  schemaId: UUID
-  name: String
-  label: String
-  description: String
-  smartTags: JSON
-  category: ObjectCategory
-  module: String
-  scope: Int
-  useRls: Boolean
-  timestamps: Boolean
-  peoplestamps: Boolean
-  pluralName: String
-  singularName: String
-  tags: [String]
-  inheritsId: UUID
   createdAt: Datetime
   updatedAt: Datetime
 }
@@ -59344,6 +59329,73 @@ input FieldPatch {
   updatedAt: Datetime
 }
 
+"""The output of our update `Table` mutation."""
+type UpdateTablePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Table` that was updated by this mutation."""
+  table: Table
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Table`. May be used by Relay 1."""
+  tableEdge(
+    """The method to use when ordering `Table`."""
+    orderBy: [TableOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): TableEdge
+}
+
+"""All input for the `updateTable` mutation."""
+input UpdateTableInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: UUID!
+
+  """
+  An object where the defined keys will be set on the `Table` being updated.
+  """
+  tablePatch: TablePatch!
+}
+
+"""
+Represents an update to a `Table`. Fields that are set will be updated.
+"""
+input TablePatch {
+  id: UUID
+  databaseId: UUID
+  schemaId: UUID
+  name: String
+  label: String
+  description: String
+  smartTags: JSON
+  category: ObjectCategory
+  module: String
+  scope: Int
+  useRls: Boolean
+  timestamps: Boolean
+  peoplestamps: Boolean
+  pluralName: String
+  singularName: String
+  tags: [String]
+  partitioned: Boolean
+  partitionStrategy: String
+  partitionKeyNames: [String]
+  partitionKeyTypes: [String]
+  inheritsId: UUID
+  createdAt: Datetime
+  updatedAt: Datetime
+}
+
 """The output of our update `LimitsModule` mutation."""
 type UpdateLimitsModulePayload {
   """
@@ -59488,6 +59540,8 @@ input StorageModulePatch {
   hasContentHash: Boolean
   hasCustomKeys: Boolean
   hasAuditLog: Boolean
+  hasConfirmUpload: Boolean
+  confirmUploadDelay: IntervalInput
   fileEventsTableId: UUID
 }
 
@@ -62512,41 +62566,6 @@ input DeleteRealtimeModuleInput {
   id: UUID!
 }
 
-"""The output of our delete `DatabaseSetting` mutation."""
-type DeleteDatabaseSettingPayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `DatabaseSetting` that was deleted by this mutation."""
-  databaseSetting: DatabaseSetting
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
-  databaseSettingEdge(
-    """The method to use when ordering `DatabaseSetting`."""
-    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): DatabaseSettingEdge
-}
-
-"""All input for the `deleteDatabaseSetting` mutation."""
-input DeleteDatabaseSettingInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-
-  """Unique identifier for this settings record"""
-  id: UUID!
-}
-
 """The output of our delete `PlansModule` mutation."""
 type DeletePlansModulePayload {
   """
@@ -62679,38 +62698,38 @@ input DeleteDatabaseTransferInput {
   id: UUID!
 }
 
-"""The output of our delete `ApiSetting` mutation."""
-type DeleteApiSettingPayload {
+"""The output of our delete `DatabaseSetting` mutation."""
+type DeleteDatabaseSettingPayload {
   """
   The exact same `clientMutationId` that was provided in the mutation input,
   unchanged and unused. May be used by a client to track mutations.
   """
   clientMutationId: String
 
-  """The `ApiSetting` that was deleted by this mutation."""
-  apiSetting: ApiSetting
+  """The `DatabaseSetting` that was deleted by this mutation."""
+  databaseSetting: DatabaseSetting
 
   """
   Our root query field type. Allows us to run any query from our mutation payload.
   """
   query: Query
 
-  """An edge for our `ApiSetting`. May be used by Relay 1."""
-  apiSettingEdge(
-    """The method to use when ordering `ApiSetting`."""
-    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): ApiSettingEdge
+  """An edge for our `DatabaseSetting`. May be used by Relay 1."""
+  databaseSettingEdge(
+    """The method to use when ordering `DatabaseSetting`."""
+    orderBy: [DatabaseSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): DatabaseSettingEdge
 }
 
-"""All input for the `deleteApiSetting` mutation."""
-input DeleteApiSettingInput {
+"""All input for the `deleteDatabaseSetting` mutation."""
+input DeleteDatabaseSettingInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
 
-  """Unique identifier for this API settings record"""
+  """Unique identifier for this settings record"""
   id: UUID!
 }
 
@@ -62944,6 +62963,41 @@ input DeleteOrgLimitInput {
   payload verbatim. May be used to track mutations by the client.
   """
   clientMutationId: String
+  id: UUID!
+}
+
+"""The output of our delete `ApiSetting` mutation."""
+type DeleteApiSettingPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `ApiSetting` that was deleted by this mutation."""
+  apiSetting: ApiSetting
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `ApiSetting`. May be used by Relay 1."""
+  apiSettingEdge(
+    """The method to use when ordering `ApiSetting`."""
+    orderBy: [ApiSettingOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): ApiSettingEdge
+}
+
+"""All input for the `deleteApiSetting` mutation."""
+input DeleteApiSettingInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """Unique identifier for this API settings record"""
   id: UUID!
 }
 
@@ -63580,39 +63634,6 @@ input DeleteWebauthnSettingInput {
   id: UUID!
 }
 
-"""The output of our delete `OrgInvite` mutation."""
-type DeleteOrgInvitePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `OrgInvite` that was deleted by this mutation."""
-  orgInvite: OrgInvite
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `OrgInvite`. May be used by Relay 1."""
-  orgInviteEdge(
-    """The method to use when ordering `OrgInvite`."""
-    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): OrgInviteEdge
-}
-
-"""All input for the `deleteOrgInvite` mutation."""
-input DeleteOrgInviteInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  id: UUID!
-}
-
 """The output of our delete `AppMembership` mutation."""
 type DeleteAppMembershipPayload {
   """
@@ -63704,6 +63725,39 @@ type DeleteIndexPayload {
 
 """All input for the `deleteIndex` mutation."""
 input DeleteIndexInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: UUID!
+}
+
+"""The output of our delete `OrgInvite` mutation."""
+type DeleteOrgInvitePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `OrgInvite` that was deleted by this mutation."""
+  orgInvite: OrgInvite
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `OrgInvite`. May be used by Relay 1."""
+  orgInviteEdge(
+    """The method to use when ordering `OrgInvite`."""
+    orderBy: [OrgInviteOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): OrgInviteEdge
+}
+
+"""All input for the `deleteOrgInvite` mutation."""
+input DeleteOrgInviteInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.
@@ -63912,39 +63966,6 @@ input DeleteForeignKeyConstraintInput {
   id: UUID!
 }
 
-"""The output of our delete `Table` mutation."""
-type DeleteTablePayload {
-  """
-  The exact same `clientMutationId` that was provided in the mutation input,
-  unchanged and unused. May be used by a client to track mutations.
-  """
-  clientMutationId: String
-
-  """The `Table` that was deleted by this mutation."""
-  table: Table
-
-  """
-  Our root query field type. Allows us to run any query from our mutation payload.
-  """
-  query: Query
-
-  """An edge for our `Table`. May be used by Relay 1."""
-  tableEdge(
-    """The method to use when ordering `Table`."""
-    orderBy: [TableOrderBy!]! = [PRIMARY_KEY_ASC]
-  ): TableEdge
-}
-
-"""All input for the `deleteTable` mutation."""
-input DeleteTableInput {
-  """
-  An arbitrary string value with no semantic meaning. Will be included in the
-  payload verbatim. May be used to track mutations by the client.
-  """
-  clientMutationId: String
-  id: UUID!
-}
-
 """The output of our delete `RelationProvision` mutation."""
 type DeleteRelationProvisionPayload {
   """
@@ -64106,6 +64127,39 @@ type DeleteFieldPayload {
 
 """All input for the `deleteField` mutation."""
 input DeleteFieldInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: UUID!
+}
+
+"""The output of our delete `Table` mutation."""
+type DeleteTablePayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Table` that was deleted by this mutation."""
+  table: Table
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Table`. May be used by Relay 1."""
+  tableEdge(
+    """The method to use when ordering `Table`."""
+    orderBy: [TableOrderBy!]! = [PRIMARY_KEY_ASC]
+  ): TableEdge
+}
+
+"""All input for the `deleteTable` mutation."""
+input DeleteTableInput {
   """
   An arbitrary string value with no semantic meaning. Will be included in the
   payload verbatim. May be used to track mutations by the client.

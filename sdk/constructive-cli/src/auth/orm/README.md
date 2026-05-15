@@ -644,7 +644,7 @@ signUp
   | `input` | SignUpInput (required) |
 
 ```typescript
-const result = await db.mutation.signUp({ input: { email: '<String>', password: '<String>', rememberMe: '<Boolean>', credentialKind: '<String>', csrfToken: '<String>' } }).execute();
+const result = await db.mutation.signUp({ input: '<SignUpInput>' }).execute();
 ```
 
 ### `db.mutation.requestCrossOriginToken`

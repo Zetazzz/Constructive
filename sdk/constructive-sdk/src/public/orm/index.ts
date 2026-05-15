@@ -18,7 +18,6 @@ import { TableModel } from './models/table';
 import { CheckConstraintModel } from './models/checkConstraint';
 import { FieldModel } from './models/field';
 import { SpatialRelationModel } from './models/spatialRelation';
-import { PartitionModel } from './models/partition';
 import { ForeignKeyConstraintModel } from './models/foreignKeyConstraint';
 import { FullTextSearchModel } from './models/fullTextSearch';
 import { IndexModel } from './models/index';
@@ -50,6 +49,7 @@ import { SiteThemeModel } from './models/siteTheme';
 import { CorsSettingModel } from './models/corsSetting';
 import { TriggerFunctionModel } from './models/triggerFunction';
 import { DatabaseTransferModel } from './models/databaseTransfer';
+import { PartitionModel } from './models/partition';
 import { ApiModel } from './models/api';
 import { SiteModel } from './models/site';
 import { AppModel } from './models/app';
@@ -143,9 +143,9 @@ import { RlsSettingModel } from './models/rlsSetting';
 import { AppLimitEventModel } from './models/appLimitEvent';
 import { OrgLimitEventModel } from './models/orgLimitEvent';
 import { RlsModuleModel } from './models/rlsModule';
-import { DatabaseSettingModel } from './models/databaseSetting';
 import { PlansModuleModel } from './models/plansModule';
 import { SqlActionModel } from './models/sqlAction';
+import { DatabaseSettingModel } from './models/databaseSetting';
 import { BillingModuleModel } from './models/billingModule';
 import { AstMigrationModel } from './models/astMigration';
 import { UserModel } from './models/user';
@@ -202,7 +202,6 @@ export function createClient(config: OrmClientConfig) {
     checkConstraint: new CheckConstraintModel(client),
     field: new FieldModel(client),
     spatialRelation: new SpatialRelationModel(client),
-    partition: new PartitionModel(client),
     foreignKeyConstraint: new ForeignKeyConstraintModel(client),
     fullTextSearch: new FullTextSearchModel(client),
     index: new IndexModel(client),
@@ -234,6 +233,7 @@ export function createClient(config: OrmClientConfig) {
     corsSetting: new CorsSettingModel(client),
     triggerFunction: new TriggerFunctionModel(client),
     databaseTransfer: new DatabaseTransferModel(client),
+    partition: new PartitionModel(client),
     api: new ApiModel(client),
     site: new SiteModel(client),
     app: new AppModel(client),
@@ -327,9 +327,9 @@ export function createClient(config: OrmClientConfig) {
     appLimitEvent: new AppLimitEventModel(client),
     orgLimitEvent: new OrgLimitEventModel(client),
     rlsModule: new RlsModuleModel(client),
-    databaseSetting: new DatabaseSettingModel(client),
     plansModule: new PlansModuleModel(client),
     sqlAction: new SqlActionModel(client),
+    databaseSetting: new DatabaseSettingModel(client),
     billingModule: new BillingModuleModel(client),
     astMigration: new AstMigrationModel(client),
     user: new UserModel(client),

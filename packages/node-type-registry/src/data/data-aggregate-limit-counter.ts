@@ -1,9 +1,9 @@
 import type { NodeTypeDefinition } from '../types';
 
-export const DataAggregateLimitCounter: NodeTypeDefinition = {
-  name: 'DataAggregateLimitCounter',
+export const LimitAggregate: NodeTypeDefinition = {
+  name: 'LimitAggregate',
   slug: 'data_aggregate_limit_counter',
-  category: 'data',
+  category: 'limit',
   display_name: 'Aggregate Limit Counter',
   description:
     'Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database.',

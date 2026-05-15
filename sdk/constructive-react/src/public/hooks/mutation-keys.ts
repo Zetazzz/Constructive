@@ -133,14 +133,6 @@ export const spatialRelationMutationKeys = {
   /** Delete spatialRelation mutation key */ delete: (id: string | number) =>
     ['mutation', 'spatialrelation', 'delete', id] as const,
 } as const;
-export const partitionMutationKeys = {
-  /** All partition mutation keys */ all: ['mutation', 'partition'] as const,
-  /** Create partition mutation key */ create: () => ['mutation', 'partition', 'create'] as const,
-  /** Update partition mutation key */ update: (id: string | number) =>
-    ['mutation', 'partition', 'update', id] as const,
-  /** Delete partition mutation key */ delete: (id: string | number) =>
-    ['mutation', 'partition', 'delete', id] as const,
-} as const;
 export const foreignKeyConstraintMutationKeys = {
   /** All foreignKeyConstraint mutation keys */ all: ['mutation', 'foreignkeyconstraint'] as const,
   /** Create foreignKeyConstraint mutation key */ create: () =>
@@ -407,6 +399,14 @@ export const databaseTransferMutationKeys = {
     ['mutation', 'databasetransfer', 'update', id] as const,
   /** Delete databaseTransfer mutation key */ delete: (id: string | number) =>
     ['mutation', 'databasetransfer', 'delete', id] as const,
+} as const;
+export const partitionMutationKeys = {
+  /** All partition mutation keys */ all: ['mutation', 'partition'] as const,
+  /** Create partition mutation key */ create: () => ['mutation', 'partition', 'create'] as const,
+  /** Update partition mutation key */ update: (id: string | number) =>
+    ['mutation', 'partition', 'update', id] as const,
+  /** Delete partition mutation key */ delete: (id: string | number) =>
+    ['mutation', 'partition', 'delete', id] as const,
 } as const;
 export const apiMutationKeys = {
   /** All api mutation keys */ all: ['mutation', 'api'] as const,
@@ -1252,15 +1252,6 @@ export const rlsModuleMutationKeys = {
   /** Delete rlsModule mutation key */ delete: (id: string | number) =>
     ['mutation', 'rlsmodule', 'delete', id] as const,
 } as const;
-export const databaseSettingMutationKeys = {
-  /** All databaseSetting mutation keys */ all: ['mutation', 'databasesetting'] as const,
-  /** Create databaseSetting mutation key */ create: () =>
-    ['mutation', 'databasesetting', 'create'] as const,
-  /** Update databaseSetting mutation key */ update: (id: string | number) =>
-    ['mutation', 'databasesetting', 'update', id] as const,
-  /** Delete databaseSetting mutation key */ delete: (id: string | number) =>
-    ['mutation', 'databasesetting', 'delete', id] as const,
-} as const;
 export const plansModuleMutationKeys = {
   /** All plansModule mutation keys */ all: ['mutation', 'plansmodule'] as const,
   /** Create plansModule mutation key */ create: () =>
@@ -1277,6 +1268,15 @@ export const sqlActionMutationKeys = {
     ['mutation', 'sqlaction', 'update', id] as const,
   /** Delete sqlAction mutation key */ delete: (id: string | number) =>
     ['mutation', 'sqlaction', 'delete', id] as const,
+} as const;
+export const databaseSettingMutationKeys = {
+  /** All databaseSetting mutation keys */ all: ['mutation', 'databasesetting'] as const,
+  /** Create databaseSetting mutation key */ create: () =>
+    ['mutation', 'databasesetting', 'create'] as const,
+  /** Update databaseSetting mutation key */ update: (id: string | number) =>
+    ['mutation', 'databasesetting', 'update', id] as const,
+  /** Delete databaseSetting mutation key */ delete: (id: string | number) =>
+    ['mutation', 'databasesetting', 'delete', id] as const,
 } as const;
 export const billingModuleMutationKeys = {
   /** All billingModule mutation keys */ all: ['mutation', 'billingmodule'] as const,
@@ -1597,7 +1597,6 @@ export const mutationKeys = {
   checkConstraint: checkConstraintMutationKeys,
   field: fieldMutationKeys,
   spatialRelation: spatialRelationMutationKeys,
-  partition: partitionMutationKeys,
   foreignKeyConstraint: foreignKeyConstraintMutationKeys,
   fullTextSearch: fullTextSearchMutationKeys,
   index: indexMutationKeys,
@@ -1629,6 +1628,7 @@ export const mutationKeys = {
   corsSetting: corsSettingMutationKeys,
   triggerFunction: triggerFunctionMutationKeys,
   databaseTransfer: databaseTransferMutationKeys,
+  partition: partitionMutationKeys,
   api: apiMutationKeys,
   site: siteMutationKeys,
   app: appMutationKeys,
@@ -1722,9 +1722,9 @@ export const mutationKeys = {
   appLimitEvent: appLimitEventMutationKeys,
   orgLimitEvent: orgLimitEventMutationKeys,
   rlsModule: rlsModuleMutationKeys,
-  databaseSetting: databaseSettingMutationKeys,
   plansModule: plansModuleMutationKeys,
   sqlAction: sqlActionMutationKeys,
+  databaseSetting: databaseSettingMutationKeys,
   billingModule: billingModuleMutationKeys,
   astMigration: astMigrationMutationKeys,
   user: userMutationKeys,

@@ -249,33 +249,6 @@ export type SpatialRelationOrderBy =
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
   | 'UPDATED_AT_DESC';
-/** Methods to use when ordering `Partition`. */
-export type PartitionOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'DATABASE_ID_ASC'
-  | 'DATABASE_ID_DESC'
-  | 'TABLE_ID_ASC'
-  | 'TABLE_ID_DESC'
-  | 'STRATEGY_ASC'
-  | 'STRATEGY_DESC'
-  | 'PARTITION_KEY_ID_ASC'
-  | 'PARTITION_KEY_ID_DESC'
-  | 'INTERVAL_ASC'
-  | 'INTERVAL_DESC'
-  | 'RETENTION_ASC'
-  | 'RETENTION_DESC'
-  | 'LOOKAHEAD_ASC'
-  | 'LOOKAHEAD_DESC'
-  | 'NAMING_PATTERN_ASC'
-  | 'NAMING_PATTERN_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC';
 /** Methods to use when ordering `Field`. */
 export type FieldOrderBy =
   | 'NATURAL'
@@ -900,6 +873,14 @@ export type TableOrderBy =
   | 'SINGULAR_NAME_DESC'
   | 'TAGS_ASC'
   | 'TAGS_DESC'
+  | 'PARTITIONED_ASC'
+  | 'PARTITIONED_DESC'
+  | 'PARTITION_STRATEGY_ASC'
+  | 'PARTITION_STRATEGY_DESC'
+  | 'PARTITION_KEY_NAMES_ASC'
+  | 'PARTITION_KEY_NAMES_DESC'
+  | 'PARTITION_KEY_TYPES_ASC'
+  | 'PARTITION_KEY_TYPES_DESC'
   | 'INHERITS_ID_ASC'
   | 'INHERITS_ID_DESC'
   | 'CREATED_AT_ASC'
@@ -1170,6 +1151,33 @@ export type DatabaseTransferOrderBy =
   | 'UPDATED_AT_DESC'
   | 'COMPLETED_AT_ASC'
   | 'COMPLETED_AT_DESC';
+/** Methods to use when ordering `Partition`. */
+export type PartitionOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'DATABASE_ID_ASC'
+  | 'DATABASE_ID_DESC'
+  | 'TABLE_ID_ASC'
+  | 'TABLE_ID_DESC'
+  | 'STRATEGY_ASC'
+  | 'STRATEGY_DESC'
+  | 'PARTITION_KEY_IDS_ASC'
+  | 'PARTITION_KEY_IDS_DESC'
+  | 'INTERVAL_ASC'
+  | 'INTERVAL_DESC'
+  | 'RETENTION_ASC'
+  | 'RETENTION_DESC'
+  | 'LOOKAHEAD_ASC'
+  | 'LOOKAHEAD_DESC'
+  | 'NAMING_PATTERN_ASC'
+  | 'NAMING_PATTERN_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC';
 /** Methods to use when ordering `Api`. */
 export type ApiOrderBy =
   | 'NATURAL'
@@ -1266,6 +1274,8 @@ export type ApiSettingOrderBy =
   | 'ENABLE_LLM_DESC'
   | 'ENABLE_REALTIME_ASC'
   | 'ENABLE_REALTIME_DESC'
+  | 'ENABLE_BULK_ASC'
+  | 'ENABLE_BULK_DESC'
   | 'OPTIONS_ASC'
   | 'OPTIONS_DESC';
 /** Methods to use when ordering `ConnectedAccountsModule`. */
@@ -2039,6 +2049,10 @@ export type StorageModuleOrderBy =
   | 'HAS_CUSTOM_KEYS_DESC'
   | 'HAS_AUDIT_LOG_ASC'
   | 'HAS_AUDIT_LOG_DESC'
+  | 'HAS_CONFIRM_UPLOAD_ASC'
+  | 'HAS_CONFIRM_UPLOAD_DESC'
+  | 'CONFIRM_UPLOAD_DELAY_ASC'
+  | 'CONFIRM_UPLOAD_DELAY_DESC'
   | 'FILE_EVENTS_TABLE_ID_ASC'
   | 'FILE_EVENTS_TABLE_ID_DESC';
 /** Methods to use when ordering `EntityTypeProvision`. */
@@ -2866,6 +2880,8 @@ export type OrgInviteOrderBy =
   | 'DATA_DESC'
   | 'PROFILE_ID_ASC'
   | 'PROFILE_ID_DESC'
+  | 'IS_READ_ONLY_ASC'
+  | 'IS_READ_ONLY_DESC'
   | 'EXPIRES_AT_ASC'
   | 'EXPIRES_AT_DESC'
   | 'CREATED_AT_ASC'
@@ -3506,37 +3522,6 @@ export type RlsModuleOrderBy =
   | 'CURRENT_ROLE_DESC'
   | 'CURRENT_ROLE_ID_ASC'
   | 'CURRENT_ROLE_ID_DESC';
-/** Methods to use when ordering `DatabaseSetting`. */
-export type DatabaseSettingOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'DATABASE_ID_ASC'
-  | 'DATABASE_ID_DESC'
-  | 'ENABLE_AGGREGATES_ASC'
-  | 'ENABLE_AGGREGATES_DESC'
-  | 'ENABLE_POSTGIS_ASC'
-  | 'ENABLE_POSTGIS_DESC'
-  | 'ENABLE_SEARCH_ASC'
-  | 'ENABLE_SEARCH_DESC'
-  | 'ENABLE_DIRECT_UPLOADS_ASC'
-  | 'ENABLE_DIRECT_UPLOADS_DESC'
-  | 'ENABLE_PRESIGNED_UPLOADS_ASC'
-  | 'ENABLE_PRESIGNED_UPLOADS_DESC'
-  | 'ENABLE_MANY_TO_MANY_ASC'
-  | 'ENABLE_MANY_TO_MANY_DESC'
-  | 'ENABLE_CONNECTION_FILTER_ASC'
-  | 'ENABLE_CONNECTION_FILTER_DESC'
-  | 'ENABLE_LTREE_ASC'
-  | 'ENABLE_LTREE_DESC'
-  | 'ENABLE_LLM_ASC'
-  | 'ENABLE_LLM_DESC'
-  | 'ENABLE_REALTIME_ASC'
-  | 'ENABLE_REALTIME_DESC'
-  | 'OPTIONS_ASC'
-  | 'OPTIONS_DESC';
 /** Methods to use when ordering `PlansModule`. */
 export type PlansModuleOrderBy =
   | 'NATURAL'
@@ -3597,6 +3582,39 @@ export type SqlActionOrderBy =
   | 'ACTION_ID_DESC'
   | 'ACTOR_ID_ASC'
   | 'ACTOR_ID_DESC';
+/** Methods to use when ordering `DatabaseSetting`. */
+export type DatabaseSettingOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'DATABASE_ID_ASC'
+  | 'DATABASE_ID_DESC'
+  | 'ENABLE_AGGREGATES_ASC'
+  | 'ENABLE_AGGREGATES_DESC'
+  | 'ENABLE_POSTGIS_ASC'
+  | 'ENABLE_POSTGIS_DESC'
+  | 'ENABLE_SEARCH_ASC'
+  | 'ENABLE_SEARCH_DESC'
+  | 'ENABLE_DIRECT_UPLOADS_ASC'
+  | 'ENABLE_DIRECT_UPLOADS_DESC'
+  | 'ENABLE_PRESIGNED_UPLOADS_ASC'
+  | 'ENABLE_PRESIGNED_UPLOADS_DESC'
+  | 'ENABLE_MANY_TO_MANY_ASC'
+  | 'ENABLE_MANY_TO_MANY_DESC'
+  | 'ENABLE_CONNECTION_FILTER_ASC'
+  | 'ENABLE_CONNECTION_FILTER_DESC'
+  | 'ENABLE_LTREE_ASC'
+  | 'ENABLE_LTREE_DESC'
+  | 'ENABLE_LLM_ASC'
+  | 'ENABLE_LLM_DESC'
+  | 'ENABLE_REALTIME_ASC'
+  | 'ENABLE_REALTIME_DESC'
+  | 'ENABLE_BULK_ASC'
+  | 'ENABLE_BULK_DESC'
+  | 'OPTIONS_ASC'
+  | 'OPTIONS_DESC';
 /** Methods to use when ordering `BillingModule`. */
 export type BillingModuleOrderBy =
   | 'NATURAL'
@@ -6189,6 +6207,8 @@ export interface OrgInviteFilter {
   multiple?: BooleanFilter;
   /** Filter by the object’s `profileId` field. */
   profileId?: UUIDFilter;
+  /** Filter by the object’s `isReadOnly` field. */
+  isReadOnly?: BooleanFilter;
   /** Filter by the object’s `expiresAt` field. */
   expiresAt?: DatetimeFilter;
   /** Filter by the object’s `createdAt` field. */
@@ -6658,6 +6678,14 @@ export interface TableFilter {
   singularName?: StringFilter;
   /** Filter by the object’s `tags` field. */
   tags?: StringListFilter;
+  /** Filter by the object’s `partitioned` field. */
+  partitioned?: BooleanFilter;
+  /** Filter by the object’s `partitionStrategy` field. */
+  partitionStrategy?: StringFilter;
+  /** Filter by the object’s `partitionKeyNames` field. */
+  partitionKeyNames?: StringListFilter;
+  /** Filter by the object’s `partitionKeyTypes` field. */
+  partitionKeyTypes?: StringListFilter;
   /** Filter by the object’s `inheritsId` field. */
   inheritsId?: UUIDFilter;
   /** Filter by the object’s `createdAt` field. */
@@ -6869,10 +6897,6 @@ export interface FieldFilter {
   spatialRelationsByRefFieldId?: FieldToManySpatialRelationFilter;
   /** `spatialRelationsByRefFieldId` exist. */
   spatialRelationsByRefFieldIdExist?: boolean;
-  /** Filter by the object’s `partitionsByPartitionKeyId` relation. */
-  partitionsByPartitionKeyId?: FieldToManyPartitionFilter;
-  /** `partitionsByPartitionKeyId` exist. */
-  partitionsByPartitionKeyIdExist?: boolean;
 }
 /** A filter to be used against many `SpatialRelation` object types. All fields are combined with a logical ‘and.’ */
 export interface FieldToManySpatialRelationFilter {
@@ -6929,52 +6953,6 @@ export interface SpatialRelationFilter {
   refField?: FieldFilter;
   /** Filter by the object’s `refTable` relation. */
   refTable?: TableFilter;
-  /** Filter by the object’s `table` relation. */
-  table?: TableFilter;
-}
-/** A filter to be used against many `Partition` object types. All fields are combined with a logical ‘and.’ */
-export interface FieldToManyPartitionFilter {
-  /** Filters to entities where at least one related entity matches. */
-  some?: PartitionFilter;
-  /** Filters to entities where every related entity matches. */
-  every?: PartitionFilter;
-  /** Filters to entities where no related entity matches. */
-  none?: PartitionFilter;
-}
-/** A filter to be used against `Partition` object types. All fields are combined with a logical ‘and.’ */
-export interface PartitionFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `databaseId` field. */
-  databaseId?: UUIDFilter;
-  /** Filter by the object’s `tableId` field. */
-  tableId?: UUIDFilter;
-  /** Filter by the object’s `strategy` field. */
-  strategy?: StringFilter;
-  /** Filter by the object’s `partitionKeyId` field. */
-  partitionKeyId?: UUIDFilter;
-  /** Filter by the object’s `interval` field. */
-  interval?: StringFilter;
-  /** Filter by the object’s `retention` field. */
-  retention?: StringFilter;
-  /** Filter by the object’s `lookahead` field. */
-  lookahead?: IntFilter;
-  /** Filter by the object’s `namingPattern` field. */
-  namingPattern?: StringFilter;
-  /** Filter by the object’s `createdAt` field. */
-  createdAt?: DatetimeFilter;
-  /** Filter by the object’s `updatedAt` field. */
-  updatedAt?: DatetimeFilter;
-  /** Checks for all expressions in this list. */
-  and?: PartitionFilter[];
-  /** Checks for any expressions in this list. */
-  or?: PartitionFilter[];
-  /** Negates the expression. */
-  not?: PartitionFilter;
-  /** Filter by the object’s `database` relation. */
-  database?: DatabaseFilter;
-  /** Filter by the object’s `partitionKey` relation. */
-  partitionKey?: FieldFilter;
   /** Filter by the object’s `table` relation. */
   table?: TableFilter;
 }
@@ -7637,6 +7615,41 @@ export interface TableToManySpatialRelationFilter {
   every?: SpatialRelationFilter;
   /** Filters to entities where no related entity matches. */
   none?: SpatialRelationFilter;
+}
+/** A filter to be used against `Partition` object types. All fields are combined with a logical ‘and.’ */
+export interface PartitionFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `databaseId` field. */
+  databaseId?: UUIDFilter;
+  /** Filter by the object’s `tableId` field. */
+  tableId?: UUIDFilter;
+  /** Filter by the object’s `strategy` field. */
+  strategy?: StringFilter;
+  /** Filter by the object’s `partitionKeyIds` field. */
+  partitionKeyIds?: UUIDListFilter;
+  /** Filter by the object’s `interval` field. */
+  interval?: StringFilter;
+  /** Filter by the object’s `retention` field. */
+  retention?: StringFilter;
+  /** Filter by the object’s `lookahead` field. */
+  lookahead?: IntFilter;
+  /** Filter by the object’s `namingPattern` field. */
+  namingPattern?: StringFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Filter by the object’s `updatedAt` field. */
+  updatedAt?: DatetimeFilter;
+  /** Checks for all expressions in this list. */
+  and?: PartitionFilter[];
+  /** Checks for any expressions in this list. */
+  or?: PartitionFilter[];
+  /** Negates the expression. */
+  not?: PartitionFilter;
+  /** Filter by the object’s `database` relation. */
+  database?: DatabaseFilter;
+  /** Filter by the object’s `table` relation. */
+  table?: TableFilter;
 }
 /** A filter to be used against many `SecureTableProvision` object types. All fields are combined with a logical ‘and.’ */
 export interface TableToManySecureTableProvisionFilter {
@@ -8680,6 +8693,8 @@ export interface ApiSettingFilter {
   enableLlm?: BooleanFilter;
   /** Filter by the object’s `enableRealtime` field. */
   enableRealtime?: BooleanFilter;
+  /** Filter by the object’s `enableBulk` field. */
+  enableBulk?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -9128,6 +9143,8 @@ export interface DatabaseSettingFilter {
   enableLlm?: BooleanFilter;
   /** Filter by the object’s `enableRealtime` field. */
   enableRealtime?: BooleanFilter;
+  /** Filter by the object’s `enableBulk` field. */
+  enableBulk?: BooleanFilter;
   /** Filter by the object’s `options` field. */
   options?: JSONFilter;
   /** Checks for all expressions in this list. */
@@ -10869,6 +10886,10 @@ export interface StorageModuleFilter {
   hasCustomKeys?: BooleanFilter;
   /** Filter by the object’s `hasAuditLog` field. */
   hasAuditLog?: BooleanFilter;
+  /** Filter by the object’s `hasConfirmUpload` field. */
+  hasConfirmUpload?: BooleanFilter;
+  /** Filter by the object’s `confirmUploadDelay` field. */
+  confirmUploadDelay?: IntervalFilter;
   /** Filter by the object’s `fileEventsTableId` field. */
   fileEventsTableId?: UUIDFilter;
   /** Checks for all expressions in this list. */
@@ -12298,6 +12319,7 @@ export interface SignUpInput {
   rememberMe?: boolean;
   credentialKind?: string;
   csrfToken?: string;
+  deviceToken?: string;
 }
 export interface RequestCrossOriginTokenInput {
   clientMutationId?: string;
@@ -13782,7 +13804,7 @@ export interface PartitionInput {
   databaseId: string;
   tableId: string;
   strategy: string;
-  partitionKeyId: string;
+  partitionKeyIds: string[];
   interval?: string;
   retention?: string;
   lookahead?: number;
@@ -13969,40 +13991,6 @@ export interface RealtimeModuleInput {
   partitionInterval?: string;
   notifyChannel?: string;
 }
-export interface CreateDatabaseSettingInput {
-  clientMutationId?: string;
-  /** The `DatabaseSetting` to be created by this mutation. */
-  databaseSetting: DatabaseSettingInput;
-}
-/** An input for mutations affecting `DatabaseSetting` */
-export interface DatabaseSettingInput {
-  /** Unique identifier for this settings record */
-  id?: string;
-  /** Reference to the metaschema database these settings apply to */
-  databaseId: string;
-  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
-  enableAggregates?: boolean;
-  /** Enable PostGIS spatial types and operators in the GraphQL API */
-  enablePostgis?: boolean;
-  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
-  enableSearch?: boolean;
-  /** Enable direct (multipart) file upload mutations in the GraphQL API */
-  enableDirectUploads?: boolean;
-  /** Enable presigned URL upload flow for S3/MinIO storage */
-  enablePresignedUploads?: boolean;
-  /** Enable many-to-many relationship queries in the GraphQL API */
-  enableManyToMany?: boolean;
-  /** Enable connection filter (where argument) in the GraphQL API */
-  enableConnectionFilter?: boolean;
-  /** Enable ltree hierarchical data type support in the GraphQL API */
-  enableLtree?: boolean;
-  /** Enable LLM/AI integration features in the GraphQL API */
-  enableLlm?: boolean;
-  /** Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API */
-  enableRealtime?: boolean;
-  /** Extensible JSON for additional settings that do not have dedicated columns */
-  options?: unknown;
-}
 export interface CreatePlansModuleInput {
   clientMutationId?: string;
   /** The `PlansModule` to be created by this mutation. */
@@ -14123,40 +14111,40 @@ export interface DatabaseTransferInput {
   updatedAt?: string;
   completedAt?: string;
 }
-export interface CreateApiSettingInput {
+export interface CreateDatabaseSettingInput {
   clientMutationId?: string;
-  /** The `ApiSetting` to be created by this mutation. */
-  apiSetting: ApiSettingInput;
+  /** The `DatabaseSetting` to be created by this mutation. */
+  databaseSetting: DatabaseSettingInput;
 }
-/** An input for mutations affecting `ApiSetting` */
-export interface ApiSettingInput {
-  /** Unique identifier for this API settings record */
+/** An input for mutations affecting `DatabaseSetting` */
+export interface DatabaseSettingInput {
+  /** Unique identifier for this settings record */
   id?: string;
-  /** Reference to the metaschema database */
+  /** Reference to the metaschema database these settings apply to */
   databaseId: string;
-  /** API these settings override for */
-  apiId: string;
-  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
   enableAggregates?: boolean;
-  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  /** Enable PostGIS spatial types and operators in the GraphQL API */
   enablePostgis?: boolean;
-  /** Override: enable unified search (NULL = inherit from database_settings) */
+  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
   enableSearch?: boolean;
-  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  /** Enable direct (multipart) file upload mutations in the GraphQL API */
   enableDirectUploads?: boolean;
-  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  /** Enable presigned URL upload flow for S3/MinIO storage */
   enablePresignedUploads?: boolean;
-  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  /** Enable many-to-many relationship queries in the GraphQL API */
   enableManyToMany?: boolean;
-  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  /** Enable connection filter (where argument) in the GraphQL API */
   enableConnectionFilter?: boolean;
-  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  /** Enable ltree hierarchical data type support in the GraphQL API */
   enableLtree?: boolean;
-  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  /** Enable LLM/AI integration features in the GraphQL API */
   enableLlm?: boolean;
-  /** Override: enable realtime subscriptions (NULL = inherit from database_settings) */
+  /** Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API */
   enableRealtime?: boolean;
-  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  /** Enable bulk mutation operations (insert, upsert, update, delete) in the GraphQL API */
+  enableBulk?: boolean;
+  /** Extensible JSON for additional settings that do not have dedicated columns */
   options?: unknown;
 }
 export interface CreateBillingModuleInput {
@@ -14367,6 +14355,44 @@ export interface AstMigrationInput {
   action?: string;
   actionId?: string;
   actorId?: string;
+}
+export interface CreateApiSettingInput {
+  clientMutationId?: string;
+  /** The `ApiSetting` to be created by this mutation. */
+  apiSetting: ApiSettingInput;
+}
+/** An input for mutations affecting `ApiSetting` */
+export interface ApiSettingInput {
+  /** Unique identifier for this API settings record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId: string;
+  /** API these settings override for */
+  apiId: string;
+  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  enableAggregates?: boolean;
+  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  enablePostgis?: boolean;
+  /** Override: enable unified search (NULL = inherit from database_settings) */
+  enableSearch?: boolean;
+  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  enableDirectUploads?: boolean;
+  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  enablePresignedUploads?: boolean;
+  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  enableManyToMany?: boolean;
+  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  enableConnectionFilter?: boolean;
+  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  enableLtree?: boolean;
+  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  enableLlm?: boolean;
+  /** Override: enable realtime subscriptions (NULL = inherit from database_settings) */
+  enableRealtime?: boolean;
+  /** Override: enable bulk mutations (NULL = inherit from database_settings) */
+  enableBulk?: boolean;
+  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  options?: unknown;
 }
 export interface CreateEnumInput {
   clientMutationId?: string;
@@ -14851,40 +14877,6 @@ export interface WebauthnSettingInput {
   /** Challenge TTL in seconds (default 300 = 5 minutes) */
   challengeExpirySeconds?: string;
 }
-export interface CreateOrgInviteInput {
-  clientMutationId?: string;
-  /** The `OrgInvite` to be created by this mutation. */
-  orgInvite: OrgInviteInput;
-}
-/** An input for mutations affecting `OrgInvite` */
-export interface OrgInviteInput {
-  id?: string;
-  /** Email address of the invited recipient */
-  email?: ConstructiveInternalTypeEmail;
-  /** User ID of the member who sent this invitation */
-  senderId?: string;
-  /** User ID of the intended recipient, if targeting a specific user */
-  receiverId?: string;
-  /** Unique random hex token used to redeem this invitation */
-  inviteToken?: string;
-  /** Whether this invitation is still valid and can be redeemed */
-  inviteValid?: boolean;
-  /** Maximum number of times this invite can be claimed; -1 means unlimited */
-  inviteLimit?: number;
-  /** Running count of how many times this invite has been claimed */
-  inviteCount?: number;
-  /** Whether this invite can be claimed by multiple recipients */
-  multiple?: boolean;
-  /** Optional JSON payload of additional invite metadata */
-  data?: unknown;
-  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
-  profileId?: string;
-  /** Timestamp after which this invitation can no longer be redeemed */
-  expiresAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  entityId: string;
-}
 export interface CreateAppMembershipInput {
   clientMutationId?: string;
   /** The `AppMembership` to be created by this mutation. */
@@ -14967,6 +14959,42 @@ export interface IndexInput {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+export interface CreateOrgInviteInput {
+  clientMutationId?: string;
+  /** The `OrgInvite` to be created by this mutation. */
+  orgInvite: OrgInviteInput;
+}
+/** An input for mutations affecting `OrgInvite` */
+export interface OrgInviteInput {
+  id?: string;
+  /** Email address of the invited recipient */
+  email?: ConstructiveInternalTypeEmail;
+  /** User ID of the member who sent this invitation */
+  senderId?: string;
+  /** User ID of the intended recipient, if targeting a specific user */
+  receiverId?: string;
+  /** Unique random hex token used to redeem this invitation */
+  inviteToken?: string;
+  /** Whether this invitation is still valid and can be redeemed */
+  inviteValid?: boolean;
+  /** Maximum number of times this invite can be claimed; -1 means unlimited */
+  inviteLimit?: number;
+  /** Running count of how many times this invite has been claimed */
+  inviteCount?: number;
+  /** Whether this invite can be claimed by multiple recipients */
+  multiple?: boolean;
+  /** Optional JSON payload of additional invite metadata */
+  data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
+  /** Whether the resulting membership should be read-only when this invite is claimed */
+  isReadOnly?: boolean;
+  /** Timestamp after which this invitation can no longer be redeemed */
+  expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  entityId: string;
 }
 export interface CreateBillingProviderModuleInput {
   clientMutationId?: string;
@@ -15161,33 +15189,6 @@ export interface ForeignKeyConstraintInput {
   module?: string;
   scope?: number;
   tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface CreateTableInput {
-  clientMutationId?: string;
-  /** The `Table` to be created by this mutation. */
-  table: TableInput;
-}
-/** An input for mutations affecting `Table` */
-export interface TableInput {
-  id?: string;
-  databaseId?: string;
-  schemaId: string;
-  name: string;
-  label?: string;
-  description?: string;
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  useRls?: boolean;
-  timestamps?: boolean;
-  peoplestamps?: boolean;
-  pluralName?: string;
-  singularName?: string;
-  tags?: string[];
-  inheritsId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -15614,6 +15615,37 @@ export interface FieldInput {
   createdAt?: string;
   updatedAt?: string;
 }
+export interface CreateTableInput {
+  clientMutationId?: string;
+  /** The `Table` to be created by this mutation. */
+  table: TableInput;
+}
+/** An input for mutations affecting `Table` */
+export interface TableInput {
+  id?: string;
+  databaseId?: string;
+  schemaId: string;
+  name: string;
+  label?: string;
+  description?: string;
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  useRls?: boolean;
+  timestamps?: boolean;
+  peoplestamps?: boolean;
+  pluralName?: string;
+  singularName?: string;
+  tags?: string[];
+  partitioned?: boolean;
+  partitionStrategy?: string;
+  partitionKeyNames?: string[];
+  partitionKeyTypes?: string[];
+  inheritsId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 export interface CreateLimitsModuleInput {
   clientMutationId?: string;
   /** The `LimitsModule` to be created by this mutation. */
@@ -15687,6 +15719,8 @@ export interface StorageModuleInput {
   hasContentHash?: boolean;
   hasCustomKeys?: boolean;
   hasAuditLog?: boolean;
+  hasConfirmUpload?: boolean;
+  confirmUploadDelay?: IntervalInput;
   fileEventsTableId?: string;
 }
 export interface CreateMembershipsModuleInput {
@@ -17190,7 +17224,7 @@ export interface PartitionPatch {
   databaseId?: string;
   tableId?: string;
   strategy?: string;
-  partitionKeyId?: string;
+  partitionKeyIds?: string[];
   interval?: string;
   retention?: string;
   lookahead?: number;
@@ -17389,42 +17423,6 @@ export interface RealtimeModulePatch {
   partitionInterval?: string;
   notifyChannel?: string;
 }
-export interface UpdateDatabaseSettingInput {
-  clientMutationId?: string;
-  /** Unique identifier for this settings record */
-  id: string;
-  /** An object where the defined keys will be set on the `DatabaseSetting` being updated. */
-  databaseSettingPatch: DatabaseSettingPatch;
-}
-/** Represents an update to a `DatabaseSetting`. Fields that are set will be updated. */
-export interface DatabaseSettingPatch {
-  /** Unique identifier for this settings record */
-  id?: string;
-  /** Reference to the metaschema database these settings apply to */
-  databaseId?: string;
-  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
-  enableAggregates?: boolean;
-  /** Enable PostGIS spatial types and operators in the GraphQL API */
-  enablePostgis?: boolean;
-  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
-  enableSearch?: boolean;
-  /** Enable direct (multipart) file upload mutations in the GraphQL API */
-  enableDirectUploads?: boolean;
-  /** Enable presigned URL upload flow for S3/MinIO storage */
-  enablePresignedUploads?: boolean;
-  /** Enable many-to-many relationship queries in the GraphQL API */
-  enableManyToMany?: boolean;
-  /** Enable connection filter (where argument) in the GraphQL API */
-  enableConnectionFilter?: boolean;
-  /** Enable ltree hierarchical data type support in the GraphQL API */
-  enableLtree?: boolean;
-  /** Enable LLM/AI integration features in the GraphQL API */
-  enableLlm?: boolean;
-  /** Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API */
-  enableRealtime?: boolean;
-  /** Extensible JSON for additional settings that do not have dedicated columns */
-  options?: unknown;
-}
 export interface UpdatePlansModuleInput {
   clientMutationId?: string;
   id: string;
@@ -17530,42 +17528,42 @@ export interface DatabaseTransferPatch {
   updatedAt?: string;
   completedAt?: string;
 }
-export interface UpdateApiSettingInput {
+export interface UpdateDatabaseSettingInput {
   clientMutationId?: string;
-  /** Unique identifier for this API settings record */
+  /** Unique identifier for this settings record */
   id: string;
-  /** An object where the defined keys will be set on the `ApiSetting` being updated. */
-  apiSettingPatch: ApiSettingPatch;
+  /** An object where the defined keys will be set on the `DatabaseSetting` being updated. */
+  databaseSettingPatch: DatabaseSettingPatch;
 }
-/** Represents an update to a `ApiSetting`. Fields that are set will be updated. */
-export interface ApiSettingPatch {
-  /** Unique identifier for this API settings record */
+/** Represents an update to a `DatabaseSetting`. Fields that are set will be updated. */
+export interface DatabaseSettingPatch {
+  /** Unique identifier for this settings record */
   id?: string;
-  /** Reference to the metaschema database */
+  /** Reference to the metaschema database these settings apply to */
   databaseId?: string;
-  /** API these settings override for */
-  apiId?: string;
-  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  /** Enable aggregate queries (sum, avg, min, max, etc.) in the GraphQL API */
   enableAggregates?: boolean;
-  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  /** Enable PostGIS spatial types and operators in the GraphQL API */
   enablePostgis?: boolean;
-  /** Override: enable unified search (NULL = inherit from database_settings) */
+  /** Enable unified search (tsvector, BM25, pg_trgm, pgvector) in the GraphQL API */
   enableSearch?: boolean;
-  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  /** Enable direct (multipart) file upload mutations in the GraphQL API */
   enableDirectUploads?: boolean;
-  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  /** Enable presigned URL upload flow for S3/MinIO storage */
   enablePresignedUploads?: boolean;
-  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  /** Enable many-to-many relationship queries in the GraphQL API */
   enableManyToMany?: boolean;
-  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  /** Enable connection filter (where argument) in the GraphQL API */
   enableConnectionFilter?: boolean;
-  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  /** Enable ltree hierarchical data type support in the GraphQL API */
   enableLtree?: boolean;
-  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  /** Enable LLM/AI integration features in the GraphQL API */
   enableLlm?: boolean;
-  /** Override: enable realtime subscriptions (NULL = inherit from database_settings) */
+  /** Enable realtime subscriptions (cursor-tracked change delivery) in the GraphQL API */
   enableRealtime?: boolean;
-  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  /** Enable bulk mutation operations (insert, upsert, update, delete) in the GraphQL API */
+  enableBulk?: boolean;
+  /** Extensible JSON for additional settings that do not have dedicated columns */
   options?: unknown;
 }
 export interface UpdateBillingModuleInput {
@@ -17763,6 +17761,46 @@ export interface OrgLimitPatch {
   /** Temporary credits for the current billing window. Resets to 0 on window expiry. */
   periodCredits?: string;
   entityId?: string;
+}
+export interface UpdateApiSettingInput {
+  clientMutationId?: string;
+  /** Unique identifier for this API settings record */
+  id: string;
+  /** An object where the defined keys will be set on the `ApiSetting` being updated. */
+  apiSettingPatch: ApiSettingPatch;
+}
+/** Represents an update to a `ApiSetting`. Fields that are set will be updated. */
+export interface ApiSettingPatch {
+  /** Unique identifier for this API settings record */
+  id?: string;
+  /** Reference to the metaschema database */
+  databaseId?: string;
+  /** API these settings override for */
+  apiId?: string;
+  /** Override: enable aggregate queries (NULL = inherit from database_settings) */
+  enableAggregates?: boolean;
+  /** Override: enable PostGIS spatial types (NULL = inherit from database_settings) */
+  enablePostgis?: boolean;
+  /** Override: enable unified search (NULL = inherit from database_settings) */
+  enableSearch?: boolean;
+  /** Override: enable direct (multipart) file uploads (NULL = inherit from database_settings) */
+  enableDirectUploads?: boolean;
+  /** Override: enable presigned URL upload flow (NULL = inherit from database_settings) */
+  enablePresignedUploads?: boolean;
+  /** Override: enable many-to-many relationships (NULL = inherit from database_settings) */
+  enableManyToMany?: boolean;
+  /** Override: enable connection filter (NULL = inherit from database_settings) */
+  enableConnectionFilter?: boolean;
+  /** Override: enable ltree hierarchical data type (NULL = inherit from database_settings) */
+  enableLtree?: boolean;
+  /** Override: enable LLM/AI integration features (NULL = inherit from database_settings) */
+  enableLlm?: boolean;
+  /** Override: enable realtime subscriptions (NULL = inherit from database_settings) */
+  enableRealtime?: boolean;
+  /** Override: enable bulk mutations (NULL = inherit from database_settings) */
+  enableBulk?: boolean;
+  /** Extensible JSON for additional per-API settings that do not have dedicated columns */
+  options?: unknown;
 }
 export interface UpdateEnumInput {
   clientMutationId?: string;
@@ -18281,41 +18319,6 @@ export interface WebauthnSettingPatch {
   /** Challenge TTL in seconds (default 300 = 5 minutes) */
   challengeExpirySeconds?: string;
 }
-export interface UpdateOrgInviteInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `OrgInvite` being updated. */
-  orgInvitePatch: OrgInvitePatch;
-}
-/** Represents an update to a `OrgInvite`. Fields that are set will be updated. */
-export interface OrgInvitePatch {
-  id?: string;
-  /** Email address of the invited recipient */
-  email?: ConstructiveInternalTypeEmail;
-  /** User ID of the member who sent this invitation */
-  senderId?: string;
-  /** User ID of the intended recipient, if targeting a specific user */
-  receiverId?: string;
-  /** Unique random hex token used to redeem this invitation */
-  inviteToken?: string;
-  /** Whether this invitation is still valid and can be redeemed */
-  inviteValid?: boolean;
-  /** Maximum number of times this invite can be claimed; -1 means unlimited */
-  inviteLimit?: number;
-  /** Running count of how many times this invite has been claimed */
-  inviteCount?: number;
-  /** Whether this invite can be claimed by multiple recipients */
-  multiple?: boolean;
-  /** Optional JSON payload of additional invite metadata */
-  data?: unknown;
-  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
-  profileId?: string;
-  /** Timestamp after which this invitation can no longer be redeemed */
-  expiresAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  entityId?: string;
-}
 export interface UpdateAppMembershipInput {
   clientMutationId?: string;
   id: string;
@@ -18401,6 +18404,43 @@ export interface IndexPatch {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+export interface UpdateOrgInviteInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `OrgInvite` being updated. */
+  orgInvitePatch: OrgInvitePatch;
+}
+/** Represents an update to a `OrgInvite`. Fields that are set will be updated. */
+export interface OrgInvitePatch {
+  id?: string;
+  /** Email address of the invited recipient */
+  email?: ConstructiveInternalTypeEmail;
+  /** User ID of the member who sent this invitation */
+  senderId?: string;
+  /** User ID of the intended recipient, if targeting a specific user */
+  receiverId?: string;
+  /** Unique random hex token used to redeem this invitation */
+  inviteToken?: string;
+  /** Whether this invitation is still valid and can be redeemed */
+  inviteValid?: boolean;
+  /** Maximum number of times this invite can be claimed; -1 means unlimited */
+  inviteLimit?: number;
+  /** Running count of how many times this invite has been claimed */
+  inviteCount?: number;
+  /** Whether this invite can be claimed by multiple recipients */
+  multiple?: boolean;
+  /** Optional JSON payload of additional invite metadata */
+  data?: unknown;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string;
+  /** Whether the resulting membership should be read-only when this invite is claimed */
+  isReadOnly?: boolean;
+  /** Timestamp after which this invitation can no longer be redeemed */
+  expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  entityId?: string;
 }
 export interface UpdateBillingProviderModuleInput {
   clientMutationId?: string;
@@ -18602,34 +18642,6 @@ export interface ForeignKeyConstraintPatch {
   module?: string;
   scope?: number;
   tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface UpdateTableInput {
-  clientMutationId?: string;
-  id: string;
-  /** An object where the defined keys will be set on the `Table` being updated. */
-  tablePatch: TablePatch;
-}
-/** Represents an update to a `Table`. Fields that are set will be updated. */
-export interface TablePatch {
-  id?: string;
-  databaseId?: string;
-  schemaId?: string;
-  name?: string;
-  label?: string;
-  description?: string;
-  smartTags?: unknown;
-  category?: ObjectCategory;
-  module?: string;
-  scope?: number;
-  useRls?: boolean;
-  timestamps?: boolean;
-  peoplestamps?: boolean;
-  pluralName?: string;
-  singularName?: string;
-  tags?: string[];
-  inheritsId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -19063,6 +19075,38 @@ export interface FieldPatch {
   createdAt?: string;
   updatedAt?: string;
 }
+export interface UpdateTableInput {
+  clientMutationId?: string;
+  id: string;
+  /** An object where the defined keys will be set on the `Table` being updated. */
+  tablePatch: TablePatch;
+}
+/** Represents an update to a `Table`. Fields that are set will be updated. */
+export interface TablePatch {
+  id?: string;
+  databaseId?: string;
+  schemaId?: string;
+  name?: string;
+  label?: string;
+  description?: string;
+  smartTags?: unknown;
+  category?: ObjectCategory;
+  module?: string;
+  scope?: number;
+  useRls?: boolean;
+  timestamps?: boolean;
+  peoplestamps?: boolean;
+  pluralName?: string;
+  singularName?: string;
+  tags?: string[];
+  partitioned?: boolean;
+  partitionStrategy?: string;
+  partitionKeyNames?: string[];
+  partitionKeyTypes?: string[];
+  inheritsId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 export interface UpdateLimitsModuleInput {
   clientMutationId?: string;
   id: string;
@@ -19138,6 +19182,8 @@ export interface StorageModulePatch {
   hasContentHash?: boolean;
   hasCustomKeys?: boolean;
   hasAuditLog?: boolean;
+  hasConfirmUpload?: boolean;
+  confirmUploadDelay?: IntervalInput;
   fileEventsTableId?: string;
 }
 export interface UpdateMembershipsModuleInput {
@@ -19555,11 +19601,6 @@ export interface DeleteRealtimeModuleInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteDatabaseSettingInput {
-  clientMutationId?: string;
-  /** Unique identifier for this settings record */
-  id: string;
-}
 export interface DeletePlansModuleInput {
   clientMutationId?: string;
   id: string;
@@ -19576,9 +19617,9 @@ export interface DeleteDatabaseTransferInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteApiSettingInput {
+export interface DeleteDatabaseSettingInput {
   clientMutationId?: string;
-  /** Unique identifier for this API settings record */
+  /** Unique identifier for this settings record */
   id: string;
 }
 export interface DeleteBillingModuleInput {
@@ -19608,6 +19649,11 @@ export interface DeleteOrgLimitAggregateInput {
 }
 export interface DeleteOrgLimitInput {
   clientMutationId?: string;
+  id: string;
+}
+export interface DeleteApiSettingInput {
+  clientMutationId?: string;
+  /** Unique identifier for this API settings record */
   id: string;
 }
 export interface DeleteEnumInput {
@@ -19689,10 +19735,6 @@ export interface DeleteWebauthnSettingInput {
   /** Unique identifier for this WebAuthn settings record */
   id: string;
 }
-export interface DeleteOrgInviteInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface DeleteAppMembershipInput {
   clientMutationId?: string;
   id: string;
@@ -19702,6 +19744,10 @@ export interface DeleteSchemaInput {
   id: string;
 }
 export interface DeleteIndexInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteOrgInviteInput {
   clientMutationId?: string;
   id: string;
 }
@@ -19730,10 +19776,6 @@ export interface DeleteForeignKeyConstraintInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteTableInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface DeleteRelationProvisionInput {
   clientMutationId?: string;
   /** Unique identifier for this relation provision row. */
@@ -19753,6 +19795,10 @@ export interface DeleteUserAuthModuleInput {
   id: string;
 }
 export interface DeleteFieldInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface DeleteTableInput {
   clientMutationId?: string;
   id: string;
 }
@@ -20449,13 +20495,6 @@ export interface RealtimeModuleConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `DatabaseSetting` values. */
-export interface DatabaseSettingConnection {
-  nodes: DatabaseSetting[];
-  edges: DatabaseSettingEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `PlansModule` values. */
 export interface PlansModuleConnection {
   nodes: PlansModule[];
@@ -20491,10 +20530,10 @@ export interface DatabaseTransferConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `ApiSetting` values. */
-export interface ApiSettingConnection {
-  nodes: ApiSetting[];
-  edges: ApiSettingEdge[];
+/** A connection to a list of `DatabaseSetting` values. */
+export interface DatabaseSettingConnection {
+  nodes: DatabaseSetting[];
+  edges: DatabaseSettingEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -20551,6 +20590,13 @@ export interface OrgLimitConnection {
 export interface AstMigrationConnection {
   nodes: AstMigration[];
   edges: AstMigrationEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `ApiSetting` values. */
+export interface ApiSettingConnection {
+  nodes: ApiSetting[];
+  edges: ApiSettingEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -20687,13 +20733,6 @@ export interface WebauthnSettingConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `OrgInvite` values. */
-export interface OrgInviteConnection {
-  nodes: OrgInvite[];
-  edges: OrgInviteEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `AppMembership` values. */
 export interface AppMembershipConnection {
   nodes: AppMembership[];
@@ -20712,6 +20751,13 @@ export interface SchemaConnection {
 export interface IndexConnection {
   nodes: Index[];
   edges: IndexEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `OrgInvite` values. */
+export interface OrgInviteConnection {
+  nodes: OrgInvite[];
+  edges: OrgInviteEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -20757,13 +20803,6 @@ export interface ForeignKeyConstraintConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `Table` values. */
-export interface TableConnection {
-  nodes: Table[];
-  edges: TableEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
 /** A connection to a list of `RelationProvision` values. */
 export interface RelationProvisionConnection {
   nodes: RelationProvision[];
@@ -20796,6 +20835,13 @@ export interface UserAuthModuleConnection {
 export interface FieldConnection {
   nodes: Field[];
   edges: FieldEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+/** A connection to a list of `Table` values. */
+export interface TableConnection {
+  nodes: Table[];
+  edges: TableEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -21560,12 +21606,6 @@ export interface CreateRealtimeModulePayload {
   realtimeModule?: RealtimeModule | null;
   realtimeModuleEdge?: RealtimeModuleEdge | null;
 }
-export interface CreateDatabaseSettingPayload {
-  clientMutationId?: string | null;
-  /** The `DatabaseSetting` that was created by this mutation. */
-  databaseSetting?: DatabaseSetting | null;
-  databaseSettingEdge?: DatabaseSettingEdge | null;
-}
 export interface CreatePlansModulePayload {
   clientMutationId?: string | null;
   /** The `PlansModule` that was created by this mutation. */
@@ -21595,11 +21635,11 @@ export interface CreateDatabaseTransferPayload {
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
 }
-export interface CreateApiSettingPayload {
+export interface CreateDatabaseSettingPayload {
   clientMutationId?: string | null;
-  /** The `ApiSetting` that was created by this mutation. */
-  apiSetting?: ApiSetting | null;
-  apiSettingEdge?: ApiSettingEdge | null;
+  /** The `DatabaseSetting` that was created by this mutation. */
+  databaseSetting?: DatabaseSetting | null;
+  databaseSettingEdge?: DatabaseSettingEdge | null;
 }
 export interface CreateBillingModulePayload {
   clientMutationId?: string | null;
@@ -21647,6 +21687,12 @@ export interface CreateAstMigrationPayload {
   clientMutationId?: string | null;
   /** The `AstMigration` that was created by this mutation. */
   astMigration?: AstMigration | null;
+}
+export interface CreateApiSettingPayload {
+  clientMutationId?: string | null;
+  /** The `ApiSetting` that was created by this mutation. */
+  apiSetting?: ApiSetting | null;
+  apiSettingEdge?: ApiSettingEdge | null;
 }
 export interface CreateEnumPayload {
   clientMutationId?: string | null;
@@ -21762,12 +21808,6 @@ export interface CreateWebauthnSettingPayload {
   webauthnSetting?: WebauthnSetting | null;
   webauthnSettingEdge?: WebauthnSettingEdge | null;
 }
-export interface CreateOrgInvitePayload {
-  clientMutationId?: string | null;
-  /** The `OrgInvite` that was created by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
-}
 export interface CreateAppMembershipPayload {
   clientMutationId?: string | null;
   /** The `AppMembership` that was created by this mutation. */
@@ -21785,6 +21825,12 @@ export interface CreateIndexPayload {
   /** The `Index` that was created by this mutation. */
   index?: Index | null;
   indexEdge?: IndexEdge | null;
+}
+export interface CreateOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was created by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
 }
 export interface CreateBillingProviderModulePayload {
   clientMutationId?: string | null;
@@ -21822,12 +21868,6 @@ export interface CreateForeignKeyConstraintPayload {
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface CreateTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was created by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface CreateRelationProvisionPayload {
   clientMutationId?: string | null;
   /** The `RelationProvision` that was created by this mutation. */
@@ -21857,6 +21897,12 @@ export interface CreateFieldPayload {
   /** The `Field` that was created by this mutation. */
   field?: Field | null;
   fieldEdge?: FieldEdge | null;
+}
+export interface CreateTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was created by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface CreateLimitsModulePayload {
   clientMutationId?: string | null;
@@ -22404,12 +22450,6 @@ export interface UpdateRealtimeModulePayload {
   realtimeModule?: RealtimeModule | null;
   realtimeModuleEdge?: RealtimeModuleEdge | null;
 }
-export interface UpdateDatabaseSettingPayload {
-  clientMutationId?: string | null;
-  /** The `DatabaseSetting` that was updated by this mutation. */
-  databaseSetting?: DatabaseSetting | null;
-  databaseSettingEdge?: DatabaseSettingEdge | null;
-}
 export interface UpdatePlansModulePayload {
   clientMutationId?: string | null;
   /** The `PlansModule` that was updated by this mutation. */
@@ -22434,11 +22474,11 @@ export interface UpdateDatabaseTransferPayload {
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
 }
-export interface UpdateApiSettingPayload {
+export interface UpdateDatabaseSettingPayload {
   clientMutationId?: string | null;
-  /** The `ApiSetting` that was updated by this mutation. */
-  apiSetting?: ApiSetting | null;
-  apiSettingEdge?: ApiSettingEdge | null;
+  /** The `DatabaseSetting` that was updated by this mutation. */
+  databaseSetting?: DatabaseSetting | null;
+  databaseSettingEdge?: DatabaseSettingEdge | null;
 }
 export interface UpdateBillingModulePayload {
   clientMutationId?: string | null;
@@ -22481,6 +22521,12 @@ export interface UpdateOrgLimitPayload {
   /** The `OrgLimit` that was updated by this mutation. */
   orgLimit?: OrgLimit | null;
   orgLimitEdge?: OrgLimitEdge | null;
+}
+export interface UpdateApiSettingPayload {
+  clientMutationId?: string | null;
+  /** The `ApiSetting` that was updated by this mutation. */
+  apiSetting?: ApiSetting | null;
+  apiSettingEdge?: ApiSettingEdge | null;
 }
 export interface UpdateEnumPayload {
   clientMutationId?: string | null;
@@ -22596,12 +22642,6 @@ export interface UpdateWebauthnSettingPayload {
   webauthnSetting?: WebauthnSetting | null;
   webauthnSettingEdge?: WebauthnSettingEdge | null;
 }
-export interface UpdateOrgInvitePayload {
-  clientMutationId?: string | null;
-  /** The `OrgInvite` that was updated by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
-}
 export interface UpdateAppMembershipPayload {
   clientMutationId?: string | null;
   /** The `AppMembership` that was updated by this mutation. */
@@ -22619,6 +22659,12 @@ export interface UpdateIndexPayload {
   /** The `Index` that was updated by this mutation. */
   index?: Index | null;
   indexEdge?: IndexEdge | null;
+}
+export interface UpdateOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was updated by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
 }
 export interface UpdateBillingProviderModulePayload {
   clientMutationId?: string | null;
@@ -22656,12 +22702,6 @@ export interface UpdateForeignKeyConstraintPayload {
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface UpdateTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was updated by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface UpdateRelationProvisionPayload {
   clientMutationId?: string | null;
   /** The `RelationProvision` that was updated by this mutation. */
@@ -22691,6 +22731,12 @@ export interface UpdateFieldPayload {
   /** The `Field` that was updated by this mutation. */
   field?: Field | null;
   fieldEdge?: FieldEdge | null;
+}
+export interface UpdateTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was updated by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface UpdateLimitsModulePayload {
   clientMutationId?: string | null;
@@ -23238,12 +23284,6 @@ export interface DeleteRealtimeModulePayload {
   realtimeModule?: RealtimeModule | null;
   realtimeModuleEdge?: RealtimeModuleEdge | null;
 }
-export interface DeleteDatabaseSettingPayload {
-  clientMutationId?: string | null;
-  /** The `DatabaseSetting` that was deleted by this mutation. */
-  databaseSetting?: DatabaseSetting | null;
-  databaseSettingEdge?: DatabaseSettingEdge | null;
-}
 export interface DeletePlansModulePayload {
   clientMutationId?: string | null;
   /** The `PlansModule` that was deleted by this mutation. */
@@ -23268,11 +23308,11 @@ export interface DeleteDatabaseTransferPayload {
   databaseTransfer?: DatabaseTransfer | null;
   databaseTransferEdge?: DatabaseTransferEdge | null;
 }
-export interface DeleteApiSettingPayload {
+export interface DeleteDatabaseSettingPayload {
   clientMutationId?: string | null;
-  /** The `ApiSetting` that was deleted by this mutation. */
-  apiSetting?: ApiSetting | null;
-  apiSettingEdge?: ApiSettingEdge | null;
+  /** The `DatabaseSetting` that was deleted by this mutation. */
+  databaseSetting?: DatabaseSetting | null;
+  databaseSettingEdge?: DatabaseSettingEdge | null;
 }
 export interface DeleteBillingModulePayload {
   clientMutationId?: string | null;
@@ -23315,6 +23355,12 @@ export interface DeleteOrgLimitPayload {
   /** The `OrgLimit` that was deleted by this mutation. */
   orgLimit?: OrgLimit | null;
   orgLimitEdge?: OrgLimitEdge | null;
+}
+export interface DeleteApiSettingPayload {
+  clientMutationId?: string | null;
+  /** The `ApiSetting` that was deleted by this mutation. */
+  apiSetting?: ApiSetting | null;
+  apiSettingEdge?: ApiSettingEdge | null;
 }
 export interface DeleteEnumPayload {
   clientMutationId?: string | null;
@@ -23430,12 +23476,6 @@ export interface DeleteWebauthnSettingPayload {
   webauthnSetting?: WebauthnSetting | null;
   webauthnSettingEdge?: WebauthnSettingEdge | null;
 }
-export interface DeleteOrgInvitePayload {
-  clientMutationId?: string | null;
-  /** The `OrgInvite` that was deleted by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
-}
 export interface DeleteAppMembershipPayload {
   clientMutationId?: string | null;
   /** The `AppMembership` that was deleted by this mutation. */
@@ -23453,6 +23493,12 @@ export interface DeleteIndexPayload {
   /** The `Index` that was deleted by this mutation. */
   index?: Index | null;
   indexEdge?: IndexEdge | null;
+}
+export interface DeleteOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was deleted by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
 }
 export interface DeleteBillingProviderModulePayload {
   clientMutationId?: string | null;
@@ -23490,12 +23536,6 @@ export interface DeleteForeignKeyConstraintPayload {
   foreignKeyConstraint?: ForeignKeyConstraint | null;
   foreignKeyConstraintEdge?: ForeignKeyConstraintEdge | null;
 }
-export interface DeleteTablePayload {
-  clientMutationId?: string | null;
-  /** The `Table` that was deleted by this mutation. */
-  table?: Table | null;
-  tableEdge?: TableEdge | null;
-}
 export interface DeleteRelationProvisionPayload {
   clientMutationId?: string | null;
   /** The `RelationProvision` that was deleted by this mutation. */
@@ -23525,6 +23565,12 @@ export interface DeleteFieldPayload {
   /** The `Field` that was deleted by this mutation. */
   field?: Field | null;
   fieldEdge?: FieldEdge | null;
+}
+export interface DeleteTablePayload {
+  clientMutationId?: string | null;
+  /** The `Table` that was deleted by this mutation. */
+  table?: Table | null;
+  tableEdge?: TableEdge | null;
 }
 export interface DeleteLimitsModulePayload {
   clientMutationId?: string | null;
@@ -24145,12 +24191,6 @@ export interface RealtimeModuleEdge {
   /** The `RealtimeModule` at the end of the edge. */
   node?: RealtimeModule | null;
 }
-/** A `DatabaseSetting` edge in the connection. */
-export interface DatabaseSettingEdge {
-  cursor?: string | null;
-  /** The `DatabaseSetting` at the end of the edge. */
-  node?: DatabaseSetting | null;
-}
 /** A `PlansModule` edge in the connection. */
 export interface PlansModuleEdge {
   cursor?: string | null;
@@ -24181,11 +24221,11 @@ export interface DatabaseTransferEdge {
   /** The `DatabaseTransfer` at the end of the edge. */
   node?: DatabaseTransfer | null;
 }
-/** A `ApiSetting` edge in the connection. */
-export interface ApiSettingEdge {
+/** A `DatabaseSetting` edge in the connection. */
+export interface DatabaseSettingEdge {
   cursor?: string | null;
-  /** The `ApiSetting` at the end of the edge. */
-  node?: ApiSetting | null;
+  /** The `DatabaseSetting` at the end of the edge. */
+  node?: DatabaseSetting | null;
 }
 /** A `BillingModule` edge in the connection. */
 export interface BillingModuleEdge {
@@ -24234,6 +24274,12 @@ export interface AstMigrationEdge {
   cursor?: string | null;
   /** The `AstMigration` at the end of the edge. */
   node?: AstMigration | null;
+}
+/** A `ApiSetting` edge in the connection. */
+export interface ApiSettingEdge {
+  cursor?: string | null;
+  /** The `ApiSetting` at the end of the edge. */
+  node?: ApiSetting | null;
 }
 /** A `Enum` edge in the connection. */
 export interface EnumEdge {
@@ -24349,12 +24395,6 @@ export interface WebauthnSettingEdge {
   /** The `WebauthnSetting` at the end of the edge. */
   node?: WebauthnSetting | null;
 }
-/** A `OrgInvite` edge in the connection. */
-export interface OrgInviteEdge {
-  cursor?: string | null;
-  /** The `OrgInvite` at the end of the edge. */
-  node?: OrgInvite | null;
-}
 /** A `AppMembership` edge in the connection. */
 export interface AppMembershipEdge {
   cursor?: string | null;
@@ -24372,6 +24412,12 @@ export interface IndexEdge {
   cursor?: string | null;
   /** The `Index` at the end of the edge. */
   node?: Index | null;
+}
+/** A `OrgInvite` edge in the connection. */
+export interface OrgInviteEdge {
+  cursor?: string | null;
+  /** The `OrgInvite` at the end of the edge. */
+  node?: OrgInvite | null;
 }
 /** A `BillingProviderModule` edge in the connection. */
 export interface BillingProviderModuleEdge {
@@ -24409,12 +24455,6 @@ export interface ForeignKeyConstraintEdge {
   /** The `ForeignKeyConstraint` at the end of the edge. */
   node?: ForeignKeyConstraint | null;
 }
-/** A `Table` edge in the connection. */
-export interface TableEdge {
-  cursor?: string | null;
-  /** The `Table` at the end of the edge. */
-  node?: Table | null;
-}
 /** A `RelationProvision` edge in the connection. */
 export interface RelationProvisionEdge {
   cursor?: string | null;
@@ -24444,6 +24484,12 @@ export interface FieldEdge {
   cursor?: string | null;
   /** The `Field` at the end of the edge. */
   node?: Field | null;
+}
+/** A `Table` edge in the connection. */
+export interface TableEdge {
+  cursor?: string | null;
+  /** The `Table` at the end of the edge. */
+  node?: Table | null;
 }
 /** A `LimitsModule` edge in the connection. */
 export interface LimitsModuleEdge {

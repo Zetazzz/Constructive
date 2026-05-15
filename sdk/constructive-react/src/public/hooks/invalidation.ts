@@ -28,7 +28,6 @@ import {
   checkConstraintKeys,
   fieldKeys,
   spatialRelationKeys,
-  partitionKeys,
   foreignKeyConstraintKeys,
   fullTextSearchKeys,
   indexKeys,
@@ -60,6 +59,7 @@ import {
   corsSettingKeys,
   triggerFunctionKeys,
   databaseTransferKeys,
+  partitionKeys,
   apiKeys,
   siteKeys,
   appKeys,
@@ -153,9 +153,9 @@ import {
   appLimitEventKeys,
   orgLimitEventKeys,
   rlsModuleKeys,
-  databaseSettingKeys,
   plansModuleKeys,
   sqlActionKeys,
+  databaseSettingKeys,
   billingModuleKeys,
   astMigrationKeys,
   userKeys,
@@ -389,23 +389,6 @@ export const invalidate = {
     ) =>
       queryClient.invalidateQueries({
         queryKey: spatialRelationKeys.detail(id),
-      }),
-  },
-  /** Invalidate partition queries */ partition: {
-    /** Invalidate all partition queries */ all: (queryClient: QueryClient) =>
-      queryClient.invalidateQueries({
-        queryKey: partitionKeys.all,
-      }),
-    /** Invalidate partition list queries */ lists: (queryClient: QueryClient) =>
-      queryClient.invalidateQueries({
-        queryKey: partitionKeys.lists(),
-      }),
-    /** Invalidate a specific partition */ detail: (
-      queryClient: QueryClient,
-      id: string | number
-    ) =>
-      queryClient.invalidateQueries({
-        queryKey: partitionKeys.detail(id),
       }),
   },
   /** Invalidate foreignKeyConstraint queries */ foreignKeyConstraint: {
@@ -909,6 +892,23 @@ export const invalidate = {
     ) =>
       queryClient.invalidateQueries({
         queryKey: databaseTransferKeys.detail(id),
+      }),
+  },
+  /** Invalidate partition queries */ partition: {
+    /** Invalidate all partition queries */ all: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: partitionKeys.all,
+      }),
+    /** Invalidate partition list queries */ lists: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: partitionKeys.lists(),
+      }),
+    /** Invalidate a specific partition */ detail: (
+      queryClient: QueryClient,
+      id: string | number
+    ) =>
+      queryClient.invalidateQueries({
+        queryKey: partitionKeys.detail(id),
       }),
   },
   /** Invalidate api queries */ api: {
@@ -2447,23 +2447,6 @@ export const invalidate = {
         queryKey: rlsModuleKeys.detail(id),
       }),
   },
-  /** Invalidate databaseSetting queries */ databaseSetting: {
-    /** Invalidate all databaseSetting queries */ all: (queryClient: QueryClient) =>
-      queryClient.invalidateQueries({
-        queryKey: databaseSettingKeys.all,
-      }),
-    /** Invalidate databaseSetting list queries */ lists: (queryClient: QueryClient) =>
-      queryClient.invalidateQueries({
-        queryKey: databaseSettingKeys.lists(),
-      }),
-    /** Invalidate a specific databaseSetting */ detail: (
-      queryClient: QueryClient,
-      id: string | number
-    ) =>
-      queryClient.invalidateQueries({
-        queryKey: databaseSettingKeys.detail(id),
-      }),
-  },
   /** Invalidate plansModule queries */ plansModule: {
     /** Invalidate all plansModule queries */ all: (queryClient: QueryClient) =>
       queryClient.invalidateQueries({
@@ -2496,6 +2479,23 @@ export const invalidate = {
     ) =>
       queryClient.invalidateQueries({
         queryKey: sqlActionKeys.detail(id),
+      }),
+  },
+  /** Invalidate databaseSetting queries */ databaseSetting: {
+    /** Invalidate all databaseSetting queries */ all: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: databaseSettingKeys.all,
+      }),
+    /** Invalidate databaseSetting list queries */ lists: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: databaseSettingKeys.lists(),
+      }),
+    /** Invalidate a specific databaseSetting */ detail: (
+      queryClient: QueryClient,
+      id: string | number
+    ) =>
+      queryClient.invalidateQueries({
+        queryKey: databaseSettingKeys.detail(id),
       }),
   },
   /** Invalidate billingModule queries */ billingModule: {
@@ -2733,11 +2733,6 @@ export const remove = {
       queryKey: spatialRelationKeys.detail(id),
     });
   },
-  /** Remove partition from cache */ partition: (queryClient: QueryClient, id: string | number) => {
-    queryClient.removeQueries({
-      queryKey: partitionKeys.detail(id),
-    });
-  },
   /** Remove foreignKeyConstraint from cache */ foreignKeyConstraint: (
     queryClient: QueryClient,
     id: string | number
@@ -2945,6 +2940,11 @@ export const remove = {
   ) => {
     queryClient.removeQueries({
       queryKey: databaseTransferKeys.detail(id),
+    });
+  },
+  /** Remove partition from cache */ partition: (queryClient: QueryClient, id: string | number) => {
+    queryClient.removeQueries({
+      queryKey: partitionKeys.detail(id),
     });
   },
   /** Remove api from cache */ api: (queryClient: QueryClient, id: string | number) => {
@@ -3628,14 +3628,6 @@ export const remove = {
       queryKey: rlsModuleKeys.detail(id),
     });
   },
-  /** Remove databaseSetting from cache */ databaseSetting: (
-    queryClient: QueryClient,
-    id: string | number
-  ) => {
-    queryClient.removeQueries({
-      queryKey: databaseSettingKeys.detail(id),
-    });
-  },
   /** Remove plansModule from cache */ plansModule: (
     queryClient: QueryClient,
     id: string | number
@@ -3647,6 +3639,14 @@ export const remove = {
   /** Remove sqlAction from cache */ sqlAction: (queryClient: QueryClient, id: string | number) => {
     queryClient.removeQueries({
       queryKey: sqlActionKeys.detail(id),
+    });
+  },
+  /** Remove databaseSetting from cache */ databaseSetting: (
+    queryClient: QueryClient,
+    id: string | number
+  ) => {
+    queryClient.removeQueries({
+      queryKey: databaseSettingKeys.detail(id),
     });
   },
   /** Remove billingModule from cache */ billingModule: (

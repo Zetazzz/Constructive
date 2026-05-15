@@ -24,6 +24,11 @@ export const DataEntityMembership: NodeTypeDefinition = {
         type: 'boolean',
         description: 'If true, adds a foreign key constraint from entity_id to the users table',
         default: true
+      },
+      create_index: {
+        type: 'boolean',
+        description: 'If true, creates a B-tree index on the entity column',
+        default: true
       }
     }
   },

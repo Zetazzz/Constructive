@@ -46,10 +46,12 @@ const fieldSchema: FieldSchema = {
   hasContentHash: 'boolean',
   hasCustomKeys: 'boolean',
   hasAuditLog: 'boolean',
+  hasConfirmUpload: 'boolean',
+  confirmUploadDelay: 'string',
   fileEventsTableId: 'uuid',
 };
 const usage =
-  '\nstorage-module <command>\n\nCommands:\n  list                  List storageModule records\n  find-first            Find first matching storageModule record\n  get                   Get a storageModule by ID\n  create                Create a new storageModule\n  update                Update an existing storageModule\n  delete                Delete a storageModule\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\nstorage-module <command>\n\nCommands:\n  list                  List storageModule records\n  find-first            Find first matching storageModule record\n  get                   Get a storageModule by ID\n  create                Create a new storageModule\n  update                Update an existing storageModule\n  delete                Delete a storageModule\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -129,6 +131,8 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       hasContentHash: true,
       hasCustomKeys: true,
       hasAuditLog: true,
+      hasConfirmUpload: true,
+      confirmUploadDelay: true,
       fileEventsTableId: true,
     };
     const findManyArgs = parseFindManyArgs<
@@ -180,10 +184,12 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       hasContentHash: true,
       hasCustomKeys: true,
       hasAuditLog: true,
+      hasConfirmUpload: true,
+      confirmUploadDelay: true,
       fileEventsTableId: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<StorageModuleSelect, StorageModuleFilter> & {
+      FindFirstArgs<StorageModuleSelect, StorageModuleFilter, StorageModuleOrderBy> & {
         select: StorageModuleSelect;
       }
     >(argv, defaultSelect);
@@ -243,6 +249,8 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           hasContentHash: true,
           hasCustomKeys: true,
           hasAuditLog: true,
+          hasConfirmUpload: true,
+          confirmUploadDelay: true,
           fileEventsTableId: true,
         },
       })
@@ -462,6 +470,20 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'hasConfirmUpload',
+        message: 'hasConfirmUpload',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'confirmUploadDelay',
+        message: 'confirmUploadDelay',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'text',
         name: 'fileEventsTableId',
         message: 'fileEventsTableId',
@@ -507,6 +529,8 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: cleanedData.hasContentHash,
           hasCustomKeys: cleanedData.hasCustomKeys,
           hasAuditLog: cleanedData.hasAuditLog,
+          hasConfirmUpload: cleanedData.hasConfirmUpload,
+          confirmUploadDelay: cleanedData.confirmUploadDelay,
           fileEventsTableId: cleanedData.fileEventsTableId,
         },
         select: {
@@ -540,6 +564,8 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: true,
           hasCustomKeys: true,
           hasAuditLog: true,
+          hasConfirmUpload: true,
+          confirmUploadDelay: true,
           fileEventsTableId: true,
         },
       })
@@ -765,6 +791,20 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'boolean',
+        name: 'hasConfirmUpload',
+        message: 'hasConfirmUpload',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'confirmUploadDelay',
+        message: 'confirmUploadDelay',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'text',
         name: 'fileEventsTableId',
         message: 'fileEventsTableId',
@@ -810,6 +850,8 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: cleanedData.hasContentHash,
           hasCustomKeys: cleanedData.hasCustomKeys,
           hasAuditLog: cleanedData.hasAuditLog,
+          hasConfirmUpload: cleanedData.hasConfirmUpload,
+          confirmUploadDelay: cleanedData.confirmUploadDelay,
           fileEventsTableId: cleanedData.fileEventsTableId,
         },
         select: {
@@ -843,6 +885,8 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           hasContentHash: true,
           hasCustomKeys: true,
           hasAuditLog: true,
+          hasConfirmUpload: true,
+          confirmUploadDelay: true,
           fileEventsTableId: true,
         },
       })

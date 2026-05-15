@@ -34,7 +34,6 @@ const db = createClient({
 | `checkConstraint` | findMany, findOne, create, update, delete |
 | `field` | findMany, findOne, create, update, delete |
 | `spatialRelation` | findMany, findOne, create, update, delete |
-| `partition` | findMany, findOne, create, update, delete |
 | `foreignKeyConstraint` | findMany, findOne, create, update, delete |
 | `fullTextSearch` | findMany, findOne, create, update, delete |
 | `index` | findMany, findOne, create, update, delete |
@@ -66,6 +65,7 @@ const db = createClient({
 | `corsSetting` | findMany, findOne, create, update, delete |
 | `triggerFunction` | findMany, findOne, create, update, delete |
 | `databaseTransfer` | findMany, findOne, create, update, delete |
+| `partition` | findMany, findOne, create, update, delete |
 | `api` | findMany, findOne, create, update, delete |
 | `site` | findMany, findOne, create, update, delete |
 | `app` | findMany, findOne, create, update, delete |
@@ -159,9 +159,9 @@ const db = createClient({
 | `appLimitEvent` | findMany, findOne, create, update, delete |
 | `orgLimitEvent` | findMany, findOne, create, update, delete |
 | `rlsModule` | findMany, findOne, create, update, delete |
-| `databaseSetting` | findMany, findOne, create, update, delete |
 | `plansModule` | findMany, findOne, create, update, delete |
 | `sqlAction` | findMany, findOne, create, update, delete |
+| `databaseSetting` | findMany, findOne, create, update, delete |
 | `billingModule` | findMany, findOne, create, update, delete |
 | `astMigration` | findMany, findOne, create, update, delete |
 | `user` | findMany, findOne, create, update, delete |
@@ -503,6 +503,10 @@ CRUD operations for Table records.
 | `pluralName` | String | Yes |
 | `singularName` | String | Yes |
 | `tags` | String | Yes |
+| `partitioned` | Boolean | Yes |
+| `partitionStrategy` | String | Yes |
+| `partitionKeyNames` | String | Yes |
+| `partitionKeyTypes` | String | Yes |
 | `inheritsId` | UUID | Yes |
 | `createdAt` | Datetime | No |
 | `updatedAt` | Datetime | No |
@@ -511,13 +515,13 @@ CRUD operations for Table records.
 
 ```typescript
 // List all table records
-const items = await db.table.findMany({ select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
+const items = await db.table.findMany({ select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Get one by id
-const item = await db.table.findOne({ id: '<UUID>', select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
+const item = await db.table.findOne({ id: '<UUID>', select: { id: true, databaseId: true, schemaId: true, name: true, label: true, description: true, smartTags: true, category: true, module: true, scope: true, useRls: true, timestamps: true, peoplestamps: true, pluralName: true, singularName: true, tags: true, partitioned: true, partitionStrategy: true, partitionKeyNames: true, partitionKeyTypes: true, inheritsId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Create
-const created = await db.table.create({ data: { databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', inheritsId: '<UUID>' }, select: { id: true } }).execute();
+const created = await db.table.create({ data: { databaseId: '<UUID>', schemaId: '<UUID>', name: '<String>', label: '<String>', description: '<String>', smartTags: '<JSON>', category: '<ObjectCategory>', module: '<String>', scope: '<Int>', useRls: '<Boolean>', timestamps: '<Boolean>', peoplestamps: '<Boolean>', pluralName: '<String>', singularName: '<String>', tags: '<String>', partitioned: '<Boolean>', partitionStrategy: '<String>', partitionKeyNames: '<String>', partitionKeyTypes: '<String>', inheritsId: '<UUID>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.table.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
@@ -661,45 +665,6 @@ const updated = await db.spatialRelation.update({ where: { id: '<UUID>' }, data:
 
 // Delete
 const deleted = await db.spatialRelation.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.partition`
-
-CRUD operations for Partition records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `databaseId` | UUID | Yes |
-| `tableId` | UUID | Yes |
-| `strategy` | String | Yes |
-| `partitionKeyId` | UUID | Yes |
-| `interval` | String | Yes |
-| `retention` | String | Yes |
-| `lookahead` | Int | Yes |
-| `namingPattern` | String | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-
-**Operations:**
-
-```typescript
-// List all partition records
-const items = await db.partition.findMany({ select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
-
-// Get one by id
-const item = await db.partition.findOne({ id: '<UUID>', select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyId: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
-
-// Create
-const created = await db.partition.create({ data: { databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyId: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.partition.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.partition.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.foreignKeyConstraint`
@@ -1875,6 +1840,45 @@ const updated = await db.databaseTransfer.update({ where: { id: '<UUID>' }, data
 const deleted = await db.databaseTransfer.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
+### `db.partition`
+
+CRUD operations for Partition records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `databaseId` | UUID | Yes |
+| `tableId` | UUID | Yes |
+| `strategy` | String | Yes |
+| `partitionKeyIds` | UUID | Yes |
+| `interval` | String | Yes |
+| `retention` | String | Yes |
+| `lookahead` | Int | Yes |
+| `namingPattern` | String | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+
+**Operations:**
+
+```typescript
+// List all partition records
+const items = await db.partition.findMany({ select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
+
+// Get one by id
+const item = await db.partition.findOne({ id: '<UUID>', select: { id: true, databaseId: true, tableId: true, strategy: true, partitionKeyIds: true, interval: true, retention: true, lookahead: true, namingPattern: true, createdAt: true, updatedAt: true } }).execute();
+
+// Create
+const created = await db.partition.create({ data: { databaseId: '<UUID>', tableId: '<UUID>', strategy: '<String>', partitionKeyIds: '<UUID>', interval: '<String>', retention: '<String>', lookahead: '<Int>', namingPattern: '<String>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.partition.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.partition.delete({ where: { id: '<UUID>' } }).execute();
+```
+
 ### `db.api`
 
 CRUD operations for Api records.
@@ -2005,19 +2009,20 @@ CRUD operations for ApiSetting records.
 | `enableLtree` | Boolean | Yes |
 | `enableLlm` | Boolean | Yes |
 | `enableRealtime` | Boolean | Yes |
+| `enableBulk` | Boolean | Yes |
 | `options` | JSON | Yes |
 
 **Operations:**
 
 ```typescript
 // List all apiSetting records
-const items = await db.apiSetting.findMany({ select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
+const items = await db.apiSetting.findMany({ select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } }).execute();
 
 // Get one by id
-const item = await db.apiSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
+const item = await db.apiSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, apiId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } }).execute();
 
 // Create
-const created = await db.apiSetting.create({ data: { databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
+const created = await db.apiSetting.create({ data: { databaseId: '<UUID>', apiId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', enableBulk: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.apiSetting.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
@@ -2978,19 +2983,21 @@ CRUD operations for StorageModule records.
 | `hasContentHash` | Boolean | Yes |
 | `hasCustomKeys` | Boolean | Yes |
 | `hasAuditLog` | Boolean | Yes |
+| `hasConfirmUpload` | Boolean | Yes |
+| `confirmUploadDelay` | Interval | Yes |
 | `fileEventsTableId` | UUID | Yes |
 
 **Operations:**
 
 ```typescript
 // List all storageModule records
-const items = await db.storageModule.findMany({ select: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, fileEventsTableId: true } }).execute();
+const items = await db.storageModule.findMany({ select: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, hasConfirmUpload: true, confirmUploadDelay: true, fileEventsTableId: true } }).execute();
 
 // Get one by id
-const item = await db.storageModule.findOne({ id: '<UUID>', select: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, fileEventsTableId: true } }).execute();
+const item = await db.storageModule.findOne({ id: '<UUID>', select: { id: true, databaseId: true, schemaId: true, privateSchemaId: true, bucketsTableId: true, filesTableId: true, bucketsTableName: true, filesTableName: true, membershipType: true, policies: true, skipDefaultPolicyTables: true, entityTableId: true, endpoint: true, publicUrlPrefix: true, provider: true, allowedOrigins: true, restrictReads: true, hasPathShares: true, pathSharesTableId: true, uploadUrlExpirySeconds: true, downloadUrlExpirySeconds: true, defaultMaxFileSize: true, maxFilenameLength: true, cacheTtlSeconds: true, maxBulkFiles: true, maxBulkTotalSize: true, hasVersioning: true, hasContentHash: true, hasCustomKeys: true, hasAuditLog: true, hasConfirmUpload: true, confirmUploadDelay: true, fileEventsTableId: true } }).execute();
 
 // Create
-const created = await db.storageModule.create({ data: { databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', bucketsTableId: '<UUID>', filesTableId: '<UUID>', bucketsTableName: '<String>', filesTableName: '<String>', membershipType: '<Int>', policies: '<JSON>', skipDefaultPolicyTables: '<String>', entityTableId: '<UUID>', endpoint: '<String>', publicUrlPrefix: '<String>', provider: '<String>', allowedOrigins: '<String>', restrictReads: '<Boolean>', hasPathShares: '<Boolean>', pathSharesTableId: '<UUID>', uploadUrlExpirySeconds: '<Int>', downloadUrlExpirySeconds: '<Int>', defaultMaxFileSize: '<BigInt>', maxFilenameLength: '<Int>', cacheTtlSeconds: '<Int>', maxBulkFiles: '<Int>', maxBulkTotalSize: '<BigInt>', hasVersioning: '<Boolean>', hasContentHash: '<Boolean>', hasCustomKeys: '<Boolean>', hasAuditLog: '<Boolean>', fileEventsTableId: '<UUID>' }, select: { id: true } }).execute();
+const created = await db.storageModule.create({ data: { databaseId: '<UUID>', schemaId: '<UUID>', privateSchemaId: '<UUID>', bucketsTableId: '<UUID>', filesTableId: '<UUID>', bucketsTableName: '<String>', filesTableName: '<String>', membershipType: '<Int>', policies: '<JSON>', skipDefaultPolicyTables: '<String>', entityTableId: '<UUID>', endpoint: '<String>', publicUrlPrefix: '<String>', provider: '<String>', allowedOrigins: '<String>', restrictReads: '<Boolean>', hasPathShares: '<Boolean>', pathSharesTableId: '<UUID>', uploadUrlExpirySeconds: '<Int>', downloadUrlExpirySeconds: '<Int>', defaultMaxFileSize: '<BigInt>', maxFilenameLength: '<Int>', cacheTtlSeconds: '<Int>', maxBulkFiles: '<Int>', maxBulkTotalSize: '<BigInt>', hasVersioning: '<Boolean>', hasContentHash: '<Boolean>', hasCustomKeys: '<Boolean>', hasAuditLog: '<Boolean>', hasConfirmUpload: '<Boolean>', confirmUploadDelay: '<Interval>', fileEventsTableId: '<UUID>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.storageModule.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
@@ -4248,6 +4255,7 @@ CRUD operations for OrgInvite records.
 | `multiple` | Boolean | Yes |
 | `data` | JSON | Yes |
 | `profileId` | UUID | Yes |
+| `isReadOnly` | Boolean | Yes |
 | `expiresAt` | Datetime | Yes |
 | `createdAt` | Datetime | No |
 | `updatedAt` | Datetime | No |
@@ -4257,13 +4265,13 @@ CRUD operations for OrgInvite records.
 
 ```typescript
 // List all orgInvite records
-const items = await db.orgInvite.findMany({ select: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
+const items = await db.orgInvite.findMany({ select: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
 
 // Get one by id
-const item = await db.orgInvite.findOne({ id: '<UUID>', select: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
+const item = await db.orgInvite.findOne({ id: '<UUID>', select: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
 
 // Create
-const created = await db.orgInvite.create({ data: { email: '<Email>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', expiresAt: '<Datetime>', entityId: '<UUID>' }, select: { id: true } }).execute();
+const created = await db.orgInvite.create({ data: { email: '<Email>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', isReadOnly: '<Boolean>', expiresAt: '<Datetime>', entityId: '<UUID>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.orgInvite.update({ where: { id: '<UUID>' }, data: { email: '<Email>' }, select: { id: true } }).execute();
@@ -5374,47 +5382,6 @@ const updated = await db.rlsModule.update({ where: { id: '<UUID>' }, data: { dat
 const deleted = await db.rlsModule.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
-### `db.databaseSetting`
-
-CRUD operations for DatabaseSetting records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `databaseId` | UUID | Yes |
-| `enableAggregates` | Boolean | Yes |
-| `enablePostgis` | Boolean | Yes |
-| `enableSearch` | Boolean | Yes |
-| `enableDirectUploads` | Boolean | Yes |
-| `enablePresignedUploads` | Boolean | Yes |
-| `enableManyToMany` | Boolean | Yes |
-| `enableConnectionFilter` | Boolean | Yes |
-| `enableLtree` | Boolean | Yes |
-| `enableLlm` | Boolean | Yes |
-| `enableRealtime` | Boolean | Yes |
-| `options` | JSON | Yes |
-
-**Operations:**
-
-```typescript
-// List all databaseSetting records
-const items = await db.databaseSetting.findMany({ select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
-
-// Get one by id
-const item = await db.databaseSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, options: true } }).execute();
-
-// Create
-const created = await db.databaseSetting.create({ data: { databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.databaseSetting.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.databaseSetting.delete({ where: { id: '<UUID>' } }).execute();
-```
-
 ### `db.plansModule`
 
 CRUD operations for PlansModule records.
@@ -5495,6 +5462,48 @@ const updated = await db.sqlAction.update({ where: { id: '<Int>' }, data: { name
 
 // Delete
 const deleted = await db.sqlAction.delete({ where: { id: '<Int>' } }).execute();
+```
+
+### `db.databaseSetting`
+
+CRUD operations for DatabaseSetting records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `databaseId` | UUID | Yes |
+| `enableAggregates` | Boolean | Yes |
+| `enablePostgis` | Boolean | Yes |
+| `enableSearch` | Boolean | Yes |
+| `enableDirectUploads` | Boolean | Yes |
+| `enablePresignedUploads` | Boolean | Yes |
+| `enableManyToMany` | Boolean | Yes |
+| `enableConnectionFilter` | Boolean | Yes |
+| `enableLtree` | Boolean | Yes |
+| `enableLlm` | Boolean | Yes |
+| `enableRealtime` | Boolean | Yes |
+| `enableBulk` | Boolean | Yes |
+| `options` | JSON | Yes |
+
+**Operations:**
+
+```typescript
+// List all databaseSetting records
+const items = await db.databaseSetting.findMany({ select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } }).execute();
+
+// Get one by id
+const item = await db.databaseSetting.findOne({ id: '<UUID>', select: { id: true, databaseId: true, enableAggregates: true, enablePostgis: true, enableSearch: true, enableDirectUploads: true, enablePresignedUploads: true, enableManyToMany: true, enableConnectionFilter: true, enableLtree: true, enableLlm: true, enableRealtime: true, enableBulk: true, options: true } }).execute();
+
+// Create
+const created = await db.databaseSetting.create({ data: { databaseId: '<UUID>', enableAggregates: '<Boolean>', enablePostgis: '<Boolean>', enableSearch: '<Boolean>', enableDirectUploads: '<Boolean>', enablePresignedUploads: '<Boolean>', enableManyToMany: '<Boolean>', enableConnectionFilter: '<Boolean>', enableLtree: '<Boolean>', enableLlm: '<Boolean>', enableRealtime: '<Boolean>', enableBulk: '<Boolean>', options: '<JSON>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.databaseSetting.update({ where: { id: '<UUID>' }, data: { databaseId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.databaseSetting.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.billingModule`
@@ -6888,7 +6897,7 @@ signUp
   | `input` | SignUpInput (required) |
 
 ```typescript
-const result = await db.mutation.signUp({ input: { email: '<String>', password: '<String>', rememberMe: '<Boolean>', credentialKind: '<String>', csrfToken: '<String>' } }).execute();
+const result = await db.mutation.signUp({ input: '<SignUpInput>' }).execute();
 ```
 
 ### `db.mutation.requestCrossOriginToken`

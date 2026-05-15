@@ -17,6 +17,7 @@ import { useOrgGetManagersQuery } from './hooks';
 
 // Query hooks: use<Model>Query, use<Model>sQuery
 // Mutation hooks: useCreate<Model>Mutation, useUpdate<Model>Mutation, useDelete<Model>Mutation
+// Bulk mutation hooks (when enabled): useBulkCreate<Model>Mutation, useBulkUpsert<Model>Mutation, etc.
 
 const { data, isLoading } = useOrgGetManagersQuery({
   selection: { fields: { id: true } },
@@ -81,8 +82,8 @@ See the `references/` directory for detailed per-entity API documentation:
 - [org-membership-setting](references/org-membership-setting.md)
 - [org-limit-aggregate](references/org-limit-aggregate.md)
 - [org-limit](references/org-limit.md)
-- [org-invite](references/org-invite.md)
 - [app-membership](references/app-membership.md)
+- [org-invite](references/org-invite.md)
 - [org-membership](references/org-membership.md)
 - [app-permissions-get-padded-mask](references/app-permissions-get-padded-mask.md)
 - [org-permissions-get-padded-mask](references/org-permissions-get-padded-mask.md)

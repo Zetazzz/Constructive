@@ -621,6 +621,7 @@ signUp
   | `--input.rememberMe` | Boolean |
   | `--input.credentialKind` | String |
   | `--input.csrfToken` | String |
+  | `--input.deviceToken` | String |
 
 ### `request-cross-origin-token`
 

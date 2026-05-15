@@ -816,6 +816,14 @@ function buildBlueprintStorageConfig(): t.ExportNamedDeclaration {
         'CORS allowed origins for the storage module.'
       ),
       addJSDoc(
+        optionalProp('has_confirm_upload', t.tsBooleanKeyword()),
+        'Enable deferred upload confirmation via HeadObject. When true, creates SECURITY DEFINER status transition functions (confirm_uploaded, mark_processed) and an AFTER INSERT trigger that enqueues a storage:confirm_upload job. The job verifies the file exists in S3 before transitioning status from requested to uploaded. Defaults to false.'
+      ),
+      addJSDoc(
+        optionalProp('confirm_upload_delay', t.tsStringKeyword()),
+        'Delay before the first upload confirmation attempt (PostgreSQL interval string, e.g. "30 seconds"). Only used when has_confirm_upload is true. Defaults to "30 seconds".'
+      ),
+      addJSDoc(
         optionalProp(
           'provisions',
           t.tsTypeLiteral([
@@ -1131,7 +1139,7 @@ function buildProgram(meta?: MetaTableInfo[]): string {
   statements.push(buildTriggerConditionInterface());
 
   // -- Parameter interfaces grouped by category --
-  const categoryOrder = ['data', 'search', 'authz', 'relation', 'view'];
+  const categoryOrder = ['billing', 'check', 'data', 'limit', 'search', 'job', 'process', 'authz', 'relation', 'view'];
   for (const cat of categoryOrder) {
     const nts = categories.get(cat);
     if (!nts || nts.length === 0) continue;

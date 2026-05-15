@@ -61,10 +61,12 @@ export const PresetB2bStorage: ModulePreset = {
     'hierarchy_module:org',
     'invites_module:app',
     'invites_module:org',
-    'storage_module'
+    'storage_module',
+    'devices_module'
   ],
   includes_notes: {
-    storage_module: 'File upload infrastructure: app_buckets + app_files tables with RLS. Entity-type storage scopes layered on top via `has_storage=true`.'
+    storage_module: 'File upload infrastructure: app_buckets + app_files tables with RLS. Entity-type storage scopes layered on top via `has_storage=true`.',
+    devices_module: 'Device tracking and trusted-device MFA bypass.'
   },
   omits_notes: {
     crypto_addresses_module: 'Not a web3 preset.'

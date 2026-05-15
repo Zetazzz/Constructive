@@ -39,7 +39,6 @@ csdk auth set-token <your-token>
 | `check-constraint` | checkConstraint CRUD operations |
 | `field` | field CRUD operations |
 | `spatial-relation` | spatialRelation CRUD operations |
-| `partition` | partition CRUD operations |
 | `foreign-key-constraint` | foreignKeyConstraint CRUD operations |
 | `full-text-search` | fullTextSearch CRUD operations |
 | `index` | index CRUD operations |
@@ -71,6 +70,7 @@ csdk auth set-token <your-token>
 | `cors-setting` | corsSetting CRUD operations |
 | `trigger-function` | triggerFunction CRUD operations |
 | `database-transfer` | databaseTransfer CRUD operations |
+| `partition` | partition CRUD operations |
 | `api` | api CRUD operations |
 | `site` | site CRUD operations |
 | `app` | app CRUD operations |
@@ -164,9 +164,9 @@ csdk auth set-token <your-token>
 | `app-limit-event` | appLimitEvent CRUD operations |
 | `org-limit-event` | orgLimitEvent CRUD operations |
 | `rls-module` | rlsModule CRUD operations |
-| `database-setting` | databaseSetting CRUD operations |
 | `plans-module` | plansModule CRUD operations |
 | `sql-action` | sqlAction CRUD operations |
+| `database-setting` | databaseSetting CRUD operations |
 | `billing-module` | billingModule CRUD operations |
 | `ast-migration` | astMigration CRUD operations |
 | `user` | user CRUD operations |
@@ -577,12 +577,16 @@ CRUD operations for Table records.
 | `pluralName` | String |
 | `singularName` | String |
 | `tags` | String |
+| `partitioned` | Boolean |
+| `partitionStrategy` | String |
+| `partitionKeyNames` | String |
+| `partitionKeyTypes` | String |
 | `inheritsId` | UUID |
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
 **Required create fields:** `schemaId`, `name`
-**Optional create fields (backend defaults):** `databaseId`, `label`, `description`, `smartTags`, `category`, `module`, `scope`, `useRls`, `timestamps`, `peoplestamps`, `pluralName`, `singularName`, `tags`, `inheritsId`
+**Optional create fields (backend defaults):** `databaseId`, `label`, `description`, `smartTags`, `category`, `module`, `scope`, `useRls`, `timestamps`, `peoplestamps`, `pluralName`, `singularName`, `tags`, `partitioned`, `partitionStrategy`, `partitionKeyNames`, `partitionKeyTypes`, `inheritsId`
 
 ### `check-constraint`
 
@@ -699,38 +703,6 @@ CRUD operations for SpatialRelation records.
 
 **Required create fields:** `tableId`, `fieldId`, `refTableId`, `refFieldId`, `name`, `operator`
 **Optional create fields (backend defaults):** `databaseId`, `paramName`, `category`, `module`, `scope`, `tags`
-
-### `partition`
-
-CRUD operations for Partition records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all partition records |
-| `find-first` | Find first matching partition record |
-| `get` | Get a partition by id |
-| `create` | Create a new partition |
-| `update` | Update an existing partition |
-| `delete` | Delete a partition |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `databaseId` | UUID |
-| `tableId` | UUID |
-| `strategy` | String |
-| `partitionKeyId` | UUID |
-| `interval` | String |
-| `retention` | String |
-| `lookahead` | Int |
-| `namingPattern` | String |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-
-**Required create fields:** `databaseId`, `tableId`, `strategy`, `partitionKeyId`
-**Optional create fields (backend defaults):** `interval`, `retention`, `lookahead`, `namingPattern`
 
 ### `foreign-key-constraint`
 
@@ -1683,6 +1655,38 @@ CRUD operations for DatabaseTransfer records.
 **Required create fields:** `databaseId`, `targetOwnerId`, `initiatedBy`
 **Optional create fields (backend defaults):** `sourceApproved`, `targetApproved`, `sourceApprovedAt`, `targetApprovedAt`, `status`, `notes`, `expiresAt`, `completedAt`
 
+### `partition`
+
+CRUD operations for Partition records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all partition records |
+| `find-first` | Find first matching partition record |
+| `get` | Get a partition by id |
+| `create` | Create a new partition |
+| `update` | Update an existing partition |
+| `delete` | Delete a partition |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `databaseId` | UUID |
+| `tableId` | UUID |
+| `strategy` | String |
+| `partitionKeyIds` | UUID |
+| `interval` | String |
+| `retention` | String |
+| `lookahead` | Int |
+| `namingPattern` | String |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+
+**Required create fields:** `databaseId`, `tableId`, `strategy`, `partitionKeyIds`
+**Optional create fields (backend defaults):** `interval`, `retention`, `lookahead`, `namingPattern`
+
 ### `api`
 
 CRUD operations for Api records.
@@ -1801,10 +1805,11 @@ CRUD operations for ApiSetting records.
 | `enableLtree` | Boolean |
 | `enableLlm` | Boolean |
 | `enableRealtime` | Boolean |
+| `enableBulk` | Boolean |
 | `options` | JSON |
 
 **Required create fields:** `databaseId`, `apiId`
-**Optional create fields (backend defaults):** `enableAggregates`, `enablePostgis`, `enableSearch`, `enableDirectUploads`, `enablePresignedUploads`, `enableManyToMany`, `enableConnectionFilter`, `enableLtree`, `enableLlm`, `enableRealtime`, `options`
+**Optional create fields (backend defaults):** `enableAggregates`, `enablePostgis`, `enableSearch`, `enableDirectUploads`, `enablePresignedUploads`, `enableManyToMany`, `enableConnectionFilter`, `enableLtree`, `enableLlm`, `enableRealtime`, `enableBulk`, `options`
 
 ### `connected-accounts-module`
 
@@ -2612,10 +2617,12 @@ CRUD operations for StorageModule records.
 | `hasContentHash` | Boolean |
 | `hasCustomKeys` | Boolean |
 | `hasAuditLog` | Boolean |
+| `hasConfirmUpload` | Boolean |
+| `confirmUploadDelay` | Interval |
 | `fileEventsTableId` | UUID |
 
 **Required create fields:** `databaseId`
-**Optional create fields (backend defaults):** `schemaId`, `privateSchemaId`, `bucketsTableId`, `filesTableId`, `bucketsTableName`, `filesTableName`, `membershipType`, `policies`, `skipDefaultPolicyTables`, `entityTableId`, `endpoint`, `publicUrlPrefix`, `provider`, `allowedOrigins`, `restrictReads`, `hasPathShares`, `pathSharesTableId`, `uploadUrlExpirySeconds`, `downloadUrlExpirySeconds`, `defaultMaxFileSize`, `maxFilenameLength`, `cacheTtlSeconds`, `maxBulkFiles`, `maxBulkTotalSize`, `hasVersioning`, `hasContentHash`, `hasCustomKeys`, `hasAuditLog`, `fileEventsTableId`
+**Optional create fields (backend defaults):** `schemaId`, `privateSchemaId`, `bucketsTableId`, `filesTableId`, `bucketsTableName`, `filesTableName`, `membershipType`, `policies`, `skipDefaultPolicyTables`, `entityTableId`, `endpoint`, `publicUrlPrefix`, `provider`, `allowedOrigins`, `restrictReads`, `hasPathShares`, `pathSharesTableId`, `uploadUrlExpirySeconds`, `downloadUrlExpirySeconds`, `defaultMaxFileSize`, `maxFilenameLength`, `cacheTtlSeconds`, `maxBulkFiles`, `maxBulkTotalSize`, `hasVersioning`, `hasContentHash`, `hasCustomKeys`, `hasAuditLog`, `hasConfirmUpload`, `confirmUploadDelay`, `fileEventsTableId`
 
 ### `entity-type-provision`
 
@@ -3641,13 +3648,14 @@ CRUD operations for OrgInvite records.
 | `multiple` | Boolean |
 | `data` | JSON |
 | `profileId` | UUID |
+| `isReadOnly` | Boolean |
 | `expiresAt` | Datetime |
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 | `entityId` | UUID |
 
 **Required create fields:** `entityId`
-**Optional create fields (backend defaults):** `email`, `senderId`, `receiverId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `profileId`, `expiresAt`
+**Optional create fields (backend defaults):** `email`, `senderId`, `receiverId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `profileId`, `isReadOnly`, `expiresAt`
 
 ### `org-claimed-invite`
 
@@ -4519,40 +4527,6 @@ CRUD operations for RlsModule records.
 **Required create fields:** `databaseId`
 **Optional create fields (backend defaults):** `schemaId`, `privateSchemaId`, `sessionCredentialsTableId`, `sessionsTableId`, `usersTableId`, `authenticate`, `authenticateStrict`, `currentRole`, `currentRoleId`
 
-### `database-setting`
-
-CRUD operations for DatabaseSetting records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all databaseSetting records |
-| `find-first` | Find first matching databaseSetting record |
-| `get` | Get a databaseSetting by id |
-| `create` | Create a new databaseSetting |
-| `update` | Update an existing databaseSetting |
-| `delete` | Delete a databaseSetting |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `databaseId` | UUID |
-| `enableAggregates` | Boolean |
-| `enablePostgis` | Boolean |
-| `enableSearch` | Boolean |
-| `enableDirectUploads` | Boolean |
-| `enablePresignedUploads` | Boolean |
-| `enableManyToMany` | Boolean |
-| `enableConnectionFilter` | Boolean |
-| `enableLtree` | Boolean |
-| `enableLlm` | Boolean |
-| `enableRealtime` | Boolean |
-| `options` | JSON |
-
-**Required create fields:** `databaseId`
-**Optional create fields (backend defaults):** `enableAggregates`, `enablePostgis`, `enableSearch`, `enableDirectUploads`, `enablePresignedUploads`, `enableManyToMany`, `enableConnectionFilter`, `enableLtree`, `enableLlm`, `enableRealtime`, `options`
-
 ### `plans-module`
 
 CRUD operations for PlansModule records.
@@ -4619,6 +4593,41 @@ CRUD operations for SqlAction records.
 | `actorId` | UUID |
 
 **Optional create fields (backend defaults):** `name`, `databaseId`, `deploy`, `deps`, `payload`, `content`, `revert`, `verify`, `action`, `actionId`, `actorId`
+
+### `database-setting`
+
+CRUD operations for DatabaseSetting records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all databaseSetting records |
+| `find-first` | Find first matching databaseSetting record |
+| `get` | Get a databaseSetting by id |
+| `create` | Create a new databaseSetting |
+| `update` | Update an existing databaseSetting |
+| `delete` | Delete a databaseSetting |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `databaseId` | UUID |
+| `enableAggregates` | Boolean |
+| `enablePostgis` | Boolean |
+| `enableSearch` | Boolean |
+| `enableDirectUploads` | Boolean |
+| `enablePresignedUploads` | Boolean |
+| `enableManyToMany` | Boolean |
+| `enableConnectionFilter` | Boolean |
+| `enableLtree` | Boolean |
+| `enableLlm` | Boolean |
+| `enableRealtime` | Boolean |
+| `enableBulk` | Boolean |
+| `options` | JSON |
+
+**Required create fields:** `databaseId`
+**Optional create fields (backend defaults):** `enableAggregates`, `enablePostgis`, `enableSearch`, `enableDirectUploads`, `enablePresignedUploads`, `enableManyToMany`, `enableConnectionFilter`, `enableLtree`, `enableLlm`, `enableRealtime`, `enableBulk`, `options`
 
 ### `billing-module`
 
@@ -5855,6 +5864,7 @@ signUp
   | `--input.rememberMe` | Boolean |
   | `--input.credentialKind` | String |
   | `--input.csrfToken` | String |
+  | `--input.deviceToken` | String |
 
 ### `request-cross-origin-token`
 

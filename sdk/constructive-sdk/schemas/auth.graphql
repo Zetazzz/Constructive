@@ -3555,6 +3555,7 @@ input SignUpInput {
   rememberMe: Boolean
   credentialKind: String
   csrfToken: String
+  deviceToken: String
 }
 
 """The output of our `requestCrossOriginToken` mutation."""

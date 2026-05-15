@@ -17,6 +17,7 @@ import { useOrgGetManagersQuery } from './hooks';
 
 // Query hooks: use<Model>Query, use<Model>sQuery
 // Mutation hooks: useCreate<Model>Mutation, useUpdate<Model>Mutation, useDelete<Model>Mutation
+// Bulk mutation hooks (when enabled): useBulkCreate<Model>Mutation, useBulkUpsert<Model>Mutation, etc.
 
 const { data, isLoading } = useOrgGetManagersQuery({
   selection: { fields: { id: true } },
@@ -50,7 +51,6 @@ See the `references/` directory for detailed per-entity API documentation:
 - [check-constraint](references/check-constraint.md)
 - [field](references/field.md)
 - [spatial-relation](references/spatial-relation.md)
-- [partition](references/partition.md)
 - [foreign-key-constraint](references/foreign-key-constraint.md)
 - [full-text-search](references/full-text-search.md)
 - [index](references/index.md)
@@ -82,6 +82,7 @@ See the `references/` directory for detailed per-entity API documentation:
 - [cors-setting](references/cors-setting.md)
 - [trigger-function](references/trigger-function.md)
 - [database-transfer](references/database-transfer.md)
+- [partition](references/partition.md)
 - [api](references/api.md)
 - [site](references/site.md)
 - [app](references/app.md)
@@ -175,9 +176,9 @@ See the `references/` directory for detailed per-entity API documentation:
 - [app-limit-event](references/app-limit-event.md)
 - [org-limit-event](references/org-limit-event.md)
 - [rls-module](references/rls-module.md)
-- [database-setting](references/database-setting.md)
 - [plans-module](references/plans-module.md)
 - [sql-action](references/sql-action.md)
+- [database-setting](references/database-setting.md)
 - [billing-module](references/billing-module.md)
 - [ast-migration](references/ast-migration.md)
 - [user](references/user.md)

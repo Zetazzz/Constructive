@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.31.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.0...@constructive-io/graphql-server@4.31.1) (2026-05-14)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
+# [4.31.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.30.2...@constructive-io/graphql-server@4.31.0) (2026-05-14)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
+## [4.30.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.30.1...@constructive-io/graphql-server@4.30.2) (2026-05-14)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
+## [4.30.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.30.0...@constructive-io/graphql-server@4.30.1) (2026-05-14)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
+# [4.30.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.29.2...@constructive-io/graphql-server@4.30.0) (2026-05-13)
+
+### Bug Fixes
+
+- add backward-compatible fallback for enable_bulk column ([3458851](https://github.com/constructive-io/constructive/commit/3458851073bbc1fa75c33acd7ccff231e3891455))
+- **auth-cookie:** parse grafserv body and set cookies correctly ([b1190bc](https://github.com/constructive-io/constructive/commit/b1190bc38924f607c7f3da5410fd402c2e69fd47))
+- remove backward-compat fallback for enable_bulk ([c0a198f](https://github.com/constructive-io/constructive/commit/c0a198f4f28d7815c2b0b7fc766301578e217dae)), closes [constructive-db#1130](https://github.com/constructive-db/issues/1130)
+- **server:** return 403 for CSRF errors instead of 500 ([b1a0c73](https://github.com/constructive-io/constructive/commit/b1a0c73170678ad000c0ad09a4e403cf05afa377))
+
+### Features
+
+- **server:** add AuthCookiePlugin for grafserv response interception ([d133c29](https://github.com/constructive-io/constructive/commit/d133c299c814acf931011d425ff74a62f20aeaec))
+- **server:** add cookie utility module for auth cookie management ([7f9b7a4](https://github.com/constructive-io/constructive/commit/7f9b7a403b1b1f4085c7e13f4fb0920da6c1bb9a)), closes [#749](https://github.com/constructive-io/constructive/issues/749)
+- **server:** add CSRF protection for cookie-authenticated requests ([960eefc](https://github.com/constructive-io/constructive/commit/960eefce8ac9879191a32e9c62a6ee948bb6fd1b))
+- **server:** add rememberMeDuration to AuthSettings ([2f1f37b](https://github.com/constructive-io/constructive/commit/2f1f37b8f0a8f9a952d81a7dd6a9728c17b80489))
+- **server:** read device token cookie and pass to GraphQL context ([c3310d2](https://github.com/constructive-io/constructive/commit/c3310d2c9f1bbfc0bf28b308aacb9b2efcadfeb0))
+- **server:** wire AuthCookiePlugin and CSRF into middleware chain ([e393e6b](https://github.com/constructive-io/constructive/commit/e393e6ba0bc13725146a12257f4f0507ca216810))
+- wire enable_bulk database setting into GraphQL server and graphile-settings ([d5ab604](https://github.com/constructive-io/constructive/commit/d5ab604955912f8c70a88bd9b9fe32b8f24c7981))
+
+## [4.29.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.29.1...@constructive-io/graphql-server@4.29.2) (2026-05-12)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
 ## [4.29.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.29.0...@constructive-io/graphql-server@4.29.1) (2026-05-11)
 
 **Note:** Version bump only for package @constructive-io/graphql-server

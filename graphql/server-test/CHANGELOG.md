@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.22.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.0...graphql-server-test@2.22.1) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.22.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.10...graphql-server-test@2.22.0) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.10](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.9...graphql-server-test@2.21.10) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.9](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.8...graphql-server-test@2.21.9) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.8](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.7...graphql-server-test@2.21.8) (2026-05-13)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.7](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.6...graphql-server-test@2.21.7) (2026-05-13)
+
+### Bug Fixes
+
+- **codegen:** findFirst/findOne return single object ([#752](https://github.com/constructive-io/constructive/issues/752)) ([006b869](https://github.com/constructive-io/constructive/commit/006b869ef305dffc568a463789f428c8b0733958))
+
+## [2.21.6](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.5...graphql-server-test@2.21.6) (2026-05-13)
+
+### Bug Fixes
+
+- add enable_bulk column to server-test seed fixture ([c4f0f2c](https://github.com/constructive-io/constructive/commit/c4f0f2c1476003768ad57bb8e4f3196077de6859))
+
+## [2.21.5](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.4...graphql-server-test@2.21.5) (2026-05-12)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.3...graphql-server-test@2.21.4) (2026-05-12)
+
+**Note:** Version bump only for package graphql-server-test
+
 ## [2.21.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.2...graphql-server-test@2.21.3) (2026-05-11)
 
 **Note:** Version bump only for package graphql-server-test

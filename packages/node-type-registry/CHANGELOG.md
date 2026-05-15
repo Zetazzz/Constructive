@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.35.0...node-type-registry@0.36.0) (2026-05-14)
+
+### Bug Fixes
+
+- align parameter_schema key names with SQL generators ([dd7f177](https://github.com/constructive-io/constructive/commit/dd7f17750a76957f4d6001a47cd7f08afd6b112f))
+
+### Features
+
+- add missing parameter_schema defaults for centralized default normalization ([b36b55b](https://github.com/constructive-io/constructive/commit/b36b55b2ee2bb861820741c3a03e0cf70f124dde))
+
+# [0.35.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.34.0...node-type-registry@0.35.0) (2026-05-14)
+
+### Features
+
+- add has_confirm_upload + confirm_upload_delay to BlueprintStorageConfig ([70acb56](https://github.com/constructive-io/constructive/commit/70acb56365116ffe9d694c831909e153c2c43970)), closes [#848](https://github.com/constructive-io/constructive/issues/848)
+- **presets:** add devices_module to auth:hardened, b2b, and b2b:storage presets ([0aadbbb](https://github.com/constructive-io/constructive/commit/0aadbbb03c44ea7f7e8a01bfff6c782ac4625890))
+
+# [0.34.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.33.1...node-type-registry@0.34.0) (2026-05-12)
+
+### Features
+
+- add relational/nested insert support and DataBulk node type ([63d5371](https://github.com/constructive-io/constructive/commit/63d5371131b17953d4891aeced62001e8115ce32))
+
 ## [0.33.1](https://github.com/constructive-io/constructive/compare/node-type-registry@0.33.0...node-type-registry@0.33.1) (2026-05-11)
 
 **Note:** Version bump only for package node-type-registry

@@ -20,7 +20,7 @@ const fieldSchema: FieldSchema = {
   databaseId: 'uuid',
   tableId: 'uuid',
   strategy: 'string',
-  partitionKeyId: 'uuid',
+  partitionKeyIds: 'uuid',
   interval: 'string',
   retention: 'string',
   lookahead: 'int',
@@ -29,7 +29,7 @@ const fieldSchema: FieldSchema = {
   updatedAt: 'string',
 };
 const usage =
-  '\npartition <command>\n\nCommands:\n  list                  List partition records\n  find-first            Find first matching partition record\n  get                   Get a partition by ID\n  create                Create a new partition\n  update                Update an existing partition\n  delete                Delete a partition\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\npartition <command>\n\nCommands:\n  list                  List partition records\n  find-first            Find first matching partition record\n  get                   Get a partition by ID\n  create                Create a new partition\n  update                Update an existing partition\n  delete                Delete a partition\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -83,7 +83,7 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       databaseId: true,
       tableId: true,
       strategy: true,
-      partitionKeyId: true,
+      partitionKeyIds: true,
       interval: true,
       retention: true,
       lookahead: true,
@@ -114,7 +114,7 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       databaseId: true,
       tableId: true,
       strategy: true,
-      partitionKeyId: true,
+      partitionKeyIds: true,
       interval: true,
       retention: true,
       lookahead: true,
@@ -123,7 +123,7 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       updatedAt: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<PartitionSelect, PartitionFilter> & {
+      FindFirstArgs<PartitionSelect, PartitionFilter, PartitionOrderBy> & {
         select: PartitionSelect;
       }
     >(argv, defaultSelect);
@@ -157,7 +157,7 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           databaseId: true,
           tableId: true,
           strategy: true,
-          partitionKeyId: true,
+          partitionKeyIds: true,
           interval: true,
           retention: true,
           lookahead: true,
@@ -199,8 +199,8 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
-        name: 'partitionKeyId',
-        message: 'partitionKeyId',
+        name: 'partitionKeyIds',
+        message: 'partitionKeyIds',
         required: true,
       },
       {
@@ -241,7 +241,7 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           databaseId: cleanedData.databaseId,
           tableId: cleanedData.tableId,
           strategy: cleanedData.strategy,
-          partitionKeyId: cleanedData.partitionKeyId,
+          partitionKeyIds: cleanedData.partitionKeyIds,
           interval: cleanedData.interval,
           retention: cleanedData.retention,
           lookahead: cleanedData.lookahead,
@@ -252,7 +252,7 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           databaseId: true,
           tableId: true,
           strategy: true,
-          partitionKeyId: true,
+          partitionKeyIds: true,
           interval: true,
           retention: true,
           lookahead: true,
@@ -300,8 +300,8 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
-        name: 'partitionKeyId',
-        message: 'partitionKeyId',
+        name: 'partitionKeyIds',
+        message: 'partitionKeyIds',
         required: false,
       },
       {
@@ -345,7 +345,7 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           databaseId: cleanedData.databaseId,
           tableId: cleanedData.tableId,
           strategy: cleanedData.strategy,
-          partitionKeyId: cleanedData.partitionKeyId,
+          partitionKeyIds: cleanedData.partitionKeyIds,
           interval: cleanedData.interval,
           retention: cleanedData.retention,
           lookahead: cleanedData.lookahead,
@@ -356,7 +356,7 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           databaseId: true,
           tableId: true,
           strategy: true,
-          partitionKeyId: true,
+          partitionKeyIds: true,
           interval: true,
           retention: true,
           lookahead: true,
