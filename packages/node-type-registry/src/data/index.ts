@@ -19,6 +19,7 @@ export { DataInflection } from './data-inflection';
 export { DataInheritFromParent } from './data-inherit-from-parent';
 export { JobTrigger } from './data-job-trigger';
 export { LimitCounter } from './data-limit-counter';
+export { MeterRateLimit } from './data-meter-rate-limit';
 export { DataJsonb } from './data-jsonb';
 export { DataOwnedFields } from './data-owned-fields';
 export { ProcessExtraction } from './process-extraction';
