@@ -41,6 +41,21 @@ export const ProcessExtraction: NodeTypeDefinition = {
         default: 'extracted_metadata'
       },
 
+      // ── Model config (optional — flows into job payload) ──────────
+      extraction_model: {
+        type: 'string',
+        description:
+          'Extraction model identifier (e.g. a vision model for OCR, an LLM for ' +
+          'structured extraction). Included in the job payload so the worker knows ' +
+          'which model to use. When null, the worker falls back to runtime config.'
+      },
+      extraction_provider: {
+        type: 'string',
+        description:
+          'Extraction provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
+      },
+
       // ── MIME scoping ──────────────────────────────────────────────
       mime_patterns: {
         type: 'array',
