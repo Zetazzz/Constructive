@@ -1,10 +1,10 @@
 import type { NodeTypeDefinition } from '../types';
 
-export const MeterRateLimit: NodeTypeDefinition = {
-  name: 'MeterRateLimit',
-  slug: 'meter_rate_limit',
-  category: 'rate_limit',
-  display_name: 'Meter Rate Limit',
+export const LimitEnforceRate: NodeTypeDefinition = {
+  name: 'LimitEnforceRate',
+  slug: 'limit_enforce_rate',
+  category: 'limit_enforce',
+  display_name: 'Enforce Rate Limit',
   description:
     'Attaches a BEFORE trigger that calls check_rate_limit() to enforce sliding-window rate limits before allowing mutations. The function checks all three scopes (entity, actor-in-entity, actor) in a single call; which scopes are actually enforced is controlled by what rows exist in rate_window_limits (plan-based config). Requires a provisioned meter_rate_limits_module and billing_module for the target database.',
   parameter_schema: {
@@ -42,5 +42,5 @@ export const MeterRateLimit: NodeTypeDefinition = {
     },
     required: ['meter_slug'],
   },
-  tags: ['rate-limits', 'triggers', 'billing', 'metering', 'abuse-protection'],
+  tags: ['rate-limits', 'triggers', 'enforce', 'metering', 'abuse-protection'],
 };
