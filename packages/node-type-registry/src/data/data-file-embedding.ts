@@ -47,6 +47,21 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
         default: {}
       },
 
+      // ── Model config (optional — flows into job payload) ──────────
+      embedding_model: {
+        type: 'string',
+        description:
+          'Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small", ' +
+          '"clip-vit-base-patch32"). Included in the job payload so the worker knows which ' +
+          'model to use. When null, the worker falls back to runtime config (llm_module / env vars).'
+      },
+      embedding_provider: {
+        type: 'string',
+        description:
+          'Embedding provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
+      },
+
       // ── MIME scoping ───────────────────────────────────────────────
       mime_patterns: {
         type: 'array',
