@@ -1,3 +1,4 @@
+import { conditionDefs, triggerConditionsProperty } from '../conditions';
 import type { NodeTypeDefinition } from '../types';
 
 export const ProcessFileEmbedding: NodeTypeDefinition = {
@@ -15,6 +16,7 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
     'names, and embedding strategies.',
   parameter_schema: {
     type: 'object',
+    $defs: conditionDefs,
     properties: {
 
       // ── Vector config (passed through to SearchVector) ─────────────
@@ -97,17 +99,7 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
           bucket_id: 'bucket_id'
         }
       },
-      trigger_conditions: {
-        description:
-          'Additional compound conditions beyond MIME filtering. ' +
-          'Merged with the auto-generated MIME conditions via AND. ' +
-          'Use this to add status checks, field guards, etc.',
-        'x-codegen-type': 'TriggerCondition | TriggerCondition[]',
-        oneOf: [
-          { $ref: '#/$defs/triggerCondition' },
-          { type: 'array', items: { $ref: '#/$defs/triggerCondition' } }
-        ]
-      },
+      trigger_conditions: triggerConditionsProperty,
 
       // ── Extraction config (optional — enables extract mode) ────────
       extraction: {
