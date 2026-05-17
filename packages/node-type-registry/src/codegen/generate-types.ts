@@ -1033,6 +1033,10 @@ function buildBlueprintEntityType(): t.ExportNamedDeclaration {
         'Whether to provision entity-scoped invite tables ({prefix}_invites, {prefix}_claimed_invites) and a submit_{prefix}_invite_code() function. Defaults to false.'
       ),
       addJSDoc(
+        optionalProp('has_invite_achievements', t.tsBooleanKeyword()),
+        "Whether to auto-attach an EventTracker to the claimed_invites table for invite-based achievements. Requires has_invites=true AND has_levels=true. When true, records 'invite_claimed' events credited to the sender (inviter) on each claimed invite. Defaults to false."
+      ),
+      addJSDoc(
         optionalProp('skip_entity_policies', t.tsBooleanKeyword()),
         'Escape hatch: when true AND table_provision is NULL, zero policies are provisioned on the entity table. Defaults to false.'
       ),
