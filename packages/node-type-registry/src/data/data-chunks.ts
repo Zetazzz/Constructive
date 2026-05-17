@@ -70,6 +70,20 @@ export const ProcessChunks: NodeTypeDefinition = {
         default: 'cosine'
       },
 
+      // ── Model config (optional — flows into job payload) ──────────
+      embedding_model: {
+        type: 'string',
+        description:
+          'Embedding model identifier for per-chunk embeddings. ' +
+          'When null, the worker falls back to runtime config (llm_module / env vars).'
+      },
+      embedding_provider: {
+        type: 'string',
+        description:
+          'Embedding provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
+      },
+
       // ── Table naming ───────────────────────────────────────────────
       chunks_table_name: {
         type: 'string',
