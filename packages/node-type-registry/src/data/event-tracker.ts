@@ -3,7 +3,7 @@ import type { NodeTypeDefinition } from '../types';
 
 export const EventTracker: NodeTypeDefinition = {
   name: 'EventTracker',
-  slug: 'data_event_tracker',
+  slug: 'event_tracker',
   category: 'event',
   display_name: 'Event Tracker',
   description:
