@@ -173,8 +173,8 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
             items: { type: 'string', enum: ['fulltext', 'bm25', 'trigram'] },
             description:
               'Text search indexes to create on the chunks content column. ' +
-              'Enables keyword-based retrieval alongside vector search.',
-            default: ['fulltext']
+              'Omit to mirror the parent table\'s text search indexes. ' +
+              'Set explicitly to override.'
           },
           enqueue_chunking_job: {
             type: 'boolean',

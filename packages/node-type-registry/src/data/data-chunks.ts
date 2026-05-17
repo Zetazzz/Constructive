@@ -105,9 +105,8 @@ export const ProcessChunks: NodeTypeDefinition = {
         items: { type: 'string', enum: ['fulltext', 'bm25', 'trigram'] },
         description:
           'Text search indexes to create on the chunks content column. ' +
-          'Enables keyword-based retrieval alongside vector search for ' +
-          'hybrid RAG workflows.',
-        default: ['fulltext']
+          'Omit to mirror the parent table\'s text search indexes. ' +
+          'Set explicitly to override (e.g. ["fulltext", "bm25"]).'
       },
 
       // ── Job trigger ────────────────────────────────────────────────
