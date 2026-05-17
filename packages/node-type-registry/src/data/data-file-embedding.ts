@@ -168,6 +168,14 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
             items: { type: 'string' },
             description: 'Field names from parent to copy into chunk metadata'
           },
+          search_indexes: {
+            type: 'array',
+            items: { type: 'string', enum: ['fulltext', 'bm25', 'trigram'] },
+            description:
+              'Text search indexes to create on the chunks content column. ' +
+              'Enables keyword-based retrieval alongside vector search.',
+            default: ['fulltext']
+          },
           enqueue_chunking_job: {
             type: 'boolean',
             description: 'Whether to auto-enqueue a chunking job on insert/update',

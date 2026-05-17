@@ -99,6 +99,17 @@ export const ProcessChunks: NodeTypeDefinition = {
           'Field names from the parent table to copy into chunk metadata'
       },
 
+      // ── Search indexes ───────────────────────────────────────────────
+      search_indexes: {
+        type: 'array',
+        items: { type: 'string', enum: ['fulltext', 'bm25', 'trigram'] },
+        description:
+          'Text search indexes to create on the chunks content column. ' +
+          'Enables keyword-based retrieval alongside vector search for ' +
+          'hybrid RAG workflows.',
+        default: ['fulltext']
+      },
+
       // ── Job trigger ────────────────────────────────────────────────
       enqueue_chunking_job: {
         type: 'boolean',
