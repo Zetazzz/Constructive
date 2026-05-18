@@ -195,6 +195,7 @@ export const META_TABLE_ORDER = [
   'plans_module',
   'realtime_module',
   'session_secrets_module',
+  'org_secrets_module',
   'webauthn_auth_module',
   'webauthn_credentials_module'
 ] as const;
@@ -1407,6 +1408,17 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       table_id: 'uuid',
       table_name: 'text',
       sessions_table_id: 'uuid'
+    }
+  },
+  org_secrets_module: {
+    schema: 'metaschema_modules_public',
+    table: 'org_secrets_module',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      table_id: 'uuid',
+      table_name: 'text'
     }
   },
   webauthn_auth_module: {
