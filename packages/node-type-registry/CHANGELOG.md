@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.36.0...node-type-registry@0.37.0) (2026-05-17)
+
+### Bug Fixes
+
+- rename EventTracker slug from data_event_tracker to event_tracker ([fcd551d](https://github.com/constructive-io/constructive/commit/fcd551db5d2cae13a3e0c521e0b82b3ff2bf987c))
+
+### Features
+
+- add BlueprintAchievement types to blueprint schema ([24ffee2](https://github.com/constructive-io/constructive/commit/24ffee2372675683e479348ad1df2943fc489f53))
+- add embedding/extraction model config to node-type registry ([a89cede](https://github.com/constructive-io/constructive/commit/a89cede6708131aa9db02395c4b796561084f014))
+- add has_invite_achievements property to BlueprintEntityType ([599c489](https://github.com/constructive-io/constructive/commit/599c489e25423476264af062e667437475c8b04a))
+- add LimitWarning\* node type definitions (Counter, Aggregate, Rate) ([5a0a6f0](https://github.com/constructive-io/constructive/commit/5a0a6f072d0e951ecdbf842b968ec6ac1974ce6f))
+- add MeterRateLimit node type to registry ([6678ba1](https://github.com/constructive-io/constructive/commit/6678ba1ed6a39fe8febb3f10148bfe52d12775aa))
+- add search_indexes parameter to ProcessChunks and ProcessFileEmbedding ([#856](https://github.com/constructive-io/constructive/issues/856)) ([cb91702](https://github.com/constructive-io/constructive/commit/cb9170296e2d55c574bf9ec6c92e06a0b22a28a9)), closes [constructive-io/constructive-db#1164](https://github.com/constructive-io/constructive-db/issues/1164)
+- rename node types to LimitEnforce*/LimitTrack* naming convention ([41079d1](https://github.com/constructive-io/constructive/commit/41079d169a6e9fe211023cf704ae880fe79f3d0f))
+- shared condition infrastructure + EventTracker node type ([b924346](https://github.com/constructive-io/constructive/commit/b9243463503dcd04ab0a155447971e812aa5ceb2))
+
 # [0.36.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.35.0...node-type-registry@0.36.0) (2026-05-14)
 
 ### Bug Fixes

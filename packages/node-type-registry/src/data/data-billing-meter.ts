@@ -1,10 +1,10 @@
 import type { NodeTypeDefinition } from '../types';
 
-export const BillingMeter: NodeTypeDefinition = {
-  name: 'BillingMeter',
-  slug: 'data_billing_meter',
-  category: 'billing',
-  display_name: 'Billing Meter',
+export const LimitTrackUsage: NodeTypeDefinition = {
+  name: 'LimitTrackUsage',
+  slug: 'limit_track_usage',
+  category: 'limit_track',
+  display_name: 'Track Usage',
   description:
     'Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database.',
   parameter_schema: {
@@ -39,5 +39,5 @@ export const BillingMeter: NodeTypeDefinition = {
     },
     required: ['meter_slug'],
   },
-  tags: ['billing', 'triggers', 'metering', 'usage'],
+  tags: ['billing', 'triggers', 'metering', 'usage', 'track'],
 };

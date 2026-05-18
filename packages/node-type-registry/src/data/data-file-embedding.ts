@@ -1,3 +1,4 @@
+import { conditionDefs, triggerConditionsProperty } from '../conditions';
 import type { NodeTypeDefinition } from '../types';
 
 export const ProcessFileEmbedding: NodeTypeDefinition = {
@@ -15,6 +16,7 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
     'names, and embedding strategies.',
   parameter_schema: {
     type: 'object',
+    $defs: conditionDefs,
     properties: {
 
       // ── Vector config (passed through to SearchVector) ─────────────
@@ -45,6 +47,21 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
         type: 'object',
         description: 'Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}.',
         default: {}
+      },
+
+      // ── Model config (optional — flows into job payload) ──────────
+      embedding_model: {
+        type: 'string',
+        description:
+          'Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small", ' +
+          '"clip-vit-base-patch32"). Included in the job payload so the worker knows which ' +
+          'model to use. When null, the worker falls back to runtime config (llm_module / env vars).'
+      },
+      embedding_provider: {
+        type: 'string',
+        description:
+          'Embedding provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
       },
 
       // ── MIME scoping ───────────────────────────────────────────────
@@ -82,17 +99,7 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
           bucket_id: 'bucket_id'
         }
       },
-      trigger_conditions: {
-        description:
-          'Additional compound conditions beyond MIME filtering. ' +
-          'Merged with the auto-generated MIME conditions via AND. ' +
-          'Use this to add status checks, field guards, etc.',
-        'x-codegen-type': 'TriggerCondition | TriggerCondition[]',
-        oneOf: [
-          { $ref: '#/$defs/triggerCondition' },
-          { type: 'array', items: { $ref: '#/$defs/triggerCondition' } }
-        ]
-      },
+      trigger_conditions: triggerConditionsProperty,
 
       // ── Extraction config (optional — enables extract mode) ────────
       extraction: {
@@ -160,6 +167,14 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
             type: 'array',
             items: { type: 'string' },
             description: 'Field names from parent to copy into chunk metadata'
+          },
+          search_indexes: {
+            type: 'array',
+            items: { type: 'string', enum: ['fulltext', 'bm25', 'trigram'] },
+            description:
+              'Text search indexes to create on the chunks content column. ' +
+              'Omit to mirror the parent table\'s text search indexes. ' +
+              'Set explicitly to override.'
           },
           enqueue_chunking_job: {
             type: 'boolean',

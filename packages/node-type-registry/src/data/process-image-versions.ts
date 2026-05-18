@@ -1,3 +1,4 @@
+import { conditionDefs, triggerConditionsProperty } from '../conditions';
 import type { NodeTypeDefinition } from '../types';
 
 /**
@@ -26,6 +27,7 @@ export const ProcessImageVersions: NodeTypeDefinition = {
     'file records linked to the source image.',
   parameter_schema: {
     type: 'object',
+    $defs: conditionDefs,
     required: ['versions'],
     properties: {
 
@@ -105,16 +107,7 @@ export const ProcessImageVersions: NodeTypeDefinition = {
           bucket_id: 'bucket_id'
         }
       },
-      trigger_conditions: {
-        description:
-          'Additional compound conditions beyond MIME filtering. ' +
-          'Merged with the auto-generated MIME conditions via AND.',
-        'x-codegen-type': 'TriggerCondition | TriggerCondition[]',
-        oneOf: [
-          { $ref: '#/$defs/triggerCondition' },
-          { type: 'array', items: { $ref: '#/$defs/triggerCondition' } }
-        ]
-      },
+      trigger_conditions: triggerConditionsProperty,
 
       // ── Job options ───────────────────────────────────────────────
       queue_name: {

@@ -1,3 +1,4 @@
+import { conditionDefs, triggerConditionsProperty } from '../conditions';
 import type { NodeTypeDefinition } from '../types';
 
 /**
@@ -25,6 +26,7 @@ export const ProcessExtraction: NodeTypeDefinition = {
     'Typically used upstream of ProcessFileEmbedding or ProcessChunks.',
   parameter_schema: {
     type: 'object',
+    $defs: conditionDefs,
     properties: {
 
       // ── Output fields ─────────────────────────────────────────────
@@ -39,6 +41,21 @@ export const ProcessExtraction: NodeTypeDefinition = {
         format: 'column-ref',
         description: 'JSONB field for extraction metadata (page count, language, etc.)',
         default: 'extracted_metadata'
+      },
+
+      // ── Model config (optional — flows into job payload) ──────────
+      extraction_model: {
+        type: 'string',
+        description:
+          'Extraction model identifier (e.g. a vision model for OCR, an LLM for ' +
+          'structured extraction). Included in the job payload so the worker knows ' +
+          'which model to use. When null, the worker falls back to runtime config.'
+      },
+      extraction_provider: {
+        type: 'string',
+        description:
+          'Extraction provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
       },
 
       // ── MIME scoping ──────────────────────────────────────────────
@@ -74,17 +91,7 @@ export const ProcessExtraction: NodeTypeDefinition = {
           bucket_id: 'bucket_id'
         }
       },
-      trigger_conditions: {
-        description:
-          'Additional compound conditions beyond MIME filtering. ' +
-          'Merged with the auto-generated MIME conditions via AND. ' +
-          'Use this to add status checks (e.g., status = \'uploaded\').',
-        'x-codegen-type': 'TriggerCondition | TriggerCondition[]',
-        oneOf: [
-          { $ref: '#/$defs/triggerCondition' },
-          { type: 'array', items: { $ref: '#/$defs/triggerCondition' } }
-        ]
-      },
+      trigger_conditions: triggerConditionsProperty,
 
       // ── Job options ───────────────────────────────────────────────
       queue_name: {

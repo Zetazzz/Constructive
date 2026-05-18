@@ -169,9 +169,9 @@ export const META_TABLE_ORDER = [
   'invites_module',
   'emails_module',
   'sessions_module',
-  'secrets_module',
+  'user_state_module',
   'profiles_module',
-  'encrypted_secrets_module',
+  'config_secrets_user_module',
   'connected_accounts_module',
   'phone_numbers_module',
   'crypto_addresses_module',
@@ -195,6 +195,7 @@ export const META_TABLE_ORDER = [
   'plans_module',
   'realtime_module',
   'session_secrets_module',
+  'config_secrets_org_module',
   'webauthn_auth_module',
   'webauthn_credentials_module'
 ] as const;
@@ -723,8 +724,8 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       sign_in_function: 'text',
       sign_up_function: 'text',
       sign_out_function: 'text',
-      sign_in_one_time_token_function: 'text',
-      one_time_token_function: 'text',
+      sign_in_cross_origin_function: 'text',
+      request_cross_origin_token_function: 'text',
       extend_token_expires: 'text',
       send_account_deletion_email_function: 'text',
       delete_account_function: 'text',
@@ -952,9 +953,9 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       auth_settings_table: 'text'
     }
   },
-  secrets_module: {
+  user_state_module: {
     schema: 'metaschema_modules_public',
-    table: 'secrets_module',
+    table: 'user_state_module',
     fields: {
       id: 'uuid',
       database_id: 'uuid',
@@ -987,9 +988,9 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       prefix: 'text'
     }
   },
-  encrypted_secrets_module: {
+  config_secrets_user_module: {
     schema: 'metaschema_modules_public',
-    table: 'encrypted_secrets_module',
+    table: 'config_secrets_user_module',
     fields: {
       id: 'uuid',
       database_id: 'uuid',
@@ -1407,6 +1408,17 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       table_id: 'uuid',
       table_name: 'text',
       sessions_table_id: 'uuid'
+    }
+  },
+  config_secrets_org_module: {
+    schema: 'metaschema_modules_public',
+    table: 'config_secrets_org_module',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      table_id: 'uuid',
+      table_name: 'text'
     }
   },
   webauthn_auth_module: {
