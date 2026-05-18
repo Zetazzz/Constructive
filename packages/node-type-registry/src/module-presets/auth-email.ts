@@ -53,7 +53,7 @@ export const PresetAuthEmail: ModulePreset = {
     'memberships_module:app',
     'sessions_module',
     'user_state_module',
-    'user_secrets_module',
+    'config_secrets_user_module',
     'emails_module',
     'rls_module',
     'user_auth_module'
@@ -65,7 +65,7 @@ export const PresetAuthEmail: ModulePreset = {
     'limits_module:app': 'Required by `memberships_module:app`: NOT NULL FK to caps table.',
     'levels_module:app': 'Required by `memberships_module:app`: NOT NULL FK to levels table.',
     emails_module: 'Required by the `user_auth_module` insert trigger (`RAISE EXCEPTION REQUIRES emails_module`).',
-    user_secrets_module: 'Required for password hashing; referenced by `set_password`, `verify_password`, and reset flows.',
+    config_secrets_user_module: 'Required for password hashing; referenced by `set_password`, `verify_password`, and reset flows.',
     user_state_module: 'API-key storage (`create_api_key`, `revoke_api_key`, `my_api_keys`).'
   },
   omits_notes: {

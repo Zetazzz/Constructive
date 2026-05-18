@@ -41,7 +41,7 @@ export const PresetB2b: ModulePreset = {
     'memberships_module:org',
     'sessions_module',
     'user_state_module',
-    'user_secrets_module',
+    'config_secrets_user_module',
     'emails_module',
     'rls_module',
     'user_auth_module',

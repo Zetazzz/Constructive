@@ -186,7 +186,7 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('sessions_module', `SELECT * FROM metaschema_modules_public.sessions_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('user_state_module', `SELECT * FROM metaschema_modules_public.user_state_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('profiles_module', `SELECT * FROM metaschema_modules_public.profiles_module WHERE database_id = $1 ORDER BY id`);
-  await queryAndParse('user_secrets_module', `SELECT * FROM metaschema_modules_public.user_secrets_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('config_secrets_user_module', `SELECT * FROM metaschema_modules_public.config_secrets_user_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('connected_accounts_module', `SELECT * FROM metaschema_modules_public.connected_accounts_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('phone_numbers_module', `SELECT * FROM metaschema_modules_public.phone_numbers_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('crypto_addresses_module', `SELECT * FROM metaschema_modules_public.crypto_addresses_module WHERE database_id = $1 ORDER BY id`);
@@ -210,7 +210,7 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('plans_module', `SELECT * FROM metaschema_modules_public.plans_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('realtime_module', `SELECT * FROM metaschema_modules_public.realtime_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('session_secrets_module', `SELECT * FROM metaschema_modules_public.session_secrets_module WHERE database_id = $1 ORDER BY id`);
-  await queryAndParse('org_secrets_module', `SELECT * FROM metaschema_modules_public.org_secrets_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('config_secrets_org_module', `SELECT * FROM metaschema_modules_public.config_secrets_org_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('webauthn_auth_module', `SELECT * FROM metaschema_modules_public.webauthn_auth_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('webauthn_credentials_module', `SELECT * FROM metaschema_modules_public.webauthn_credentials_module WHERE database_id = $1 ORDER BY id`);
 
