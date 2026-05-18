@@ -169,9 +169,9 @@ export const META_TABLE_ORDER = [
   'invites_module',
   'emails_module',
   'sessions_module',
-  'secrets_module',
+  'user_state_module',
   'profiles_module',
-  'encrypted_secrets_module',
+  'user_secrets_module',
   'connected_accounts_module',
   'phone_numbers_module',
   'crypto_addresses_module',
@@ -953,9 +953,9 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       auth_settings_table: 'text'
     }
   },
-  secrets_module: {
+  user_state_module: {
     schema: 'metaschema_modules_public',
-    table: 'secrets_module',
+    table: 'user_state_module',
     fields: {
       id: 'uuid',
       database_id: 'uuid',
@@ -988,9 +988,9 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       prefix: 'text'
     }
   },
-  encrypted_secrets_module: {
+  user_secrets_module: {
     schema: 'metaschema_modules_public',
-    table: 'encrypted_secrets_module',
+    table: 'user_secrets_module',
     fields: {
       id: 'uuid',
       database_id: 'uuid',
