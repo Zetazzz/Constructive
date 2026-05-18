@@ -171,9 +171,9 @@ export const META_TABLE_ORDER = [
   'invites_module',
   'emails_module',
   'sessions_module',
-  'secrets_module',
+  'user_state_module',
   'profiles_module',
-  'encrypted_secrets_module',
+  'config_secrets_user_module',
   'connected_accounts_module',
   'phone_numbers_module',
   'crypto_addresses_module',
@@ -197,6 +197,7 @@ export const META_TABLE_ORDER = [
   'plans_module',
   'realtime_module',
   'session_secrets_module',
+  'config_secrets_org_module',
   'webauthn_auth_module',
   'webauthn_credentials_module'
 ] as const;
@@ -435,17 +436,51 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
     schema: 'metaschema_modules_public',
     table: 'sessions_module'
   },
-  secrets_module: {
+  user_state_module: {
     schema: 'metaschema_modules_public',
-    table: 'secrets_module'
+    table: 'user_state_module',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      table_id: 'uuid',
+      table_name: 'text'
+    }
   },
   profiles_module: {
     schema: 'metaschema_modules_public',
-    table: 'profiles_module'
+    table: 'profiles_module',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      private_schema_id: 'uuid',
+      table_id: 'uuid',
+      table_name: 'text',
+      profile_permissions_table_id: 'uuid',
+      profile_permissions_table_name: 'text',
+      profile_grants_table_id: 'uuid',
+      profile_grants_table_name: 'text',
+      profile_definition_grants_table_id: 'uuid',
+      profile_definition_grants_table_name: 'text',
+      membership_type: 'int',
+      entity_table_id: 'uuid',
+      actor_table_id: 'uuid',
+      permissions_table_id: 'uuid',
+      memberships_table_id: 'uuid',
+      prefix: 'text'
+    }
   },
-  encrypted_secrets_module: {
+  config_secrets_user_module: {
     schema: 'metaschema_modules_public',
-    table: 'encrypted_secrets_module'
+    table: 'config_secrets_user_module',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      table_id: 'uuid',
+      table_name: 'text'
+    }
   },
   connected_accounts_module: {
     schema: 'metaschema_modules_public',
@@ -537,7 +572,26 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
   },
   session_secrets_module: {
     schema: 'metaschema_modules_public',
-    table: 'session_secrets_module'
+    table: 'session_secrets_module',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      table_id: 'uuid',
+      table_name: 'text',
+      sessions_table_id: 'uuid'
+    }
+  },
+  config_secrets_org_module: {
+    schema: 'metaschema_modules_public',
+    table: 'config_secrets_org_module',
+    fields: {
+      id: 'uuid',
+      database_id: 'uuid',
+      schema_id: 'uuid',
+      table_id: 'uuid',
+      table_name: 'text'
+    }
   },
   webauthn_auth_module: {
     schema: 'metaschema_modules_public',

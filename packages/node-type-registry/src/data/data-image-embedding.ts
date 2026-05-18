@@ -1,32 +1,34 @@
+import { conditionDefs, triggerConditionsProperty } from '../conditions';
 import type { NodeTypeDefinition } from '../types';
 
 /**
- * Image-specific preset of DataFileEmbedding.
+ * Image-specific preset of ProcessFileEmbedding.
  *
  * At the SQL layer, data_image_embedding delegates entirely to
  * data_file_embedding, merging image-specific defaults before forwarding.
- * The parameter schema here is intentionally identical to DataFileEmbedding;
+ * The parameter schema here is intentionally identical to ProcessFileEmbedding;
  * only the defaults differ (dimensions: 512, task: process_image_embedding,
  * mime_patterns: ['image/%']).
  *
  * Kept as a separate node type for backward compatibility — existing
- * blueprints that reference DataImageEmbedding continue to work unchanged.
+ * blueprints that reference ProcessImageEmbedding continue to work unchanged.
  */
-export const DataImageEmbedding: NodeTypeDefinition = {
-  name: 'DataImageEmbedding',
+export const ProcessImageEmbedding: NodeTypeDefinition = {
+  name: 'ProcessImageEmbedding',
   slug: 'data_image_embedding',
-  category: 'data',
+  category: 'process',
   display_name: 'Image Embedding',
   description:
-    'Image-specific preset of DataFileEmbedding. Delegates to DataFileEmbedding ' +
+    'Image-specific preset of ProcessFileEmbedding. Delegates to ProcessFileEmbedding ' +
     'with image-oriented defaults: dimensions=512 (CLIP), mime_patterns=[\'image/%\'], ' +
     'task_identifier=\'process_image_embedding\', direct mode (no extraction). ' +
-    'Accepts all DataFileEmbedding parameters — any overrides are forwarded through.',
+    'Accepts all ProcessFileEmbedding parameters — any overrides are forwarded through.',
   parameter_schema: {
     type: 'object',
+    $defs: conditionDefs,
     properties: {
 
-      // ── Vector config (passed through to DataFileEmbedding) ──────────
+      // ── Vector config (passed through to ProcessFileEmbedding) ──────────
       field_name: {
         type: 'string',
         format: 'column-ref',
@@ -54,6 +56,21 @@ export const DataImageEmbedding: NodeTypeDefinition = {
         type: 'object',
         description: 'Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}.',
         default: {}
+      },
+
+      // ── Model config (optional — flows into job payload) ──────────
+      embedding_model: {
+        type: 'string',
+        description:
+          'Embedding model identifier (e.g. "clip-vit-base-patch32"). ' +
+          'Included in the job payload so the worker knows which model to use. ' +
+          'When null, the worker falls back to runtime config (llm_module / env vars).'
+      },
+      embedding_provider: {
+        type: 'string',
+        description:
+          'Embedding provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
       },
 
       // ── MIME scoping ───────────────────────────────────────────────
@@ -88,22 +105,13 @@ export const DataImageEmbedding: NodeTypeDefinition = {
           bucket_id: 'bucket_id'
         }
       },
-      trigger_conditions: {
-        description:
-          'Additional compound conditions beyond MIME filtering. ' +
-          'Merged with the auto-generated MIME conditions via AND.',
-        'x-codegen-type': 'TriggerCondition | TriggerCondition[]',
-        oneOf: [
-          { $ref: '#/$defs/triggerCondition' },
-          { type: 'array', items: { $ref: '#/$defs/triggerCondition' } }
-        ]
-      },
+      trigger_conditions: triggerConditionsProperty,
 
       // ── Extraction config (optional — enables extract mode) ────────
       extraction: {
         type: 'object',
         description:
-          'Text extraction configuration. Forwarded to DataFileEmbedding. ' +
+          'Text extraction configuration. Forwarded to ProcessFileEmbedding. ' +
           'When present, enables extract mode (e.g., OCR for images).',
         properties: {
           text_field: {
@@ -117,21 +125,15 @@ export const DataImageEmbedding: NodeTypeDefinition = {
             format: 'column-ref',
             description: 'JSONB field for extraction metadata',
             default: 'extracted_metadata'
-          },
-          status_field: {
-            type: 'string',
-            format: 'column-ref',
-            description: 'Extraction lifecycle status field',
-            default: 'extraction_status'
           }
         }
       },
 
-      // ── Chunking config (optional — forwarded to DataFileEmbedding) ─
+      // ── Chunking config (optional — forwarded to ProcessFileEmbedding) ─
       chunks: {
         type: 'object',
         description:
-          'Chunking configuration. Forwarded to DataFileEmbedding. ' +
+          'Chunking configuration. Forwarded to ProcessFileEmbedding. ' +
           'Only meaningful when extraction is also provided.',
         properties: {
           content_field_name: {
@@ -150,19 +152,6 @@ export const DataImageEmbedding: NodeTypeDefinition = {
           enqueue_chunking_job: { type: 'boolean', default: true },
           chunking_task_name: { type: 'string', default: 'generate_chunks' }
         }
-      },
-
-      // ── Stale tracking (forwarded to DataFileEmbedding) ────────────
-      stale_strategy: {
-        type: 'string',
-        enum: ['column', 'null', 'hash'],
-        description: 'Strategy for tracking embedding staleness in extract mode',
-        default: 'column'
-      },
-      include_stale_field: {
-        type: 'boolean',
-        description: 'Whether to include the embedding_stale boolean field',
-        default: true
       }
     }
   },

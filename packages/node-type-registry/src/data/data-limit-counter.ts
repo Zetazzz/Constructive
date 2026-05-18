@@ -1,10 +1,10 @@
 import type { NodeTypeDefinition } from '../types';
 
-export const DataLimitCounter: NodeTypeDefinition = {
-  name: 'DataLimitCounter',
-  slug: 'data_limit_counter',
-  category: 'data',
-  display_name: 'Limit Counter',
+export const LimitEnforceCounter: NodeTypeDefinition = {
+  name: 'LimitEnforceCounter',
+  slug: 'limit_enforce_counter',
+  category: 'limit_enforce',
+  display_name: 'Enforce Counter',
   description:
     'Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope.',
   parameter_schema: {
@@ -42,5 +42,5 @@ export const DataLimitCounter: NodeTypeDefinition = {
     },
     required: ['limit_name'],
   },
-  tags: ['limits', 'triggers', 'billing'],
+  tags: ['limits', 'triggers', 'enforce'],
 };

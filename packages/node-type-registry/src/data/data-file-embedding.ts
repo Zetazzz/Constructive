@@ -1,20 +1,22 @@
+import { conditionDefs, triggerConditionsProperty } from '../conditions';
 import type { NodeTypeDefinition } from '../types';
 
-export const DataFileEmbedding: NodeTypeDefinition = {
-  name: 'DataFileEmbedding',
+export const ProcessFileEmbedding: NodeTypeDefinition = {
+  name: 'ProcessFileEmbedding',
   slug: 'data_file_embedding',
-  category: 'data',
+  category: 'process',
   display_name: 'File Embedding',
   description:
     'Generic, MIME-scoped embedding node for file tables. Supports two modes: ' +
     'direct (whole-file to single vector, e.g. CLIP for images) when extraction ' +
     'is omitted, or extract (file to text to chunks to per-chunk vectors) when ' +
-    'extraction config is provided. Composes SearchVector + DataJobTrigger + ' +
-    'DataChunks (enabled by default in extract mode) internally. Multiple ' +
+    'extraction config is provided. Composes SearchVector + JobTrigger + ' +
+    'ProcessChunks (enabled by default in extract mode) internally. Multiple ' +
     'instances can coexist on the same table with different MIME scopes, field ' +
     'names, and embedding strategies.',
   parameter_schema: {
     type: 'object',
+    $defs: conditionDefs,
     properties: {
 
       // ── Vector config (passed through to SearchVector) ─────────────
@@ -45,6 +47,21 @@ export const DataFileEmbedding: NodeTypeDefinition = {
         type: 'object',
         description: 'Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}.',
         default: {}
+      },
+
+      // ── Model config (optional — flows into job payload) ──────────
+      embedding_model: {
+        type: 'string',
+        description:
+          'Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small", ' +
+          '"clip-vit-base-patch32"). Included in the job payload so the worker knows which ' +
+          'model to use. When null, the worker falls back to runtime config (llm_module / env vars).'
+      },
+      embedding_provider: {
+        type: 'string',
+        description:
+          'Embedding provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
       },
 
       // ── MIME scoping ───────────────────────────────────────────────
@@ -82,17 +99,7 @@ export const DataFileEmbedding: NodeTypeDefinition = {
           bucket_id: 'bucket_id'
         }
       },
-      trigger_conditions: {
-        description:
-          'Additional compound conditions beyond MIME filtering. ' +
-          'Merged with the auto-generated MIME conditions via AND. ' +
-          'Use this to add status checks, field guards, etc.',
-        'x-codegen-type': 'TriggerCondition | TriggerCondition[]',
-        oneOf: [
-          { $ref: '#/$defs/triggerCondition' },
-          { type: 'array', items: { $ref: '#/$defs/triggerCondition' } }
-        ]
-      },
+      trigger_conditions: triggerConditionsProperty,
 
       // ── Extraction config (optional — enables extract mode) ────────
       extraction: {
@@ -114,12 +121,6 @@ export const DataFileEmbedding: NodeTypeDefinition = {
             format: 'column-ref',
             description: 'JSONB field for extraction metadata (page count, language, etc.)',
             default: 'extracted_metadata'
-          },
-          status_field: {
-            type: 'string',
-            format: 'column-ref',
-            description: 'Extraction lifecycle status field',
-            default: 'extraction_status'
           }
         }
       },
@@ -128,16 +129,17 @@ export const DataFileEmbedding: NodeTypeDefinition = {
       include_chunks: {
         type: 'boolean',
         description:
-          'Whether to create a chunks table via DataChunks. Defaults to true ' +
+          'Whether to create a chunks table via ProcessChunks. Defaults to true ' +
           'when extraction is provided, false in direct mode. Set explicitly ' +
           'to override.',
       },
       chunks: {
         type: 'object',
         description:
-          'Chunking configuration passed through to DataChunks. When ' +
+          'Chunking configuration passed through to ProcessChunks. When ' +
           'include_chunks is true (or defaults to true in extract mode), these ' +
           'params configure the chunks table, embedding dimensions, strategy, etc.',
+        default: {},
         properties: {
           content_field_name: {
             type: 'string',
@@ -166,6 +168,14 @@ export const DataFileEmbedding: NodeTypeDefinition = {
             items: { type: 'string' },
             description: 'Field names from parent to copy into chunk metadata'
           },
+          search_indexes: {
+            type: 'array',
+            items: { type: 'string', enum: ['fulltext', 'bm25', 'trigram'] },
+            description:
+              'Text search indexes to create on the chunks content column. ' +
+              'Omit to mirror the parent table\'s text search indexes. ' +
+              'Set explicitly to override.'
+          },
           enqueue_chunking_job: {
             type: 'boolean',
             description: 'Whether to auto-enqueue a chunking job on insert/update',
@@ -177,21 +187,6 @@ export const DataFileEmbedding: NodeTypeDefinition = {
             default: 'generate_chunks'
           }
         }
-      },
-
-      // ── Stale tracking (meaningful in extract mode) ────────────────
-      stale_strategy: {
-        type: 'string',
-        enum: ['column', 'null', 'hash'],
-        description:
-          'Strategy for tracking embedding staleness when extraction is enabled. ' +
-          'column: embedding_stale boolean. null: set embedding to NULL. hash: md5 hash.',
-        default: 'column'
-      },
-      include_stale_field: {
-        type: 'boolean',
-        description: 'Whether to include the embedding_stale boolean field (extract mode)',
-        default: true
       }
     }
   },

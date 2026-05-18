@@ -110,6 +110,16 @@ export const SearchUnified: NodeTypeDefinition = {
               format: 'column-ref'
             }
           },
+          embedding_model: {
+            type: 'string',
+            description:
+              'Embedding model identifier. When null, the worker falls back to runtime config.'
+          },
+          embedding_provider: {
+            type: 'string',
+            description:
+              'Embedding provider name. When null, the worker falls back to runtime config.'
+          },
           search_score_weight: {
             type: 'number',
             default: 1
@@ -162,6 +172,18 @@ export const SearchUnified: NodeTypeDefinition = {
             }
           }
         }
+      },
+      embedding_text_field: {
+        type: 'string',
+        format: 'column-ref',
+        description: 'Name of the composite text field created for embedding input',
+        default: 'embedding_text'
+      },
+      composite_format: {
+        type: 'string',
+        enum: ['labeled', 'plain'],
+        description: 'Output format for the composite text field',
+        default: 'labeled'
       },
       trgm_fields: {
         type: 'array',

@@ -816,6 +816,14 @@ function buildBlueprintStorageConfig(): t.ExportNamedDeclaration {
         'CORS allowed origins for the storage module.'
       ),
       addJSDoc(
+        optionalProp('has_confirm_upload', t.tsBooleanKeyword()),
+        'Enable deferred upload confirmation via HeadObject. When true, creates SECURITY DEFINER status transition functions (confirm_uploaded, mark_processed) and an AFTER INSERT trigger that enqueues a storage:confirm_upload job. The job verifies the file exists in S3 before transitioning status from requested to uploaded. Defaults to false.'
+      ),
+      addJSDoc(
+        optionalProp('confirm_upload_delay', t.tsStringKeyword()),
+        'Delay before the first upload confirmation attempt (PostgreSQL interval string, e.g. "30 seconds"). Only used when has_confirm_upload is true. Defaults to "30 seconds".'
+      ),
+      addJSDoc(
         optionalProp(
           'provisions',
           t.tsTypeLiteral([
@@ -833,6 +841,102 @@ function buildBlueprintStorageConfig(): t.ExportNamedDeclaration {
       )
     ]),
     'Storage configuration for an entity type. Seeds initial buckets, overrides module-level settings (expiry times, file size limits, CORS), and provides per-table provisioning overrides via provisions.'
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Achievement types
+// ---------------------------------------------------------------------------
+
+function buildBlueprintAchievementRequirement(): t.ExportNamedDeclaration {
+  return addJSDoc(
+    exportInterface('BlueprintAchievementRequirement', [
+      addJSDoc(
+        requiredProp('event_name', t.tsStringKeyword()),
+        'Name identifier matching an event_type or step name.'
+      ),
+      addJSDoc(
+        requiredProp('count', t.tsNumberKeyword()),
+        'Number of events needed to satisfy this requirement.'
+      ),
+      addJSDoc(
+        optionalProp('description', t.tsStringKeyword()),
+        'Human-readable description of what this requirement entails.'
+      )
+    ]),
+    'A requirement entry within a blueprint achievement. Defines what events must occur to earn the achievement.'
+  );
+}
+
+function buildBlueprintAchievementReward(): t.ExportNamedDeclaration {
+  return addJSDoc(
+    exportInterface('BlueprintAchievementReward', [
+      addJSDoc(
+        requiredProp(
+          'reward_type',
+          t.tsUnionType([
+            t.tsLiteralType(t.stringLiteral('limit_credit')),
+            t.tsLiteralType(t.stringLiteral('meter_credit'))
+          ])
+        ),
+        'Type of reward: limit_credit (grants limit credits) or meter_credit (grants meter credits).'
+      ),
+      addJSDoc(
+        requiredProp('target_name', t.tsStringKeyword()),
+        'Target limit name or meter slug for the credit grant.'
+      ),
+      addJSDoc(
+        requiredProp('amount', t.tsNumberKeyword()),
+        'Number of credits to grant.'
+      ),
+      addJSDoc(
+        optionalProp('credit_type', t.tsStringKeyword()),
+        'Credit type: permanent, expiring, etc. Defaults to "permanent".'
+      )
+    ]),
+    'A reward entry within a blueprint achievement. Defines credits granted when the achievement is earned.'
+  );
+}
+
+function buildBlueprintAchievement(): t.ExportNamedDeclaration {
+  return addJSDoc(
+    exportInterface('BlueprintAchievement', [
+      addJSDoc(
+        requiredProp('name', t.tsStringKeyword()),
+        'Unique name for the achievement level.'
+      ),
+      addJSDoc(
+        optionalProp('description', t.tsStringKeyword()),
+        'Human-readable description of this achievement.'
+      ),
+      addJSDoc(
+        optionalProp('priority', t.tsNumberKeyword()),
+        'Display ordering priority; lower values appear first. Defaults to 100.'
+      ),
+      addJSDoc(
+        requiredProp(
+          'requirements',
+          t.tsArrayType(
+            t.tsTypeReference(t.identifier('BlueprintAchievementRequirement'))
+          )
+        ),
+        'Requirements that must be met to earn this achievement.'
+      ),
+      addJSDoc(
+        optionalProp(
+          'rewards',
+          t.tsArrayType(
+            t.tsTypeReference(t.identifier('BlueprintAchievementReward'))
+          )
+        ),
+        'Rewards granted when the achievement is earned.'
+      ),
+      addJSDoc(
+        optionalProp('entity_prefix', t.tsStringKeyword()),
+        'Entity prefix to scope this achievement to (e.g., "org", "app"). Used to resolve the correct events_module. Defaults to "app".'
+      )
+    ]),
+    'An achievement entry for the blueprint achievements[] section. Creates a level with requirements and optional rewards in the events_module. Requires events_module to be provisioned (e.g., via entity_types[].has_levels = true or modules includes events_module).'
   );
 }
 
@@ -927,6 +1031,10 @@ function buildBlueprintEntityType(): t.ExportNamedDeclaration {
       addJSDoc(
         optionalProp('has_invites', t.tsBooleanKeyword()),
         'Whether to provision entity-scoped invite tables ({prefix}_invites, {prefix}_claimed_invites) and a submit_{prefix}_invite_code() function. Defaults to false.'
+      ),
+      addJSDoc(
+        optionalProp('has_invite_achievements', t.tsBooleanKeyword()),
+        "Whether to auto-attach an EventTracker to the claimed_invites table for invite-based achievements. Requires has_invites=true AND has_levels=true. When true, records 'invite_claimed' events credited to the sender (inviter) on each claimed invite. Defaults to false."
       ),
       addJSDoc(
         optionalProp('skip_entity_policies', t.tsBooleanKeyword()),
@@ -1082,6 +1190,15 @@ function buildBlueprintDefinition(): t.ExportNamedDeclaration {
           t.tsTypeReference(t.identifier('BlueprintStorageConfig'))
         ),
         'App-level storage configuration. Creates a storage_module (membership_type = NULL), seeds initial buckets, and overrides module-level settings (expiry times, file size limits, CORS). Use provisions for per-table policy overrides. For entity-scoped storage, use entity_types[].has_storage + entity_types[].storage instead.'
+      ),
+      addJSDoc(
+        optionalProp(
+          'achievements',
+          t.tsArrayType(
+            t.tsTypeReference(t.identifier('BlueprintAchievement'))
+          )
+        ),
+        'Achievement definitions. Each entry creates a level with requirements and optional rewards in the events_module. Requires events_module to be provisioned (e.g., via entity_types[].has_levels = true or modules includes events_module).'
       )
     ]),
     'The complete blueprint definition -- the JSONB shape accepted by construct_blueprint().'
@@ -1131,7 +1248,7 @@ function buildProgram(meta?: MetaTableInfo[]): string {
   statements.push(buildTriggerConditionInterface());
 
   // -- Parameter interfaces grouped by category --
-  const categoryOrder = ['data', 'search', 'authz', 'relation', 'view'];
+  const categoryOrder = ['billing', 'check', 'data', 'limit', 'search', 'job', 'process', 'authz', 'relation', 'view'];
   for (const cat of categoryOrder) {
     const nts = categories.get(cat);
     if (!nts || nts.length === 0) continue;
@@ -1160,6 +1277,9 @@ function buildProgram(meta?: MetaTableInfo[]): string {
   statements.push(buildBlueprintTableUniqueConstraint());
   statements.push(buildBlueprintBucketSeed());
   statements.push(buildBlueprintStorageConfig());
+  statements.push(buildBlueprintAchievementRequirement());
+  statements.push(buildBlueprintAchievementReward());
+  statements.push(buildBlueprintAchievement());
   statements.push(buildBlueprintEntityTableProvision());
   statements.push(buildBlueprintEntityType());
 

@@ -17,6 +17,7 @@ import { useGetAllQuery } from './hooks';
 
 // Query hooks: use<Model>Query, use<Model>sQuery
 // Mutation hooks: useCreate<Model>Mutation, useUpdate<Model>Mutation, useDelete<Model>Mutation
+// Bulk mutation hooks (when enabled): useBulkCreate<Model>Mutation, useBulkUpsert<Model>Mutation, etc.
 
 const { data, isLoading } = useGetAllQuery({
   selection: { fields: { id: true } },

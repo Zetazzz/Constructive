@@ -5,7 +5,7 @@ export const SearchVector: NodeTypeDefinition = {
   slug: 'search_vector',
   category: 'search',
   display_name: 'Vector Search',
-  description: 'Adds a vector embedding column with HNSW or IVFFlat index for similarity search. Supports configurable dimensions, distance metrics (cosine, l2, ip), stale tracking strategies (column, null, hash), and automatic job enqueue triggers for embedding generation.',
+  description: 'Adds a vector embedding column with HNSW or IVFFlat index for similarity search. Supports configurable dimensions, distance metrics (cosine, l2, ip), per-field {field_name}_updated_at timestamp tracking (read-only in GraphQL), and automatic job enqueue triggers for embedding generation.',
   parameter_schema: {
     type: 'object',
     properties: {
@@ -44,11 +44,6 @@ export const SearchVector: NodeTypeDefinition = {
         description: 'Index-specific options. HNSW: {m, ef_construction}. IVFFlat: {lists}.',
         default: {}
       },
-      include_stale_field: {
-        type: 'boolean',
-        description: 'When stale_strategy is column, adds an embedding_stale boolean field',
-        default: true
-      },
       source_fields: {
         type: 'array',
         items: {
@@ -56,6 +51,21 @@ export const SearchVector: NodeTypeDefinition = {
           format: 'column-ref'
         },
         description: 'Column names that feed the embedding. Used by stale trigger to detect content changes.'
+      },
+
+      // ── Model config (optional — flows into job payload) ──────────
+      embedding_model: {
+        type: 'string',
+        description:
+          'Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small"). ' +
+          'Included in the job payload so the worker knows which model to use. ' +
+          'When null, the worker falls back to runtime config (llm_module / env vars).'
+      },
+      embedding_provider: {
+        type: 'string',
+        description:
+          'Embedding provider name (e.g. "ollama", "openai"). ' +
+          'When null, the worker falls back to runtime config.'
       },
       enqueue_job: {
         type: 'boolean',
@@ -66,16 +76,6 @@ export const SearchVector: NodeTypeDefinition = {
         type: 'string',
         description: 'Task identifier for the job queue',
         default: 'generate_embedding'
-      },
-      stale_strategy: {
-        type: 'string',
-        enum: [
-          'column',
-          'null',
-          'hash'
-        ],
-        description: 'Strategy for tracking embedding staleness. column: embedding_stale boolean. null: set embedding to NULL. hash: md5 hash of source fields.',
-        default: 'column'
       },
       chunks: {
         type: 'object',

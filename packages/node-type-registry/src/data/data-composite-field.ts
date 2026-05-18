@@ -12,7 +12,8 @@ export const DataCompositeField: NodeTypeDefinition = {
       target: {
         type: 'string',
         format: 'column-ref',
-        description: "Name of the derived text field to create (default: 'embedding_text')"
+        description: 'Name of the derived text field to create',
+        default: 'embedding_text'
       },
       source_fields: {
         type: 'array',
@@ -25,7 +26,8 @@ export const DataCompositeField: NodeTypeDefinition = {
       format: {
         type: 'string',
         enum: ['labeled', 'plain'],
-        description: "Output format: 'labeled' (field_name: value) or 'plain' (values only). Default: 'labeled'"
+        description: "Output format: 'labeled' (field_name: value) or 'plain' (values only)",
+        default: 'labeled'
       }
     },
     required: [
