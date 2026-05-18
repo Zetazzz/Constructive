@@ -202,6 +202,7 @@ export const exportGraphQLMeta = async ({
     queryAndParse('plans_module'),
     queryAndParse('realtime_module'),
     queryAndParse('session_secrets_module'),
+    queryAndParse('org_secrets_module'),
     queryAndParse('webauthn_auth_module'),
     queryAndParse('webauthn_credentials_module')
   ]);
