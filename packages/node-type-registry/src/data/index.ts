@@ -9,6 +9,7 @@ export { ProcessChunks } from './data-chunks';
 export { DataCompositeField } from './data-composite-field';
 export { DataDirectOwner } from './data-direct-owner';
 export { DataEntityMembership } from './data-entity-membership';
+export { EventReferral } from './event-referral';
 export { EventTracker } from './event-tracker';
 export { ProcessFileEmbedding } from './data-file-embedding';
 export { LimitEnforceFeature } from './data-feature-flag';
