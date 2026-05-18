@@ -171,7 +171,7 @@ export const META_TABLE_ORDER = [
   'sessions_module',
   'user_state_module',
   'profiles_module',
-  'user_secrets_module',
+  'config_secrets_user_module',
   'connected_accounts_module',
   'phone_numbers_module',
   'crypto_addresses_module',
@@ -195,7 +195,7 @@ export const META_TABLE_ORDER = [
   'plans_module',
   'realtime_module',
   'session_secrets_module',
-  'org_secrets_module',
+  'config_secrets_org_module',
   'webauthn_auth_module',
   'webauthn_credentials_module'
 ] as const;
@@ -988,9 +988,9 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       prefix: 'text'
     }
   },
-  user_secrets_module: {
+  config_secrets_user_module: {
     schema: 'metaschema_modules_public',
-    table: 'user_secrets_module',
+    table: 'config_secrets_user_module',
     fields: {
       id: 'uuid',
       database_id: 'uuid',
@@ -1410,9 +1410,9 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       sessions_table_id: 'uuid'
     }
   },
-  org_secrets_module: {
+  config_secrets_org_module: {
     schema: 'metaschema_modules_public',
-    table: 'org_secrets_module',
+    table: 'config_secrets_org_module',
     fields: {
       id: 'uuid',
       database_id: 'uuid',

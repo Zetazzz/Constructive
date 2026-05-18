@@ -42,7 +42,7 @@ export const PresetAuthEmailMagic: ModulePreset = {
     'memberships_module:app',
     'sessions_module',
     'user_state_module',
-    'user_secrets_module',
+    'config_secrets_user_module',
     'emails_module',
     'rls_module',
     'user_auth_module',

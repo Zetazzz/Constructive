@@ -65,7 +65,7 @@ describe('getGraphQLQueryName', () => {
     expect(getGraphQLQueryName('sessions_module')).toBe('sessionsModules');
     expect(getGraphQLQueryName('user_state_module')).toBe('userStateModules');
     expect(getGraphQLQueryName('profiles_module')).toBe('profilesModules');
-    expect(getGraphQLQueryName('user_secrets_module')).toBe('userSecretsModules');
+    expect(getGraphQLQueryName('config_secrets_user_module')).toBe('configSecretsUserModules');
     expect(getGraphQLQueryName('connected_accounts_module')).toBe('connectedAccountsModules');
     expect(getGraphQLQueryName('phone_numbers_module')).toBe('phoneNumbersModules');
     expect(getGraphQLQueryName('crypto_addresses_module')).toBe('cryptoAddressesModules');
