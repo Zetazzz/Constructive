@@ -5,6 +5,7 @@ import { toSnakeCase } from 'inflekt';
 import path from 'path';
 
 import { PgpmPackage, getMissingInstallableModules, parseAuthor } from '@pgpmjs/core';
+import { lookupByPgUdt } from './type-map';
 
 // =============================================================================
 // Shared constants
@@ -43,43 +44,11 @@ export const DB_REQUIRED_EXTENSIONS = [
 /**
  * Map PostgreSQL data types to FieldType values.
  * Uses udt_name from information_schema which gives the base type name.
+ * Delegates to the canonical PG_TYPE_MAP in type-map.ts.
  */
 export const mapPgTypeToFieldType = (udtName: string): FieldType => {
-  switch (udtName) {
-    case 'uuid':
-      return 'uuid';
-    case '_uuid':
-      return 'uuid[]';
-    case 'text':
-    case 'varchar':
-    case 'bpchar':
-    case 'name':
-      return 'text';
-    case '_text':
-    case '_varchar':
-      return 'text[]';
-    case 'bool':
-      return 'boolean';
-    case 'jsonb':
-    case 'json':
-      return 'jsonb';
-    case '_jsonb':
-      return 'jsonb[]';
-    case 'int4':
-    case 'int8':
-    case 'int2':
-    case 'numeric':
-    case 'float4':
-    case 'float8':
-      return 'int';
-    case 'interval':
-      return 'interval';
-    case 'timestamptz':
-    case 'timestamp':
-      return 'timestamptz';
-    default:
-      return 'text';
-  }
+  const entry = lookupByPgUdt(udtName);
+  return entry?.fieldType ?? 'text';
 };
 
 /**
@@ -225,7 +194,6 @@ export interface TableConfig {
  * Only `typeOverrides` are hardcoded for special types (image, upload, url)
  * that cannot be inferred from database/GraphQL types alone.
  * 
- * See ISSUES/export/export-dynamic-config for the full design.
  */
 export const META_TABLE_CONFIG: Record<string, TableConfig> = {
   // =============================================================================

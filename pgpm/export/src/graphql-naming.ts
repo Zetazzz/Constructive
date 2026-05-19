@@ -16,6 +16,7 @@
 import { toCamelCase, toPascalCase, toSnakeCase, distinctPluralize, singularizeLast } from 'inflekt';
 
 import { FieldType } from './export-utils';
+import { lookupByGqlType } from './type-map';
 
 /**
  * Get the GraphQL query field name for a given Postgres table name.
@@ -43,21 +44,7 @@ export const graphqlRowToPostgresRow = (
   return result;
 };
 
-/**
- * Convert a PostgreSQL interval object (from GraphQL Interval type) back to a Postgres interval string.
- * e.g. { years: 0, months: 0, days: 0, hours: 1, minutes: 30, seconds: 0 } -> '1 hour 30 minutes'
- */
-export const intervalToPostgres = (interval: Record<string, number | null> | null): string | null => {
-  if (!interval) return null;
-  const parts: string[] = [];
-  if (interval.years) parts.push(`${interval.years} year${interval.years !== 1 ? 's' : ''}`);
-  if (interval.months) parts.push(`${interval.months} mon${interval.months !== 1 ? 's' : ''}`);
-  if (interval.days) parts.push(`${interval.days} day${interval.days !== 1 ? 's' : ''}`);
-  if (interval.hours) parts.push(`${interval.hours}:${String(interval.minutes ?? 0).padStart(2, '0')}:${String(interval.seconds ?? 0).padStart(2, '0')}`);
-  else if (interval.minutes) parts.push(`00:${String(interval.minutes).padStart(2, '0')}:${String(interval.seconds ?? 0).padStart(2, '0')}`);
-  else if (interval.seconds) parts.push(`00:00:${String(interval.seconds).padStart(2, '0')}`);
-  return parts.length > 0 ? parts.join(' ') : '00:00:00';
-};
+export { intervalToPostgres } from './interval-utils';
 
 /**
  * Convert an array of Postgres field names (with optional type hints) to a GraphQL fields fragment.
@@ -125,7 +112,7 @@ export const unwrapGraphQLType = (
 
 /**
  * Map GraphQL scalar/type names to FieldType values.
- * Must stay aligned with mapPgTypeToFieldType() per the Type Mapping Alignment Table.
+ * Delegates to the canonical PG_TYPE_MAP in type-map.ts.
  */
 export const mapGraphQLTypeToFieldType = (gqlTypeName: string, isList = false): FieldType => {
   // Handle list types — map to the array variants that exist in FieldType
@@ -140,28 +127,12 @@ export const mapGraphQLTypeToFieldType = (gqlTypeName: string, isList = false): 
     }
   }
 
-  switch (gqlTypeName) {
-    case 'UUID':
-    case 'ID':
-      return 'uuid';
-    case 'String':
-      return 'text';
-    case 'Boolean':
-      return 'boolean';
-    case 'Int':
-    case 'BigInt':
-    case 'BigFloat':
-    case 'Float':
-      return 'int';
-    case 'JSON':
-      return 'jsonb';
-    case 'Interval':
-      return 'interval';
-    case 'Datetime':
-      return 'timestamptz';
-    default:
-      return 'text'; // safe fallback — matches mapPgTypeToFieldType's default
-  }
+  // ID is a GraphQL-only type (relay-style) that maps to uuid;
+  // it has no direct PG udt_name counterpart in PG_TYPE_MAP.
+  if (gqlTypeName === 'ID') return 'uuid';
+
+  const entry = lookupByGqlType(gqlTypeName);
+  return entry?.fieldType ?? 'text';
 };
 
 /**

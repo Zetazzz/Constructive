@@ -23,39 +23,18 @@ import {
   getGraphQLTypeName,
   getGraphQLQueryName
 } from '../src/graphql-naming';
+import { PG_TYPE_MAP } from '../src/type-map';
 
 // =============================================================================
 // Task 10: Type Mapping Parity Validation
 // =============================================================================
 
 describe('Type mapping parity: mapPgTypeToFieldType vs mapGraphQLTypeToFieldType', () => {
-  // This table is the contract from the Type Mapping Alignment Table in the plan.
-  // Each row maps a PostgreSQL udt_name to its PostGraphile GraphQL type name,
-  // and both mappers must produce the same FieldType.
-  const parityTable: Array<[string, string, FieldType]> = [
-    // [pgUdtName, gqlTypeName, expectedFieldType]
-    ['uuid', 'UUID', 'uuid'],
-    ['_uuid', 'UUID', 'uuid[]'],          // _uuid → array of UUID
-    ['text', 'String', 'text'],
-    ['varchar', 'String', 'text'],
-    ['bpchar', 'String', 'text'],
-    ['name', 'String', 'text'],
-    ['_text', 'String', 'text[]'],        // _text → array of String
-    ['_varchar', 'String', 'text[]'],     // _varchar → array of String
-    ['bool', 'Boolean', 'boolean'],
-    ['jsonb', 'JSON', 'jsonb'],
-    ['json', 'JSON', 'jsonb'],
-    ['_jsonb', 'JSON', 'jsonb[]'],        // _jsonb → array of JSON
-    ['int2', 'Int', 'int'],
-    ['int4', 'Int', 'int'],
-    ['int8', 'BigInt', 'int'],
-    ['numeric', 'BigFloat', 'int'],
-    ['interval', 'Interval', 'interval'],
-    ['timestamptz', 'Datetime', 'timestamptz'],
-    ['timestamp', 'Datetime', 'timestamptz'],
-    ['float4', 'Float', 'int'],
-    ['float8', 'Float', 'int'],
-  ];
+  // Derived from the canonical PG_TYPE_MAP — adding a type there
+  // automatically updates both mappers and this test.
+  const parityTable: Array<[string, string, FieldType]> = PG_TYPE_MAP.flatMap(entry =>
+    entry.pgUdtNames.map(pgUdt => [pgUdt, entry.gqlTypeName, entry.fieldType] as [string, string, FieldType])
+  );
 
   for (const [pgUdtName, gqlTypeName, expectedFieldType] of parityTable) {
     const isPgArray = pgUdtName.startsWith('_');

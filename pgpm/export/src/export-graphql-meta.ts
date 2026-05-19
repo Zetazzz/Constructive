@@ -18,6 +18,7 @@ import {
   intervalToPostgres,
   mapGraphQLTypeToFieldType
 } from './graphql-naming';
+import { lookupByGqlType } from './type-map';
 
 export interface ExportGraphQLMetaParams {
   /** GraphQL client configured for the meta/services API endpoint */
@@ -71,11 +72,12 @@ const buildDynamicFieldsFromGraphQL = async (
       }
       // Skip non-scalar fields (relations/computed columns like "database" of type Database)
       // Only SCALAR and ENUM kinds can be selected without sub-field selections
-      // EXCEPTION: Interval is an OBJECT type in PostGraphile v5 but we handle it specially
-      // via buildFieldsFragment sub-selections and intervalToPostgres conversion
+      // EXCEPTION: types registered as non-SCALAR in PG_TYPE_MAP (e.g. Interval=OBJECT)
+      // are handled via buildFieldsFragment sub-selections and intervalToPostgres conversion
       if (typeInfo.kind !== 'SCALAR' && typeInfo.kind !== 'ENUM') {
-        if (typeInfo.typeName === 'Interval' && typeInfo.kind === 'OBJECT') {
-          dynamicFields[snakeName] = 'interval';
+        const mapEntry = lookupByGqlType(typeInfo.typeName);
+        if (mapEntry && mapEntry.gqlKind !== 'SCALAR') {
+          dynamicFields[snakeName] = mapEntry.fieldType;
           continue;
         }
         continue;

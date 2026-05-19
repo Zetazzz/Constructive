@@ -3,7 +3,7 @@ export * from './export-migrations';
 export * from './export-graphql';
 export * from './export-graphql-meta';
 export { GraphQLClient } from './graphql-client';
-export { getGraphQLQueryName, getGraphQLTypeName, graphqlRowToPostgresRow, buildFieldsFragment, intervalToPostgres, mapGraphQLTypeToFieldType, unwrapGraphQLType, GraphQLTypeInfo } from './graphql-naming';
+export { getGraphQLQueryName, getGraphQLTypeName, graphqlRowToPostgresRow, buildFieldsFragment, mapGraphQLTypeToFieldType, unwrapGraphQLType, GraphQLTypeInfo } from './graphql-naming';
 export {
   DB_REQUIRED_EXTENSIONS,
   SERVICE_REQUIRED_EXTENSIONS,
@@ -27,3 +27,5 @@ export type {
   PreparePackageOptions,
   MissingModulesResult
 } from './export-utils';
+export { PG_TYPE_MAP, TypeMapEntry, lookupByPgUdt, lookupByGqlType } from './type-map';
+export { intervalToPostgres, parsePgInterval, PgInterval } from './interval-utils';

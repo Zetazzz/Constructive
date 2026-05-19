@@ -22,6 +22,7 @@ import { exportGraphQLMeta } from '../src/export-graphql-meta';
 import { GraphQLClient } from '../src/graphql-client';
 import { META_TABLE_CONFIG, FieldType } from '../src/export-utils';
 import { getGraphQLQueryName, getGraphQLTypeName, GraphQLTypeInfo } from '../src/graphql-naming';
+import { lookupByPgUdt } from '../src/type-map';
 
 jest.setTimeout(60000);
 
@@ -114,9 +115,10 @@ function createMockGraphQLClient(pgClient: PgTestClient): GraphQLClient {
           continue;
         }
 
-        // Map PostgreSQL udt_name to GraphQL type info
-        const gqlTypeName = pgUdtToGraphQLType(baseUdt);
-        const gqlKind = pgUdtToGraphQLKind(baseUdt);
+        // Map PostgreSQL udt_name to GraphQL type info via canonical type map
+        const entry = lookupByPgUdt(baseUdt);
+        const gqlTypeName = entry?.gqlTypeName ?? 'String';
+        const gqlKind = entry?.gqlKind ?? 'SCALAR';
         fields.set(camelName, { typeName: gqlTypeName, kind: gqlKind, list: isList, nonNull: false });
       }
       return fields;
@@ -251,48 +253,6 @@ function createMockGraphQLClient(pgClient: PgTestClient): GraphQLClient {
 }
 
 /**
- * Map PostgreSQL udt_name to the GraphQL type name that PostGraphile would expose.
- * Must stay aligned with mapPgTypeToFieldType and mapGraphQLTypeToFieldType.
- */
-function pgUdtToGraphQLType(udtName: string): string {
-  if (udtName.startsWith('_')) {
-    // Array type — map the inner type
-    return pgUdtToGraphQLType(udtName.slice(1));
-  }
-  switch (udtName) {
-    case 'uuid': return 'UUID';
-    case 'text':
-    case 'varchar':
-    case 'bpchar':
-    case 'name': return 'String';
-    case 'bool': return 'Boolean';
-    case 'jsonb':
-    case 'json': return 'JSON';
-    case 'int2':
-    case 'int4': return 'Int';
-    case 'int8': return 'BigInt';
-    case 'numeric': return 'BigFloat';
-    case 'float4':
-    case 'float8': return 'Float';
-    case 'interval': return 'Interval';
-    case 'timestamptz':
-    case 'timestamp': return 'Datetime';
-    default: return 'String'; // safe fallback
-  }
-}
-
-/**
- * Map PostgreSQL udt_name to the GraphQL kind that PostGraphile would report.
- * Most types are SCALAR, but Interval is registered as OBJECT in PostGraphile v5.
- */
-function pgUdtToGraphQLKind(udtName: string): string {
-  switch (udtName) {
-    case 'interval': return 'OBJECT';
-    default: return 'SCALAR';
-  }
-}
-
-/**
  * Parse a PostgreSQL interval string into the object shape that PostGraphile's
  * Interval type returns: { years, months, days, hours, minutes, seconds }.
  * This simulates what the real PostGraphile server does.
@@ -300,6 +260,10 @@ function pgUdtToGraphQLKind(udtName: string): string {
  * Handles formats like:
  *   '30 days' → { years: 0, months: 0, days: 30, hours: 0, minutes: 0, seconds: 0 }
  *   '01:30:00' → { years: 0, months: 0, days: 0, hours: 1, minutes: 30, seconds: 0 }
+ *
+ * NOTE: Also available from @pgpmjs/export as parsePgInterval (interval-utils.ts).
+ * Kept inline here to avoid importing src code that depends on build output
+ * in this integration test.
  */
 function parsePgInterval(value: string): Record<string, number> {
   const result = { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
