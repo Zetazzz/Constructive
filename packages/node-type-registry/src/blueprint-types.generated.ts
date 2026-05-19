@@ -37,6 +37,23 @@ export interface TriggerCondition {
 }
 /**
  * ===========================================================================
+ * Billing node type parameters
+ * ===========================================================================
+ */
+;
+/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
+export interface BillingMeterParams {
+  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
+  meter_slug: string;
+  /* Column on the target table that holds the entity id for billing */
+  entity_field?: string;
+  /* Units to record per event (default 1) */
+  quantity?: number;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/**
+ * ===========================================================================
  * Check node type parameters
  * ===========================================================================
  */
@@ -199,9 +216,9 @@ export interface DataPeoplestampsParams {
 /** Adds publish state columns (is_published, published_at) for content visibility. Enables AuthzPublishable and AuthzTemporal authorization. */
 export interface DataPublishableParams {
   /* Column name for the published boolean flag */
-  is_published_field_name?: string;
+  is_published_field?: string;
   /* Column name for the publish timestamp */
-  published_at_field_name?: string;
+  published_at_field?: string;
   /* If true, also adds a UUID primary key column with auto-generation */
   include_id?: boolean;
 }
@@ -265,6 +282,41 @@ export type TableOrganizationSettingsParams = {};
 export type TableUserProfilesParams = {};
 /** Creates a user settings table for user-specific configuration. Uses AuthzDirectOwner for access control. */
 export type TableUserSettingsParams = {};
+/**
+ * ===========================================================================
+ * Limit node type parameters
+ * ===========================================================================
+ */
+;
+/** Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database. */
+export interface LimitAggregateParams {
+  /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
+  limit_name: string;
+  /* Column on the target table that holds the entity id for aggregate limit lookup */
+  entity_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
+export interface LimitFeatureFlagParams {
+  /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
+  feature_name: string;
+  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
+  entity_field?: string;
+}
+/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
+export interface LimitCounterParams {
+  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
+  limit_name: string;
+  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
+  scope?: 'app' | 'org';
+  /* Column on the target table that holds the actor or entity id used for limit lookup */
+  actor_field?: string;
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
 /**
  * ===========================================================================
  * Search node type parameters
@@ -367,8 +419,6 @@ export interface SearchUnifiedParams {
     index_method?: 'hnsw' | 'ivfflat';
     metric?: 'cosine' | 'l2' | 'ip';
     source_fields?: string[];
-    /* Embedding model identifier. When null, the worker falls back to runtime config. */embedding_model?: string;
-    /* Embedding provider name. When null, the worker falls back to runtime config. */embedding_provider?: string;
     search_score_weight?: number;
     /* Chunking configuration for long-text embedding. Creates an embedding_chunks record that drives automatic text splitting and per-chunk embedding. Omit to skip chunking. */chunks?: {
       /* Name of the text content column in the chunks table */content_field_name?: string;
@@ -415,10 +465,6 @@ export interface SearchVectorParams {
   };
   /* Column names that feed the embedding. Used by stale trigger to detect content changes. */
   source_fields?: string[];
-  /* Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small"). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config (llm_module / env vars). */
-  embedding_model?: string;
-  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
-  embedding_provider?: string;
   /* Auto-create trigger that enqueues embedding generation jobs */
   enqueue_job?: boolean;
   /* Task identifier for the job queue */
@@ -499,16 +545,10 @@ export interface ProcessChunksParams {
   dimensions?: number;
   /* Distance metric for the HNSW index on chunk embeddings */
   metric?: 'cosine' | 'l2' | 'ip';
-  /* Embedding model identifier for per-chunk embeddings. When null, the worker falls back to runtime config (llm_module / env vars). */
-  embedding_model?: string;
-  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
-  embedding_provider?: string;
   /* Override the chunks table name. Defaults to {parent_table}_chunks. */
   chunks_table_name?: string;
   /* Field names from the parent table to copy into chunk metadata */
   metadata_fields?: string[];
-  /* Text search indexes to create on the chunks content column. Omit to mirror the parent table's text search indexes. Set explicitly to override (e.g. ["fulltext", "bm25"]). */
-  search_indexes?: ('fulltext' | 'bm25' | 'trigram')[];
   /* Whether to create a job trigger that auto-enqueues chunking on parent INSERT/UPDATE */
   enqueue_chunking_job?: boolean;
   /* Task identifier for the chunking job queue */
@@ -528,10 +568,6 @@ export interface ProcessFileEmbeddingParams {
   index_options?: {
     [key: string]: unknown;
   };
-  /* Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small", "clip-vit-base-patch32"). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config (llm_module / env vars). */
-  embedding_model?: string;
-  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
-  embedding_provider?: string;
   /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['image/%'], ['application/pdf', 'text/%'], ['audio/%']. */
   mime_patterns?: string[];
   /* Job task identifier for the worker. In direct mode this is the embedding worker; in extract mode this is the extraction worker. */
@@ -542,7 +578,7 @@ export interface ProcessFileEmbeddingParams {
   payload_custom?: {
     [key: string]: unknown;
   };
-  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks, field guards, etc. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
   /* Text extraction configuration. When present, the generator creates extraction output fields on the table and configures SearchVector with source_fields + stale tracking. When absent, the node operates in direct mode (single vector per file, no text extraction). */
   extraction?: {
@@ -558,7 +594,6 @@ export interface ProcessFileEmbeddingParams {
     /* Number of overlapping characters between consecutive chunks */chunk_overlap?: number;
     /* Strategy for splitting text into chunks */chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
     /* Field names from parent to copy into chunk metadata */metadata_fields?: string[];
-    /* Text search indexes to create on the chunks content column. Omit to mirror the parent table's text search indexes. Set explicitly to override. */search_indexes?: ('fulltext' | 'bm25' | 'trigram')[];
     /* Whether to auto-enqueue a chunking job on insert/update */enqueue_chunking_job?: boolean;
     /* Task identifier for the chunking job queue */chunking_task_name?: string;
   };
@@ -577,10 +612,6 @@ export interface ProcessImageEmbeddingParams {
   index_options?: {
     [key: string]: unknown;
   };
-  /* Embedding model identifier (e.g. "clip-vit-base-patch32"). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config (llm_module / env vars). */
-  embedding_model?: string;
-  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
-  embedding_provider?: string;
   /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. */
   mime_patterns?: string[];
   /* Job task identifier for the image embedding worker */
@@ -591,7 +622,7 @@ export interface ProcessImageEmbeddingParams {
   payload_custom?: {
     [key: string]: unknown;
   };
-  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
   /* Text extraction configuration. Forwarded to ProcessFileEmbedding. When present, enables extract mode (e.g., OCR for images). */
   extraction?: {
@@ -617,10 +648,6 @@ export interface ProcessExtractionParams {
   text_field?: string;
   /* JSONB field for extraction metadata (page count, language, etc.) */
   metadata_field?: string;
-  /* Extraction model identifier (e.g. a vision model for OCR, an LLM for structured extraction). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config. */
-  extraction_model?: string;
-  /* Extraction provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
-  extraction_provider?: string;
   /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['application/pdf', 'text/%'], ['application/vnd.openxmlformats%']. */
   mime_patterns?: string[];
   /* Job task identifier for the extraction worker */
@@ -631,7 +658,7 @@ export interface ProcessExtractionParams {
   payload_custom?: {
     [key: string]: unknown;
   };
-  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks (e.g., status = 'uploaded'). */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
   /* Job queue name for extraction tasks */
   queue_name?: string;
@@ -661,7 +688,7 @@ export interface ProcessImageVersionsParams {
   payload_custom?: {
     [key: string]: unknown;
   };
-  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
+  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
   /* Job queue name for image processing tasks */
   queue_name?: string;
@@ -1275,6 +1302,7 @@ export interface BlueprintEntityType {
   has_profiles?: boolean;
   /** Whether to provision a levels module for this entity type. Defaults to false. */
   has_levels?: boolean;
+
   /** Whether to provision entity-scoped invite tables ({prefix}_invites, {prefix}_claimed_invites) and a submit_{prefix}_invite_code() function. Defaults to false. */
   has_invites?: boolean;
   /** Whether to auto-attach an EventTracker to the claimed_invites table for invite-based achievements. Requires has_invites=true AND has_levels=true. When true, records 'invite_claimed' events credited to the sender (inviter) on each claimed invite. Defaults to false. */
@@ -1283,7 +1311,7 @@ export interface BlueprintEntityType {
   skip_entity_policies?: boolean;
   /** Override for the entity table. Shape mirrors BlueprintTable / secure_table_provision vocabulary. When supplied, its policies[] replaces the five default entity-table policies; is_visible becomes a no-op. When NULL (default), the five default policies are applied (gated by is_visible). */
   table_provision?: BlueprintEntityTableProvision;
-  /** Storage module configuration array. Each entry provisions a separate storage module with its own tables, RLS, and settings. When non-empty, has_storage is derived as true. Each entry may specify a storage_key for multi-module support (defaults to "default"). */
+  /** Storage configuration (array-only). A non-empty array enables storage provisioning. Each entry creates a separate storage module with its own tables ({prefix}_{storage_key}_buckets/files). Controls RLS policies, bucket seeding, and module-level settings. */
   storage?: BlueprintStorageConfig[];
 }
 /**
@@ -1293,7 +1321,7 @@ export interface BlueprintEntityType {
  */
 ;
 /** String shorthand -- just the node type name. */
-export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'LimitEnforceAggregate' | 'LimitTrackUsage' | 'DataBulk' | 'ProcessChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'EventReferral' | 'EventTracker' | 'ProcessFileEmbedding' | 'LimitEnforceFeature' | 'DataForceCurrentUser' | 'DataId' | 'ProcessImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'JobTrigger' | 'LimitEnforceCounter' | 'LimitEnforceRate' | 'LimitWarningCounter' | 'LimitWarningAggregate' | 'LimitWarningRate' | 'DataJsonb' | 'DataOwnedFields' | 'ProcessExtraction' | 'ProcessImageVersions' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
+export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'LimitAggregate' | 'BillingMeter' | 'DataBulk' | 'ProcessChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'ProcessFileEmbedding' | 'LimitFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'ProcessImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'JobTrigger' | 'LimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'ProcessExtraction' | 'ProcessImageVersions' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
 /** Object form -- { $type, data } with typed parameters. */
 export type BlueprintNodeObject = {
   $type: 'AuthzAllowAll';
@@ -1359,11 +1387,11 @@ export type BlueprintNodeObject = {
   $type: 'CheckOneOf';
   data: CheckOneOfParams;
 } | {
-  $type: 'LimitEnforceAggregate';
-  data: LimitEnforceAggregateParams;
+  $type: 'LimitAggregate';
+  data: LimitAggregateParams;
 } | {
-  $type: 'LimitTrackUsage';
-  data: LimitTrackUsageParams;
+  $type: 'BillingMeter';
+  data: BillingMeterParams;
 } | {
   $type: 'DataBulk';
   data: DataBulkParams;
@@ -1380,17 +1408,11 @@ export type BlueprintNodeObject = {
   $type: 'DataEntityMembership';
   data: DataEntityMembershipParams;
 } | {
-  $type: 'EventReferral';
-  data: EventReferralParams;
-} | {
-  $type: 'EventTracker';
-  data: EventTrackerParams;
-} | {
   $type: 'ProcessFileEmbedding';
   data: ProcessFileEmbeddingParams;
 } | {
-  $type: 'LimitEnforceFeature';
-  data: LimitEnforceFeatureParams;
+  $type: 'LimitFeatureFlag';
+  data: LimitFeatureFlagParams;
 } | {
   $type: 'DataForceCurrentUser';
   data: DataForceCurrentUserParams;
@@ -1413,20 +1435,8 @@ export type BlueprintNodeObject = {
   $type: 'JobTrigger';
   data: JobTriggerParams;
 } | {
-  $type: 'LimitEnforceCounter';
-  data: LimitEnforceCounterParams;
-} | {
-  $type: 'LimitEnforceRate';
-  data: LimitEnforceRateParams;
-} | {
-  $type: 'LimitWarningCounter';
-  data: LimitWarningCounterParams;
-} | {
-  $type: 'LimitWarningAggregate';
-  data: LimitWarningAggregateParams;
-} | {
-  $type: 'LimitWarningRate';
-  data: LimitWarningRateParams;
+  $type: 'LimitCounter';
+  data: LimitCounterParams;
 } | {
   $type: 'DataJsonb';
   data: DataJsonbParams;
@@ -1585,7 +1595,7 @@ export interface BlueprintDefinition {
   unique_constraints?: BlueprintUniqueConstraint[];
   /** Entity types to provision in Phase 0 (before tables). Each entry creates an entity table with membership modules and security. */
   entity_types?: BlueprintEntityType[];
-  /** App-level storage configuration array. Each entry creates a storage_module (membership_type = NULL) with its own tables and settings. For entity-scoped storage, use entity_types[].storage instead. */
+  /** App-level storage configuration (array-only). Creates storage_module(s) (membership_type = NULL), seeds initial buckets, and overrides module-level settings. Each entry creates a separate storage module. For entity-scoped storage, use entity_types[].storage instead. */
   storage?: BlueprintStorageConfig[];
   /** Achievement definitions. Each entry creates a level with requirements and optional rewards in the events_module. Requires events_module to be provisioned (e.g., via entity_types[].has_levels = true or modules includes events_module). */
   achievements?: BlueprintAchievement[];
