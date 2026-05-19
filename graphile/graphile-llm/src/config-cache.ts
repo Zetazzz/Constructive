@@ -44,11 +44,23 @@ export interface BillingConfig {
 }
 
 /**
+ * Inference log table metadata resolved from the inference_log_module.
+ */
+export interface InferenceLogConfig {
+  /** Schema containing the usage_log_inference table */
+  schema: string;
+  /** Name of the inference log table */
+  tableName: string;
+}
+
+/**
  * Per-database cached configuration for the LLM billing integration.
  */
 export interface LlmBillingCacheEntry {
   /** Billing function references (null if billing_module not provisioned) */
   billing: BillingConfig | null;
+  /** Inference log table references (null if inference_log_module not provisioned) */
+  inferenceLog: InferenceLogConfig | null;
 }
 
 // ─── SQL Queries ────────────────────────────────────────────────────────────
@@ -71,6 +83,18 @@ const BILLING_MODULE_SQL = `
   LIMIT 1
 `;
 
+/**
+ * Resolve the inference log module's schema and table name.
+ */
+const INFERENCE_LOG_MODULE_SQL = `
+  SELECT
+    s.schema_name AS schema,
+    ilm.inference_log_table_name AS table_name
+  FROM metaschema_modules_public.inference_log_module ilm
+  JOIN metaschema_public.schema s ON ilm.schema_id = s.id
+  WHERE ilm.database_id = $1
+  LIMIT 1
+`;
 // ─── Cache ──────────────────────────────────────────────────────────────────
 
 const billingCache = new ModuleConfigCache<LlmBillingCacheEntry>({
@@ -88,6 +112,27 @@ const billingCache = new ModuleConfigCache<LlmBillingCacheEntry>({
 const SCHEMA_EXISTS_SQL = `
   SELECT 1 FROM information_schema.schemata WHERE schema_name = $1 LIMIT 1
 `;
+
+async function resolveInferenceLogConfig(
+  pgClient: PgClient,
+  databaseId: string,
+): Promise<InferenceLogConfig | null> {
+  try {
+    const schemaCheck = await pgClient.query(SCHEMA_EXISTS_SQL, ['metaschema_modules_public']);
+    if (schemaCheck.rows.length === 0) return null;
+
+    const result = await pgClient.query(INFERENCE_LOG_MODULE_SQL, [databaseId]);
+    const row = result.rows[0];
+    if (!row?.schema || !row?.table_name) return null;
+
+    return {
+      schema: row.schema as string,
+      tableName: row.table_name as string,
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function resolveBillingConfig(
   pgClient: PgClient,
@@ -133,9 +178,12 @@ export async function getLlmBillingConfig(
   const cached = billingCache.get(databaseId);
   if (cached) return cached;
 
-  const billing = await resolveBillingConfig(pgClient, databaseId);
+  const [billing, inferenceLog] = await Promise.all([
+    resolveBillingConfig(pgClient, databaseId),
+    resolveInferenceLogConfig(pgClient, databaseId),
+  ]);
 
-  const entry: LlmBillingCacheEntry = { billing };
+  const entry: LlmBillingCacheEntry = { billing, inferenceLog };
   billingCache.set(databaseId, entry);
   return entry;
 }

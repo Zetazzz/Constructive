@@ -67,16 +67,19 @@ async function buildMeteringContext(
   const entityId = resolveEntityId(pgSettings);
   const databaseId = pgSettings['jwt.claims.database_id'] ?? null;
   const requestId = pgSettings['request.id'] ?? null;
+  const actorId = pgSettings['jwt.claims.user_id'] ?? null;
   if (!entityId || !databaseId) return null;
 
   const withPgClient: WithPgClient | undefined = graphqlContext?.withPgClient;
   if (!withPgClient) return null;
 
   let billingConfig = null;
+  let inferenceLogConfig = null;
   try {
     await withPgClient(pgSettings, async (pgClient: PgClient) => {
       const entry = await getLlmBillingConfig(pgClient, databaseId);
       billingConfig = entry.billing;
+      inferenceLogConfig = entry.inferenceLog;
     });
   } catch {
     return null;
@@ -90,6 +93,9 @@ async function buildMeteringContext(
     billing: billingConfig,
     entityId,
     requestId,
+    databaseId,
+    actorId,
+    inferenceLog: inferenceLogConfig,
   };
 }
 
@@ -173,6 +179,8 @@ export function createLlmMeteringPlugin(
             embeddingMeterSlug: embeddingSlug,
             chatMeterSlug: chatSlug,
             skipMetering,
+            embeddingModel: embeddingModel ?? undefined,
+            chatModel: chatModel ?? undefined,
           };
 
           // Replace the embedder with a metered version.
