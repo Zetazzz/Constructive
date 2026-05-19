@@ -20,7 +20,9 @@ export const PGPM_MODULE_MAP: Record<string, string> = {
   'pgpm-totp': '@pgpm/totp',
   'pgpm-types': '@pgpm/types',
   'pgpm-utils': '@pgpm/utils',
-  'pgpm-ltree-helpers': '@pgpm/ltree-helpers'
+  'pgpm-ltree-helpers': '@pgpm/ltree-helpers',
+  'pgpm-uuid': '@pgpm/uuid',
+  'pgpm-partman': '@pgpm/partman'
 };
 
 /**
