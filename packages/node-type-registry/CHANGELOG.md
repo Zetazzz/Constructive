@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.37.0...node-type-registry@0.38.0) (2026-05-19)
+
+### Bug Fixes
+
+- regenerate blueprint types from main base — storage changes only ([bfbcc36](https://github.com/constructive-io/constructive/commit/bfbcc36a78bfde4938fdbec792af882f6ed82bf5))
+
+### Features
+
+- add EventReferral node type definition ([433cace](https://github.com/constructive-io/constructive/commit/433cace84fc8d5ead1b4ef4f6ad33b8d0195fb9f)), closes [#877](https://github.com/constructive-io/constructive/issues/877)
+- rename secrets_module to user_state_module and encrypted_secrets_module to user_secrets_module in presets and export pipeline ([2bb18f8](https://github.com/constructive-io/constructive/commit/2bb18f8c3c519bbe3df1e665dce32b9be64eab70))
+- rename user_secrets_module/org_secrets_module to config_secrets_user_module/config_secrets_org_module ([4228cf8](https://github.com/constructive-io/constructive/commit/4228cf8f05e5fcefc8fd5a6a221a5cc098e71b76))
+- update blueprint types for array-only multi-module storage ([f3ded0f](https://github.com/constructive-io/constructive/commit/f3ded0f41a7c2ba2d70ba08b34e86a3f08bfd38c))
+
 # [0.37.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.36.0...node-type-registry@0.37.0) (2026-05-17)
 
 ### Bug Fixes
