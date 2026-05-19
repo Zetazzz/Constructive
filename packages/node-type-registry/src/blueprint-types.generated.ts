@@ -1207,8 +1207,10 @@ export interface BlueprintBucketSeed {
   /** CORS allowed origins for this bucket. */
   allowed_origins?: string[];
 }
-/** Storage configuration for an entity type. Seeds initial buckets, overrides module-level settings (expiry times, file size limits, CORS), and provides per-table provisioning overrides via provisions. */
+/** Storage configuration with optional scope. When used at the top level of a blueprint, the scope field controls whether storage is app-level ("app", default) or org-level ("org"). Seeds initial buckets, overrides module-level settings (expiry times, file size limits, CORS), and provides per-table provisioning overrides via provisions. */
 export interface BlueprintStorageConfig {
+  /** Storage scope. "app" (default) creates app-level storage (no owner_id). "org" creates per-org/user storage (owner_id = org entity id, buckets seeded per-entity via AFTER INSERT trigger). Only "app" and "org" are allowed — child entity types get storage via entity_types[].storage. */
+  scope?: 'app' | 'org';
   /** Discriminator for multi-module storage. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{storage_key}_buckets. Max 16 chars, lowercase snake_case. */
   storage_key?: string;
   /** Initial bucket seed entries. Each creates a row in {prefix}_buckets during provisioning. */
@@ -1595,7 +1597,7 @@ export interface BlueprintDefinition {
   unique_constraints?: BlueprintUniqueConstraint[];
   /** Entity types to provision in Phase 0 (before tables). Each entry creates an entity table with membership modules and security. */
   entity_types?: BlueprintEntityType[];
-  /** App-level storage configuration (array-only). Creates storage_module(s) (membership_type = NULL), seeds initial buckets, and overrides module-level settings. Each entry creates a separate storage module. For entity-scoped storage, use entity_types[].storage instead. */
+  /** Top-level storage configuration array. Each entry has an optional scope ("app" or "org"). App-scoped (default) creates storage_module with membership_type = NULL. Org-scoped creates per-org/user storage with owner_id and AFTER INSERT bucket seeding. When infra is installed, a private "functions" bucket is auto-injected into org-scoped entries. For child entity type storage, use entity_types[].storage instead. */
   storage?: BlueprintStorageConfig[];
   /** Achievement definitions. Each entry creates a level with requirements and optional rewards in the events_module. Requires events_module to be provisioned (e.g., via entity_types[].has_levels = true or modules includes events_module). */
   achievements?: BlueprintAchievement[];

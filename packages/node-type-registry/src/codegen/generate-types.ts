@@ -788,6 +788,16 @@ function buildBlueprintStorageConfig(): t.ExportNamedDeclaration {
   return addJSDoc(
     exportInterface('BlueprintStorageConfig', [
       addJSDoc(
+        optionalProp(
+          'scope',
+          t.tsUnionType([
+            t.tsLiteralType(t.stringLiteral('app')),
+            t.tsLiteralType(t.stringLiteral('org'))
+          ])
+        ),
+        'Storage scope. "app" (default) creates app-level storage (no owner_id). "org" creates per-org/user storage (owner_id = org entity id, buckets seeded per-entity via AFTER INSERT trigger). Only "app" and "org" are allowed — child entity types get storage via entity_types[].storage.'
+      ),
+      addJSDoc(
         optionalProp('storage_key', t.tsStringKeyword()),
         'Discriminator for multi-module storage. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{storage_key}_buckets. Max 16 chars, lowercase snake_case.'
       ),
@@ -844,7 +854,7 @@ function buildBlueprintStorageConfig(): t.ExportNamedDeclaration {
         'Per-table overrides for storage tables. Each key targets a specific storage table (files, buckets) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision targeting the corresponding table. When a key includes policies[], those REPLACE the default storage policies for that table; tables without a key still get defaults.'
       )
     ]),
-    'Storage configuration for an entity type. Seeds initial buckets, overrides module-level settings (expiry times, file size limits, CORS), and provides per-table provisioning overrides via provisions.'
+    'Storage configuration with optional scope. When used at the top level of a blueprint, the scope field controls whether storage is app-level (\"app\", default) or org-level (\"org\"). Seeds initial buckets, overrides module-level settings (expiry times, file size limits, CORS), and provides per-table provisioning overrides via provisions.'
   );
 }
 
@@ -1194,7 +1204,7 @@ function buildBlueprintDefinition(): t.ExportNamedDeclaration {
             t.tsTypeReference(t.identifier('BlueprintStorageConfig'))
           )
         ),
-        'App-level storage configuration array. Each entry creates a storage_module (membership_type = NULL) with its own tables and settings. For entity-scoped storage, use entity_types[].storage instead.'
+        'Top-level storage configuration array. Each entry has an optional scope ("app" or "org"). App-scoped (default) creates storage_module with membership_type = NULL. Org-scoped creates per-org/user storage with owner_id and AFTER INSERT bucket seeding. When infra is installed, a private "functions" bucket is auto-injected into org-scoped entries. For child entity type storage, use entity_types[].storage instead.'
       ),
       addJSDoc(
         optionalProp(
