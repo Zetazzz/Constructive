@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.38.0...node-type-registry@0.39.0) (2026-05-20)
+
+### Features
+
+- add scope field to BlueprintStorageConfig — 'app' or 'org' only ([b00e134](https://github.com/constructive-io/constructive/commit/b00e134a2176dc5f8e08b056bffc12c555f3efc8))
+- make name optional on BlueprintEntityType for extend path ([ff59f11](https://github.com/constructive-io/constructive/commit/ff59f11f6b5184d3d48f01a919657adbf9ad16e4)), closes [constructive-db#1250](https://github.com/constructive-db/issues/1250)
+
 # [0.38.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.37.0...node-type-registry@0.38.0) (2026-05-19)
 
 ### Bug Fixes
