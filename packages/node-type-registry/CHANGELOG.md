@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.40.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.39.0...node-type-registry@0.40.0) (2026-05-20)
+
+### Features
+
+- **node-type-registry:** add max_depth parameter to EventReferral ([e4305c5](https://github.com/constructive-io/constructive/commit/e4305c5ec6e27d1fd473cb0bb24fe1d3b257faf7)), closes [constructive-io/constructive-planning#904](https://github.com/constructive-io/constructive-planning/issues/904)
+
 # [0.39.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.38.0...node-type-registry@0.39.0) (2026-05-20)
 
 ### Features
