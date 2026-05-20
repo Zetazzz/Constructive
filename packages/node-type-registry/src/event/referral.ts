@@ -44,6 +44,17 @@ export const EventReferral: NodeTypeDefinition = {
         format: 'column-ref',
         description: 'Column containing the entity ID (org/group) for entity-scoped referral events. Omit for user-only events.'
       },
+      max_depth: {
+        type: 'integer',
+        description:
+          'Maximum depth to walk up the invite chain. ' +
+          'Default 1 (direct inviter only). Set 2–10 to enable ' +
+          'multi-level referral rewards. App-level only — must not ' +
+          'be combined with entity_field.',
+        default: 1,
+        minimum: 1,
+        maximum: 10,
+      },
       auto_register_type: {
         type: 'boolean',
         description: 'Automatically register the event_name in event_types during provisioning',
