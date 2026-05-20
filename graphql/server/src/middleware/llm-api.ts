@@ -1,7 +1,7 @@
 /**
  * LLM API Router
  *
- * Express router providing a REST streaming endpoint for AI agent conversations.
+ * Express router providing REST streaming endpoints for AI agent conversations.
  * Uses the agent tables (agent_thread, agent_message) discovered from the
  * agent_chat_module config table at runtime.
  *
@@ -9,12 +9,16 @@
  *   - GraphQL handles CRUD (threads, messages, tasks) via PostGraphile
  *   - REST handles SSE streaming for chat completions (what GraphQL can't do)
  *
- * Routes:
- *   POST /orgs/:entity_id/threads                    → create thread
- *   POST /orgs/:entity_id/threads/:thread_id/messages → send message + stream response
+ * Routes (entity-scoped):
+ *   POST /v1/orgs/:entity_id/threads                    → create thread
+ *   POST /v1/orgs/:entity_id/threads/:thread_id/messages → send message + stream response
+ *
+ * Routes (global — bills to actor_id from JWT):
+ *   POST /v1/threads                    → create thread (entity_id = user_id)
+ *   POST /v1/threads/:thread_id/messages → send message + stream response
  *
  * Auth: JWT from the auth middleware (req.token) → pg SET LOCAL context for RLS
- * Metering: TODO v2 — integrate with meteredChat
+ * Metering: check_billing_quota → LLM call → record_usage with real token counts
  */
 
 import express, { Router, Request, Response } from 'express';
@@ -22,7 +26,12 @@ import { Logger } from '@pgpmjs/logger';
 import { Pool } from 'pg';
 import { getPgPool } from 'pg-cache';
 import OllamaClient from '@agentic-kit/ollama';
-import { getLlmEnvOptions, getAgentDiscovery } from 'graphile-llm';
+import {
+  getLlmEnvOptions,
+  getAgentDiscovery,
+  getLlmBillingConfig,
+} from 'graphile-llm';
+import type { AgentDiscovery, BillingConfig } from 'graphile-llm';
 
 const log = new Logger('llm-api');
 
@@ -55,6 +64,55 @@ interface SendMessageBody {
   model?: string;
   temperature?: number;
   stream?: boolean;
+}
+
+interface TokenUsageJson {
+  input: number;
+  output: number;
+  totalTokens: number;
+  model: string;
+  latency_ms: number;
+}
+
+/**
+ * Estimate token count from text length (~4 chars per token for English).
+ * Used as fallback when the provider doesn't return actual counts.
+ */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/**
+ * Call generateWithUsage if available (>=1.3.0), otherwise fall back
+ * to generate() + estimate tokens from text length.
+ */
+async function callWithUsage(
+  client: OllamaClient,
+  input: { model: string; messages: any; stream?: boolean; temperature?: number },
+  onChunk?: (chunk: string) => void,
+): Promise<{ content: string; usage: { input: number; output: number; totalTokens: number }; estimated?: boolean }> {
+  // Runtime check for generateWithUsage (available in @agentic-kit/ollama >=1.3.0)
+  if ('generateWithUsage' in client && typeof (client as any).generateWithUsage === 'function') {
+    const result = await (client as any).generateWithUsage(input, onChunk);
+    return { content: result.content, usage: result.usage };
+  }
+
+  // Fallback: use generate() + estimate tokens
+  const promptText = input.messages.map((m: any) => m.content).join(' ');
+  let content: string;
+  if (onChunk || input.stream) {
+    await client.generate(input, onChunk!);
+    content = '';
+  } else {
+    content = await client.generate(input);
+  }
+
+  const inputTokens = estimateTokens(promptText);
+  const outputTokens = estimateTokens(content);
+  return {
+    content,
+    usage: { input: inputTokens, output: outputTokens, totalTokens: inputTokens + outputTokens },
+  };
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -108,287 +166,475 @@ function resolveOllamaClient(): { client: OllamaClient; model: string } | null {
   return null;
 }
 
-// ─── Router Factory ─────────────────────────────────────────────────────────
+// ─── Billing Helpers ────────────────────────────────────────────────────────
 
-/**
- * Creates the LLM API router.
- * Agent table discovery queries the agent_chat_module config table.
- */
-export function createLlmApiRouter(): Router {
-  const router = Router();
+async function checkQuota(
+  pool: Pool,
+  pgSettings: Record<string, string>,
+  billing: BillingConfig,
+  entityId: string,
+  meterSlug: string,
+): Promise<boolean> {
+  try {
+    return await withRlsClient(pool, pgSettings, async (client) => {
+      const sql = `SELECT "${billing.privateSchema}"."${billing.checkBillingQuotaFunction}"($1, $2::uuid, $3) AS allowed`;
+      const result = await client.query(sql, [meterSlug, entityId, 1]);
+      return result.rows[0]?.allowed !== false;
+    });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    log.warn(`[llm-api] check_billing_quota failed (allowing): ${message}`);
+    return true;
+  }
+}
 
-  // JSON body parsing scoped to this router
-  router.use(express.json());
+async function recordUsage(
+  pool: Pool,
+  pgSettings: Record<string, string>,
+  billing: BillingConfig,
+  entityId: string,
+  meterSlug: string,
+  amount: number,
+  metadata: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await withRlsClient(pool, pgSettings, async (client) => {
+      const sql = `SELECT "${billing.privateSchema}"."${billing.recordUsageFunction}"($1, $2::uuid, $3, $4::jsonb)`;
+      await client.query(sql, [meterSlug, entityId, amount, JSON.stringify(metadata)]);
+    });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    log.warn(`[llm-api] record_usage failed (non-fatal): ${message}`);
+  }
+}
 
-  // ── POST /orgs/:entity_id/threads ────────────────────────────────────────
+async function resolveBilling(
+  pool: Pool,
+  pgSettings: Record<string, string>,
+  databaseId: string,
+): Promise<BillingConfig | null> {
+  try {
+    let billing: BillingConfig | null = null;
+    await withRlsClient(pool, pgSettings, async (client) => {
+      const entry = await getLlmBillingConfig(client, databaseId);
+      billing = entry.billing;
+    });
+    return billing;
+  } catch {
+    return null;
+  }
+}
 
-  router.post('/orgs/:entity_id/threads', async (req: Request, res: Response) => {
-    try {
-      if (!req.token?.user_id) {
-        res.status(401).json({ error: 'Authentication required' });
-        return;
-      }
+// ─── Route Handlers ─────────────────────────────────────────────────────────
 
-      const dbname = req.api?.dbname;
-      if (!dbname) {
-        res.status(400).json({ error: 'Database not resolved' });
-        return;
-      }
+async function handleCreateThread(
+  req: Request,
+  res: Response,
+  entityId: string,
+): Promise<void> {
+  if (!req.token?.user_id) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
 
-      const pool = getPgPool({ database: dbname });
-      const discovery = await getAgentDiscovery(pool, dbname);
-      if (!discovery?.thread) {
-        res.status(404).json({ error: 'Agent module not provisioned for this database' });
-        return;
-      }
+  const dbname = req.api?.dbname;
+  if (!dbname) {
+    res.status(400).json({ error: 'Database not resolved' });
+    return;
+  }
 
-      const body: CreateThreadBody = req.body || {};
-      const { thread } = discovery;
-      const pgSettings = getPgSettings(req);
-      const entityId = req.params.entity_id;
+  const pool = getPgPool({ database: dbname });
+  const discovery = await getAgentDiscovery(pool, dbname);
+  if (!discovery?.thread) {
+    res.status(404).json({ error: 'Agent module not provisioned for this database' });
+    return;
+  }
 
-      const result = await withRlsClient(pool, pgSettings, async (client) => {
-        const { rows } = await client.query(
-          `INSERT INTO "${thread.schemaName}"."${thread.tableName}"
-           (entity_id, owner_id, mode, model, system_prompt, title)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING id, mode, model, system_prompt, status, created_at`,
+  const body: CreateThreadBody = req.body || {};
+  const { thread } = discovery;
+  const pgSettings = getPgSettings(req);
+
+  const result = await withRlsClient(pool, pgSettings, async (client) => {
+    const { rows } = await client.query(
+      `INSERT INTO "${thread.schemaName}"."${thread.tableName}"
+       (entity_id, owner_id, mode, model, system_prompt, title)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, mode, model, system_prompt, status, created_at`,
+      [
+        entityId,
+        req.token!.user_id,
+        body.mode ?? 'ask',
+        body.model ?? null,
+        body.system_prompt ?? null,
+        body.title ?? null,
+      ],
+    );
+    return rows[0];
+  });
+
+  res.status(201).json({
+    id: result.id,
+    mode: result.mode,
+    model: result.model,
+    system_prompt: result.system_prompt,
+    status: result.status,
+    created_at: result.created_at,
+  });
+}
+
+async function handleSendMessage(
+  req: Request,
+  res: Response,
+  entityId: string,
+): Promise<void> {
+  if (!req.token?.user_id) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  const dbname = req.api?.dbname;
+  if (!dbname) {
+    res.status(400).json({ error: 'Database not resolved' });
+    return;
+  }
+
+  const pool = getPgPool({ database: dbname });
+  const discovery = await getAgentDiscovery(pool, dbname);
+  if (!discovery?.thread || !discovery?.message) {
+    res.status(404).json({ error: 'Agent module not provisioned for this database' });
+    return;
+  }
+
+  const body: SendMessageBody = req.body || {};
+  if (!body.messages?.length) {
+    res.status(400).json({ error: 'messages[] is required and must not be empty' });
+    return;
+  }
+
+  const { thread, message: msgTable } = discovery;
+  const pgSettings = getPgSettings(req);
+  const threadId = req.params.thread_id;
+  const userId = req.token.user_id;
+  const databaseId = req.databaseId;
+
+  // 1. Verify thread exists and user owns it (RLS enforced)
+  const threadRow = await withRlsClient(pool, pgSettings, async (client) => {
+    const { rows } = await client.query(
+      `SELECT id, mode, model, system_prompt, status
+       FROM "${thread.schemaName}"."${thread.tableName}"
+       WHERE id = $1`,
+      [threadId],
+    );
+    return rows[0] as ThreadRow | undefined;
+  });
+
+  if (!threadRow) {
+    res.status(404).json({ error: 'Thread not found' });
+    return;
+  }
+
+  // 2. Resolve billing config + pre-check quota
+  const billing = databaseId
+    ? await resolveBilling(pool, pgSettings, databaseId)
+    : null;
+
+  const ollama = resolveOllamaClient();
+  if (!ollama) {
+    res.status(503).json({ error: 'No LLM provider configured' });
+    return;
+  }
+
+  const model = body.model ?? threadRow.model ?? ollama.model;
+  const meterSlug = model;
+
+  if (billing) {
+    const allowed = await checkQuota(pool, pgSettings, billing, entityId, meterSlug);
+    if (!allowed) {
+      res.status(429).json({
+        error: 'Token quota exceeded',
+        meter: meterSlug,
+        entity_id: entityId,
+      });
+      return;
+    }
+  }
+
+  // 3. Persist user message(s)
+  await withRlsClient(pool, pgSettings, async (client) => {
+    for (const msg of body.messages) {
+      if (msg.role === 'user') {
+        await client.query(
+          `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
+           (thread_id, owner_id, entity_id, author_role, parts)
+           VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4)`,
           [
-            entityId,
-            req.token!.user_id,
-            body.mode ?? 'ask',
-            body.model ?? null,
-            body.system_prompt ?? null,
-            body.title ?? null,
+            threadId,
+            userId,
+            'user',
+            JSON.stringify([{ type: 'text', text: msg.content }]),
           ],
         );
-        return rows[0];
-      });
-
-      res.status(201).json({
-        id: result.id,
-        mode: result.mode,
-        model: result.model,
-        system_prompt: result.system_prompt,
-        status: result.status,
-        created_at: result.created_at,
-      });
-    } catch (err: any) {
-      log.error('[llm-api] Error creating thread:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      }
     }
   });
 
-  // ── POST /orgs/:entity_id/threads/:thread_id/messages ────────────────────
+  // 4. Load full thread history for context
+  const history = await withRlsClient(pool, pgSettings, async (client) => {
+    const { rows } = await client.query(
+      `SELECT author_role, parts, created_at
+       FROM "${msgTable.schemaName}"."${msgTable.tableName}"
+       WHERE thread_id = $1
+       ORDER BY created_at ASC`,
+      [threadId],
+    );
+    return rows as MessageRow[];
+  });
+
+  const llmMessages: Array<{ role: string; content: string }> = [];
+  const systemPrompt = threadRow.system_prompt;
+  if (systemPrompt) {
+    llmMessages.push({ role: 'system', content: systemPrompt });
+  }
+  for (const row of history) {
+    const parts = Array.isArray(row.parts) ? row.parts : [];
+    const textContent = parts
+      .filter((p: any) => p.type === 'text')
+      .map((p: any) => p.text)
+      .join('');
+    if (textContent) {
+      llmMessages.push({
+        role: row.author_role === 'user' ? 'user' : 'assistant',
+        content: textContent,
+      });
+    }
+  }
+
+  // 5. Call LLM with token usage tracking
+  const shouldStream = body.stream !== false;
+  const startTime = Date.now();
+
+  if (shouldStream) {
+    // ── SSE Streaming ──────────────────────────────────────────────────
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    const messageId = `msg_${Date.now()}`;
+
+    try {
+      let streamedContent = '';
+      const result = await callWithUsage(
+        ollama.client,
+        {
+          model,
+          messages: llmMessages as any,
+          stream: true,
+          temperature: body.temperature,
+        },
+        (chunk: string) => {
+          streamedContent += chunk;
+          const event = {
+            id: messageId,
+            choices: [{
+              index: 0,
+              delta: { content: chunk, role: 'assistant' },
+              finish_reason: null as string | null,
+            }],
+            model,
+          };
+          res.write(`data: ${JSON.stringify(event)}\n\n`);
+        },
+      );
+      // For streaming, result.content may be empty in fallback mode
+      if (!result.content && streamedContent) {
+        result.content = streamedContent;
+      }
+
+      const latencyMs = Date.now() - startTime;
+      const tokenUsage: TokenUsageJson = {
+        input: result.usage.input,
+        output: result.usage.output,
+        totalTokens: result.usage.totalTokens,
+        model,
+        latency_ms: latencyMs,
+      };
+
+      // Send [DONE] marker
+      res.write('data: [DONE]\n\n');
+      res.end();
+
+      // Re-estimate tokens if streaming fallback returned zero usage
+      if (result.usage.totalTokens === 0 && streamedContent) {
+        const promptText = llmMessages.map(m => m.content).join(' ');
+        result.usage.input = estimateTokens(promptText);
+        result.usage.output = estimateTokens(streamedContent);
+        result.usage.totalTokens = result.usage.input + result.usage.output;
+      }
+
+      // 6. Persist assistant response with token_usage (fire-and-forget)
+      if (result.content) {
+        withRlsClient(pool, pgSettings, async (client) => {
+          await client.query(
+            `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
+             (thread_id, owner_id, entity_id, author_role, parts, token_usage)
+             VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4, $5)`,
+            [
+              threadId,
+              userId,
+              'assistant',
+              JSON.stringify([{ type: 'text', text: result.content }]),
+              JSON.stringify(tokenUsage),
+            ],
+          );
+        }).catch((err) => {
+          log.error('[llm-api] Failed to persist assistant message:', err);
+        });
+      }
+
+      // 7. Record billing usage (fire-and-forget)
+      if (billing && tokenUsage.totalTokens > 0) {
+        recordUsage(pool, pgSettings, billing, entityId, meterSlug, tokenUsage.totalTokens, {
+          input_tokens: tokenUsage.input,
+          output_tokens: tokenUsage.output,
+          model,
+          latency_ms: latencyMs,
+          stream: true,
+        }).catch(() => {});
+      }
+    } catch (streamErr: any) {
+      log.error('[llm-api] Streaming error:', streamErr);
+      const errorEvent = { error: { message: streamErr.message, type: 'stream_error' } };
+      res.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  } else {
+    // ── Non-streaming (batch) ──────────────────────────────────────────
+    const result = await callWithUsage(ollama.client, {
+      model,
+      messages: llmMessages as any,
+      stream: false,
+      temperature: body.temperature,
+    });
+
+    const latencyMs = Date.now() - startTime;
+    const tokenUsage: TokenUsageJson = {
+      input: result.usage.input,
+      output: result.usage.output,
+      totalTokens: result.usage.totalTokens,
+      model,
+      latency_ms: latencyMs,
+    };
+
+    // Persist assistant response with token_usage
+    await withRlsClient(pool, pgSettings, async (client) => {
+      await client.query(
+        `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
+         (thread_id, owner_id, entity_id, author_role, parts, token_usage)
+         VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4, $5)`,
+        [
+          threadId,
+          userId,
+          'assistant',
+          JSON.stringify([{ type: 'text', text: result.content }]),
+          JSON.stringify(tokenUsage),
+        ],
+      );
+    });
+
+    // Record billing usage
+    if (billing && tokenUsage.totalTokens > 0) {
+      recordUsage(pool, pgSettings, billing, entityId, meterSlug, tokenUsage.totalTokens, {
+        input_tokens: tokenUsage.input,
+        output_tokens: tokenUsage.output,
+        model,
+        latency_ms: latencyMs,
+        stream: false,
+      }).catch(() => {});
+    }
+
+    res.json({
+      id: `msg_${Date.now()}`,
+      choices: [{
+        index: 0,
+        message: { role: 'assistant', content: result.content },
+        finish_reason: 'stop',
+      }],
+      model,
+      usage: {
+        prompt_tokens: tokenUsage.input,
+        completion_tokens: tokenUsage.output,
+        total_tokens: tokenUsage.totalTokens,
+      },
+    });
+  }
+}
+
+// ─── Router Factory ─────────────────────────────────────────────────────────
+
+export function createLlmApiRouter(): Router {
+  const router = Router();
+
+  router.use(express.json());
+
+  // ── Entity-scoped routes ─────────────────────────────────────────────────
+
+  router.post('/v1/orgs/:entity_id/threads', async (req: Request, res: Response) => {
+    try {
+      await handleCreateThread(req, res, req.params.entity_id);
+    } catch (err: any) {
+      log.error('[llm-api] Error creating thread:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
 
   router.post(
-    '/orgs/:entity_id/threads/:thread_id/messages',
+    '/v1/orgs/:entity_id/threads/:thread_id/messages',
     async (req: Request, res: Response) => {
       try {
-        if (!req.token?.user_id) {
+        await handleSendMessage(req, res, req.params.entity_id);
+      } catch (err: any) {
+        log.error('[llm-api] Error in messages endpoint:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Internal server error' });
+        }
+      }
+    },
+  );
+
+  // ── Global routes (no entity_id — bills to actor_id from JWT) ────────────
+
+  router.post('/v1/threads', async (req: Request, res: Response) => {
+    try {
+      const userId = req.token?.user_id;
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+      await handleCreateThread(req, res, userId);
+    } catch (err: any) {
+      log.error('[llm-api] Error creating thread:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  router.post(
+    '/v1/threads/:thread_id/messages',
+    async (req: Request, res: Response) => {
+      try {
+        const userId = req.token?.user_id;
+        if (!userId) {
           res.status(401).json({ error: 'Authentication required' });
           return;
         }
-
-        const dbname = req.api?.dbname;
-        if (!dbname) {
-          res.status(400).json({ error: 'Database not resolved' });
-          return;
-        }
-
-        const pool = getPgPool({ database: dbname });
-        const discovery = await getAgentDiscovery(pool, dbname);
-        if (!discovery?.thread || !discovery?.message) {
-          res.status(404).json({ error: 'Agent module not provisioned for this database' });
-          return;
-        }
-
-        const body: SendMessageBody = req.body || {};
-        if (!body.messages?.length) {
-          res.status(400).json({ error: 'messages[] is required and must not be empty' });
-          return;
-        }
-
-        const { thread, message: msgTable } = discovery;
-        const pgSettings = getPgSettings(req);
-        const threadId = req.params.thread_id;
-        const userId = req.token.user_id;
-
-        // 1. Verify thread exists and user owns it (RLS enforced)
-        const threadRow = await withRlsClient(pool, pgSettings, async (client) => {
-          const { rows } = await client.query(
-            `SELECT id, mode, model, system_prompt, status
-             FROM "${thread.schemaName}"."${thread.tableName}"
-             WHERE id = $1`,
-            [threadId],
-          );
-          return rows[0] as ThreadRow | undefined;
-        });
-
-        if (!threadRow) {
-          res.status(404).json({ error: 'Thread not found' });
-          return;
-        }
-
-        // 2. Persist the user message(s)
-        const lastUserMsg = body.messages[body.messages.length - 1];
-        await withRlsClient(pool, pgSettings, async (client) => {
-          for (const msg of body.messages) {
-            if (msg.role === 'user') {
-              await client.query(
-                `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
-                 (thread_id, owner_id, entity_id, author_role, parts)
-                 VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4)`,
-                [
-                  threadId,
-                  userId,
-                  'user',
-                  JSON.stringify([{ type: 'text', text: msg.content }]),
-                ],
-              );
-            }
-          }
-        });
-
-        // 3. Load full thread history for context
-        const history = await withRlsClient(pool, pgSettings, async (client) => {
-          const { rows } = await client.query(
-            `SELECT author_role, parts, created_at
-             FROM "${msgTable.schemaName}"."${msgTable.tableName}"
-             WHERE thread_id = $1
-             ORDER BY created_at ASC`,
-            [threadId],
-          );
-          return rows as MessageRow[];
-        });
-
-        // Build messages array for the LLM
-        const llmMessages: Array<{ role: string; content: string }> = [];
-        const systemPrompt = threadRow.system_prompt;
-        if (systemPrompt) {
-          llmMessages.push({ role: 'system', content: systemPrompt });
-        }
-        for (const row of history) {
-          const parts = Array.isArray(row.parts) ? row.parts : [];
-          const textContent = parts
-            .filter((p: any) => p.type === 'text')
-            .map((p: any) => p.text)
-            .join('');
-          if (textContent) {
-            llmMessages.push({
-              role: row.author_role === 'user' ? 'user' : 'assistant',
-              content: textContent,
-            });
-          }
-        }
-
-        // 4. Resolve LLM client
-        const ollama = resolveOllamaClient();
-        if (!ollama) {
-          res.status(503).json({ error: 'No LLM provider configured' });
-          return;
-        }
-
-        const model = body.model ?? threadRow.model ?? ollama.model;
-        const shouldStream = body.stream !== false; // default: true
-
-        if (shouldStream) {
-          // ── SSE Streaming ──────────────────────────────────────────────
-          res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'X-Accel-Buffering': 'no',
-          });
-
-          const responseChunks: string[] = [];
-          const messageId = `msg_${Date.now()}`;
-
-          try {
-            await ollama.client.generate(
-              {
-                model,
-                messages: llmMessages as any,
-                stream: true,
-                temperature: body.temperature,
-              },
-              (chunk: string) => {
-                responseChunks.push(chunk);
-                const event = {
-                  id: messageId,
-                  choices: [{
-                    index: 0,
-                    delta: { content: chunk, role: 'assistant' },
-                    finish_reason: null as string | null,
-                  }],
-                  model,
-                };
-                res.write(`data: ${JSON.stringify(event)}\n\n`);
-              },
-            );
-          } catch (streamErr: any) {
-            log.error('[llm-api] Streaming error:', streamErr);
-            const errorEvent = { error: { message: streamErr.message, type: 'stream_error' } };
-            res.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
-          }
-
-          // Send [DONE] marker
-          res.write('data: [DONE]\n\n');
-          res.end();
-
-          // 5. Persist assistant response (fire-and-forget, after stream ends)
-          const fullResponse = responseChunks.join('');
-          if (fullResponse) {
-            withRlsClient(pool, pgSettings, async (client) => {
-              await client.query(
-                `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
-                 (thread_id, owner_id, entity_id, author_role, parts)
-                 VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4)`,
-                [
-                  threadId,
-                  userId,
-                  'assistant',
-                  JSON.stringify([{ type: 'text', text: fullResponse }]),
-                ],
-              );
-            }).catch((err) => {
-              log.error('[llm-api] Failed to persist assistant message:', err);
-            });
-          }
-        } else {
-          // ── Non-streaming (batch) ──────────────────────────────────────
-          const response = await ollama.client.generate({
-            model,
-            messages: llmMessages as any,
-            stream: false,
-            temperature: body.temperature,
-          });
-
-          // Persist assistant response
-          await withRlsClient(pool, pgSettings, async (client) => {
-            await client.query(
-              `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
-               (thread_id, owner_id, entity_id, author_role, parts)
-               VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4)`,
-              [
-                threadId,
-                userId,
-                'assistant',
-                JSON.stringify([{ type: 'text', text: response }]),
-              ],
-            );
-          });
-
-          res.json({
-            id: `msg_${Date.now()}`,
-            choices: [{
-              index: 0,
-              message: { role: 'assistant', content: response },
-              finish_reason: 'stop',
-            }],
-            model,
-          });
-        }
+        await handleSendMessage(req, res, userId);
       } catch (err: any) {
         log.error('[llm-api] Error in messages endpoint:', err);
         if (!res.headersSent) {
