@@ -91,7 +91,6 @@ export function buildChatCompleterFromModule(data: LlmModuleData): ChatFunction 
     provider: data.chat_provider,
     model: data.chat_model,
     baseUrl: data.chat_base_url,
-    apiKey: data.api_key_ref,
   });
 }
 

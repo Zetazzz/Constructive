@@ -59,7 +59,6 @@ export function buildEmbedderFromModule(data: LlmModuleData): EmbedderFunction |
     provider: data.embedding_provider,
     model: data.embedding_model,
     baseUrl: data.embedding_base_url,
-    apiKey: data.api_key_ref,
   });
 }
 

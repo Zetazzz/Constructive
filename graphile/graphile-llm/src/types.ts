@@ -21,8 +21,6 @@ export interface EmbedderConfig {
   model?: string;
   /** Base URL for the provider (e.g. 'http://localhost:11434' for Ollama) */
   baseUrl?: string;
-  /** API key for providers that require authentication (e.g. OpenAI) */
-  apiKey?: string;
 }
 
 // ─── Chat Completion Types ──────────────────────────────────────────────────
@@ -60,8 +58,6 @@ export interface ChatConfig {
   model?: string;
   /** Base URL for the provider */
   baseUrl?: string;
-  /** API key for providers that require authentication */
-  apiKey?: string;
 }
 
 // ─── LLM Module Types ───────────────────────────────────────────────────────
@@ -87,8 +83,6 @@ export interface LlmModuleData {
   chat_model?: string;
   /** Base URL for the chat provider */
   chat_base_url?: string;
-  /** API key reference (e.g. 'vault://openai-key' or env var name) */
-  api_key_ref?: string;
   /** Rate limit: requests per minute */
   rate_limit_rpm?: number;
   /** Maximum tokens per request */
