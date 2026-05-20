@@ -1284,10 +1284,10 @@ export interface BlueprintEntityTableProvision {
   /** RLS policies for the entity table. When present, these policies fully replace the five default entity-table policies (is_visible becomes a no-op). */
   policies?: BlueprintPolicy[];
 }
-/** An entity type entry for Phase 0 of construct_blueprint(). Provisions a full entity type with its own entity table, membership modules, and security policies via entity_type_provision. */
+/** An entity type entry for Phase 0 of construct_blueprint(). When name is provided, provisions a new entity type with its own entity table, membership modules, and security policies via entity_type_provision. When name is omitted and only prefix is given, extends an existing entity type (e.g., the built-in "org") with additional capabilities like storage — without creating a new entity type. */
 export interface BlueprintEntityType {
-  /** Entity type name (e.g., "data_room", "channel", "department"). Must be unique per database. */
-  name: string;
+  /** Entity type name (e.g., "data_room", "channel", "department"). Required when creating a new entity type. Omit when extending an existing entity type (e.g., prefix: "org") — the entry will add storage/config to the existing type without creating a new one. */
+  name?: string;
   /** Short prefix for generated objects (e.g., "dr", "ch", "dept"). Used in table/trigger naming. */
   prefix: string;
   /** Human-readable description of this entity type. */
