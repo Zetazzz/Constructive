@@ -225,6 +225,87 @@ async function resolveBilling(
   }
 }
 
+// ─── Inference Logging ──────────────────────────────────────────────────────
+
+interface InferenceLogInfo {
+  schemaName: string;
+  tableName: string;
+}
+
+const INFERENCE_LOG_DISCOVERY_SQL = `
+  SELECT s.schema_name, ilm.inference_log_table_name
+  FROM metaschema_modules_public.inference_log_module ilm
+  JOIN metaschema_public.schema s ON s.id = ilm.schema_id
+  LIMIT 1
+`;
+
+const inferenceLogCache = new Map<string, { info: InferenceLogInfo | null; expiresAt: number }>();
+const INFERENCE_CACHE_TTL = 60_000;
+
+async function getInferenceLogInfo(pool: Pool, dbname: string): Promise<InferenceLogInfo | null> {
+  const cached = inferenceLogCache.get(dbname);
+  if (cached && cached.expiresAt > Date.now()) return cached.info;
+
+  let info: InferenceLogInfo | null = null;
+  try {
+    const { rows } = await pool.query(INFERENCE_LOG_DISCOVERY_SQL);
+    if (rows.length > 0) {
+      info = {
+        schemaName: rows[0].schema_name,
+        tableName: rows[0].inference_log_table_name,
+      };
+    }
+  } catch {
+    // Module not provisioned
+  }
+
+  inferenceLogCache.set(dbname, { info, expiresAt: Date.now() + INFERENCE_CACHE_TTL });
+  return info;
+}
+
+async function logInference(
+  pool: Pool,
+  pgSettings: Record<string, string>,
+  logInfo: InferenceLogInfo,
+  data: {
+    entityId: string;
+    actorId: string;
+    model: string;
+    provider: string;
+    requestType: string;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    latencyMs: number;
+    status: string;
+  },
+): Promise<void> {
+  try {
+    await withRlsClient(pool, pgSettings, async (client) => {
+      await client.query(
+        `INSERT INTO "${logInfo.schemaName}"."${logInfo.tableName}"
+         (entity_id, actor_id, model, provider, request_type, input_tokens, output_tokens, total_tokens, latency_ms, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          data.entityId,
+          data.actorId,
+          data.model,
+          data.provider,
+          data.requestType,
+          data.inputTokens,
+          data.outputTokens,
+          data.totalTokens,
+          data.latencyMs,
+          data.status,
+        ],
+      );
+    });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    log.warn(`[llm-api] inference log INSERT failed (non-fatal): ${message}`);
+  }
+}
+
 // ─── Route Handlers ─────────────────────────────────────────────────────────
 
 async function handleCreateThread(
@@ -333,10 +414,11 @@ async function handleSendMessage(
     return;
   }
 
-  // 2. Resolve billing config + pre-check quota
+  // 2. Resolve billing config + inference log discovery
   const billing = databaseId
     ? await resolveBilling(pool, pgSettings, databaseId)
     : null;
+  const inferenceLog = await getInferenceLogInfo(pool, dbname);
 
   const ollama = resolveOllamaClient();
   if (!ollama) {
@@ -504,6 +586,22 @@ async function handleSendMessage(
           stream: true,
         }).catch(() => {});
       }
+
+      // 8. Inference log (fire-and-forget)
+      if (inferenceLog) {
+        logInference(pool, pgSettings, inferenceLog, {
+          entityId,
+          actorId: userId,
+          model,
+          provider: 'ollama',
+          requestType: 'chat',
+          inputTokens: tokenUsage.input,
+          outputTokens: tokenUsage.output,
+          totalTokens: tokenUsage.totalTokens,
+          latencyMs,
+          status: 'ok',
+        }).catch(() => {});
+      }
     } catch (streamErr: any) {
       log.error('[llm-api] Streaming error:', streamErr);
       const errorEvent = { error: { message: streamErr.message, type: 'stream_error' } };
@@ -553,6 +651,22 @@ async function handleSendMessage(
         model,
         latency_ms: latencyMs,
         stream: false,
+      }).catch(() => {});
+    }
+
+    // Inference log
+    if (inferenceLog) {
+      logInference(pool, pgSettings, inferenceLog, {
+        entityId,
+        actorId: userId,
+        model,
+        provider: 'ollama',
+        requestType: 'chat',
+        inputTokens: tokenUsage.input,
+        outputTokens: tokenUsage.output,
+        totalTokens: tokenUsage.totalTokens,
+        latencyMs,
+        status: 'ok',
       }).catch(() => {});
     }
 
