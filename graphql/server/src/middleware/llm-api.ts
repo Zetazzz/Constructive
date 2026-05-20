@@ -83,21 +83,15 @@ function estimateTokens(text: string): number {
 }
 
 /**
- * Call generateWithUsage if available (>=1.3.0), otherwise fall back
- * to generate() + estimate tokens from text length.
+ * Call generate() and estimate token counts from text length.
+ * When a provider-native token counting API is approved, this can be
+ * swapped out without changing call sites.
  */
 async function callWithUsage(
   client: OllamaClient,
   input: { model: string; messages: any; stream?: boolean; temperature?: number },
   onChunk?: (chunk: string) => void,
-): Promise<{ content: string; usage: { input: number; output: number; totalTokens: number }; estimated?: boolean }> {
-  // Runtime check for generateWithUsage (available in @agentic-kit/ollama >=1.3.0)
-  if ('generateWithUsage' in client && typeof (client as any).generateWithUsage === 'function') {
-    const result = await (client as any).generateWithUsage(input, onChunk);
-    return { content: result.content, usage: result.usage };
-  }
-
-  // Fallback: use generate() + estimate tokens
+): Promise<{ content: string; usage: { input: number; output: number; totalTokens: number } }> {
   const promptText = input.messages.map((m: any) => m.content).join(' ');
   let content: string;
   if (onChunk || input.stream) {
@@ -530,16 +524,14 @@ async function handleSendMessage(
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         },
       );
-      // For streaming, result.content may be empty in fallback mode
-      if (!result.content && streamedContent) {
-        result.content = streamedContent;
-      }
-
+      // Streaming generate() returns void; use accumulated chunks
+      const content = streamedContent;
+      const promptText = llmMessages.map(m => m.content).join(' ');
       const latencyMs = Date.now() - startTime;
       const tokenUsage: TokenUsageJson = {
-        input: result.usage.input,
-        output: result.usage.output,
-        totalTokens: result.usage.totalTokens,
+        input: estimateTokens(promptText),
+        output: estimateTokens(content),
+        totalTokens: estimateTokens(promptText) + estimateTokens(content),
         model,
         latency_ms: latencyMs,
       };
@@ -548,16 +540,8 @@ async function handleSendMessage(
       res.write('data: [DONE]\n\n');
       res.end();
 
-      // Re-estimate tokens if streaming fallback returned zero usage
-      if (result.usage.totalTokens === 0 && streamedContent) {
-        const promptText = llmMessages.map(m => m.content).join(' ');
-        result.usage.input = estimateTokens(promptText);
-        result.usage.output = estimateTokens(streamedContent);
-        result.usage.totalTokens = result.usage.input + result.usage.output;
-      }
-
       // 6. Persist assistant response with token_usage (fire-and-forget)
-      if (result.content) {
+      if (content) {
         withRlsClient(pool, pgSettings, async (client) => {
           await client.query(
             `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
@@ -567,7 +551,7 @@ async function handleSendMessage(
               threadId,
               userId,
               'assistant',
-              JSON.stringify([{ type: 'text', text: result.content }]),
+              JSON.stringify([{ type: 'text', text: content }]),
               JSON.stringify(tokenUsage),
             ],
           );
