@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.41.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.40.0...node-type-registry@0.41.0) (2026-05-21)
+
+### Features
+
+- **node-type-registry:** sync latest from constructive-db ([0a457ba](https://github.com/constructive-io/constructive/commit/0a457bad52bfaa185ae77158d81e171860eeb9a5))
+
 # [0.40.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.39.0...node-type-registry@0.40.0) (2026-05-20)
 
 ### Features
