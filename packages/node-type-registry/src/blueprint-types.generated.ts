@@ -514,6 +514,17 @@ export interface JobTriggerParams {
   conditions?: TriggerCondition | TriggerCondition[];
   /* For UPDATE triggers, only fire when these fields change (uses DISTINCT FROM) */
   watch_fields?: string[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from */
+    obj_table: string;
+    /* Schema of the related table (optional — resolved by table name if omitted) */
+    obj_schema?: string;
+    /* Column on the related table that holds the entity_id */
+    obj_field: string;
+  };
   /* Static job key for upsert semantics (prevents duplicate jobs) */
   job_key?: string;
   /* Job queue name for routing to specific workers */
@@ -549,6 +560,16 @@ export interface ProcessChunksParams {
   chunks_table_name?: string;
   /* Field names from the parent table to copy into chunk metadata */
   metadata_fields?: string[];
+  /* Text search indexes to create on the chunks content column */
+  search_indexes?: ('fulltext' | 'bm25' | 'trigram')[];
+  /* Column on the parent table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Whether to create a job trigger that auto-enqueues chunking on parent INSERT/UPDATE */
   enqueue_chunking_job?: boolean;
   /* Task identifier for the chunking job queue */
@@ -580,6 +601,14 @@ export interface ProcessFileEmbeddingParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks, field guards, etc. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Text extraction configuration. When present, the generator creates extraction output fields on the table and configures SearchVector with source_fields + stale tracking. When absent, the node operates in direct mode (single vector per file, no text extraction). */
   extraction?: {
     /* Field to store extracted text/markdown */text_field?: string;
@@ -624,6 +653,14 @@ export interface ProcessImageEmbeddingParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Text extraction configuration. Forwarded to ProcessFileEmbedding. When present, enables extract mode (e.g., OCR for images). */
   extraction?: {
     /* Field to store extracted text */text_field?: string;
@@ -660,6 +697,14 @@ export interface ProcessExtractionParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks (e.g., status = 'uploaded'). */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Job queue name for extraction tasks */
   queue_name?: string;
   /* Maximum number of retry attempts */
@@ -690,6 +735,14 @@ export interface ProcessImageVersionsParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Job queue name for image processing tasks */
   queue_name?: string;
   /* Maximum number of retry attempts */

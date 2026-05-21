@@ -109,6 +109,23 @@ export const ProcessChunks: NodeTypeDefinition = {
           'Set explicitly to override (e.g. ["fulltext", "bm25"]).'
       },
 
+      // ── Entity billing scope ──────────────────────────────────────
+      entity_field: {
+        type: 'string',
+        format: 'column-ref',
+        description: 'Column on the parent table that holds (or references) the entity_id for billing scope. Forwarded to the chunking job trigger.'
+      },
+      entity_lookup: {
+        type: 'object',
+        description: 'FK lookup configuration for resolving entity_id through a related table. Forwarded to the chunking job trigger.',
+        properties: {
+          obj_table: { type: 'string', description: 'Name of the related table to look up entity_id from' },
+          obj_schema: { type: 'string', description: 'Schema of the related table (user-facing name, optional)' },
+          obj_field: { type: 'string', format: 'column-ref', description: 'Column on the related table that holds the entity_id' }
+        },
+        required: ['obj_table', 'obj_field']
+      },
+
       // ── Job trigger ────────────────────────────────────────────────
       enqueue_chunking_job: {
         type: 'boolean',
