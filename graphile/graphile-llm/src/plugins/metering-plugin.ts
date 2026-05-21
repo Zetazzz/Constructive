@@ -66,6 +66,7 @@ async function buildMeteringContext(
   const pgSettings: Record<string, string> = graphqlContext?.pgSettings ?? {};
   const entityId = resolveEntityId(pgSettings);
   const databaseId = pgSettings['jwt.claims.database_id'] ?? null;
+  const requestId = pgSettings['request.id'] ?? null;
   if (!entityId || !databaseId) return null;
 
   const withPgClient: WithPgClient | undefined = graphqlContext?.withPgClient;
@@ -88,6 +89,7 @@ async function buildMeteringContext(
     pgSettings,
     billing: billingConfig,
     entityId,
+    requestId,
   };
 }
 
