@@ -14,6 +14,18 @@ jest.mock('pg-cache', () => ({
   })),
 }));
 
+jest.mock('graphile-cache', () => ({
+  ModuleConfigCache: class {
+    private _map = new Map<string, unknown>();
+    get(key: string) { return this._map.get(key); }
+    set(key: string, value: unknown) { this._map.set(key, value); }
+    delete(key: string) { return this._map.delete(key); }
+    clear() { this._map.clear(); }
+    has(key: string) { return this._map.has(key); }
+    get size() { return this._map.size; }
+  },
+}));
+
 jest.mock('graphile-llm', () => ({
   getLlmEnvOptions: jest.fn(() => ({
     chat: { provider: 'ollama', model: 'tinyllama', baseUrl: 'http://localhost:11434' },

@@ -17,7 +17,7 @@
  * billing piece.
  */
 
-import { LRUCache } from 'lru-cache';
+import { ModuleConfigCache } from 'graphile-cache';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -73,13 +73,10 @@ const BILLING_MODULE_SQL = `
 
 // ─── Cache ──────────────────────────────────────────────────────────────────
 
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CACHE_MAX_ENTRIES = 50;
-
-const billingCache = new LRUCache<string, LlmBillingCacheEntry>({
-  max: CACHE_MAX_ENTRIES,
-  ttl: CACHE_TTL_MS,
-  updateAgeOnGet: true,
+const billingCache = new ModuleConfigCache<LlmBillingCacheEntry>({
+  name: 'billing-config',
+  ttlMs: 5 * 60 * 1000, // 5 minutes
+  max: 50,
 });
 
 // ─── Resolution Functions ───────────────────────────────────────────────────
@@ -158,5 +155,5 @@ export function invalidateLlmBillingConfig(databaseId?: string): void {
  * Get cache stats for diagnostics.
  */
 export function getLlmBillingCacheStats(): { size: number; max: number } {
-  return { size: billingCache.size, max: CACHE_MAX_ENTRIES };
+  return { size: billingCache.size, max: 50 };
 }

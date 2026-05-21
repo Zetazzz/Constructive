@@ -26,6 +26,7 @@ import { Logger } from '@pgpmjs/logger';
 import { Pool } from 'pg';
 import { getPgPool } from 'pg-cache';
 import OllamaClient from '@agentic-kit/ollama';
+import { ModuleConfigCache } from 'graphile-cache';
 import {
   getLlmEnvOptions,
   getAgentDiscovery,
@@ -233,12 +234,14 @@ const INFERENCE_LOG_DISCOVERY_SQL = `
   LIMIT 1
 `;
 
-const inferenceLogCache = new Map<string, { info: InferenceLogInfo | null; expiresAt: number }>();
-const INFERENCE_CACHE_TTL = 60_000;
+const inferenceLogCache = new ModuleConfigCache<InferenceLogInfo | null>({
+  name: 'inference-log',
+  ttlMs: 60_000,
+});
 
 async function getInferenceLogInfo(pool: Pool, dbname: string): Promise<InferenceLogInfo | null> {
   const cached = inferenceLogCache.get(dbname);
-  if (cached && cached.expiresAt > Date.now()) return cached.info;
+  if (cached !== undefined) return cached;
 
   let info: InferenceLogInfo | null = null;
   try {
@@ -253,7 +256,7 @@ async function getInferenceLogInfo(pool: Pool, dbname: string): Promise<Inferenc
     // Module not provisioned
   }
 
-  inferenceLogCache.set(dbname, { info, expiresAt: Date.now() + INFERENCE_CACHE_TTL });
+  inferenceLogCache.set(dbname, info);
   return info;
 }
 

@@ -10,6 +10,7 @@
  */
 
 import { Pool } from 'pg';
+import { ModuleConfigCache } from 'graphile-cache';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -28,14 +29,10 @@ export interface AgentDiscovery {
 
 // ─── Cache ──────────────────────────────────────────────────────────────────
 
-interface CacheEntry {
-  discovery: AgentDiscovery | null;
-  expiresAt: number;
-}
-
-const CACHE_TTL_MS = 60_000;
-
-const agentDiscoveryCache = new Map<string, CacheEntry>();
+const agentDiscoveryCache = new ModuleConfigCache<AgentDiscovery | null>({
+  name: 'agent-discovery',
+  ttlMs: 60_000,
+});
 
 /** Clear all cached discovery results (for testing) */
 export function clearAgentDiscoveryCache(): void {
@@ -57,16 +54,15 @@ const DISCOVERY_SQL = `
 
 /**
  * Look up agent table info for a database, querying the module config table.
- * Results are cached per-database for CACHE_TTL_MS.
+ * Results are cached per-database with a 60s TTL.
  */
 export async function getAgentDiscovery(
   pool: Pool,
   dbname: string,
 ): Promise<AgentDiscovery | null> {
-  const now = Date.now();
   const cached = agentDiscoveryCache.get(dbname);
-  if (cached && cached.expiresAt > now) {
-    return cached.discovery;
+  if (cached !== undefined) {
+    return cached;
   }
 
   let discovery: AgentDiscovery | null = null;
@@ -94,6 +90,6 @@ export async function getAgentDiscovery(
     // Module table doesn't exist in this database — not provisioned
   }
 
-  agentDiscoveryCache.set(dbname, { discovery, expiresAt: now + CACHE_TTL_MS });
+  agentDiscoveryCache.set(dbname, discovery);
   return discovery;
 }
