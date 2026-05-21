@@ -580,12 +580,15 @@ describe('RAG plugin schema enrichment', () => {
     // Mock embedder that returns a fixed 3-dim vector
     const mockEmbedder = async (_text: string): Promise<number[]> => [1, 0, 0];
 
-    // Mock chat completer that returns a canned response
+    // Mock chat completer that returns a canned response with usage
     const mockChatCompleter = async (
       messages: Array<{ role: string; content: string }>,
-    ): Promise<string> => {
+    ) => {
       const userMessage = messages.find((m) => m.role === 'user');
-      return `Mock answer for: ${userMessage?.content || 'unknown'}`;
+      return {
+        content: `Mock answer for: ${userMessage?.content || 'unknown'}`,
+        usage: { input: 10, output: 15, reasoning: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 25 },
+      };
     };
 
     const testPreset = {

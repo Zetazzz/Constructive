@@ -84,6 +84,8 @@ export type {
   ChatConfig,
   ChatMessage,
   ChatOptions,
+  ChatResult,
+  LlmUsage,
   LlmModuleData,
   GraphileLlmOptions,
   MeteringConfig,

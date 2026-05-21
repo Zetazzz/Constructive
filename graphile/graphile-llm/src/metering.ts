@@ -9,9 +9,9 @@
  * When the quota check fails, the wrapper returns null (graceful degradation)
  * instead of throwing, so the search pipeline can fall back to text-only.
  *
- * Token counts are estimated from text length (~4 chars per token). No
- * tokenizer needed — the billing system uses tokens as abstract units
- * and the credit_cost on each model's meter normalizes the relative expense.
+ * Token counts:
+ *   - Chat: real provider counts via ChatResult.usage (from OllamaAdapter.stream())
+ *   - Embedding: estimated at ~4 chars/token (Ollama embedding API has no token counts)
  *
  * The billing functions live in the tenant database and are called via the
  * Graphile `withPgClient` callback. Function locations (schema, names) are
@@ -19,7 +19,7 @@
  */
 
 import type { PgClient, BillingConfig, InferenceLogConfig } from './config-cache';
-import type { EmbedderFunction, ChatFunction, ChatMessage, ChatOptions } from './types';
+import type { EmbedderFunction, ChatFunction, ChatMessage, ChatOptions, ChatResult, LlmUsage } from './types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -259,8 +259,7 @@ export async function meteredEmbed(
   }
 
   if (!allowed) {
-    // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
-    const placeholderAmountTokens = Math.ceil(text.length / 4);
+    const estimatedTokens = Math.ceil(text.length / 4);
     logInferenceUsage(ctx, {
       databaseId: ctx.databaseId,
       entityId: ctx.entityId,
@@ -269,9 +268,9 @@ export async function meteredEmbed(
       provider: options.provider ?? null,
       service: 'embedding',
       operation: 'create',
-      inputTokens: placeholderAmountTokens,
+      inputTokens: estimatedTokens,
       outputTokens: 0,
-      totalTokens: placeholderAmountTokens,
+      totalTokens: estimatedTokens,
       cacheReadTokens: null,
       cacheWriteTokens: null,
       latencyMs: Date.now() - startTime,
@@ -281,7 +280,7 @@ export async function meteredEmbed(
       embeddingLatencyMs: null,
       status: 'quota_exceeded',
       errorType: null,
-      rawUsage: null,
+      rawUsage: { estimated: true, method: 'chars_div_4' },
     }).catch(() => {});
 
     return {
@@ -296,14 +295,15 @@ export async function meteredEmbed(
   const result = await embedder(text);
   const latencyMs = Date.now() - startTime;
 
-  // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
-  const placeholderAmountTokens = Math.ceil(text.length / 4);
+  // Embedding API does not return token counts; estimate from text length
+  const estimatedTokens = Math.ceil(text.length / 4);
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
-    await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, text.length, {
+    await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, estimatedTokens, {
       request_id: ctx.requestId,
       input_chars: text.length,
       dims: result.length,
       latency_ms: latencyMs,
+      estimated: true,
     });
   }).catch(() => {});
 
@@ -316,9 +316,9 @@ export async function meteredEmbed(
     provider: options.provider ?? null,
     service: 'embedding',
     operation: 'create',
-    inputTokens: placeholderAmountTokens,
+    inputTokens: estimatedTokens,
     outputTokens: 0,
-    totalTokens: placeholderAmountTokens,
+    totalTokens: estimatedTokens,
     cacheReadTokens: null,
     cacheWriteTokens: null,
     latencyMs,
@@ -328,7 +328,7 @@ export async function meteredEmbed(
     embeddingLatencyMs: latencyMs,
     status: 'success',
     errorType: null,
-    rawUsage: null,
+    rawUsage: { estimated: true, method: 'chars_div_4' },
   }).catch(() => {});
 
   return {
@@ -354,9 +354,9 @@ export async function meteredChat(
   const startTime = Date.now();
 
   if (!ctx) {
-    const result = await chat(messages, chatOptions);
+    const chatResult = await chat(messages, chatOptions);
     return {
-      result,
+      result: chatResult.content,
       metered: false,
       quotaExceeded: false,
       latencyMs: Date.now() - startTime,
@@ -365,9 +365,9 @@ export async function meteredChat(
 
   const meterSlug = meteringOptions.chatMeterSlug;
   if (!meterSlug) {
-    const result = await chat(messages, chatOptions);
+    const chatResult = await chat(messages, chatOptions);
     return {
-      result,
+      result: chatResult.content,
       metered: false,
       quotaExceeded: false,
       latencyMs: Date.now() - startTime,
@@ -375,9 +375,9 @@ export async function meteredChat(
   }
 
   if (meteringOptions.skipMetering) {
-    const result = await chat(messages, chatOptions);
+    const chatResult = await chat(messages, chatOptions);
     return {
-      result,
+      result: chatResult.content,
       metered: false,
       quotaExceeded: false,
       latencyMs: Date.now() - startTime,
@@ -395,8 +395,7 @@ export async function meteredChat(
   }
 
   if (!allowed) {
-    // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
-    const placeholderInputTokens = Math.ceil(messages.reduce((sum, m) => sum + m.content.length, 0) / 4);
+    const estimatedInputTokens = Math.ceil(messages.reduce((sum, m) => sum + m.content.length, 0) / 4);
     logInferenceUsage(ctx, {
       databaseId: ctx.databaseId,
       entityId: ctx.entityId,
@@ -405,9 +404,9 @@ export async function meteredChat(
       provider: meteringOptions.provider ?? null,
       service: 'llm',
       operation: 'chat',
-      inputTokens: placeholderInputTokens,
+      inputTokens: estimatedInputTokens,
       outputTokens: 0,
-      totalTokens: placeholderInputTokens,
+      totalTokens: estimatedInputTokens,
       cacheReadTokens: null,
       cacheWriteTokens: null,
       latencyMs: Date.now() - startTime,
@@ -428,26 +427,24 @@ export async function meteredChat(
     };
   }
 
-  // Execute chat completion
-  const result = await chat(messages, chatOptions);
+  // Execute chat completion — returns real token usage from provider
+  const chatResult = await chat(messages, chatOptions);
   const latencyMs = Date.now() - startTime;
+  const usage = chatResult.usage;
 
-  // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
-  const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
-  const placeholderInputTokens = Math.ceil(inputChars / 4);
-  const placeholderOutputTokens = Math.ceil(result.length / 4);
-  const placeholderTotalTokens = placeholderInputTokens + placeholderOutputTokens;
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
-    await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, inputChars + result.length, {
+    await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, usage.totalTokens, {
       request_id: ctx.requestId,
-      input_chars: inputChars,
-      output_chars: result.length,
+      input_tokens: usage.input,
+      output_tokens: usage.output,
+      cache_read_tokens: usage.cacheRead,
+      cache_write_tokens: usage.cacheWrite,
       messages_count: messages.length,
       latency_ms: latencyMs,
     });
   }).catch(() => {});
 
-  // Log to inference usage table
+  // Log to inference usage table with real provider token counts
   logInferenceUsage(ctx, {
     databaseId: ctx.databaseId,
     entityId: ctx.entityId,
@@ -456,11 +453,11 @@ export async function meteredChat(
     provider: meteringOptions.provider ?? null,
     service: 'llm',
     operation: 'chat',
-    inputTokens: placeholderInputTokens,
-    outputTokens: placeholderOutputTokens,
-    totalTokens: placeholderTotalTokens,
-    cacheReadTokens: null,
-    cacheWriteTokens: null,
+    inputTokens: usage.input,
+    outputTokens: usage.output,
+    totalTokens: usage.totalTokens,
+    cacheReadTokens: usage.cacheRead || null,
+    cacheWriteTokens: usage.cacheWrite || null,
     latencyMs,
     ragEnabled: false,
     chunksRetrieved: null,
@@ -468,11 +465,11 @@ export async function meteredChat(
     embeddingLatencyMs: null,
     status: 'success',
     errorType: null,
-    rawUsage: null,
+    rawUsage: { reasoning: usage.reasoning },
   }).catch(() => {});
 
   return {
-    result,
+    result: chatResult.content,
     metered: true,
     quotaExceeded: false,
     latencyMs,

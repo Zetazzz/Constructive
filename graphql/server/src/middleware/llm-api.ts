@@ -25,7 +25,7 @@ import express, { Router, Request, Response } from 'express';
 import { Logger } from '@pgpmjs/logger';
 import { Pool } from 'pg';
 import { getPgPool } from 'pg-cache';
-import OllamaClient from '@agentic-kit/ollama';
+import { OllamaAdapter } from '@agentic-kit/ollama';
 import { ModuleConfigCache } from 'graphile-cache';
 import {
   getLlmEnvOptions,
@@ -67,39 +67,13 @@ interface SendMessageBody {
   stream?: boolean;
 }
 
-/**
- * Placeholder: replace with actual provider token counts once generateWithUsage() is approved.
- * Estimates ~4 chars per token for English text.
- */
-function placeholderAmountTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
-
-/**
- * Call generate() and estimate token counts from text length.
- * When a provider-native token counting API is approved, swap the
- * estimation logic here without changing call sites.
- */
-async function callWithUsage(
-  client: OllamaClient,
-  input: { model: string; messages: any; stream?: boolean; temperature?: number },
-  onChunk?: (chunk: string) => void,
-): Promise<{ content: string; usage: { input: number; output: number; totalTokens: number } }> {
-  const promptText = input.messages.map((m: any) => m.content).join(' ');
-  let content: string;
-  if (onChunk || input.stream) {
-    await client.generate(input, onChunk!);
-    content = '';
-  } else {
-    content = await client.generate(input);
-  }
-
-  const inputTokens = placeholderAmountTokens(promptText);
-  const outputTokens = placeholderAmountTokens(content);
-  return {
-    content,
-    usage: { input: inputTokens, output: outputTokens, totalTokens: inputTokens + outputTokens },
-  };
+interface LlmUsageResult {
+  input: number;
+  output: number;
+  reasoning: number;
+  cacheRead: number;
+  cacheWrite: number;
+  totalTokens: number;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -143,13 +117,14 @@ async function withRlsClient<T>(
   }
 }
 
-function resolveOllamaClient(): { client: OllamaClient; model: string } | null {
+function resolveOllamaAdapter(): { adapter: OllamaAdapter; model: string; baseUrl: string } | null {
   const { chat } = getLlmEnvOptions();
 
   if (chat.provider === 'ollama') {
     return {
-      client: new OllamaClient(chat.baseUrl),
+      adapter: new OllamaAdapter(chat.baseUrl),
       model: chat.model,
+      baseUrl: chat.baseUrl,
     };
   }
 
@@ -414,7 +389,7 @@ async function handleSendMessage(
     : null;
   const inferenceLog = await getInferenceLogInfo(pool, dbname);
 
-  const ollama = resolveOllamaClient();
+  const ollama = resolveOllamaAdapter();
   if (!ollama) {
     res.status(503).json({ error: 'No LLM provider configured' });
     return;
@@ -490,7 +465,7 @@ async function handleSendMessage(
   const startTime = Date.now();
 
   if (shouldStream) {
-    // ── SSE Streaming ──────────────────────────────────────────────────
+    // ── SSE Streaming via OllamaAdapter ─────────────────────────────────
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
@@ -501,36 +476,51 @@ async function handleSendMessage(
     const messageId = `msg_${Date.now()}`;
 
     try {
+      const systemMsg = llmMessages.find(m => m.role === 'system');
+      const nonSystem = llmMessages.filter(m => m.role !== 'system');
+      const modelDesc = ollama.adapter.createModel(model, {
+        maxOutputTokens: undefined,
+      });
+      const context = {
+        systemPrompt: systemMsg?.content,
+        messages: nonSystem.map((m) => ({
+          role: m.role as 'user',
+          content: m.content,
+          timestamp: Date.now(),
+        })),
+      };
+      const stream = ollama.adapter.stream(modelDesc, context, {
+        temperature: body.temperature,
+      });
+
       let streamedContent = '';
-      const result = await callWithUsage(
-        ollama.client,
-        {
-          model,
-          messages: llmMessages as any,
-          stream: true,
-          temperature: body.temperature,
-        },
-        (chunk: string) => {
-          streamedContent += chunk;
-          const event = {
+      for await (const event of stream) {
+        if (event.type === 'text_delta') {
+          streamedContent += event.delta;
+          const sseEvent = {
             id: messageId,
             choices: [{
               index: 0,
-              delta: { content: chunk, role: 'assistant' },
+              delta: { content: event.delta, role: 'assistant' },
               finish_reason: null as string | null,
             }],
             model,
           };
-          res.write(`data: ${JSON.stringify(event)}\n\n`);
-        },
-      );
-      // Streaming generate() returns void; use accumulated chunks
+          res.write(`data: ${JSON.stringify(sseEvent)}\n\n`);
+        }
+      }
+
+      const result = await stream.result();
       const content = streamedContent;
-      const promptText = llmMessages.map(m => m.content).join(' ');
       const latencyMs = Date.now() - startTime;
-      const inputTokens = placeholderAmountTokens(promptText);
-      const outputTokens = placeholderAmountTokens(content);
-      const totalTokens = inputTokens + outputTokens;
+      const usage: LlmUsageResult = {
+        input: result.usage.input,
+        output: result.usage.output,
+        reasoning: result.usage.reasoning,
+        cacheRead: result.usage.cacheRead,
+        cacheWrite: result.usage.cacheWrite,
+        totalTokens: result.usage.totalTokens,
+      };
 
       // Send [DONE] marker
       res.write('data: [DONE]\n\n');
@@ -557,10 +547,12 @@ async function handleSendMessage(
       }
 
       // 7. Record billing usage (fire-and-forget)
-      if (billing && totalTokens > 0) {
-        recordUsage(pool, pgSettings, billing, entityId, meterSlug, totalTokens, {
-          input_tokens: inputTokens,
-          output_tokens: outputTokens,
+      if (billing && usage.totalTokens > 0) {
+        recordUsage(pool, pgSettings, billing, entityId, meterSlug, usage.totalTokens, {
+          input_tokens: usage.input,
+          output_tokens: usage.output,
+          cache_read_tokens: usage.cacheRead,
+          cache_write_tokens: usage.cacheWrite,
           model,
           latency_ms: latencyMs,
           stream: true,
@@ -576,9 +568,9 @@ async function handleSendMessage(
           provider: 'ollama',
           service: 'llm',
           operation: 'chat',
-          inputTokens,
-          outputTokens,
-          totalTokens,
+          inputTokens: usage.input,
+          outputTokens: usage.output,
+          totalTokens: usage.totalTokens,
           latencyMs,
           status: 'ok',
         }).catch(() => {});
@@ -591,18 +583,38 @@ async function handleSendMessage(
       res.end();
     }
   } else {
-    // ── Non-streaming (batch) ──────────────────────────────────────────
-    const result = await callWithUsage(ollama.client, {
-      model,
-      messages: llmMessages as any,
-      stream: false,
+    // ── Non-streaming (batch) via OllamaAdapter ─────────────────────────
+    const systemMsg = llmMessages.find(m => m.role === 'system');
+    const nonSystem = llmMessages.filter(m => m.role !== 'system');
+    const modelDesc = ollama.adapter.createModel(model, {
+      maxOutputTokens: undefined,
+    });
+    const context = {
+      systemPrompt: systemMsg?.content,
+      messages: nonSystem.map((m) => ({
+        role: m.role as 'user',
+        content: m.content,
+        timestamp: Date.now(),
+      })),
+    };
+    const stream = ollama.adapter.stream(modelDesc, context, {
       temperature: body.temperature,
     });
 
+    const result = await stream.result();
+    const content = result.content
+      .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
     const latencyMs = Date.now() - startTime;
-    const inputTokens = result.usage.input;
-    const outputTokens = result.usage.output;
-    const totalTokens = result.usage.totalTokens;
+    const usage: LlmUsageResult = {
+      input: result.usage.input,
+      output: result.usage.output,
+      reasoning: result.usage.reasoning,
+      cacheRead: result.usage.cacheRead,
+      cacheWrite: result.usage.cacheWrite,
+      totalTokens: result.usage.totalTokens,
+    };
 
     // Persist assistant message with model
     await withRlsClient(pool, pgSettings, async (client) => {
@@ -614,17 +626,19 @@ async function handleSendMessage(
           threadId,
           userId,
           'assistant',
-          JSON.stringify([{ type: 'text', text: result.content }]),
+          JSON.stringify([{ type: 'text', text: content }]),
           model,
         ],
       );
     });
 
     // Record billing usage
-    if (billing && totalTokens > 0) {
-      recordUsage(pool, pgSettings, billing, entityId, meterSlug, totalTokens, {
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
+    if (billing && usage.totalTokens > 0) {
+      recordUsage(pool, pgSettings, billing, entityId, meterSlug, usage.totalTokens, {
+        input_tokens: usage.input,
+        output_tokens: usage.output,
+        cache_read_tokens: usage.cacheRead,
+        cache_write_tokens: usage.cacheWrite,
         model,
         latency_ms: latencyMs,
         stream: false,
@@ -640,9 +654,9 @@ async function handleSendMessage(
         provider: 'ollama',
         service: 'llm',
         operation: 'chat',
-        inputTokens,
-        outputTokens,
-        totalTokens,
+        inputTokens: usage.input,
+        outputTokens: usage.output,
+        totalTokens: usage.totalTokens,
         latencyMs,
         status: 'ok',
       }).catch(() => {});
@@ -652,14 +666,14 @@ async function handleSendMessage(
       id: `msg_${Date.now()}`,
       choices: [{
         index: 0,
-        message: { role: 'assistant', content: result.content },
+        message: { role: 'assistant', content },
         finish_reason: 'stop',
       }],
       model,
       usage: {
-        prompt_tokens: inputTokens,
-        completion_tokens: outputTokens,
-        total_tokens: totalTokens,
+        prompt_tokens: usage.input,
+        completion_tokens: usage.output,
+        total_tokens: usage.totalTokens,
       },
     });
   }

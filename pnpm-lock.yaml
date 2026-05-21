@@ -329,8 +329,8 @@ importers:
   graphile/graphile-llm:
     dependencies:
       '@agentic-kit/ollama':
-        specifier: ^1.0.3
-        version: 1.0.3(encoding@0.1.13)
+        specifier: ^1.2.1
+        version: 1.2.1
       '@dataplan/pg':
         specifier: 1.0.0
         version: 1.0.0(@dataplan/json@1.0.0(grafast@1.0.0(graphql@16.13.0)))(grafast@1.0.0(graphql@16.13.0))(graphile-config@1.0.0)(graphql@16.13.0)(pg-sql2@5.0.0)(pg@8.20.0)
@@ -1459,8 +1459,8 @@ importers:
   graphql/server:
     dependencies:
       '@agentic-kit/ollama':
-        specifier: ^1.0.3
-        version: 1.0.3(encoding@0.1.13)
+        specifier: ^1.2.1
+        version: 1.2.1
       '@constructive-io/csrf':
         specifier: workspace:^
         version: link:../../packages/csrf/dist
@@ -1654,8 +1654,8 @@ importers:
         specifier: ^1.2.0
         version: 1.2.0(graphql@16.13.0)
       '@agentic-kit/ollama':
-        specifier: ^1.0.3
-        version: 1.0.3(encoding@0.1.13)
+        specifier: ^1.2.1
+        version: 1.2.1
       '@constructive-io/graphql-codegen':
         specifier: workspace:^
         version: link:../codegen/dist
@@ -3314,8 +3314,8 @@ packages:
       graphql:
         optional: true
 
-  '@agentic-kit/ollama@1.0.3':
-    resolution: {integrity: sha512-bvDMjofjgSTI8oLvFI/8ORQvO+wrwmdYETYCB1yAOSy622zB6DWYqk+ldK7mKjZ22iWrjkoWFEdSY7T9rYE1FA==}
+  '@agentic-kit/ollama@1.2.1':
+    resolution: {integrity: sha512-AYAsY1cGaGPuL+9BsXhBPtRofUOzlowJRoYVRI5P0tqze1Vj+O8Rid7hyfnuu3aB842v90I7rGbBzB0QvlidLw==}
 
   '@aws-crypto/crc32@5.2.0':
     resolution: {integrity: sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg==}
@@ -6630,9 +6630,6 @@ packages:
   cron-parser@4.9.0:
     resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
     engines: {node: '>=12.0.0'}
-
-  cross-fetch@4.1.0:
-    resolution: {integrity: sha512-uKm5PU+MHTootlWEY+mZ4vvXoCn4fLQxT9dSc1sXVMSFkINTJVN8cAQROpwcKm8bJ/c7rgZVIBWzH5T78sNZZw==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -10439,11 +10436,7 @@ snapshots:
     optionalDependencies:
       graphql: 16.13.0
 
-  '@agentic-kit/ollama@1.0.3(encoding@0.1.13)':
-    dependencies:
-      cross-fetch: 4.1.0(encoding@0.1.13)
-    transitivePeerDependencies:
-      - encoding
+  '@agentic-kit/ollama@1.2.1': {}
 
   '@aws-crypto/crc32@5.2.0':
     dependencies:
@@ -14605,12 +14598,6 @@ snapshots:
   cron-parser@4.9.0:
     dependencies:
       luxon: 3.7.2
-
-  cross-fetch@4.1.0(encoding@0.1.13):
-    dependencies:
-      node-fetch: 2.7.0(encoding@0.1.13)
-    transitivePeerDependencies:
-      - encoding
 
   cross-spawn@7.0.6:
     dependencies:

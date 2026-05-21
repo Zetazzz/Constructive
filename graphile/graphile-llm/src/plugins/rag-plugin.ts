@@ -357,7 +357,7 @@ export function createLlmRagPlugin(
 
               // Step 4: Call chat completion
               const startChat = Date.now();
-              const answer = await chatCompleter([
+              const chatResult = await chatCompleter([
                 { role: 'system', content: systemPromptTemplate + contextText },
                 { role: 'user', content: prompt },
               ], {
@@ -366,19 +366,19 @@ export function createLlmRagPlugin(
               const chatLatency = Date.now() - startChat;
 
               console.log(
-                `[graphile-llm] RAG chat: sources=${topChunks.length}, latency=${chatLatency}ms`
+                `[graphile-llm] RAG chat: sources=${topChunks.length}, tokens=${chatResult.usage.totalTokens}, latency=${chatLatency}ms`
               );
 
               // Step 5: Return response
               return {
-                answer,
+                answer: chatResult.content,
                 sources: topChunks.map((chunk) => ({
                   content: chunk.content,
                   similarity: 1 - chunk.distance,
                   tableName: chunk.table_name,
                   parentId: chunk.parent_id,
                 })),
-                tokensUsed: null as number | null, // Deferred to metering system
+                tokensUsed: chatResult.usage.totalTokens,
               };
             });
           },

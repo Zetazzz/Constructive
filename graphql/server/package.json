@@ -41,7 +41,7 @@
     "backend"
   ],
   "dependencies": {
-    "@agentic-kit/ollama": "^1.0.3",
+    "@agentic-kit/ollama": "^1.2.1",
     "@constructive-io/csrf": "workspace:^",
     "@constructive-io/graphql-env": "workspace:^",
     "@constructive-io/graphql-types": "workspace:^",
