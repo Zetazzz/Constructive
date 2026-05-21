@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.33.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.32.0...@constructive-io/graphql-server@4.33.0) (2026-05-21)
+
+### Features
+
+- replace placeholder token estimates with real counts from agentic-kit v1.2.1 ([d61e92b](https://github.com/constructive-io/constructive/commit/d61e92bf4345e887e326a4625dafc6fb4474376b))
+- use real embedding token counts from @agentic-kit/ollama@2.0.0 ([1e84f7f](https://github.com/constructive-io/constructive/commit/1e84f7f8d5ea4440174aefb565ddc385e0f7285f))
+
 # [4.32.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.5...@constructive-io/graphql-server@4.32.0) (2026-05-21)
 
 ### Features

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.44.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.43.0...@constructive-io/graphql-codegen@4.44.0) (2026-05-21)
+
+### Features
+
+- use real embedding token counts from @agentic-kit/ollama@2.0.0 ([1e84f7f](https://github.com/constructive-io/constructive/commit/1e84f7f8d5ea4440174aefb565ddc385e0f7285f))
+
 # [4.43.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.42.5...@constructive-io/graphql-codegen@4.43.0) (2026-05-21)
 
 ### Bug Fixes
