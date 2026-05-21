@@ -205,13 +205,28 @@ describeExtended('Ollama live extended', () => {
     expect(output.trim().toLowerCase()).toContain('marble');
   });
 
-  itWithEmbeddings('generates local embeddings when an embed model is installed', async () => {
+  itWithEmbeddings('generates local embeddings with token count via /api/embed', async () => {
     const client = new OllamaClient(baseUrl);
-    const embedding = await client.generateEmbedding('hello world', embedModel);
+    const result = await client.generateEmbedding('hello world', embedModel);
 
-    expect(Array.isArray(embedding)).toBe(true);
-    expect(embedding.length).toBeGreaterThan(0);
-    expect(embedding.every((value) => Number.isFinite(value))).toBe(true);
+    expect(result).toHaveProperty('embedding');
+    expect(result).toHaveProperty('promptTokens');
+    expect(Array.isArray(result.embedding)).toBe(true);
+    expect(result.embedding.length).toBeGreaterThan(0);
+    expect(result.embedding.every((value) => Number.isFinite(value))).toBe(true);
+    expect(result.promptTokens).toBeGreaterThan(0);
+  });
+
+  itWithEmbeddings('OllamaAdapter.embed() returns embedding with token count', async () => {
+    const { OllamaAdapter } = require('../src/index');
+    const adapter = new OllamaAdapter(baseUrl);
+    const result = await adapter.embed('hello world', embedModel);
+
+    expect(result).toHaveProperty('embedding');
+    expect(result).toHaveProperty('promptTokens');
+    expect(Array.isArray(result.embedding)).toBe(true);
+    expect(result.embedding.length).toBeGreaterThan(0);
+    expect(result.promptTokens).toBeGreaterThan(0);
   });
 });
 

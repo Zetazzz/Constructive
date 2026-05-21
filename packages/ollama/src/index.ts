@@ -246,8 +246,17 @@ interface OllamaChatLine {
   response?: string;
 }
 
-interface OllamaEmbeddingResponse {
+interface OllamaEmbedResponse {
+  model: string;
+  embeddings: number[][];
+  total_duration?: number;
+  load_duration?: number;
+  prompt_eval_count?: number;
+}
+
+export interface EmbeddingResult {
   embedding: number[];
+  promptTokens: number;
 }
 
 export const OLLAMA_MODELS: ModelDescriptor[] = [];
@@ -297,18 +306,21 @@ export class OllamaClient {
     }
   }
 
-  async generateEmbedding(text: string, model = 'nomic-embed-text'): Promise<number[]> {
-    const response = await fetch(`${this.baseUrl}/api/embeddings`, {
+  async generateEmbedding(text: string, model = 'nomic-embed-text'): Promise<EmbeddingResult> {
+    const response = await fetch(`${this.baseUrl}/api/embed`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, prompt: text }),
+      body: JSON.stringify({ model, input: text }),
     });
     if (!response.ok) {
       throw new Error(`generateEmbedding failed: ${response.status} ${response.statusText}`);
     }
 
-    const payload = (await response.json()) as OllamaEmbeddingResponse;
-    return payload.embedding;
+    const payload = (await response.json()) as OllamaEmbedResponse;
+    return {
+      embedding: payload.embeddings[0],
+      promptTokens: payload.prompt_eval_count ?? 0,
+    };
   }
 
   async generate(input: GenerateInput): Promise<string>;
@@ -383,6 +395,10 @@ export class OllamaAdapter {
 
   async listModels(): Promise<Array<ModelDescriptor | string>> {
     return this.client.listModels();
+  }
+
+  async embed(text: string, model = 'nomic-embed-text'): Promise<EmbeddingResult> {
+    return this.client.generateEmbedding(text, model);
   }
 
   stream(model: ModelDescriptor, context: Context, options?: StreamOptions): AssistantMessageEventStream {

@@ -50,9 +50,10 @@ await client.generate(
 // Pull a model to local cache
 await client.pullModel('mistral');
 
-// Generate embeddings
-const embedding = await client.generateEmbedding('Compute embeddings');
-console.log('Embedding vector length:', embedding.length);
+// Generate embeddings (with token count from /api/embed)
+const result = await client.generateEmbedding('Compute embeddings');
+console.log('Embedding vector length:', result.embedding.length);
+console.log('Prompt tokens:', result.promptTokens);
 
 // Delete a pulled model when done
 await client.deleteModel('mistral');
@@ -64,7 +65,7 @@ await client.deleteModel('mistral');
 - `.listModels(): Promise<string[]>`
 - `.showModel(model: string): Promise<{ capabilities?: string[] } | null>`
 - `.generate(input: GenerateInput, onChunk?: (chunk: string) => void): Promise<string | void>`
-- `.generateEmbedding(text: string, model?: string): Promise<number[]>` — defaults to `nomic-embed-text`
+- `.generateEmbedding(text: string, model?: string): Promise<EmbeddingResult>` — returns `{ embedding: number[], promptTokens: number }`, defaults to `nomic-embed-text`
 - `.pullModel(model: string): Promise<void>`
 - `.deleteModel(model: string): Promise<void>`
 
@@ -75,6 +76,10 @@ import { OllamaAdapter } from '@agentic-kit/ollama';
 
 const provider = new OllamaAdapter('http://localhost:11434');
 const model = provider.createModel('llama3');
+
+// Embeddings with real token counts
+const result = await provider.embed('Compute embeddings', 'nomic-embed-text');
+console.log(result.embedding.length, result.promptTokens);
 ```
 
 ## Local Live Tests
