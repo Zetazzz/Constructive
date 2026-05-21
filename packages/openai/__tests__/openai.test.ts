@@ -132,6 +132,20 @@ describe('OpenAIAdapter', () => {
     expect(message.usage.totalTokens).toBe(40);
   });
 
+  it('createModel preserves model-specific compat overriding adapter defaults', () => {
+    const adapter = new OpenAIAdapter({ apiKey: 'k' });
+    const model = adapter.createModel('gpt-5.4-nano');
+    expect(model.compat?.maxTokensField).toBe('max_completion_tokens');
+  });
+
+  it('createModel lets caller overrides win over both', () => {
+    const adapter = new OpenAIAdapter({ apiKey: 'k' });
+    const model = adapter.createModel('gpt-5.4-nano', {
+      compat: { maxTokensField: 'max_tokens' },
+    });
+    expect(model.compat?.maxTokensField).toBe('max_tokens');
+  });
+
   it('falls back to built-in models when no API key is configured', async () => {
     const adapter = new OpenAIAdapter();
     const models = await adapter.listModels();

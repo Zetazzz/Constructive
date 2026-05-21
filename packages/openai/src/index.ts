@@ -389,8 +389,8 @@ export class OpenAIAdapter {
       return {
         ...builtIn,
         baseUrl: this.baseUrl,
-        headers: { ...(builtIn.headers ?? {}), ...(this.defaultHeaders ?? {}), ...(overrides?.headers ?? {}) },
-        compat: { ...(builtIn.compat ?? {}), ...(this.compat ?? {}), ...(overrides?.compat ?? {}) },
+        headers: { ...(this.defaultHeaders ?? {}), ...(builtIn.headers ?? {}), ...(overrides?.headers ?? {}) },
+        compat: { ...(this.compat ?? {}), ...(builtIn.compat ?? {}), ...(overrides?.compat ?? {}) },
         ...overrides,
       };
     }
