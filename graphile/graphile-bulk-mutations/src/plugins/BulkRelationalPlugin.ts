@@ -1,6 +1,7 @@
 import '../augmentations';
 
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType } from 'graphql';
 
 import { discoverNestedRelations } from '../utils/relations';
 
@@ -106,7 +107,7 @@ export const BulkRelationalPlugin: GraphileConfig.Plugin = {
                     const inputType = build.getGraphQLTypeByPgCodec(
                       attr.codec,
                       'input'
-                    );
+                    ) as GraphQLInputType | undefined;
                     if (!inputType) continue;
 
                     const isRequired = !!attr.notNull && !attr.hasDefault;
@@ -168,7 +169,7 @@ export const BulkRelationalPlugin: GraphileConfig.Plugin = {
               parentTypeName,
               childTypeName
             );
-          const nestedInputType = build.getTypeByName(nestedInputTypeName);
+          const nestedInputType = build.getTypeByName(nestedInputTypeName) as GraphQLInputType | undefined;
           if (!nestedInputType) continue;
 
           fields = build.extend(

@@ -1,5 +1,6 @@
 import '../augmentations';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType } from 'graphql';
 import type { ConnectionFilterOperatorSpec } from '../types';
 import { $$filters } from '../types';
 import { makeApplyFromOperatorSpec } from './operatorApply';
@@ -137,7 +138,7 @@ export const ConnectionFilterCustomOperatorsPlugin: GraphileConfig.Plugin = {
           const codecGraphQLType = build.getGraphQLTypeByPgCodec(
             inputCodec,
             'input'
-          );
+          ) as GraphQLInputType | undefined;
           if (!codecGraphQLType) {
             continue;
           }

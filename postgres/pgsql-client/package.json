@@ -41,14 +41,14 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "makage": "^0.3.0"
   },
   "dependencies": {
     "@pgpmjs/core": "workspace:^",
     "@pgpmjs/logger": "workspace:^",
     "@pgpmjs/types": "workspace:^",
-    "pg": "^8.20.0",
+    "pg": "^8.21.0",
     "pg-env": "workspace:^"
   }
 }

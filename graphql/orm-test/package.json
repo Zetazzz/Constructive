@@ -14,13 +14,13 @@
     "@constructive-io/graphql-query": "workspace:^",
     "@constructive-io/graphql-test": "workspace:^",
     "@constructive-io/graphql-types": "workspace:^",
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "gql-ast": "workspace:^",
     "graphile-settings": "workspace:^",
     "graphile-test": "workspace:^",
     "graphql": "16.13.0",
     "pgsql-test": "workspace:^",
-    "ts-jest": "^29.1.0",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.0.0"
   }
 }

@@ -45,14 +45,14 @@
     "@pgpmjs/server-utils": "workspace:^",
     "@pgpmjs/types": "workspace:^",
     "inflekt": "^0.7.1",
-    "pg": "^8.20.0",
+    "pg": "^8.21.0",
     "pg-cache": "workspace:^",
     "pg-env": "workspace:^",
     "pgsql-test": "workspace:^"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "makage": "^0.3.0"
   }
 }

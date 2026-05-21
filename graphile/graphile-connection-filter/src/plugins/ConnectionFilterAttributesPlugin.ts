@@ -1,5 +1,6 @@
 import '../augmentations';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType } from 'graphql';
 import { isEmpty } from '../utils';
 
 const version = '1.0.0';
@@ -64,7 +65,7 @@ export const ConnectionFilterAttributesPlugin: GraphileConfig.Plugin = {
           const digest = connectionFilterOperatorsDigest(attribute.codec);
           if (!digest) continue;
 
-          const OperatorsType = build.getTypeByName(digest.operatorsTypeName);
+          const OperatorsType = build.getTypeByName(digest.operatorsTypeName) as GraphQLInputType | undefined;
           if (!OperatorsType) continue;
 
           const {

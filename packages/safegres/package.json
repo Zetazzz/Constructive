@@ -41,20 +41,20 @@
     "constructive"
   ],
   "dependencies": {
-    "@inquirerer/utils": "^3.3.5",
+    "@inquirerer/utils": "^3.3.7",
     "@pgpmjs/logger": "workspace:^",
-    "@pgsql/traverse": "^17.2.5",
+    "@pgsql/traverse": "^17.2.6",
     "@pgsql/types": "^17.6.2",
-    "inquirerer": "^4.7.0",
-    "pg": "^8.16.0",
+    "inquirerer": "^4.8.1",
+    "pg": "^8.21.0",
     "pg-env": "workspace:^",
-    "pgsql-deparser": "^17.18.2",
-    "pgsql-parser": "^17.9.14",
+    "pgsql-deparser": "^17.18.3",
+    "pgsql-parser": "^17.9.15",
     "yanse": "^0.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@types/pg": "^8.11.10",
+    "@types/pg": "^8.20.0",
     "makage": "^0.3.0",
     "pgsql-test": "workspace:^"
   }
