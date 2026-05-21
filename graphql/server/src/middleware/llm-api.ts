@@ -264,7 +264,8 @@ async function logInference(
     actorId: string;
     model: string;
     provider: string;
-    requestType: string;
+    service: string;
+    operation: string;
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
@@ -276,14 +277,15 @@ async function logInference(
     await withRlsClient(pool, pgSettings, async (client) => {
       await client.query(
         `INSERT INTO "${logInfo.schemaName}"."${logInfo.tableName}"
-         (entity_id, actor_id, model, provider, request_type, input_tokens, output_tokens, total_tokens, latency_ms, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+         (entity_id, actor_id, model, provider, service, operation, input_tokens, output_tokens, total_tokens, latency_ms, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [
           data.entityId,
           data.actorId,
           data.model,
           data.provider,
-          data.requestType,
+          data.service,
+          data.operation,
           data.inputTokens,
           data.outputTokens,
           data.totalTokens,
@@ -572,7 +574,8 @@ async function handleSendMessage(
           actorId: userId,
           model,
           provider: 'ollama',
-          requestType: 'chat',
+          service: 'llm',
+          operation: 'chat',
           inputTokens,
           outputTokens,
           totalTokens,
@@ -635,7 +638,8 @@ async function handleSendMessage(
         actorId: userId,
         model,
         provider: 'ollama',
-        requestType: 'chat',
+        service: 'llm',
+        operation: 'chat',
         inputTokens,
         outputTokens,
         totalTokens,

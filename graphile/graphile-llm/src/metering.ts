@@ -133,10 +133,13 @@ export interface InferenceLogEntry {
   actorId: string | null;
   model: string;
   provider: string | null;
-  requestType: 'embedding' | 'chat' | 'rag';
+  service: 'llm' | 'embedding' | 'tts' | 'stt' | 'ocr' | 'image_gen' | 'search' | 'compute';
+  operation: string;
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
   latencyMs: number;
   ragEnabled: boolean;
   chunksRetrieved: number | null;
@@ -144,6 +147,7 @@ export interface InferenceLogEntry {
   embeddingLatencyMs: number | null;
   status: 'success' | 'quota_exceeded' | 'provider_error' | 'timeout';
   errorType: string | null;
+  rawUsage: Record<string, unknown> | null;
 }
 
 /**
@@ -161,29 +165,33 @@ export async function logInferenceUsage(
   const { schema, tableName } = ctx.inferenceLog;
   const sql = `INSERT INTO "${schema}"."${tableName}" (
     database_id, entity_id, actor_id,
-    model, provider, request_type,
+    model, provider, service, operation,
     input_tokens, output_tokens, total_tokens,
+    cache_read_tokens, cache_write_tokens,
     latency_ms, rag_enabled, chunks_retrieved,
     embedding_model, embedding_latency_ms,
-    status, error_type
+    status, error_type, raw_usage
   ) VALUES (
     $1, $2, $3,
-    $4, $5, $6,
-    $7, $8, $9,
-    $10, $11, $12,
-    $13, $14,
-    $15, $16
+    $4, $5, $6, $7,
+    $8, $9, $10,
+    $11, $12,
+    $13, $14, $15,
+    $16, $17,
+    $18, $19, $20
   )`;
 
   try {
     await ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
       await pgClient.query(sql, [
         entry.databaseId, entry.entityId, entry.actorId,
-        entry.model, entry.provider, entry.requestType,
+        entry.model, entry.provider, entry.service, entry.operation,
         entry.inputTokens, entry.outputTokens, entry.totalTokens,
+        entry.cacheReadTokens, entry.cacheWriteTokens,
         entry.latencyMs, entry.ragEnabled, entry.chunksRetrieved,
         entry.embeddingModel, entry.embeddingLatencyMs,
         entry.status, entry.errorType,
+        entry.rawUsage ? JSON.stringify(entry.rawUsage) : null,
       ]);
     });
   } catch (e: unknown) {
@@ -259,10 +267,13 @@ export async function meteredEmbed(
       actorId: ctx.actorId,
       model: options.embeddingModel ?? meterSlug,
       provider: options.provider ?? null,
-      requestType: 'embedding',
+      service: 'embedding',
+      operation: 'create',
       inputTokens: placeholderAmountTokens,
       outputTokens: 0,
       totalTokens: placeholderAmountTokens,
+      cacheReadTokens: null,
+      cacheWriteTokens: null,
       latencyMs: Date.now() - startTime,
       ragEnabled: false,
       chunksRetrieved: null,
@@ -270,6 +281,7 @@ export async function meteredEmbed(
       embeddingLatencyMs: null,
       status: 'quota_exceeded',
       errorType: null,
+      rawUsage: null,
     }).catch(() => {});
 
     return {
@@ -302,10 +314,13 @@ export async function meteredEmbed(
     actorId: ctx.actorId,
     model: options.embeddingModel ?? meterSlug,
     provider: options.provider ?? null,
-    requestType: 'embedding',
+    service: 'embedding',
+    operation: 'create',
     inputTokens: placeholderAmountTokens,
     outputTokens: 0,
     totalTokens: placeholderAmountTokens,
+    cacheReadTokens: null,
+    cacheWriteTokens: null,
     latencyMs,
     ragEnabled: false,
     chunksRetrieved: null,
@@ -313,6 +328,7 @@ export async function meteredEmbed(
     embeddingLatencyMs: latencyMs,
     status: 'success',
     errorType: null,
+    rawUsage: null,
   }).catch(() => {});
 
   return {
@@ -387,10 +403,13 @@ export async function meteredChat(
       actorId: ctx.actorId,
       model: meteringOptions.chatModel ?? meterSlug,
       provider: meteringOptions.provider ?? null,
-      requestType: 'chat',
+      service: 'llm',
+      operation: 'chat',
       inputTokens: placeholderInputTokens,
       outputTokens: 0,
       totalTokens: placeholderInputTokens,
+      cacheReadTokens: null,
+      cacheWriteTokens: null,
       latencyMs: Date.now() - startTime,
       ragEnabled: false,
       chunksRetrieved: null,
@@ -398,6 +417,7 @@ export async function meteredChat(
       embeddingLatencyMs: null,
       status: 'quota_exceeded',
       errorType: null,
+      rawUsage: null,
     }).catch(() => {});
 
     return {
@@ -434,10 +454,13 @@ export async function meteredChat(
     actorId: ctx.actorId,
     model: meteringOptions.chatModel ?? meterSlug,
     provider: meteringOptions.provider ?? null,
-    requestType: 'chat',
+    service: 'llm',
+    operation: 'chat',
     inputTokens: placeholderInputTokens,
     outputTokens: placeholderOutputTokens,
     totalTokens: placeholderTotalTokens,
+    cacheReadTokens: null,
+    cacheWriteTokens: null,
     latencyMs,
     ragEnabled: false,
     chunksRetrieved: null,
@@ -445,6 +468,7 @@ export async function meteredChat(
     embeddingLatencyMs: null,
     status: 'success',
     errorType: null,
+    rawUsage: null,
   }).catch(() => {});
 
   return {
