@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.2.1](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/anthropic@1.2.0...@agentic-kit/anthropic@1.2.1) (2026-05-21)
+
+### Bug Fixes
+
+- **anthropic:** initialize reasoning field at zero ([d6087d2](https://github.com/constructive-io/agentic-kit/commit/d6087d290a04ef0dccd449f67c42b1f4f0f1f02d))
+
 # [1.2.0](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/anthropic@1.1.0...@agentic-kit/anthropic@1.2.0) (2026-05-14)
 
 **Note:** Version bump only for package @agentic-kit/anthropic

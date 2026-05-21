@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.2.1](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/ollama@1.2.0...@agentic-kit/ollama@1.2.1) (2026-05-21)
+
+### Bug Fixes
+
+- **ollama:** invoke calculateUsageCost so cost.total populates ([6d34ed7](https://github.com/constructive-io/agentic-kit/commit/6d34ed7576793c39e9bb10e1c4492b5cfce0bf31))
+
 # [1.2.0](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/ollama@1.1.0...@agentic-kit/ollama@1.2.0) (2026-05-14)
 
 **Note:** Version bump only for package @agentic-kit/ollama

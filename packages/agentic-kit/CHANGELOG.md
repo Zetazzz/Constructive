@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.3.0](https://github.com/constructive-io/agentic-kit/compare/agentic-kit@1.2.0...agentic-kit@1.3.0) (2026-05-21)
+
+### Features
+
+- **agentic-kit:** add reasoning token field and usage helpers ([e5cbff1](https://github.com/constructive-io/agentic-kit/commit/e5cbff1502f54ec315384af8cf97b10d24229b02))
+
 # [1.2.0](https://github.com/constructive-io/agentic-kit/compare/agentic-kit@1.1.0...agentic-kit@1.2.0) (2026-05-14)
 
 **Note:** Version bump only for package agentic-kit

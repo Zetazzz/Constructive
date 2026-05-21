@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/agent@0.3.0...@agentic-kit/agent@0.4.0) (2026-05-21)
+
+### Features
+
+- **agent:** accumulate cumulative totalUsage and emit on turn_end/agent_end ([0b40656](https://github.com/constructive-io/agentic-kit/commit/0b40656b6c3a4522764681e1c913af3180abc172))
+
 # [0.3.0](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/agent@0.2.0...@agentic-kit/agent@0.3.0) (2026-05-14)
 
 **Note:** Version bump only for package @agentic-kit/agent

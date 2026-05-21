@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.2.1](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/openai@1.2.0...@agentic-kit/openai@1.2.1) (2026-05-21)
+
+### Bug Fixes
+
+- **openai:** restore adapter→builtin→override precedence in createModel ([ff81bc8](https://github.com/constructive-io/agentic-kit/commit/ff81bc80cb0016b1c56b79b144e349b164b561e6))
+- **openai:** split reasoning from output and fix cacheWrite in totalTokens fallback ([649654c](https://github.com/constructive-io/agentic-kit/commit/649654c8733efdd0b17fe03c404ab647bac04826))
+
 # [1.2.0](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/openai@1.1.0...@agentic-kit/openai@1.2.0) (2026-05-14)
 
 **Note:** Version bump only for package @agentic-kit/openai
