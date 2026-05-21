@@ -230,7 +230,9 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
                         );
                       }
 
+                      const startTime = Date.now();
                       const vector = await embedder(value);
+                      const latencyMs = Date.now() - startTime;
 
                       if (vector === null) {
                         throw new Error(
@@ -240,7 +242,7 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
                       }
 
                       console.log(
-                        `[graphile-llm] Mutation embed: field=${key}, dims=${vector.length}`
+                        `[graphile-llm] Mutation embed: field=${key}, dims=${vector.length}, latency=${latencyMs}ms`
                       );
 
                       // Inject the vector into the corresponding field
