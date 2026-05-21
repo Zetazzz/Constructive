@@ -67,14 +67,6 @@ interface SendMessageBody {
   stream?: boolean;
 }
 
-interface TokenUsageJson {
-  input: number;
-  output: number;
-  totalTokens: number;
-  model: string;
-  latency_ms: number;
-}
-
 /**
  * Estimate token count from text length (~4 chars per token for English).
  * Used as fallback when the provider doesn't return actual counts.
@@ -85,8 +77,8 @@ function estimateTokens(text: string): number {
 
 /**
  * Call generate() and estimate token counts from text length.
- * When a provider-native token counting API is approved, this can be
- * swapped out without changing call sites.
+ * When a provider-native token counting API is approved, swap the
+ * estimation logic here without changing call sites.
  */
 async function callWithUsage(
   client: OllamaClient,
@@ -531,31 +523,27 @@ async function handleSendMessage(
       const content = streamedContent;
       const promptText = llmMessages.map(m => m.content).join(' ');
       const latencyMs = Date.now() - startTime;
-      const tokenUsage: TokenUsageJson = {
-        input: estimateTokens(promptText),
-        output: estimateTokens(content),
-        totalTokens: estimateTokens(promptText) + estimateTokens(content),
-        model,
-        latency_ms: latencyMs,
-      };
+      const inputTokens = estimateTokens(promptText);
+      const outputTokens = estimateTokens(content);
+      const totalTokens = inputTokens + outputTokens;
 
       // Send [DONE] marker
       res.write('data: [DONE]\n\n');
       res.end();
 
-      // 6. Persist assistant response with token_usage (fire-and-forget)
+      // 6. Persist assistant message with model (fire-and-forget)
       if (content) {
         withRlsClient(pool, pgSettings, async (client) => {
           await client.query(
             `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
-             (thread_id, owner_id, entity_id, author_role, parts, token_usage)
+             (thread_id, owner_id, entity_id, author_role, parts, model)
              VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4, $5)`,
             [
               threadId,
               userId,
               'assistant',
               JSON.stringify([{ type: 'text', text: content }]),
-              JSON.stringify(tokenUsage),
+              model,
             ],
           );
         }).catch((err) => {
@@ -564,10 +552,10 @@ async function handleSendMessage(
       }
 
       // 7. Record billing usage (fire-and-forget)
-      if (billing && tokenUsage.totalTokens > 0) {
-        recordUsage(pool, pgSettings, billing, entityId, meterSlug, tokenUsage.totalTokens, {
-          input_tokens: tokenUsage.input,
-          output_tokens: tokenUsage.output,
+      if (billing && totalTokens > 0) {
+        recordUsage(pool, pgSettings, billing, entityId, meterSlug, totalTokens, {
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
           model,
           latency_ms: latencyMs,
           stream: true,
@@ -582,9 +570,9 @@ async function handleSendMessage(
           model,
           provider: 'ollama',
           requestType: 'chat',
-          inputTokens: tokenUsage.input,
-          outputTokens: tokenUsage.output,
-          totalTokens: tokenUsage.totalTokens,
+          inputTokens,
+          outputTokens,
+          totalTokens,
           latencyMs,
           status: 'ok',
         }).catch(() => {});
@@ -606,35 +594,31 @@ async function handleSendMessage(
     });
 
     const latencyMs = Date.now() - startTime;
-    const tokenUsage: TokenUsageJson = {
-      input: result.usage.input,
-      output: result.usage.output,
-      totalTokens: result.usage.totalTokens,
-      model,
-      latency_ms: latencyMs,
-    };
+    const inputTokens = result.usage.input;
+    const outputTokens = result.usage.output;
+    const totalTokens = result.usage.totalTokens;
 
-    // Persist assistant response with token_usage
+    // Persist assistant message with model
     await withRlsClient(pool, pgSettings, async (client) => {
       await client.query(
         `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
-         (thread_id, owner_id, entity_id, author_role, parts, token_usage)
+         (thread_id, owner_id, entity_id, author_role, parts, model)
          VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4, $5)`,
         [
           threadId,
           userId,
           'assistant',
           JSON.stringify([{ type: 'text', text: result.content }]),
-          JSON.stringify(tokenUsage),
+          model,
         ],
       );
     });
 
     // Record billing usage
-    if (billing && tokenUsage.totalTokens > 0) {
-      recordUsage(pool, pgSettings, billing, entityId, meterSlug, tokenUsage.totalTokens, {
-        input_tokens: tokenUsage.input,
-        output_tokens: tokenUsage.output,
+    if (billing && totalTokens > 0) {
+      recordUsage(pool, pgSettings, billing, entityId, meterSlug, totalTokens, {
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
         model,
         latency_ms: latencyMs,
         stream: false,
@@ -649,9 +633,9 @@ async function handleSendMessage(
         model,
         provider: 'ollama',
         requestType: 'chat',
-        inputTokens: tokenUsage.input,
-        outputTokens: tokenUsage.output,
-        totalTokens: tokenUsage.totalTokens,
+        inputTokens,
+        outputTokens,
+        totalTokens,
         latencyMs,
         status: 'ok',
       }).catch(() => {});
@@ -666,9 +650,9 @@ async function handleSendMessage(
       }],
       model,
       usage: {
-        prompt_tokens: tokenUsage.input,
-        completion_tokens: tokenUsage.output,
-        total_tokens: tokenUsage.totalTokens,
+        prompt_tokens: inputTokens,
+        completion_tokens: outputTokens,
+        total_tokens: totalTokens,
       },
     });
   }
