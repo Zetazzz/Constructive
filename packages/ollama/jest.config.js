@@ -22,5 +22,6 @@ module.exports = {
     '^agentic-kit$': '<rootDir>/../agentic-kit/src',
     '^@agentic-kit/(.*)$': '<rootDir>/../$1/src',
   },
+  setupFiles: ['<rootDir>/../../tools/test/load-env.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js']
 };

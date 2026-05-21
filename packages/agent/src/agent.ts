@@ -1,9 +1,12 @@
 import {
+  addUsage,
   type AssistantMessage,
   type Context,
+  createEmptyUsage,
   createToolResultMessage,
   createUserMessage,
   type Message,
+  snapshotUsage,
   stream,
   type StreamOptions,
   type ToolCallContent,
@@ -47,6 +50,7 @@ export class Agent {
       messages: [],
       isStreaming: false,
       stepCount: 0,
+      totalUsage: createEmptyUsage(),
       streamMessage: null,
       streamOptions: undefined,
       ...options.initialState,
@@ -116,6 +120,7 @@ export class Agent {
 
     const message = typeof input === 'string' ? createUserMessage(input) : input;
     this._state.stepCount = 0;
+    this._state.totalUsage = createEmptyUsage();
 
     const handle: AgentRunHandle = new DefaultAgentRunHandle(async (push, signal) => {
       if (this.outstandingHandle === handle) {
@@ -293,7 +298,7 @@ export class Agent {
 
             if (assistantMessage.stopReason === 'error' || assistantMessage.stopReason === 'aborted') {
               this._state.error = assistantMessage.errorMessage;
-              await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [] });
+              await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [], totalUsage: snapshotUsage(this._state.totalUsage) });
               break;
             }
           }
@@ -302,7 +307,7 @@ export class Agent {
             (block): block is ToolCallContent => block.type === 'toolCall'
           );
           if (toolCalls.length === 0) {
-            await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [] });
+            await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: [], totalUsage: snapshotUsage(this._state.totalUsage) });
             break;
           }
 
@@ -312,7 +317,7 @@ export class Agent {
             return;
           }
 
-          await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: outcome.results });
+          await this.emit({ type: 'turn_end', message: assistantMessage, toolResults: outcome.results, totalUsage: snapshotUsage(this._state.totalUsage) });
 
           if (localAbortController.signal.aborted) {
             stopReason = 'aborted';
@@ -320,7 +325,7 @@ export class Agent {
           }
         }
 
-        await this.emit({ type: 'agent_end', messages: [...this._state.messages], stopReason });
+        await this.emit({ type: 'agent_end', messages: [...this._state.messages], stopReason, totalUsage: snapshotUsage(this._state.totalUsage) });
       } finally {
         if (opts.externalAbortSignal) {
           opts.externalAbortSignal.removeEventListener('abort', onExternalAbort);
@@ -381,7 +386,9 @@ export class Agent {
       }
     }
 
-    return streamResult.result();
+    const message = await streamResult.result();
+    addUsage(this._state.totalUsage, message.usage);
+    return message;
   }
 
   private async executeToolCalls(

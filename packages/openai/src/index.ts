@@ -128,6 +128,7 @@ interface StreamOptions {
 interface Usage {
   input: number;
   output: number;
+  reasoning: number;
   cacheRead: number;
   cacheWrite: number;
   totalTokens: number;
@@ -388,8 +389,8 @@ export class OpenAIAdapter {
       return {
         ...builtIn,
         baseUrl: this.baseUrl,
-        headers: { ...(builtIn.headers ?? {}), ...(this.defaultHeaders ?? {}), ...(overrides?.headers ?? {}) },
-        compat: { ...(builtIn.compat ?? {}), ...(this.compat ?? {}), ...(overrides?.compat ?? {}) },
+        headers: { ...(this.defaultHeaders ?? {}), ...(builtIn.headers ?? {}), ...(overrides?.headers ?? {}) },
+        compat: { ...(this.compat ?? {}), ...(builtIn.compat ?? {}), ...(overrides?.compat ?? {}) },
         ...overrides,
       };
     }
@@ -797,6 +798,7 @@ function createAssistantMessage(model: ModelDescriptor): AssistantMessage {
     usage: {
       input: 0,
       output: 0,
+      reasoning: 0,
       cacheRead: 0,
       cacheWrite: 0,
       totalTokens: 0,
@@ -825,10 +827,11 @@ function applyUsage(
   const reasoningTokens = payload.completion_tokens_details?.reasoning_tokens ?? 0;
 
   usage.input = (payload.prompt_tokens ?? 0) - cachedTokens;
-  usage.output = (payload.completion_tokens ?? 0) + reasoningTokens;
+  usage.output = payload.completion_tokens ?? 0;
+  usage.reasoning = reasoningTokens;
   usage.cacheRead = cachedTokens;
   usage.cacheWrite = 0;
-  usage.totalTokens = payload.total_tokens ?? usage.input + usage.output + usage.cacheRead;
+  usage.totalTokens = payload.total_tokens ?? usage.input + usage.output + usage.cacheRead + usage.cacheWrite;
   calculateUsageCost(model, usage);
 }
 

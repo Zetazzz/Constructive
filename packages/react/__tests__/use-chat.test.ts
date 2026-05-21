@@ -1,5 +1,5 @@
 import type { AgentEvent } from '@agentic-kit/agent';
-import { createScriptedSSEResponse, makeFakeAssistantMessage } from '@test/index';
+import { createScriptedSSEResponse, makeFakeAssistantMessage, ZERO_USAGE } from '@test/index';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { AssistantMessage, Message, UserMessage } from 'agentic-kit';
 
@@ -77,7 +77,7 @@ describe('useChat', () => {
       async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
         streamFromEvents([
           { type: 'agent_start' },
-          { type: 'agent_end', messages: [makeUser('first'), makeUser('second'), final] },
+          { type: 'agent_end', messages: [makeUser('first'), makeUser('second'), final], totalUsage: ZERO_USAGE },
         ])
     );
 
@@ -118,7 +118,7 @@ describe('useChat', () => {
             },
           },
           { type: 'message_end', message: final },
-          { type: 'agent_end', messages: [userEcho, final] },
+          { type: 'agent_end', messages: [userEcho, final], totalUsage: ZERO_USAGE },
         ])
     );
     const onMessage = jest.fn();
@@ -196,6 +196,7 @@ describe('useChat', () => {
     pushFn({
       type: 'agent_end',
       messages: [makeUser('hi'), final],
+      totalUsage: ZERO_USAGE,
     });
     closeFn();
     await act(async () => {
@@ -215,7 +216,7 @@ describe('useChat', () => {
       async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
         streamFromEvents([
           { type: 'agent_start' },
-          { type: 'agent_end', messages: [makeUser('hi'), final] },
+          { type: 'agent_end', messages: [makeUser('hi'), final], totalUsage: ZERO_USAGE },
         ])
     );
     const body = jest.fn(() => ({ model: 'demo', sessionId: 'abc' }));
@@ -248,7 +249,7 @@ describe('useChat', () => {
         controller.enqueue(encoder.encode('data: {garbage not json\n\n'));
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ type: 'agent_end', messages: [makeUser('hi'), final] })}\n\n`
+            `data: ${JSON.stringify({ type: 'agent_end', messages: [makeUser('hi'), final], totalUsage: ZERO_USAGE })}\n\n`
           )
         );
         controller.close();
@@ -280,7 +281,7 @@ describe('useChat', () => {
         async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
           streamFromEvents([
             { type: 'agent_start' },
-            { type: 'agent_end', messages: [makeUser('a'), makeUser('b'), final] },
+            { type: 'agent_end', messages: [makeUser('a'), makeUser('b'), final], totalUsage: ZERO_USAGE },
           ])
       );
       const { result } = renderHook(() => useChat({ api: '/chat', fetch: fetchFn }));
@@ -304,7 +305,7 @@ describe('useChat', () => {
           });
           return streamFromEvents([
             { type: 'agent_start' },
-            { type: 'agent_end', messages: [makeUser('hi'), makeFinalAssistant('hello')] },
+            { type: 'agent_end', messages: [makeUser('hi'), makeFinalAssistant('hello')], totalUsage: ZERO_USAGE },
           ]);
         }
       );
@@ -430,7 +431,7 @@ describe('useChat', () => {
               isError: false,
             },
             { type: 'message_end', message: final },
-            { type: 'agent_end', messages: [userEcho, final] },
+            { type: 'agent_end', messages: [userEcho, final], totalUsage: ZERO_USAGE },
           ])
       );
 
@@ -762,7 +763,7 @@ describe('useChat', () => {
       expect(result.current.isStreaming).toBe(false);
 
       const lateAssistant = makeFinalAssistant('late');
-      pushFn({ type: 'agent_end', messages: [makeUser('hi'), lateAssistant] });
+      pushFn({ type: 'agent_end', messages: [makeUser('hi'), lateAssistant], totalUsage: ZERO_USAGE });
       closeFn();
       await act(async () => {
         await sendPromise;
@@ -843,6 +844,7 @@ describe('useChat', () => {
             {
               type: 'agent_end',
               messages: [userEcho, resumedAssistant, toolResult, final],
+              totalUsage: ZERO_USAGE,
             },
           ])
       );
@@ -875,7 +877,7 @@ describe('useChat', () => {
         async (): Promise<Response> =>
           streamFromEvents([
             { type: 'agent_start' },
-            { type: 'agent_end', messages: initial },
+            { type: 'agent_end', messages: initial, totalUsage: ZERO_USAGE },
           ])
       );
 
@@ -907,7 +909,7 @@ describe('useChat', () => {
         async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
           streamFromEvents([
             { type: 'agent_start' },
-            { type: 'agent_end', messages: initial },
+            { type: 'agent_end', messages: initial, totalUsage: ZERO_USAGE },
           ])
       );
 
@@ -964,7 +966,7 @@ describe('useChat', () => {
         async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
           streamFromEvents([
             { type: 'agent_start' },
-            { type: 'agent_end', messages: initial },
+            { type: 'agent_end', messages: initial, totalUsage: ZERO_USAGE },
           ])
       );
 
@@ -1049,6 +1051,113 @@ describe('useChat', () => {
     });
   });
 
+  describe('usage', () => {
+    const sampleUsage = {
+      input: 10,
+      output: 20,
+      reasoning: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 30,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    };
+
+    it('starts as null', () => {
+      const { result } = renderHook(() => useChat({ api: '/chat' }));
+      expect(result.current.usage).toBeNull();
+    });
+
+    it('is populated from agent_end totalUsage', async () => {
+      const final = makeFinalAssistant('ok');
+      const fetchFn = jest.fn(
+        async (): Promise<Response> =>
+          streamFromEvents([
+            { type: 'agent_start' },
+            { type: 'agent_end', messages: [makeUser('hi'), final], totalUsage: sampleUsage },
+          ])
+      );
+      const { result } = renderHook(() => useChat({ api: '/chat', fetch: fetchFn }));
+
+      await act(async () => {
+        await result.current.send('hi');
+      });
+
+      expect(result.current.usage).not.toBeNull();
+      expect(result.current.usage?.input).toBe(10);
+      expect(result.current.usage?.output).toBe(20);
+    });
+
+    it('is populated from turn_end totalUsage', async () => {
+      const final = makeFinalAssistant('ok');
+      const fetchFn = jest.fn(
+        async (): Promise<Response> =>
+          streamFromEvents([
+            { type: 'agent_start' },
+            {
+              type: 'turn_end',
+              message: final,
+              toolResults: [],
+              totalUsage: sampleUsage,
+            },
+            { type: 'agent_end', messages: [makeUser('hi'), final], totalUsage: sampleUsage },
+          ])
+      );
+      const { result } = renderHook(() => useChat({ api: '/chat', fetch: fetchFn }));
+
+      await act(async () => {
+        await result.current.send('hi');
+      });
+
+      expect(result.current.usage?.input).toBe(10);
+      expect(result.current.usage?.output).toBe(20);
+    });
+
+    it('resets to null when a new prompt() is called', async () => {
+      const final = makeFinalAssistant('ok');
+      let releaseFetch: (() => void) | null = null;
+      const fetchFn = jest.fn(
+        async (): Promise<Response> =>
+          streamFromEvents([
+            { type: 'agent_start' },
+            { type: 'agent_end', messages: [makeUser('hi'), final], totalUsage: sampleUsage },
+          ])
+      );
+
+      // First, complete a request so usage is populated.
+      const { result } = renderHook(() => useChat({ api: '/chat', fetch: fetchFn }));
+      await act(async () => {
+        await result.current.send('first');
+      });
+      expect(result.current.usage?.input).toBe(10);
+
+      // Now set up a blocking fetch for the second request.
+      fetchFn.mockImplementationOnce(
+        async (): Promise<Response> => {
+          await new Promise<void>((resolve) => {
+            releaseFetch = resolve;
+          });
+          return streamFromEvents([
+            { type: 'agent_start' },
+            { type: 'agent_end', messages: [makeUser('second'), final], totalUsage: sampleUsage },
+          ]);
+        }
+      );
+
+      // Start the second send (do not await yet).
+      act(() => {
+        void result.current.send('second');
+      });
+
+      // usage should be reset to null immediately after send() is called.
+      await waitFor(() => expect(result.current.usage).toBeNull());
+
+      // Release and finish.
+      await act(async () => {
+        releaseFetch?.();
+      });
+    });
+  });
+
   describe('lifecycle hooks', () => {
     it('reads handlers from a ref so consumers do not need to memoize', async () => {
       const final = makeFinalAssistant('ok');
@@ -1060,7 +1169,7 @@ describe('useChat', () => {
             { type: 'message_end', message: makeUser('hi') },
             { type: 'message_start', message: final },
             { type: 'message_end', message: final },
-            { type: 'agent_end', messages: [makeUser('hi'), final] },
+            { type: 'agent_end', messages: [makeUser('hi'), final], totalUsage: ZERO_USAGE },
           ])
       );
 

@@ -146,6 +146,7 @@ describe('OllamaAdapter', () => {
           usage: {
             input: 0,
             output: 0,
+            reasoning: 0,
             cacheRead: 0,
             cacheWrite: 0,
             totalTokens: 0,
@@ -210,6 +211,40 @@ describe('OllamaAdapter', () => {
     expect(eventTypes).toEqual(['error']);
     expect(message.stopReason).toBe('aborted');
     expect(message.errorMessage).toContain('aborted');
+  });
+
+  it('populates usage.cost when the model descriptor has a cost schedule', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce(
+      createLineResponse([
+        JSON.stringify({ message: { content: 'Hi' }, done: false }),
+        JSON.stringify({ done: true, done_reason: 'stop', prompt_eval_count: 100, eval_count: 50 }),
+      ]),
+    );
+
+    const adapter = new OllamaAdapter('http://localhost:11434');
+    const model = adapter.createModel('llama3', {
+      cost: { input: 2, output: 4 },
+    });
+    const stream = adapter.stream(model, {
+      messages: [{ role: 'user', content: 'hi', timestamp: Date.now() }],
+    });
+
+    for await (const _event of stream) {
+      // Drain stream.
+    }
+
+    const message = await stream.result();
+    expect(message.usage.input).toBe(100);
+    expect(message.usage.output).toBe(50);
+    expect(message.usage.cost.total).toBeGreaterThan(0);
+    expect(message.usage.cost.input + message.usage.cost.output).toBeCloseTo(
+      message.usage.cost.total,
+      10,
+    );
+    // 100 * (2 / 1_000_000) = 0.0002, 50 * (4 / 1_000_000) = 0.0002, total = 0.0004
+    expect(message.usage.cost.input).toBeCloseTo(0.0002, 10);
+    expect(message.usage.cost.output).toBeCloseTo(0.0002, 10);
+    expect(message.usage.cost.total).toBeCloseTo(0.0004, 10);
   });
 
   it('lists models through the client API', async () => {

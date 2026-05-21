@@ -1,4 +1,10 @@
 import {
+  createScriptedProvider,
+  makeFakeAssistantMessage,
+  makeFakeModel,
+  ZERO_USAGE,
+} from '@test/index';
+import {
   type AssistantMessage,
   type Context,
   createAssistantMessageEventStream,
@@ -7,11 +13,6 @@ import {
   type ModelDescriptor,
   type ToolCallContent,
 } from 'agentic-kit';
-import {
-  createScriptedProvider,
-  makeFakeAssistantMessage,
-  makeFakeModel,
-} from '@test/index';
 
 import {
   Agent,
@@ -183,14 +184,7 @@ describe('@agentic-kit/agent', () => {
 });
 
 function makeUsage() {
-  return {
-    input: 1,
-    output: 1,
-    cacheRead: 0,
-    cacheWrite: 0,
-    totalTokens: 2,
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-  };
+  return { ...ZERO_USAGE, cost: { ...ZERO_USAGE.cost }, input: 1, output: 1, totalTokens: 2 };
 }
 
 describe('@agentic-kit/agent — pausable tools', () => {
@@ -734,5 +728,179 @@ describe('@agentic-kit/agent — maxSteps', () => {
 
     await agent.prompt('second');
     expect(agent.state.stepCount).toBe(1);
+  });
+});
+
+describe('@agentic-kit/agent — totalUsage accumulation', () => {
+  function makeUsageTurn(input: number, output: number) {
+    const totalTokens = input + output;
+    return {
+      input,
+      output,
+      reasoning: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens,
+      cost: { input: input * 0.01, output: output * 0.02, cacheRead: 0, cacheWrite: 0, total: input * 0.01 + output * 0.02 },
+    };
+  }
+
+  it('accumulates totalUsage across two turns and attaches snapshot to turn_end and agent_end events', async () => {
+    const turn1Usage = makeUsageTurn(10, 20);
+    const turn2Usage = makeUsageTurn(30, 40);
+
+    const responses = [
+      makeFakeAssistantMessage({
+        stopReason: 'toolUse',
+        usage: turn1Usage,
+        content: [{ type: 'toolCall', id: 'tool_1', name: 'echo', arguments: { text: 'hi' } }],
+      }),
+      makeFakeAssistantMessage({
+        stopReason: 'stop',
+        usage: turn2Usage,
+        content: [{ type: 'text', text: 'done' }],
+      }),
+    ];
+
+    const provider = createScriptedProvider({ responses });
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([
+      {
+        name: 'echo',
+        label: 'Echo',
+        description: 'Echo text',
+        parameters: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+          required: ['text'],
+        },
+        execute: async (_id, params) => ({
+          content: [{ type: 'text', text: String(params.text) }],
+        }),
+      },
+    ]);
+
+    const events: AgentEvent[] = [];
+    agent.subscribe((e) => events.push(e));
+
+    await agent.prompt('go');
+
+    expect(agent.state.totalUsage.input).toBe(40);
+    expect(agent.state.totalUsage.output).toBe(60);
+    expect(agent.state.totalUsage.totalTokens).toBe(turn1Usage.totalTokens + turn2Usage.totalTokens);
+    expect(agent.state.totalUsage.cost.total).toBeCloseTo(
+      turn1Usage.cost.total + turn2Usage.cost.total,
+      10
+    );
+
+    const agentEndEvent = events.find(
+      (e): e is Extract<AgentEvent, { type: 'agent_end' }> => e.type === 'agent_end'
+    );
+    expect(agentEndEvent).toBeDefined();
+    expect(agentEndEvent!.totalUsage.input).toBe(agent.state.totalUsage.input);
+    expect(agentEndEvent!.totalUsage.output).toBe(agent.state.totalUsage.output);
+    expect(agentEndEvent!.totalUsage.totalTokens).toBe(agent.state.totalUsage.totalTokens);
+    expect(agentEndEvent!.totalUsage.cost.total).toBeCloseTo(agent.state.totalUsage.cost.total, 10);
+
+    // Decision #17: events carry a snapshot, not a live reference. Mutating
+    // the agent's state after emit must not leak into the captured event.
+    const capturedInput = agentEndEvent!.totalUsage.input;
+    const capturedCostTotal = agentEndEvent!.totalUsage.cost.total;
+    agent.state.totalUsage.input = 9999;
+    agent.state.totalUsage.cost.total = 9999;
+    expect(agentEndEvent!.totalUsage.input).toBe(capturedInput);
+    expect(agentEndEvent!.totalUsage.cost.total).toBe(capturedCostTotal);
+
+    const turnEndEvents = events.filter(
+      (e): e is Extract<AgentEvent, { type: 'turn_end' }> => e.type === 'turn_end'
+    );
+    const lastTurnEnd = turnEndEvents[turnEndEvents.length - 1];
+    expect(lastTurnEnd).toBeDefined();
+    expect(lastTurnEnd!.totalUsage.input).toBe(40);
+  });
+
+  it('prompt() resets totalUsage; a second prompt only reflects its own turns', async () => {
+    const turn1Usage = makeUsageTurn(10, 20);
+    const turn2Usage = makeUsageTurn(30, 40);
+
+    const provider = createScriptedProvider({
+      responses: [
+        makeFakeAssistantMessage({ stopReason: 'stop', usage: turn1Usage, content: [{ type: 'text', text: 'p1' }] }),
+        makeFakeAssistantMessage({ stopReason: 'stop', usage: turn2Usage, content: [{ type: 'text', text: 'p2' }] }),
+      ],
+    });
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+
+    await agent.prompt('first');
+    expect(agent.state.totalUsage.input).toBe(turn1Usage.input);
+    expect(agent.state.totalUsage.output).toBe(turn1Usage.output);
+
+    await agent.prompt('second');
+    expect(agent.state.totalUsage.input).toBe(turn2Usage.input);
+    expect(agent.state.totalUsage.output).toBe(turn2Usage.output);
+  });
+
+  it('continue() does NOT reset totalUsage — it keeps growing', async () => {
+    const turn1Usage = makeUsageTurn(10, 20);
+    const turn2Usage = makeUsageTurn(30, 40);
+
+    const pauseResponse = makeFakeAssistantMessage({
+      stopReason: 'toolUse',
+      usage: turn1Usage,
+      content: [{ type: 'toolCall', id: 'tool_1', name: 'approve', arguments: { target: 'thing' } }],
+    });
+    const finalResponse = makeFakeAssistantMessage({
+      stopReason: 'stop',
+      usage: turn2Usage,
+      content: [{ type: 'text', text: 'done' }],
+    });
+
+    const provider = createScriptedProvider({ responses: [pauseResponse, finalResponse] });
+
+    const approveTool: AgentTool = {
+      name: 'approve',
+      label: 'Approve',
+      description: 'Requires decision',
+      parameters: {
+        type: 'object',
+        properties: { target: { type: 'string' } },
+        required: ['target'],
+      },
+      decision: {
+        type: 'object',
+        properties: { approved: { type: 'boolean' } },
+        required: ['approved'],
+      },
+      execute: async () => ({ content: [{ type: 'text', text: 'ok' }] }),
+    };
+
+    const agent = new Agent({
+      initialState: { model: makeFakeModel() },
+      streamFn: provider.stream,
+    });
+    agent.setTools([approveTool]);
+
+    await agent.prompt('go');
+    expect(agent.state.totalUsage.input).toBe(turn1Usage.input);
+
+    const messages = agent.state.messages;
+    const last = messages[messages.length - 1] as ReturnType<typeof makeFakeAssistantMessage>;
+    const updatedContent = last.content.map((block) =>
+      block.type === 'toolCall' && block.id === 'tool_1'
+        ? ({ ...block, decision: { approved: true } } as ToolCallContent)
+        : block
+    );
+    agent.replaceMessages([...messages.slice(0, -1), { ...last, content: updatedContent }]);
+
+    await agent.continue();
+
+    expect(agent.state.totalUsage.input).toBe(turn1Usage.input + turn2Usage.input);
+    expect(agent.state.totalUsage.output).toBe(turn1Usage.output + turn2Usage.output);
   });
 });

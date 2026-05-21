@@ -1,6 +1,6 @@
 import type { AgentEvent, AgentToolResult } from '@agentic-kit/agent';
 import { parseSSEStream } from '@agentic-kit/agent';
-import type { AssistantMessage, Message, ToolCallContent } from 'agentic-kit';
+import type { AssistantMessage, Message, ToolCallContent, Usage } from 'agentic-kit';
 import { createUserMessage } from 'agentic-kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -43,6 +43,7 @@ export interface UseChatResult {
   pendingDecisions: ReadonlyMap<string, ToolDecisionPendingEvent>;
   executingToolCallIds: ReadonlySet<string>;
   error: unknown;
+  usage: Usage | null;
 
   send: (input: string | Message) => Promise<void>;
   sendMessages: (messages: Message[]) => Promise<void>;
@@ -99,6 +100,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
     () => new Set()
   );
   const [error, setError] = useState<unknown>(undefined);
+  const [usage, setUsage] = useState<Usage | null>(null);
 
   const messagesRef = useRef(messages);
   useEffect(() => {
@@ -143,6 +145,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       setPendingDecisions(new Map());
       setExecutingToolCallIds(new Set());
       setStreamingMessage(null);
+      setUsage(null);
       if (optimisticUserMessage) {
         setMessagesState((prev) => [...prev, optimisticUserMessage]);
       }
@@ -187,81 +190,90 @@ export function useChat(options: UseChatOptions): UseChatResult {
           if (!isCurrent()) return;
 
           switch (event.type) {
-            case 'message_start': {
-              if (skipUserEcho && event.message.role === 'user') {
-                skipUserEcho = false;
-                break;
-              }
-              if (event.message.role === 'assistant') {
-                setStreamingMessage(event.message);
-              }
+          case 'message_start': {
+            if (skipUserEcho && event.message.role === 'user') {
+              skipUserEcho = false;
               break;
             }
-            case 'message_update': {
+            if (event.message.role === 'assistant') {
               setStreamingMessage(event.message);
-              break;
             }
-            case 'message_end': {
-              if (event.message.role === 'assistant') {
-                setStreamingMessage(null);
-                setMessagesState((prev) => [...prev, event.message]);
-              } else if (event.message.role === 'toolResult') {
-                setMessagesState((prev) => [...prev, event.message]);
-              }
-              opts.onMessage?.(event.message);
-              break;
-            }
-            case 'tool_execution_start': {
-              setExecutingToolCallIds((prev) => {
-                const next = new Set(prev);
-                next.add(event.toolCallId);
-                return next;
-              });
-              opts.onToolExecutionStart?.({
-                toolCallId: event.toolCallId,
-                toolName: event.toolName,
-                args: event.args,
-              });
-              break;
-            }
-            case 'tool_execution_end': {
-              setExecutingToolCallIds((prev) => {
-                if (!prev.has(event.toolCallId)) return prev;
-                const next = new Set(prev);
-                next.delete(event.toolCallId);
-                return next;
-              });
-              opts.onToolExecutionEnd?.({
-                toolCallId: event.toolCallId,
-                toolName: event.toolName,
-                result: event.result,
-                isError: event.isError,
-              });
-              break;
-            }
-            case 'tool_decision_pending': {
-              setPendingDecisions((prev) => {
-                const next = new Map(prev);
-                next.set(event.toolCallId, event);
-                return next;
-              });
-              opts.onDecisionPending?.(event);
-              break;
-            }
-            case 'agent_end': {
+            break;
+          }
+          case 'message_update': {
+            setStreamingMessage(event.message);
+            break;
+          }
+          case 'message_end': {
+            if (event.message.role === 'assistant') {
               setStreamingMessage(null);
-              setMessagesState(() => {
-                if (!isCurrent()) return messagesRef.current;
-                return event.messages;
-              });
-              const lastAssistant = [...event.messages]
-                .reverse()
-                .find((m): m is AssistantMessage => m.role === 'assistant');
-              if (lastAssistant) {
-                opts.onFinish?.(lastAssistant);
-              }
-              break;
+              setMessagesState((prev) => [...prev, event.message]);
+            } else if (event.message.role === 'toolResult') {
+              setMessagesState((prev) => [...prev, event.message]);
             }
+            opts.onMessage?.(event.message);
+            break;
+          }
+          case 'tool_execution_start': {
+            setExecutingToolCallIds((prev) => {
+              const next = new Set(prev);
+              next.add(event.toolCallId);
+              return next;
+            });
+            opts.onToolExecutionStart?.({
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              args: event.args,
+            });
+            break;
+          }
+          case 'tool_execution_end': {
+            setExecutingToolCallIds((prev) => {
+              if (!prev.has(event.toolCallId)) return prev;
+              const next = new Set(prev);
+              next.delete(event.toolCallId);
+              return next;
+            });
+            opts.onToolExecutionEnd?.({
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              result: event.result,
+              isError: event.isError,
+            });
+            break;
+          }
+          case 'tool_decision_pending': {
+            setPendingDecisions((prev) => {
+              const next = new Map(prev);
+              next.set(event.toolCallId, event);
+              return next;
+            });
+            opts.onDecisionPending?.(event);
+            break;
+          }
+          case 'turn_end': {
+            setUsage((prev) =>
+              prev?.totalTokens === event.totalUsage.totalTokens ? prev : event.totalUsage
+            );
+            break;
+          }
+          case 'agent_end': {
+            setStreamingMessage(null);
+            setUsage((prev) =>
+              prev?.totalTokens === event.totalUsage.totalTokens ? prev : event.totalUsage
+            );
+            setMessagesState(() => {
+              if (!isCurrent()) return messagesRef.current;
+              return event.messages;
+            });
+            const lastAssistant = [...event.messages]
+              .reverse()
+              .find((m): m is AssistantMessage => m.role === 'assistant');
+            if (lastAssistant) {
+              opts.onFinish?.(lastAssistant);
+            }
+            break;
+          }
           }
         }
       } catch (err) {
@@ -398,6 +410,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       pendingDecisions,
       executingToolCallIds,
       error,
+      usage,
       send,
       sendMessages,
       setMessages,
@@ -411,6 +424,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       pendingDecisions,
       executingToolCallIds,
       error,
+      usage,
       send,
       sendMessages,
       setMessages,

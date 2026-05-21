@@ -1,15 +1,15 @@
 import {
+  createScriptedProvider,
+  makeFakeAssistantMessage,
+  makeFakeModel,
+} from '@test/index';
+import {
   type AssistantMessageEvent,
   type Context,
   createAssistantMessageEventStream,
   type ModelDescriptor,
   type StreamOptions,
 } from 'agentic-kit';
-import {
-  createScriptedProvider,
-  makeFakeAssistantMessage,
-  makeFakeModel,
-} from '@test/index';
 
 import { Agent, type AgentEvent, type AgentTool, parseSSEStream } from '../src';
 
@@ -239,7 +239,7 @@ describe('AgentRunHandle', () => {
     function makeAbortableStreamFn(): {
       streamFn: (model: ModelDescriptor, context: Context, options?: StreamOptions) => ReturnType<typeof createAssistantMessageEventStream>;
       getSignal: () => AbortSignal | undefined;
-    } {
+      } {
       let capturedSignal: AbortSignal | undefined;
       const streamFn = (
         _model: ModelDescriptor,
