@@ -34,7 +34,10 @@
     "build:dev": "makage build --dev",
     "lint": "eslint . --fix",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:live": "node ./scripts/run-live-tests.js smoke",
+    "test:live:smoke": "node ./scripts/run-live-tests.js smoke",
+    "test:live:extended": "node ./scripts/run-live-tests.js extended"
   },
   "keywords": []
 }

@@ -34,10 +34,16 @@
     "build:dev": "makage build --dev",
     "lint": "eslint . --fix",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:live": "node ./scripts/run-live-tests.js smoke",
+    "test:live:smoke": "node ./scripts/run-live-tests.js smoke",
+    "test:live:extended": "node ./scripts/run-live-tests.js extended"
   },
   "dependencies": {
     "agentic-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "@agentic-kit/openai": "workspace:*"
   },
   "keywords": []
 }

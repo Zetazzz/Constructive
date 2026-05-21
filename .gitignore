@@ -5,3 +5,7 @@
 lerna-debug.log
 **/src/*.js
 **/src/*.d.ts
+.env
+.env.local
+**/.env
+**/.env.local

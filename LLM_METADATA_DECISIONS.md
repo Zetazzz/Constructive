@@ -141,3 +141,40 @@ Tracking issue: [constructive-planning #907](https://github.com/constructive-io/
     unconditionally for every new request — including decision-resume
     requests via `respondWithDecision`. Mirrors the agent-side rule from
     decision #6 (reset on each new request, not on `continue()`).
+
+19. **Live provider eval suites are opt-in, `.env`-loaded, excluded from
+    default `pnpm test` via `testPathIgnorePatterns`, and never run in CI.**
+    Three suites land: `packages/openai/__tests__/openai.live.test.ts`,
+    `packages/ollama/__tests__/ollama.live.test.ts` (extended with a new
+    `Ollama live token-usage audit` block), and
+    `packages/agent/__tests__/agent.live.test.ts`. Each suite is gated by
+    `<NAMESPACE>_LIVE_SUITE=smoke|extended` (e.g. `OPENAI_LIVE_SUITE`); the
+    `pnpm test:live:<provider>{,:smoke,:extended}` runners set
+    `*_LIVE_READY=1` which both un-ignores the file in Jest config and
+    disables the `global.fetch = jest.fn()` mock in `openai/jest.setup.js`.
+    A shared `tools/test/load-env.js` walks up to find a workspace `.env`
+    and is silent if absent, so CI is unaffected. Why: empirical wire-shape
+    verification is the only way to confirm load-bearing claims like
+    "`completion_tokens` already includes `reasoning_tokens`" — but live
+    suites are expensive (real tokens) and require secrets, so they must
+    stay out of the default loop. How to apply: when changing usage
+    extraction, header construction, or any wire-shape detail, run the
+    matching `pnpm test:live:*:extended` locally before merging. The
+    `.gitignore` was updated to cover `.env` / `.env.local` to close a
+    secrets-leak gap.
+
+20. **Adapter-default `compat` must be the base layer of `createModel`'s
+    merge, not the override layer.** The original spread order was
+    `{ ...builtIn.compat, ...this.compat, ...overrides.compat }`, which
+    silently clobbered model-specific settings (notably
+    `maxTokensField: 'max_completion_tokens'` for reasoning-capable models)
+    with the adapter's generic default (`'max_tokens'`). OpenAI returned
+    400 (`Unsupported parameter: 'max_tokens'`) for `gpt-5.4-nano`. The
+    mock-mode unit tests didn't catch it because the mocked `fetch` never
+    validated the body. The live smoke test caught it on the very first
+    real call. Why: model-specific knowledge in the built-in catalog is
+    more authoritative than weak adapter defaults; user-provided overrides
+    are most authoritative of all. How to apply: spread order is now
+    `{ ...this.compat, ...builtIn.compat, ...overrides.compat }` — same
+    rule for `headers`. Same precedence rule should be applied any time a
+    new merge of compat-like fields is introduced.

@@ -2,6 +2,7 @@ import OllamaClient, { OllamaAdapter } from '../src';
 
 const baseUrl = process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434';
 const modelId = process.env.OLLAMA_LIVE_MODEL ?? 'qwen3.5:4b';
+const reasoningModelId = process.env.OLLAMA_LIVE_REASONING_MODEL ?? 'qwen3:0.6b';
 const embedModel = process.env.OLLAMA_LIVE_EMBED_MODEL ?? 'nomic-embed-text:latest';
 const hasEmbedModel = process.env.OLLAMA_LIVE_HAS_EMBED_MODEL === '1';
 const liveSuite = process.env.OLLAMA_LIVE_SUITE ?? 'smoke';
@@ -211,5 +212,181 @@ describeExtended('Ollama live extended', () => {
     expect(Array.isArray(embedding)).toBe(true);
     expect(embedding.length).toBeGreaterThan(0);
     expect(embedding.every((value) => Number.isFinite(value))).toBe(true);
+  });
+});
+
+describeExtended('Ollama live token-usage audit', () => {
+  jest.setTimeout(60_000);
+
+  let reasoningModelReady = false;
+
+  beforeAll(async () => {
+    const client = new OllamaClient(baseUrl);
+    try {
+      const models = await client.listModels();
+      reasoningModelReady = models.includes(reasoningModelId);
+      if (!reasoningModelReady) {
+        console.warn(
+          `[usage-audit] skipping: model '${reasoningModelId}' not pulled. Run: ollama pull ${reasoningModelId}`,
+        );
+      }
+    } catch (error) {
+      console.warn(`[usage-audit] skipping: failed to list models — ${(error as Error).message}`);
+    }
+  });
+
+  it('non-reasoning path: usage.totalTokens === input + output and reasoning === 0', async () => {
+    if (!reasoningModelReady) return;
+
+    const adapter = new OllamaAdapter(baseUrl);
+    const model = adapter.createModel(reasoningModelId, {
+      reasoning: false,
+      cost: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+    });
+    const stream = adapter.stream(
+      model,
+      {
+        messages: [
+          {
+            role: 'user',
+            content: '/no_think\nReply with exactly the single word PONG and nothing else.',
+            timestamp: Date.now(),
+          },
+        ],
+      },
+      { temperature: 0, maxTokens: 128 },
+    );
+
+    for await (const _event of stream) {
+      // Drain.
+    }
+
+    const message = await stream.result();
+    expect(message.usage.input).toBeGreaterThan(0);
+    expect(message.usage.output).toBeGreaterThan(0);
+    expect(message.usage.totalTokens).toBe(message.usage.input + message.usage.output);
+    expect(message.usage.reasoning).toBe(0);
+    expect(message.usage.cost.input).toBeGreaterThan(0);
+    expect(message.usage.cost.output).toBeGreaterThan(0);
+    expect(message.usage.cost.total).toBeCloseTo(
+      message.usage.cost.input + message.usage.cost.output,
+      10,
+    );
+  });
+
+  it('reasoning path: thinking events emitted and reasoning stays 0', async () => {
+    if (!reasoningModelReady) return;
+
+    const adapter = new OllamaAdapter(baseUrl);
+    const model = adapter.createModel(reasoningModelId, { reasoning: true });
+    const stream = adapter.stream(
+      model,
+      {
+        messages: [
+          {
+            role: 'user',
+            content: 'What is 17 * 23? Think step by step.',
+            timestamp: Date.now(),
+          },
+        ],
+      },
+      { temperature: 0, maxTokens: 512 },
+    );
+
+    const eventTypes: string[] = [];
+    for await (const event of stream) {
+      eventTypes.push(event.type);
+    }
+
+    const message = await stream.result();
+    expect(eventTypes).toEqual(
+      expect.arrayContaining(['thinking_start', 'thinking_delta', 'thinking_end']),
+    );
+    expect(message.content.some((b) => b.type === 'thinking')).toBe(true);
+    const thinkingBlock = message.content.find(
+      (b): b is { type: 'thinking'; thinking: string } => b.type === 'thinking',
+    );
+    expect(thinkingBlock!.thinking.length).toBeGreaterThan(0);
+    expect(message.usage.input).toBeGreaterThan(0);
+    expect(message.usage.output).toBeGreaterThan(0);
+    expect(message.usage.totalTokens).toBe(message.usage.input + message.usage.output);
+    // Regression guard: Ollama exposes no reasoning token count — must stay 0.
+    expect(message.usage.reasoning).toBe(0);
+  });
+
+  it('cost fields populate when descriptor has a cost schedule', async () => {
+    if (!reasoningModelReady) return;
+
+    const adapter = new OllamaAdapter(baseUrl);
+    const model = adapter.createModel(reasoningModelId, {
+      reasoning: true,
+      cost: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+    });
+    const stream = adapter.stream(
+      model,
+      {
+        messages: [
+          {
+            role: 'user',
+            content: 'What is 17 * 23? Think step by step.',
+            timestamp: Date.now(),
+          },
+        ],
+      },
+      { temperature: 0, maxTokens: 512 },
+    );
+
+    for await (const _event of stream) {
+      // Drain.
+    }
+
+    const message = await stream.result();
+    expect(message.usage.cost.input).toBeGreaterThan(0);
+    expect(message.usage.cost.output).toBeGreaterThan(0);
+    expect(message.usage.cost.total).toBeCloseTo(
+      message.usage.cost.input + message.usage.cost.output,
+      10,
+    );
+  });
+
+  it('two-turn cumulative usage matches field-wise sum', async () => {
+    if (!reasoningModelReady) return;
+
+    const adapter = new OllamaAdapter(baseUrl);
+    const model = adapter.createModel(reasoningModelId, { reasoning: false });
+
+    const stream1 = adapter.stream(
+      model,
+      {
+        messages: [
+          { role: 'user', content: 'What is 2+2? Reply with just the number.', timestamp: Date.now() },
+        ],
+      },
+      { temperature: 0, maxTokens: 32 },
+    );
+    for await (const _event of stream1) {
+      // Drain.
+    }
+    const t1 = await stream1.result();
+
+    const stream2 = adapter.stream(
+      model,
+      {
+        messages: [
+          { role: 'user', content: 'What is 3+3? Reply with just the number.', timestamp: Date.now() },
+        ],
+      },
+      { temperature: 0, maxTokens: 32 },
+    );
+    for await (const _event of stream2) {
+      // Drain.
+    }
+    const t2 = await stream2.result();
+
+    const totalInput = t1.usage.input + t2.usage.input;
+    const totalOutput = t1.usage.output + t2.usage.output;
+    expect(totalInput).toBe(t1.usage.input + t2.usage.input);
+    expect(totalOutput).toBe(t1.usage.output + t2.usage.output);
+    expect(t1.usage.totalTokens + t2.usage.totalTokens).toBe(totalInput + totalOutput);
   });
 });
