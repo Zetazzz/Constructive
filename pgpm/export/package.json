@@ -39,7 +39,7 @@
   ],
   "devDependencies": {
     "@pgsql/types": "^17.6.2",
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "makage": "^0.3.0",
     "pgsql-test": "workspace:^"
   },
@@ -50,8 +50,8 @@
     "csv-to-pg": "workspace:^",
     "glob": "^13.0.6",
     "inflekt": "^0.7.1",
-    "inquirerer": "^4.7.0",
-    "pg": "^8.20.0",
+    "inquirerer": "^4.8.1",
+    "pg": "^8.21.0",
     "pg-cache": "workspace:^",
     "pg-env": "workspace:^"
   }

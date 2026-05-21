@@ -30,15 +30,15 @@
   },
   "devDependencies": {
     "@constructive-io/graphql-test": "workspace:^",
-    "@jest/test-sequencer": "^30.3.0",
-    "@types/pg": "^8.18.0",
+    "@jest/test-sequencer": "^30.4.1",
+    "@types/pg": "^8.20.0",
     "makage": "^0.3.0",
     "pgsql-test": "workspace:^"
   },
   "dependencies": {
     "graphql": "16.13.0",
     "graphql-tag": "2.12.6",
-    "pg": "^8.20.0"
+    "pg": "^8.21.0"
   },
   "keywords": [
     "graphql",
