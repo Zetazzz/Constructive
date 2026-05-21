@@ -18,6 +18,12 @@ interface ModelDescriptor {
   tools?: boolean;
   contextWindow?: number;
   maxOutputTokens?: number;
+  cost?: {
+    input?: number;
+    output?: number;
+    cacheRead?: number;
+    cacheWrite?: number;
+  };
   headers?: Record<string, string>;
 }
 
@@ -47,6 +53,7 @@ interface ToolCallContent {
 interface Usage {
   input: number;
   output: number;
+  reasoning: number;
   cacheRead: number;
   cacheWrite: number;
   totalTokens: number;
@@ -464,6 +471,7 @@ export class OllamaAdapter {
           output.usage.input = payload.prompt_eval_count ?? output.usage.input;
           output.usage.output = payload.eval_count ?? output.usage.output;
           output.usage.totalTokens = output.usage.input + output.usage.output;
+          calculateUsageCost(model, output.usage);
           output.stopReason = payload.done_reason === 'length' ? 'length' : 'stop';
 
           if (thinkingIndex !== undefined) {
@@ -622,6 +630,7 @@ function createAssistantMessage(model: ModelDescriptor): AssistantMessage {
     usage: {
       input: 0,
       output: 0,
+      reasoning: 0,
       cacheRead: 0,
       cacheWrite: 0,
       totalTokens: 0,
@@ -630,6 +639,15 @@ function createAssistantMessage(model: ModelDescriptor): AssistantMessage {
     stopReason: 'stop',
     timestamp: Date.now(),
   };
+}
+
+function calculateUsageCost(model: ModelDescriptor, usage: Usage): void {
+  usage.cost.input = ((model.cost?.input ?? 0) / 1_000_000) * usage.input;
+  usage.cost.output = ((model.cost?.output ?? 0) / 1_000_000) * usage.output;
+  usage.cost.cacheRead = ((model.cost?.cacheRead ?? 0) / 1_000_000) * usage.cacheRead;
+  usage.cost.cacheWrite = ((model.cost?.cacheWrite ?? 0) / 1_000_000) * usage.cacheWrite;
+  usage.cost.total =
+    usage.cost.input + usage.cost.output + usage.cost.cacheRead + usage.cost.cacheWrite;
 }
 
 function legacyInputToContext(input: GenerateInput): Context {
@@ -647,6 +665,7 @@ function legacyInputToContext(input: GenerateInput): Context {
             usage: {
               input: 0,
               output: 0,
+              reasoning: 0,
               cacheRead: 0,
               cacheWrite: 0,
               totalTokens: 0,
