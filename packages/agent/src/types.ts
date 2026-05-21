@@ -8,6 +8,7 @@ import type {
   StreamOptions,
   ToolDefinition,
   ToolResultMessage,
+  Usage,
 } from 'agentic-kit';
 
 export interface AgentToolResult<TDetails = unknown> {
@@ -41,6 +42,7 @@ export interface AgentState {
   streamOptions?: Omit<StreamOptions, 'signal'>;
   systemPrompt: string;
   tools: AgentTool[];
+  totalUsage: Usage;
 }
 
 export interface AgentEventBase {
@@ -49,9 +51,19 @@ export interface AgentEventBase {
 
 export type AgentEvent =
   | { type: 'agent_start' }
-  | { type: 'agent_end'; messages: Message[]; stopReason?: 'completed' | 'max_steps' | 'aborted' }
+  | {
+      type: 'agent_end';
+      messages: Message[];
+      totalUsage: Usage;
+      stopReason?: 'completed' | 'max_steps' | 'aborted';
+    }
   | { type: 'turn_start' }
-  | { type: 'turn_end'; message: AssistantMessage; toolResults: ToolResultMessage[] }
+  | {
+      type: 'turn_end';
+      message: AssistantMessage;
+      toolResults: ToolResultMessage[];
+      totalUsage: Usage;
+    }
   | { type: 'message_start'; message: Message }
   | { type: 'message_update'; message: AssistantMessage; assistantMessageEvent: AssistantMessageEvent }
   | { type: 'message_end'; message: Message }
