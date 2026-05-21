@@ -114,6 +114,9 @@ function getPgSettings(req: Request): Record<string, string> {
   if (req.databaseId) {
     settings['jwt.claims.database_id'] = req.databaseId;
   }
+  if (req.requestId) {
+    settings['request.id'] = req.requestId;
+  }
 
   return settings;
 }

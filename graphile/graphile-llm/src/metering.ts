@@ -41,6 +41,8 @@ export interface MeteringContext {
   billing: BillingConfig;
   /** Entity ID to meter against (from JWT claims) */
   entityId: string;
+  /** Per-request correlation ID (from request.id pgSetting) */
+  requestId: string | null;
 }
 
 export interface MeteringOptions {
@@ -185,6 +187,7 @@ export async function meteredEmbed(
   // Record actual usage (input_chars as the metered amount)
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
     await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, text.length, {
+      request_id: ctx.requestId,
       input_chars: text.length,
       dims: result.length,
       latency_ms: latencyMs,
@@ -271,6 +274,7 @@ export async function meteredChat(
   const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
     await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, inputChars + result.length, {
+      request_id: ctx.requestId,
       input_chars: inputChars,
       output_chars: result.length,
       messages_count: messages.length,
