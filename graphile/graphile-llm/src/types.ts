@@ -7,9 +7,19 @@
 // ─── Embedder Types ─────────────────────────────────────────────────────────
 
 /**
- * A function that converts text into a vector embedding.
+ * Result from an embedding call, including real token usage from the provider.
  */
-export type EmbedderFunction = (text: string) => Promise<number[]>;
+export interface EmbeddingResult {
+  /** The vector embedding */
+  embedding: number[];
+  /** Number of prompt tokens consumed (from provider; 0 if unavailable) */
+  promptTokens: number;
+}
+
+/**
+ * A function that converts text into a vector embedding with token usage.
+ */
+export type EmbedderFunction = (text: string) => Promise<EmbeddingResult>;
 
 /**
  * Configuration for an embedding provider.
@@ -21,6 +31,27 @@ export interface EmbedderConfig {
   model?: string;
   /** Base URL for the provider (e.g. 'http://localhost:11434' for Ollama) */
   baseUrl?: string;
+}
+
+// ─── Token Usage Types ──────────────────────────────────────────────────────
+
+/**
+ * Token usage metadata returned by LLM providers.
+ * Maps to the billing schema's inference_log columns.
+ */
+export interface LlmUsage {
+  /** Prompt / input tokens consumed */
+  input: number;
+  /** Completion / output tokens generated (includes reasoning for providers that count it) */
+  output: number;
+  /** Reasoning tokens (subset of output — not additive) */
+  reasoning: number;
+  /** Tokens served from prompt cache (zero cost) */
+  cacheRead: number;
+  /** Tokens written to prompt cache */
+  cacheWrite: number;
+  /** input + output + cacheRead + cacheWrite */
+  totalTokens: number;
 }
 
 // ─── Chat Completion Types ──────────────────────────────────────────────────
@@ -44,9 +75,18 @@ export interface ChatOptions {
 }
 
 /**
- * A function that sends messages to a chat completion provider and returns the response.
+ * Result from a chat completion call, including real token usage.
  */
-export type ChatFunction = (messages: ChatMessage[], options?: ChatOptions) => Promise<string>;
+export interface ChatResult {
+  content: string;
+  usage: LlmUsage;
+}
+
+/**
+ * A function that sends messages to a chat completion provider
+ * and returns the response with token usage metadata.
+ */
+export type ChatFunction = (messages: ChatMessage[], options?: ChatOptions) => Promise<ChatResult>;
 
 /**
  * Configuration for a chat completion provider.

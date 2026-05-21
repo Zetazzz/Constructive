@@ -46,14 +46,28 @@ jest.mock('graphile-llm', () => ({
   })),
 }));
 
-const mockGenerate = jest.fn();
+const mockStreamResult = jest.fn();
+const mockStreamIterator = jest.fn();
 
 jest.mock('@agentic-kit/ollama', () => {
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      generate: mockGenerate,
+    OllamaAdapter: jest.fn().mockImplementation(() => ({
+      createModel: jest.fn((modelId: string) => ({
+        id: modelId,
+        name: modelId,
+        api: 'ollama-native',
+        provider: 'ollama',
+        baseUrl: 'http://localhost:11434',
+        input: ['text', 'image'],
+        reasoning: false,
+      })),
+      stream: jest.fn(() => ({
+        [Symbol.asyncIterator]: mockStreamIterator,
+        result: mockStreamResult,
+      })),
     })),
+    default: jest.fn().mockImplementation(() => ({})),
   };
 });
 
@@ -200,8 +214,29 @@ describe('LLM API Router', () => {
         return { rows: [] };
       });
 
-      // Mock generate to return content
-      mockGenerate.mockResolvedValue('Hello from the LLM!');
+      // Mock adapter.stream().result() to return an AssistantMessage with usage
+      mockStreamResult.mockResolvedValue({
+        role: 'assistant',
+        content: [{ type: 'text', text: 'Hello from the LLM!' }],
+        usage: {
+          input: 5,
+          output: 12,
+          reasoning: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 17,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        },
+        stopReason: 'stop',
+        api: 'ollama-native',
+        provider: 'ollama',
+        model: 'tinyllama',
+        timestamp: Date.now(),
+      });
+      // Mock the async iterator to complete immediately (non-streaming mode)
+      mockStreamIterator.mockReturnValue({
+        next: jest.fn().mockResolvedValue({ done: true, value: undefined }),
+      });
 
       const req = makeReq({
         params: { entity_id: 'org-1', thread_id: 'thread-1' },
@@ -217,18 +252,13 @@ describe('LLM API Router', () => {
       );
       await route.route.stack[0].handle(req, res, jest.fn());
 
-      // Should have called generate
-      expect(mockGenerate).toHaveBeenCalled();
-
-      // If the response was successful, it should include usage
+      // If the response was successful, it should include real usage from provider
       if (res._json && res._json.usage) {
-        expect(res._json.usage).toEqual(
-          expect.objectContaining({
-            prompt_tokens: expect.any(Number),
-            completion_tokens: expect.any(Number),
-            total_tokens: expect.any(Number),
-          }),
-        );
+        expect(res._json.usage).toEqual({
+          prompt_tokens: 5,
+          completion_tokens: 12,
+          total_tokens: 17,
+        });
       }
     });
   });

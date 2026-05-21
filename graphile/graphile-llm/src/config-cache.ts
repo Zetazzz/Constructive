@@ -100,7 +100,7 @@ const INFERENCE_LOG_MODULE_SQL = `
 const billingCache = new ModuleConfigCache<LlmBillingCacheEntry>({
   name: 'billing-config',
   ttlMs: 5 * 60 * 1000, // 5 minutes
-  max: 50,
+  max: 50
 });
 
 // ─── Resolution Functions ───────────────────────────────────────────────────
@@ -115,7 +115,7 @@ const SCHEMA_EXISTS_SQL = `
 
 async function resolveInferenceLogConfig(
   pgClient: PgClient,
-  databaseId: string,
+  databaseId: string
 ): Promise<InferenceLogConfig | null> {
   try {
     const schemaCheck = await pgClient.query(SCHEMA_EXISTS_SQL, ['metaschema_modules_public']);
@@ -127,7 +127,7 @@ async function resolveInferenceLogConfig(
 
     return {
       schema: row.schema as string,
-      tableName: row.table_name as string,
+      tableName: row.table_name as string
     };
   } catch {
     return null;
@@ -136,7 +136,7 @@ async function resolveInferenceLogConfig(
 
 async function resolveBillingConfig(
   pgClient: PgClient,
-  databaseId: string,
+  databaseId: string
 ): Promise<BillingConfig | null> {
   try {
     // Guard: check if the metaschema_modules_public schema exists.
@@ -154,7 +154,7 @@ async function resolveBillingConfig(
       privateSchema: row.private_schema as string,
       recordUsageFunction: row.record_usage_function as string,
       // The check_billing_quota function name follows the inflection pattern
-      checkBillingQuotaFunction: 'check_billing_quota',
+      checkBillingQuotaFunction: 'check_billing_quota'
     };
   } catch {
     // Schema/table doesn't exist or query failed — billing not available
@@ -173,14 +173,14 @@ async function resolveBillingConfig(
  */
 export async function getLlmBillingConfig(
   pgClient: PgClient,
-  databaseId: string,
+  databaseId: string
 ): Promise<LlmBillingCacheEntry> {
   const cached = billingCache.get(databaseId);
   if (cached) return cached;
 
   const [billing, inferenceLog] = await Promise.all([
     resolveBillingConfig(pgClient, databaseId),
-    resolveInferenceLogConfig(pgClient, databaseId),
+    resolveInferenceLogConfig(pgClient, databaseId)
   ]);
 
   const entry: LlmBillingCacheEntry = { billing, inferenceLog };

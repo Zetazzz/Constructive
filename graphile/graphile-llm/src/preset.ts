@@ -65,11 +65,12 @@
  */
 
 import type { GraphileConfig } from 'graphile-config';
+
 import { createLlmModulePlugin } from './plugins/llm-module-plugin';
-import { createLlmTextSearchPlugin } from './plugins/text-search-plugin';
-import { createLlmTextMutationPlugin } from './plugins/text-mutation-plugin';
-import { createLlmRagPlugin } from './plugins/rag-plugin';
 import { createLlmMeteringPlugin } from './plugins/metering-plugin';
+import { createLlmRagPlugin } from './plugins/rag-plugin';
+import { createLlmTextMutationPlugin } from './plugins/text-mutation-plugin';
+import { createLlmTextSearchPlugin } from './plugins/text-search-plugin';
 import type { GraphileLlmOptions } from './types';
 
 /**
@@ -86,11 +87,11 @@ export function GraphileLlmPreset(
     enableTextMutations = true,
     enableRag = false,
     ragDefaults,
-    metering,
+    metering
   } = options;
 
   const plugins: GraphileConfig.Plugin[] = [
-    createLlmModulePlugin(options),
+    createLlmModulePlugin(options)
   ];
 
   // Metering is opt-in: only loaded when metering is truthy
@@ -113,7 +114,7 @@ export function GraphileLlmPreset(
   }
 
   return {
-    plugins,
+    plugins
   };
 }
 

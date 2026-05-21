@@ -28,8 +28,9 @@
 
 import 'graphile-build';
 import 'graphile-build-pg';
+
 import type { GraphileConfig } from 'graphile-config';
-import type { EmbedderFunction } from '../types';
+
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ function isVectorCodec(codec: any): boolean {
  */
 function getTextToVectorMapping(
   pgCodec: any,
-  build: any,
+  build: any
 ): Record<string, string> {
   const mapping: Record<string, string> = {};
   if (!pgCodec?.attributes) return mapping;
@@ -65,7 +66,7 @@ function getTextToVectorMapping(
     if (isVectorCodec(attribute.codec)) {
       const fieldName = build.inflection.attribute({
         codec: pgCodec,
-        attributeName,
+        attributeName
       });
       mapping[`${fieldName}Text`] = fieldName;
     }
@@ -95,7 +96,7 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
       'PgAttributesPlugin',
       'PgMutationCreatePlugin',
       'PgMutationUpdateDeletePlugin',
-      'VectorCodecPlugin',
+      'VectorCodecPlugin'
     ],
 
     schema: {
@@ -110,8 +111,8 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
               isPgPatch,
               isPgBaseInput,
               isMutationInput,
-              pgCodec,
-            },
+              pgCodec
+            }
           } = context as any;
 
           // Only intercept create/update input types for table rows
@@ -120,7 +121,7 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
           }
 
           const {
-            graphql: { GraphQLString },
+            graphql: { GraphQLString }
           } = build;
 
           // Find vector columns on this table
@@ -143,7 +144,7 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
             // Convert snake_case column name to camelCase field name
             const fieldName = build.inflection.attribute({
               codec: pgCodec,
-              attributeName: columnName,
+              attributeName: columnName
             });
             const textFieldName = `${fieldName}Text`;
 
@@ -155,8 +156,8 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
                   description:
                     `Natural language text to embed server-side into the \`${fieldName}\` vector column. ` +
                     `Mutually exclusive with \`${fieldName}\` — provide one or the other. ` +
-                    'Requires the LLM plugin to be configured with an embedding provider.',
-                },
+                    'Requires the LLM plugin to be configured with an embedding provider.'
+                }
               },
               `LlmTextMutationPlugin adding ${textFieldName} companion field for vector column '${columnName}'`
             );
@@ -178,7 +179,7 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
          */
         GraphQLObjectType_fields_field(field, build, context) {
           const {
-            scope: { isRootMutation, fieldName, pgCodec },
+            scope: { isRootMutation, fieldName, pgCodec }
           } = context as any;
 
           // Only wrap root mutation fields on tables with attributes
@@ -266,10 +267,10 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
 
               await embedTextFields(args);
               return oldResolve(source, args, graphqlContext, info);
-            },
+            }
           };
-        },
-      },
-    },
+        }
+      }
+    }
   };
 }
