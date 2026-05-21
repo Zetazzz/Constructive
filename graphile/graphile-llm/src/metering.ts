@@ -18,7 +18,7 @@
  * resolved from `billing_module` metaschema and cached by `config-cache.ts`.
  */
 
-import type { PgClient, BillingConfig } from './config-cache';
+import type { PgClient, BillingConfig, InferenceLogConfig } from './config-cache';
 import type { EmbedderFunction, ChatFunction, ChatMessage, ChatOptions } from './types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -43,6 +43,12 @@ export interface MeteringContext {
   entityId: string;
   /** Per-request correlation ID (from request.id pgSetting) */
   requestId: string | null;
+  /** Database UUID from JWT claims */
+  databaseId: string;
+  /** Actor (user) ID from JWT claims */
+  actorId: string | null;
+  /** Inference log table config (null if inference_log_module not provisioned) */
+  inferenceLog: InferenceLogConfig | null;
 }
 
 export interface MeteringOptions {
@@ -52,6 +58,12 @@ export interface MeteringOptions {
   chatMeterSlug?: string;
   /** Whether to skip metering entirely (e.g. for local dev). Default: false */
   skipMetering?: boolean;
+  /** Embedding model name (for inference log) */
+  embeddingModel?: string;
+  /** Chat model name (for inference log) */
+  chatModel?: string;
+  /** Provider name (for inference log) */
+  provider?: string;
 }
 
 export interface MeterResult<T> {
@@ -110,6 +122,73 @@ async function recordUsage(
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
     console.warn(`[graphile-llm] record_usage failed (non-fatal): ${message}`);
+  }
+}
+
+// ─── Inference Usage Log ────────────────────────────────────────────────────
+
+export interface InferenceLogEntry {
+  databaseId: string;
+  entityId: string;
+  actorId: string | null;
+  model: string;
+  provider: string | null;
+  requestType: 'embedding' | 'chat' | 'rag';
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  latencyMs: number;
+  ragEnabled: boolean;
+  chunksRetrieved: number | null;
+  embeddingModel: string | null;
+  embeddingLatencyMs: number | null;
+  status: 'success' | 'quota_exceeded' | 'provider_error' | 'timeout';
+  errorType: string | null;
+}
+
+/**
+ * Write a row to the usage_log_inference table.
+ * Gracefully skips if the inference_log_module is not provisioned.
+ *
+ * TODO: Also write to child (generated) database when dual-write is needed.
+ */
+export async function logInferenceUsage(
+  ctx: MeteringContext,
+  entry: InferenceLogEntry,
+): Promise<void> {
+  if (!ctx.inferenceLog) return;
+
+  const { schema, tableName } = ctx.inferenceLog;
+  const sql = `INSERT INTO "${schema}"."${tableName}" (
+    database_id, entity_id, actor_id,
+    model, provider, request_type,
+    input_tokens, output_tokens, total_tokens,
+    latency_ms, rag_enabled, chunks_retrieved,
+    embedding_model, embedding_latency_ms,
+    status, error_type
+  ) VALUES (
+    $1, $2, $3,
+    $4, $5, $6,
+    $7, $8, $9,
+    $10, $11, $12,
+    $13, $14,
+    $15, $16
+  )`;
+
+  try {
+    await ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
+      await pgClient.query(sql, [
+        entry.databaseId, entry.entityId, entry.actorId,
+        entry.model, entry.provider, entry.requestType,
+        entry.inputTokens, entry.outputTokens, entry.totalTokens,
+        entry.latencyMs, entry.ragEnabled, entry.chunksRetrieved,
+        entry.embeddingModel, entry.embeddingLatencyMs,
+        entry.status, entry.errorType,
+      ]);
+    });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.warn(`[graphile-llm] inference log INSERT failed (non-fatal): ${message}`);
   }
 }
 
@@ -172,6 +251,27 @@ export async function meteredEmbed(
   }
 
   if (!allowed) {
+    // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
+    const placeholderAmountTokens = Math.ceil(text.length / 4);
+    logInferenceUsage(ctx, {
+      databaseId: ctx.databaseId,
+      entityId: ctx.entityId,
+      actorId: ctx.actorId,
+      model: options.embeddingModel ?? meterSlug,
+      provider: options.provider ?? null,
+      requestType: 'embedding',
+      inputTokens: placeholderAmountTokens,
+      outputTokens: 0,
+      totalTokens: placeholderAmountTokens,
+      latencyMs: Date.now() - startTime,
+      ragEnabled: false,
+      chunksRetrieved: null,
+      embeddingModel: options.embeddingModel ?? null,
+      embeddingLatencyMs: null,
+      status: 'quota_exceeded',
+      errorType: null,
+    }).catch(() => {});
+
     return {
       result: null,
       metered: true,
@@ -184,7 +284,8 @@ export async function meteredEmbed(
   const result = await embedder(text);
   const latencyMs = Date.now() - startTime;
 
-  // Record actual usage (input_chars as the metered amount)
+  // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
+  const placeholderAmountTokens = Math.ceil(text.length / 4);
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
     await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, text.length, {
       request_id: ctx.requestId,
@@ -192,6 +293,26 @@ export async function meteredEmbed(
       dims: result.length,
       latency_ms: latencyMs,
     });
+  }).catch(() => {});
+
+  // Log to inference usage table
+  logInferenceUsage(ctx, {
+    databaseId: ctx.databaseId,
+    entityId: ctx.entityId,
+    actorId: ctx.actorId,
+    model: options.embeddingModel ?? meterSlug,
+    provider: options.provider ?? null,
+    requestType: 'embedding',
+    inputTokens: placeholderAmountTokens,
+    outputTokens: 0,
+    totalTokens: placeholderAmountTokens,
+    latencyMs,
+    ragEnabled: false,
+    chunksRetrieved: null,
+    embeddingModel: options.embeddingModel ?? null,
+    embeddingLatencyMs: latencyMs,
+    status: 'success',
+    errorType: null,
   }).catch(() => {});
 
   return {
@@ -258,6 +379,27 @@ export async function meteredChat(
   }
 
   if (!allowed) {
+    // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
+    const placeholderInputTokens = Math.ceil(messages.reduce((sum, m) => sum + m.content.length, 0) / 4);
+    logInferenceUsage(ctx, {
+      databaseId: ctx.databaseId,
+      entityId: ctx.entityId,
+      actorId: ctx.actorId,
+      model: meteringOptions.chatModel ?? meterSlug,
+      provider: meteringOptions.provider ?? null,
+      requestType: 'chat',
+      inputTokens: placeholderInputTokens,
+      outputTokens: 0,
+      totalTokens: placeholderInputTokens,
+      latencyMs: Date.now() - startTime,
+      ragEnabled: false,
+      chunksRetrieved: null,
+      embeddingModel: null,
+      embeddingLatencyMs: null,
+      status: 'quota_exceeded',
+      errorType: null,
+    }).catch(() => {});
+
     return {
       result: null,
       metered: true,
@@ -270,8 +412,11 @@ export async function meteredChat(
   const result = await chat(messages, chatOptions);
   const latencyMs = Date.now() - startTime;
 
-  // Record actual usage (input + output chars as the metered amount)
+  // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
   const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+  const placeholderInputTokens = Math.ceil(inputChars / 4);
+  const placeholderOutputTokens = Math.ceil(result.length / 4);
+  const placeholderTotalTokens = placeholderInputTokens + placeholderOutputTokens;
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
     await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, inputChars + result.length, {
       request_id: ctx.requestId,
@@ -280,6 +425,26 @@ export async function meteredChat(
       messages_count: messages.length,
       latency_ms: latencyMs,
     });
+  }).catch(() => {});
+
+  // Log to inference usage table
+  logInferenceUsage(ctx, {
+    databaseId: ctx.databaseId,
+    entityId: ctx.entityId,
+    actorId: ctx.actorId,
+    model: meteringOptions.chatModel ?? meterSlug,
+    provider: meteringOptions.provider ?? null,
+    requestType: 'chat',
+    inputTokens: placeholderInputTokens,
+    outputTokens: placeholderOutputTokens,
+    totalTokens: placeholderTotalTokens,
+    latencyMs,
+    ragEnabled: false,
+    chunksRetrieved: null,
+    embeddingModel: null,
+    embeddingLatencyMs: null,
+    status: 'success',
+    errorType: null,
   }).catch(() => {});
 
   return {

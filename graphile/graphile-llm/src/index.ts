@@ -65,8 +65,8 @@ export {
 } from './chat';
 
 // Metering utilities (for custom integration)
-export { meteredEmbed, meteredChat, QuotaExceededError } from './metering';
-export type { MeteringContext, MeteringOptions, MeterResult, WithPgClient } from './metering';
+export { meteredEmbed, meteredChat, logInferenceUsage, QuotaExceededError } from './metering';
+export type { MeteringContext, MeteringOptions, MeterResult, WithPgClient, InferenceLogEntry } from './metering';
 
 // Config cache (for custom integration)
 export {
@@ -74,7 +74,7 @@ export {
   invalidateLlmBillingConfig,
   getLlmBillingCacheStats,
 } from './config-cache';
-export type { BillingConfig, LlmBillingCacheEntry, PgClient } from './config-cache';
+export type { BillingConfig, LlmBillingCacheEntry, InferenceLogConfig, PgClient } from './config-cache';
 
 // Types
 export type {
