@@ -1,6 +1,6 @@
 {
   "name": "@constructive-io/graphql-explorer",
-  "version": "4.19.5",
+  "version": "4.19.6",
   "author": "Constructive <developers@constructive.io>",
   "description": "Constructive GraphQL Explorer",
   "main": "index.js",
@@ -41,12 +41,12 @@
     "express": "^5.2.1",
     "grafserv": "1.0.0",
     "graphile-cache": "workspace:^",
-    "graphile-config": "1.0.0",
+    "graphile-config": "1.0.1",
     "graphile-settings": "workspace:^",
     "graphql": "16.13.0",
     "pg-cache": "workspace:^",
     "pg-env": "workspace:^",
-    "postgraphile": "5.0.0"
+    "postgraphile": "5.0.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

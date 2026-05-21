@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.32.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.5...@constructive-io/graphql-server@4.32.0) (2026-05-21)
+
+### Features
+
+- **graphile-llm:** add agent discovery plugin and REST streaming endpoint ([47dab61](https://github.com/constructive-io/constructive/commit/47dab619a536c136b0f100e3f682c2f2a1c9ce56))
+- **llm-api:** add inference logging to usage_log_inference table ([10a1b4b](https://github.com/constructive-io/constructive/commit/10a1b4b125265ecc8c30cf73094f65918df38f6f))
+- **llm-api:** wire metering + add global /v1/threads routes ([5d407c2](https://github.com/constructive-io/constructive/commit/5d407c2d93d6dc0df49afdbc652572b64214b53b))
+- propagate request_id through pgSettings and metering context ([37c3cd1](https://github.com/constructive-io/constructive/commit/37c3cd186fc277776c196bcdf2bf1455f6954c2c))
+- replace request_type with service + operation in inference log inserts ([01c98c7](https://github.com/constructive-io/constructive/commit/01c98c7d8882681a68f400556aa7d673d1cc2d47)), closes [#1281](https://github.com/constructive-io/constructive/issues/1281)
+
 ## [4.31.5](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.4...@constructive-io/graphql-server@4.31.5) (2026-05-20)
 
 **Note:** Version bump only for package @constructive-io/graphql-server

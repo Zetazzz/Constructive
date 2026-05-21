@@ -1,6 +1,6 @@
 {
   "name": "@constructive-io/upload-client",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "author": "Constructive <developers@constructive.io>",
   "description": "Client-side presigned URL upload utilities for Constructive",
   "main": "index.js",
@@ -29,7 +29,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@constructive-io/fetch": "^1.0.0",
+    "@constructive-io/fetch": "^1.1.1",
     "@constructive-io/noble-hashes": "^0.2.1"
   },
   "devDependencies": {

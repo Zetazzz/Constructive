@@ -2,6 +2,7 @@ import '../augmentations';
 
 import { sideEffectWithPgClient } from '@dataplan/pg';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType, GraphQLOutputType } from 'graphql';
 
 const version = '0.1.0';
 
@@ -58,8 +59,8 @@ export const BulkUpdatePlugin: GraphileConfig.Plugin = {
           const inputTypeName = inflection.bulkUpdateInputType(typeName);
           const payloadTypeName = inflection.bulkUpdatePayloadType(typeName);
 
-          const inputType = build.getTypeByName(inputTypeName);
-          const payloadType = build.getTypeByName(payloadTypeName);
+          const inputType = build.getTypeByName(inputTypeName) as GraphQLInputType | undefined;
+          const payloadType = build.getTypeByName(payloadTypeName) as GraphQLOutputType | undefined;
           if (!inputType || !payloadType) continue;
 
           // Build field-to-attribute mapping for patch resolution

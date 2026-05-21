@@ -3,6 +3,7 @@ import '../augmentations';
 import { pgSelectFromRecords } from '@dataplan/pg';
 import { access } from 'grafast';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType, GraphQLOutputType } from 'graphql';
 
 const version = '0.1.0';
 
@@ -215,7 +216,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description:
                         'The unique constraint to use for conflict detection.',
-                      type: build.getTypeByName(constraintEnumName)
+                      type: build.getTypeByName(constraintEnumName) as GraphQLInputType
                     })
                   ),
                   action: fieldWithHooks(
@@ -223,7 +224,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description: 'The action to take on conflict.',
                       type: new build.graphql.GraphQLNonNull(
-                        build.getTypeByName('ConflictAction')
+                        build.getTypeByName('ConflictAction') as GraphQLInputType
                       )
                     })
                   )
@@ -253,7 +254,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       description:
                         'The unique constraint to use for conflict detection.',
                       type: new build.graphql.GraphQLNonNull(
-                        build.getTypeByName(constraintEnumName)
+                        build.getTypeByName(constraintEnumName) as GraphQLInputType
                       )
                     })
                   ),
@@ -264,7 +265,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                         'Columns to update on conflict. If omitted, all non-key columns are updated.',
                       type: new build.graphql.GraphQLList(
                         new build.graphql.GraphQLNonNull(
-                          build.getTypeByName(columnEnumName)
+                          build.getTypeByName(columnEnumName) as GraphQLInputType
                         )
                       )
                     })
@@ -389,7 +390,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       type: new build.graphql.GraphQLNonNull(
                         new build.graphql.GraphQLList(
                           new build.graphql.GraphQLNonNull(
-                            build.getTypeByName(itemTypeName)
+                            build.getTypeByName(itemTypeName) as GraphQLInputType
                           )
                         )
                       )
@@ -400,7 +401,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description:
                         'Optional ON CONFLICT handling for duplicate keys.',
-                      type: build.getTypeByName(onConflictName)
+                      type: build.getTypeByName(onConflictName) as GraphQLInputType
                     })
                   )
                 })
@@ -429,7 +430,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       type: new build.graphql.GraphQLNonNull(
                         new build.graphql.GraphQLList(
                           new build.graphql.GraphQLNonNull(
-                            build.getTypeByName(itemTypeName)
+                            build.getTypeByName(itemTypeName) as GraphQLInputType
                           )
                         )
                       )
@@ -441,7 +442,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                       description:
                         'The unique constraint to target and which columns to update.',
                       type: new build.graphql.GraphQLNonNull(
-                        build.getTypeByName(onConflictName)
+                        build.getTypeByName(onConflictName) as GraphQLInputType
                       )
                     })
                   )
@@ -466,13 +467,13 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => {
                       // Try to use connection-filter type if available
                       const filterTypeName = `${typeName}Filter`;
-                      const filterType = build.getTypeByName(filterTypeName);
+                      const filterType = build.getTypeByName(filterTypeName) as GraphQLInputType | undefined;
                       // Fall back to PostGraphile's built-in condition type
                       const conditionTypeName = inflection.conditionType(
                         typeName
                       );
                       const conditionType =
-                        build.getTypeByName(conditionTypeName);
+                        build.getTypeByName(conditionTypeName) as GraphQLInputType | undefined;
                       const whereType = filterType || conditionType;
                       return {
                         description:
@@ -488,7 +489,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description: 'The fields to update.',
                       type: new build.graphql.GraphQLNonNull(
-                        build.getTypeByName(patchTypeName)
+                        build.getTypeByName(patchTypeName) as GraphQLInputType
                       )
                     })
                   )
@@ -511,12 +512,12 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     { fieldName: 'where' },
                     () => {
                       const filterTypeName = `${typeName}Filter`;
-                      const filterType = build.getTypeByName(filterTypeName);
+                      const filterType = build.getTypeByName(filterTypeName) as GraphQLInputType | undefined;
                       const conditionTypeName = inflection.conditionType(
                         typeName
                       );
                       const conditionType =
-                        build.getTypeByName(conditionTypeName);
+                        build.getTypeByName(conditionTypeName) as GraphQLInputType | undefined;
                       const whereType = filterType || conditionType;
                       return {
                         description:
@@ -545,7 +546,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
               () => ({
                 description,
                 fields: ({ fieldWithHooks }: any) => {
-                  const outputType = build.getTypeByName(typeName);
+                  const outputType = build.getTypeByName(typeName) as GraphQLOutputType | undefined;
                   const fields: Record<string, any> = {
                     clientMutationId: fieldWithHooks(
                       { fieldName: 'clientMutationId' },
@@ -602,7 +603,7 @@ export const BulkTypesPlugin: GraphileConfig.Plugin = {
                     () => ({
                       description:
                         'Access the root query type. Useful for re-fetching data after a mutation.',
-                      type: build.getTypeByName('Query')
+                      type: build.getTypeByName('Query') as GraphQLOutputType
                     })
                   );
 

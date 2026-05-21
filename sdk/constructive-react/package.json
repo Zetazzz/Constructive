@@ -1,6 +1,6 @@
 {
   "name": "@constructive-io/react",
-  "version": "0.20.5",
+  "version": "0.20.6",
   "author": "Constructive <developers@constructive.io>",
   "description": "Constructive React - Auto-generated React Query hooks and ORM client",
   "main": "index.js",
@@ -54,7 +54,7 @@
   "devDependencies": {
     "@constructive-io/graphql-codegen": "workspace:^",
     "@types/node": "^22.19.11",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.15",
     "makage": "^0.3.0",
     "react": "^19.2.4",
     "tsx": "^4.19.0",

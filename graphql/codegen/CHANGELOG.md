@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.43.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.42.5...@constructive-io/graphql-codegen@4.43.0) (2026-05-21)
+
+### Bug Fixes
+
+- **codegen:** collect input types referenced by table field arguments ([62061ea](https://github.com/constructive-io/constructive/commit/62061ea0e9b4e5bbcf147d2777d5e71823a365c8))
+
+### Features
+
+- **codegen:** re-export FetchAdapter from ORM barrel ([93bc05e](https://github.com/constructive-io/constructive/commit/93bc05ebb8c1035d5b71c3432b1781290d13657e))
+
 ## [4.42.5](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.42.4...@constructive-io/graphql-codegen@4.42.5) (2026-05-20)
 
 **Note:** Version bump only for package @constructive-io/graphql-codegen
