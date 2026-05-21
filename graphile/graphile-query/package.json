@@ -36,7 +36,7 @@
     "graphile-settings": "workspace:^",
     "graphql": "16.13.0",
     "pg": "^8.21.0",
-    "postgraphile": "5.0.0"
+    "postgraphile": "5.0.3"
   },
   "devDependencies": {
     "@types/pg": "^8.20.0",

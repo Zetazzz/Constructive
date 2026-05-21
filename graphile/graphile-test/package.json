@@ -45,7 +45,7 @@
     "mock-req": "^0.2.0",
     "pg": "^8.21.0",
     "pgsql-test": "workspace:^",
-    "postgraphile": "5.0.0"
+    "postgraphile": "5.0.3"
   },
   "keywords": [
     "testing",
