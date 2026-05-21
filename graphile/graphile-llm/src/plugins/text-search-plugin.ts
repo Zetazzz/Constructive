@@ -74,7 +74,9 @@ async function embedTextInWhere(
     // Detect VectorNearbyInput shape: has `text` and no `vector`
     if ('text' in value && typeof value.text === 'string' && !value.vector) {
       pending.push((async () => {
+        const startTime = Date.now();
         const vector = await embedder(value.text);
+        const latencyMs = Date.now() - startTime;
 
         if (vector === null) {
           // Embedder returned null (e.g. quota exceeded) — skip vector search
@@ -83,7 +85,7 @@ async function embedTextInWhere(
         }
 
         console.log(
-          `[graphile-llm] Search embed: field=${key}, dims=${vector.length}`
+          `[graphile-llm] Search embed: field=${key}, dims=${vector.length}, latency=${latencyMs}ms`
         );
 
         // Replace text with vector

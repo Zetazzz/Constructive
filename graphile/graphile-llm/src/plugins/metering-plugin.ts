@@ -108,7 +108,11 @@ function wrapEmbedderWithMetering(
 
     if (!ctx) {
       // No metering context in scope — call original embedder directly
-      return embedder(text);
+      const startTime = Date.now();
+      const result = await embedder(text);
+      const latencyMs = Date.now() - startTime;
+      console.log(`[graphile-llm] Embed (unmetered): dims=${result?.length ?? 0}, latency=${latencyMs}ms`);
+      return result;
     }
 
     const result = await meteredEmbed(embedder, text, ctx, meteringOptions);
