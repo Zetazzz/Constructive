@@ -11,20 +11,23 @@
  */
 
 import OllamaClient from '@agentic-kit/ollama';
+
 import { getLlmEnvOptions } from './env';
-import type { EmbedderConfig, EmbedderFunction, LlmModuleData } from './types';
+import type { EmbedderConfig, EmbedderFunction, EmbeddingResult, LlmModuleData } from './types';
 
 // ─── Built-in Providers ─────────────────────────────────────────────────────
 
 /**
  * Create an Ollama-based embedder function.
+ *
+ * Uses the /api/embed endpoint which returns prompt_eval_count (real token count).
  */
 function createOllamaEmbedder(
   baseUrl: string = 'http://localhost:11434',
-  model: string = 'nomic-embed-text',
+  model: string = 'nomic-embed-text'
 ): EmbedderFunction {
   const client = new OllamaClient(baseUrl);
-  return async (text: string): Promise<number[]> => {
+  return async (text: string): Promise<EmbeddingResult> => {
     return client.generateEmbedding(text, model);
   };
 }
@@ -38,11 +41,11 @@ function createOllamaEmbedder(
  */
 export function buildEmbedder(config: EmbedderConfig): EmbedderFunction | null {
   switch (config.provider) {
-    case 'ollama':
-      return createOllamaEmbedder(config.baseUrl, config.model);
+  case 'ollama':
+    return createOllamaEmbedder(config.baseUrl, config.model);
     // Future: 'openai', 'anthropic', 'custom'
-    default:
-      return null;
+  default:
+    return null;
   }
 }
 
@@ -58,7 +61,7 @@ export function buildEmbedderFromModule(data: LlmModuleData): EmbedderFunction |
   return buildEmbedder({
     provider: data.embedding_provider,
     model: data.embedding_model,
-    baseUrl: data.embedding_base_url,
+    baseUrl: data.embedding_base_url
   });
 }
 

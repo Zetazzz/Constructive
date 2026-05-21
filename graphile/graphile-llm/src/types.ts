@@ -7,9 +7,19 @@
 // ─── Embedder Types ─────────────────────────────────────────────────────────
 
 /**
- * A function that converts text into a vector embedding.
+ * Result from an embedding call, including real token usage from the provider.
  */
-export type EmbedderFunction = (text: string) => Promise<number[]>;
+export interface EmbeddingResult {
+  /** The vector embedding */
+  embedding: number[];
+  /** Number of prompt tokens consumed (from provider; 0 if unavailable) */
+  promptTokens: number;
+}
+
+/**
+ * A function that converts text into a vector embedding with token usage.
+ */
+export type EmbedderFunction = (text: string) => Promise<EmbeddingResult>;
 
 /**
  * Configuration for an embedding provider.

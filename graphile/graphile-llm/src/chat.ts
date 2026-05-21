@@ -13,6 +13,7 @@
  */
 
 import { OllamaAdapter } from '@agentic-kit/ollama';
+
 import { getLlmEnvOptions } from './env';
 import type { ChatConfig, ChatFunction, ChatMessage, ChatOptions, ChatResult, LlmModuleData } from './types';
 
@@ -26,7 +27,7 @@ import type { ChatConfig, ChatFunction, ChatMessage, ChatOptions, ChatResult, Ll
  */
 function createOllamaChatCompleter(
   baseUrl: string = 'http://localhost:11434',
-  model: string = 'llama3',
+  model: string = 'llama3'
 ): ChatFunction {
   const adapter = new OllamaAdapter(baseUrl);
 
@@ -35,7 +36,7 @@ function createOllamaChatCompleter(
     const nonSystem = messages.filter((m) => m.role !== 'system');
 
     const modelDesc = adapter.createModel(model, {
-      maxOutputTokens: options?.maxTokens,
+      maxOutputTokens: options?.maxTokens
     });
 
     const context = {
@@ -43,13 +44,13 @@ function createOllamaChatCompleter(
       messages: nonSystem.map((m) => ({
         role: m.role as 'user',
         content: m.content,
-        timestamp: Date.now(),
-      })),
+        timestamp: Date.now()
+      }))
     };
 
     const stream = adapter.stream(modelDesc, context, {
       temperature: options?.temperature,
-      maxTokens: options?.maxTokens,
+      maxTokens: options?.maxTokens
     });
 
     const result = await stream.result();
@@ -67,8 +68,8 @@ function createOllamaChatCompleter(
         reasoning: result.usage.reasoning,
         cacheRead: result.usage.cacheRead,
         cacheWrite: result.usage.cacheWrite,
-        totalTokens: result.usage.totalTokens,
-      },
+        totalTokens: result.usage.totalTokens
+      }
     };
   };
 }
@@ -82,11 +83,11 @@ function createOllamaChatCompleter(
  */
 export function buildChatCompleter(config: ChatConfig): ChatFunction | null {
   switch (config.provider) {
-    case 'ollama':
-      return createOllamaChatCompleter(config.baseUrl, config.model);
+  case 'ollama':
+    return createOllamaChatCompleter(config.baseUrl, config.model);
     // Future: 'openai', 'anthropic', 'custom'
-    default:
-      return null;
+  default:
+    return null;
   }
 }
 
@@ -103,7 +104,7 @@ export function buildChatCompleterFromModule(data: LlmModuleData): ChatFunction 
   return buildChatCompleter({
     provider: data.chat_provider,
     model: data.chat_model,
-    baseUrl: data.chat_base_url,
+    baseUrl: data.chat_base_url
   });
 }
 

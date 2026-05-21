@@ -32,12 +32,14 @@
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';
+
 import type { GraphileConfig } from 'graphile-config';
-import type { EmbedderFunction, MeteringConfig } from '../types';
+
+import type { PgClient } from '../config-cache';
+import { getLlmBillingConfig } from '../config-cache';
 import type { MeteringContext, MeteringOptions, WithPgClient } from '../metering';
 import { meteredEmbed } from '../metering';
-import { getLlmBillingConfig } from '../config-cache';
-import type { PgClient } from '../config-cache';
+import type { EmbedderFunction, MeteringConfig } from '../types';
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -61,7 +63,7 @@ function defaultResolveEntityId(pgSettings: Record<string, string>): string | nu
 
 async function buildMeteringContext(
   graphqlContext: any,
-  resolveEntityId: (pgSettings: Record<string, string>) => string | null,
+  resolveEntityId: (pgSettings: Record<string, string>) => string | null
 ): Promise<MeteringContext | null> {
   const pgSettings: Record<string, string> = graphqlContext?.pgSettings ?? {};
   const entityId = resolveEntityId(pgSettings);
@@ -95,7 +97,7 @@ async function buildMeteringContext(
     requestId,
     databaseId,
     actorId,
-    inferenceLog: inferenceLogConfig,
+    inferenceLog: inferenceLogConfig
   };
 }
 
@@ -109,7 +111,7 @@ async function buildMeteringContext(
  */
 function wrapEmbedderWithMetering(
   embedder: EmbedderFunction,
-  meteringOptions: MeteringOptions,
+  meteringOptions: MeteringOptions
 ): (text: string) => Promise<number[] | null> {
   return async (text: string): Promise<number[] | null> => {
     const ctx = meteringStore.getStore();
@@ -117,10 +119,10 @@ function wrapEmbedderWithMetering(
     if (!ctx) {
       // No metering context in scope — call original embedder directly
       const startTime = Date.now();
-      const result = await embedder(text);
+      const { embedding } = await embedder(text);
       const latencyMs = Date.now() - startTime;
-      console.log(`[graphile-llm] Embed (unmetered): dims=${result?.length ?? 0}, latency=${latencyMs}ms`);
-      return result;
+      console.log(`[graphile-llm] Embed (unmetered): dims=${embedding?.length ?? 0}, latency=${latencyMs}ms`);
+      return embedding;
     }
 
     const result = await meteredEmbed(embedder, text, ctx, meteringOptions);
@@ -136,13 +138,13 @@ function wrapEmbedderWithMetering(
 // ─── Plugin ─────────────────────────────────────────────────────────────────
 
 export function createLlmMeteringPlugin(
-  meteringConfig: MeteringConfig = {},
+  meteringConfig: MeteringConfig = {}
 ): GraphileConfig.Plugin {
   const {
     embeddingMeterSlug: configEmbeddingSlug,
     chatMeterSlug: configChatSlug,
     skipMetering,
-    resolveEntityId = defaultResolveEntityId,
+    resolveEntityId = defaultResolveEntityId
   } = meteringConfig;
 
   return {
@@ -180,7 +182,7 @@ export function createLlmMeteringPlugin(
             chatMeterSlug: chatSlug,
             skipMetering,
             embeddingModel: embeddingModel ?? undefined,
-            chatModel: chatModel ?? undefined,
+            chatModel: chatModel ?? undefined
           };
 
           // Replace the embedder with a metered version.
@@ -188,7 +190,7 @@ export function createLlmMeteringPlugin(
           const meteredEmbedder = wrapEmbedderWithMetering(originalEmbedder, meteringOptions);
 
           return build.extend(build, {
-            llmEmbedder: meteredEmbedder,
+            llmEmbedder: meteredEmbedder as unknown as EmbedderFunction
           }, 'LlmMeteringPlugin replacing llmEmbedder with metered version');
         },
 
@@ -198,7 +200,7 @@ export function createLlmMeteringPlugin(
          */
         GraphQLObjectType_fields_field(field, build, context) {
           const {
-            scope: { isRootQuery, isRootMutation },
+            scope: { isRootQuery, isRootMutation }
           } = context as any;
 
           if (!isRootQuery && !isRootMutation) return field;
@@ -220,10 +222,10 @@ export function createLlmMeteringPlugin(
               return meteringStore.run(ctx, () => {
                 return oldResolve(source, args, graphqlContext, info);
               });
-            },
+            }
           };
-        },
-      },
-    },
+        }
+      }
+    }
   };
 }

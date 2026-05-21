@@ -20,13 +20,13 @@ const LLM_DEFAULTS = {
   embedding: {
     provider: 'ollama',
     model: 'nomic-embed-text',
-    baseUrl: 'http://localhost:11434',
+    baseUrl: 'http://localhost:11434'
   },
   chat: {
     provider: 'ollama',
     model: 'llama3',
-    baseUrl: 'http://localhost:11434',
-  },
+    baseUrl: 'http://localhost:11434'
+  }
 } as const;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -55,12 +55,12 @@ export function getLlmEnvOptions(): LlmEnvOptions {
     embedding: {
       provider: process.env.EMBEDDER_PROVIDER ?? LLM_DEFAULTS.embedding.provider,
       model: process.env.EMBEDDER_MODEL ?? LLM_DEFAULTS.embedding.model,
-      baseUrl: process.env.EMBEDDER_BASE_URL ?? LLM_DEFAULTS.embedding.baseUrl,
+      baseUrl: process.env.EMBEDDER_BASE_URL ?? LLM_DEFAULTS.embedding.baseUrl
     },
     chat: {
       provider: process.env.CHAT_PROVIDER ?? LLM_DEFAULTS.chat.provider,
       model: process.env.CHAT_MODEL ?? LLM_DEFAULTS.chat.model,
-      baseUrl: process.env.CHAT_BASE_URL ?? LLM_DEFAULTS.chat.baseUrl,
-    },
+      baseUrl: process.env.CHAT_BASE_URL ?? LLM_DEFAULTS.chat.baseUrl
+    }
   };
 }

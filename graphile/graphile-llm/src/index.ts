@@ -31,64 +31,65 @@
  */
 
 // Environment configuration (single source of truth for LLM defaults)
-export { getLlmEnvOptions } from './env';
 export type { LlmEnvOptions, LlmProviderConfig } from './env';
+export { getLlmEnvOptions } from './env';
 
 // Preset (recommended entry point)
 export { GraphileLlmPreset } from './preset';
 
 // Individual plugins (pure — no billing dependency)
 export { createLlmModulePlugin } from './plugins/llm-module-plugin';
-export { createLlmTextSearchPlugin } from './plugins/text-search-plugin';
-export { createLlmTextMutationPlugin } from './plugins/text-mutation-plugin';
 export { createLlmRagPlugin } from './plugins/rag-plugin';
+export { createLlmTextMutationPlugin } from './plugins/text-mutation-plugin';
+export { createLlmTextSearchPlugin } from './plugins/text-search-plugin';
 
 // Metering plugin (opt-in billing integration)
 export { createLlmMeteringPlugin } from './plugins/metering-plugin';
 
 // Agent discovery (queries agent_chat_module config table at runtime)
-export { getAgentDiscovery, clearAgentDiscoveryCache } from './plugins/agent-discovery-plugin';
-export type { AgentTableInfo, AgentDiscovery } from './plugins/agent-discovery-plugin';
+export type { AgentDiscovery,AgentTableInfo } from './plugins/agent-discovery-plugin';
+export { clearAgentDiscoveryCache,getAgentDiscovery } from './plugins/agent-discovery-plugin';
 
 // Embedder utilities
 export {
   buildEmbedder,
-  buildEmbedderFromModule,
   buildEmbedderFromEnv,
+  buildEmbedderFromModule
 } from './embedder';
 
 // Chat completion utilities
 export {
   buildChatCompleter,
-  buildChatCompleterFromModule,
   buildChatCompleterFromEnv,
+  buildChatCompleterFromModule
 } from './chat';
 
 // Metering utilities (for custom integration)
-export { meteredEmbed, meteredChat, logInferenceUsage, QuotaExceededError } from './metering';
-export type { MeteringContext, MeteringOptions, MeterResult, WithPgClient, InferenceLogEntry } from './metering';
+export type { InferenceLogEntry,MeteringContext, MeteringOptions, MeterResult, WithPgClient } from './metering';
+export { logInferenceUsage, meteredChat, meteredEmbed, QuotaExceededError } from './metering';
 
 // Config cache (for custom integration)
+export type { BillingConfig, InferenceLogConfig, LlmBillingCacheEntry, PgClient } from './config-cache';
 export {
-  getLlmBillingConfig,
-  invalidateLlmBillingConfig,
   getLlmBillingCacheStats,
+  getLlmBillingConfig,
+  invalidateLlmBillingConfig
 } from './config-cache';
-export type { BillingConfig, LlmBillingCacheEntry, InferenceLogConfig, PgClient } from './config-cache';
 
 // Types
 export type {
-  EmbedderFunction,
-  EmbedderConfig,
-  ChatFunction,
   ChatConfig,
+  ChatFunction,
   ChatMessage,
   ChatOptions,
   ChatResult,
-  LlmUsage,
-  LlmModuleData,
-  GraphileLlmOptions,
-  MeteringConfig,
-  RagDefaults,
   ChunkTableInfo,
+  EmbedderConfig,
+  EmbedderFunction,
+  EmbeddingResult,
+  GraphileLlmOptions,
+  LlmModuleData,
+  LlmUsage,
+  MeteringConfig,
+  RagDefaults
 } from './types';

@@ -22,10 +22,11 @@
  */
 
 import type { GraphileConfig } from 'graphile-config';
-import { buildEmbedder, buildEmbedderFromEnv } from '../embedder';
+
 import { buildChatCompleter, buildChatCompleterFromEnv } from '../chat';
+import { buildEmbedder, buildEmbedderFromEnv } from '../embedder';
 import { getLlmEnvOptions } from '../env';
-import type { EmbedderFunction, ChatFunction, GraphileLlmOptions } from '../types';
+import type { ChatFunction, EmbedderFunction, GraphileLlmOptions } from '../types';
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -122,10 +123,10 @@ export function createLlmModulePlugin(
             llmEmbedder: embedder,
             llmChatCompleter: chat,
             llmEmbeddingModel: defaultEmbedder?.model ?? getLlmEnvOptions().embedding.model,
-            llmChatModel: defaultChatCompleter?.model ?? getLlmEnvOptions().chat.model,
+            llmChatModel: defaultChatCompleter?.model ?? getLlmEnvOptions().chat.model
           }, 'LlmModulePlugin adding llmEmbedder, llmChatCompleter, and model names to build');
-        },
-      },
-    },
+        }
+      }
+    }
   };
 }

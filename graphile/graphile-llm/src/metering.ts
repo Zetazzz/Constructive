@@ -11,15 +11,15 @@
  *
  * Token counts:
  *   - Chat: real provider counts via ChatResult.usage (from OllamaAdapter.stream())
- *   - Embedding: estimated at ~4 chars/token (Ollama embedding API has no token counts)
+ *   - Embedding: real provider counts via EmbeddingResult.promptTokens (from /api/embed)
  *
  * The billing functions live in the tenant database and are called via the
  * Graphile `withPgClient` callback. Function locations (schema, names) are
  * resolved from `billing_module` metaschema and cached by `config-cache.ts`.
  */
 
-import type { PgClient, BillingConfig, InferenceLogConfig } from './config-cache';
-import type { EmbedderFunction, ChatFunction, ChatMessage, ChatOptions, ChatResult, LlmUsage } from './types';
+import type { BillingConfig, InferenceLogConfig,PgClient } from './config-cache';
+import type { ChatFunction, ChatMessage, ChatOptions, EmbedderFunction } from './types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -91,7 +91,7 @@ async function checkQuota(
   billing: BillingConfig,
   entityId: string,
   meterSlug: string,
-  amount: number,
+  amount: number
 ): Promise<boolean> {
   try {
     const sql = `SELECT "${billing.privateSchema}"."${billing.checkBillingQuotaFunction}"($1, $2::uuid, $3) AS allowed`;
@@ -114,7 +114,7 @@ async function recordUsage(
   entityId: string,
   meterSlug: string,
   amount: number,
-  metadata: Record<string, unknown>,
+  metadata: Record<string, unknown>
 ): Promise<void> {
   try {
     const sql = `SELECT "${billing.privateSchema}"."${billing.recordUsageFunction}"($1, $2::uuid, $3, $4::jsonb)`;
@@ -158,7 +158,7 @@ export interface InferenceLogEntry {
  */
 export async function logInferenceUsage(
   ctx: MeteringContext,
-  entry: InferenceLogEntry,
+  entry: InferenceLogEntry
 ): Promise<void> {
   if (!ctx.inferenceLog) return;
 
@@ -191,7 +191,7 @@ export async function logInferenceUsage(
         entry.latencyMs, entry.ragEnabled, entry.chunksRetrieved,
         entry.embeddingModel, entry.embeddingLatencyMs,
         entry.status, entry.errorType,
-        entry.rawUsage ? JSON.stringify(entry.rawUsage) : null,
+        entry.rawUsage ? JSON.stringify(entry.rawUsage) : null
       ]);
     });
   } catch (e: unknown) {
@@ -212,39 +212,39 @@ export async function meteredEmbed(
   embedder: EmbedderFunction,
   text: string,
   ctx: MeteringContext | null,
-  options: MeteringOptions = {},
+  options: MeteringOptions = {}
 ): Promise<MeterResult<number[]>> {
   const startTime = Date.now();
 
   // No billing context → just embed without metering
   if (!ctx) {
-    const result = await embedder(text);
+    const { embedding } = await embedder(text);
     return {
-      result,
+      result: embedding,
       metered: false,
       quotaExceeded: false,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
   const meterSlug = options.embeddingMeterSlug;
   if (!meterSlug) {
-    const result = await embedder(text);
+    const { embedding } = await embedder(text);
     return {
-      result,
+      result: embedding,
       metered: false,
       quotaExceeded: false,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
   if (options.skipMetering) {
-    const result = await embedder(text);
+    const { embedding } = await embedder(text);
     return {
-      result,
+      result: embedding,
       metered: false,
       quotaExceeded: false,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
@@ -259,7 +259,6 @@ export async function meteredEmbed(
   }
 
   if (!allowed) {
-    const estimatedTokens = Math.ceil(text.length / 4);
     logInferenceUsage(ctx, {
       databaseId: ctx.databaseId,
       entityId: ctx.entityId,
@@ -268,9 +267,9 @@ export async function meteredEmbed(
       provider: options.provider ?? null,
       service: 'embedding',
       operation: 'create',
-      inputTokens: estimatedTokens,
+      inputTokens: 0,
       outputTokens: 0,
-      totalTokens: estimatedTokens,
+      totalTokens: 0,
       cacheReadTokens: null,
       cacheWriteTokens: null,
       latencyMs: Date.now() - startTime,
@@ -280,30 +279,28 @@ export async function meteredEmbed(
       embeddingLatencyMs: null,
       status: 'quota_exceeded',
       errorType: null,
-      rawUsage: { estimated: true, method: 'chars_div_4' },
+      rawUsage: null
     }).catch(() => {});
 
     return {
       result: null,
       metered: true,
       quotaExceeded: true,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
-  // Execute embedding
-  const result = await embedder(text);
+  // Execute embedding — real token count from provider via EmbeddingResult
+  const { embedding, promptTokens } = await embedder(text);
   const latencyMs = Date.now() - startTime;
 
-  // Embedding API does not return token counts; estimate from text length
-  const estimatedTokens = Math.ceil(text.length / 4);
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
-    await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, estimatedTokens, {
+    await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, promptTokens, {
       request_id: ctx.requestId,
       input_chars: text.length,
-      dims: result.length,
-      latency_ms: latencyMs,
-      estimated: true,
+      prompt_tokens: promptTokens,
+      dims: embedding.length,
+      latency_ms: latencyMs
     });
   }).catch(() => {});
 
@@ -316,9 +313,9 @@ export async function meteredEmbed(
     provider: options.provider ?? null,
     service: 'embedding',
     operation: 'create',
-    inputTokens: estimatedTokens,
+    inputTokens: promptTokens,
     outputTokens: 0,
-    totalTokens: estimatedTokens,
+    totalTokens: promptTokens,
     cacheReadTokens: null,
     cacheWriteTokens: null,
     latencyMs,
@@ -328,14 +325,14 @@ export async function meteredEmbed(
     embeddingLatencyMs: latencyMs,
     status: 'success',
     errorType: null,
-    rawUsage: { estimated: true, method: 'chars_div_4' },
+    rawUsage: { prompt_tokens: promptTokens }
   }).catch(() => {});
 
   return {
-    result,
+    result: embedding,
     metered: true,
     quotaExceeded: false,
-    latencyMs,
+    latencyMs
   };
 }
 
@@ -349,7 +346,7 @@ export async function meteredChat(
   messages: ChatMessage[],
   ctx: MeteringContext | null,
   chatOptions?: ChatOptions,
-  meteringOptions: MeteringOptions = {},
+  meteringOptions: MeteringOptions = {}
 ): Promise<MeterResult<string>> {
   const startTime = Date.now();
 
@@ -359,7 +356,7 @@ export async function meteredChat(
       result: chatResult.content,
       metered: false,
       quotaExceeded: false,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
@@ -370,7 +367,7 @@ export async function meteredChat(
       result: chatResult.content,
       metered: false,
       quotaExceeded: false,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
@@ -380,7 +377,7 @@ export async function meteredChat(
       result: chatResult.content,
       metered: false,
       quotaExceeded: false,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
@@ -416,14 +413,14 @@ export async function meteredChat(
       embeddingLatencyMs: null,
       status: 'quota_exceeded',
       errorType: null,
-      rawUsage: null,
+      rawUsage: null
     }).catch(() => {});
 
     return {
       result: null,
       metered: true,
       quotaExceeded: true,
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - startTime
     };
   }
 
@@ -440,7 +437,7 @@ export async function meteredChat(
       cache_read_tokens: usage.cacheRead,
       cache_write_tokens: usage.cacheWrite,
       messages_count: messages.length,
-      latency_ms: latencyMs,
+      latency_ms: latencyMs
     });
   }).catch(() => {});
 
@@ -465,14 +462,14 @@ export async function meteredChat(
     embeddingLatencyMs: null,
     status: 'success',
     errorType: null,
-    rawUsage: { reasoning: usage.reasoning },
+    rawUsage: { reasoning: usage.reasoning }
   }).catch(() => {});
 
   return {
     result: chatResult.content,
     metered: true,
     quotaExceeded: false,
-    latencyMs,
+    latencyMs
   };
 }
 

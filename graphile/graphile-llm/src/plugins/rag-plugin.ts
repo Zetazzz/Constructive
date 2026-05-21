@@ -23,7 +23,8 @@
 import { context as grafastContext, lambda, object } from 'grafast';
 import type { GraphileConfig } from 'graphile-config';
 import { extendSchema, gql } from 'graphile-utils';
-import type { EmbedderFunction, ChatFunction, ChunkTableInfo, RagDefaults } from '../types';
+
+import type { ChatFunction, ChunkTableInfo, EmbedderFunction, RagDefaults } from '../types';
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ function parseHasChunksTag(raw: any, codec: any): ChunkTableInfo | null {
     parentFkField: parsed.parentFk || 'parent_id',
     parentPkField: parsed.parentPk || 'id',
     embeddingField: parsed.embeddingField || 'embedding',
-    contentField: parsed.contentField || 'content',
+    contentField: parsed.contentField || 'content'
   };
 }
 
@@ -115,7 +116,7 @@ function buildChunkSearchSql(
   table: ChunkTableInfo,
   vectorString: string,
   limit: number,
-  maxDistance: number | null,
+  maxDistance: number | null
 ): { text: string; values: any[] } {
   const schema = table.chunksSchema;
   const qualifiedTable = schema
@@ -151,7 +152,7 @@ function buildChunkSearchSql(
  * Assemble retrieved chunks into a context string for the LLM prompt.
  */
 function assembleContext(
-  chunks: Array<{ content: string; parent_id: string; distance: number; table_name: string }>,
+  chunks: Array<{ content: string; parent_id: string; distance: number; table_name: string }>
 ): string {
   return chunks
     .map((chunk, i) => `[Source ${i + 1}] (similarity: ${(1 - chunk.distance).toFixed(3)})\n${chunk.content}`)
@@ -166,7 +167,7 @@ function assembleContext(
  * @param ragDefaults - Default configuration for RAG queries
  */
 export function createLlmRagPlugin(
-  ragDefaults: RagDefaults = {},
+  ragDefaults: RagDefaults = {}
 ): GraphileConfig.Plugin {
   // Chunk tables discovered during schema build, used by the plan at execution time
   let chunkTables: ChunkTableInfo[] = [];
@@ -267,7 +268,7 @@ export function createLlmRagPlugin(
               minSimilarity: $minSimilarity,
               systemPrompt: $systemPrompt,
               withPgClient: $withPgClient,
-              pgSettings: $pgSettings,
+              pgSettings: $pgSettings
             });
 
             return lambda($combined, async (input: any) => {
@@ -277,7 +278,7 @@ export function createLlmRagPlugin(
                 minSimilarity: queryMinSimilarity,
                 systemPrompt: querySystemPrompt,
                 withPgClient,
-                pgSettings,
+                pgSettings
               } = input;
 
               if (!prompt || typeof prompt !== 'string') {
@@ -306,7 +307,7 @@ export function createLlmRagPlugin(
 
               // Step 1: Embed the prompt
               const startEmbed = Date.now();
-              const vector = await embedder(prompt);
+              const { embedding: vector } = await embedder(prompt);
               const embedLatency = Date.now() - startEmbed;
               const vectorString = `[${vector.join(',')}]`;
 
@@ -332,7 +333,7 @@ export function createLlmRagPlugin(
                         content: row.content,
                         parent_id: row.parent_id,
                         distance: parseFloat(row.distance),
-                        table_name: table.parentCodecName,
+                        table_name: table.parentCodecName
                       });
                     }
                   }
@@ -348,7 +349,7 @@ export function createLlmRagPlugin(
                   answer: 'No relevant context found for your query. ' +
                     'Try broadening your search or lowering the minimum similarity threshold.',
                   sources: [],
-                  tokensUsed: null,
+                  tokensUsed: null
                 };
               }
 
@@ -359,9 +360,9 @@ export function createLlmRagPlugin(
               const startChat = Date.now();
               const chatResult = await chatCompleter([
                 { role: 'system', content: systemPromptTemplate + contextText },
-                { role: 'user', content: prompt },
+                { role: 'user', content: prompt }
               ], {
-                maxTokens: ragDefaults.maxTokens ?? DEFAULT_MAX_TOKENS,
+                maxTokens: ragDefaults.maxTokens ?? DEFAULT_MAX_TOKENS
               });
               const chatLatency = Date.now() - startChat;
 
@@ -376,9 +377,9 @@ export function createLlmRagPlugin(
                   content: chunk.content,
                   similarity: 1 - chunk.distance,
                   tableName: chunk.table_name,
-                  parentId: chunk.parent_id,
+                  parentId: chunk.parent_id
                 })),
-                tokensUsed: chatResult.usage.totalTokens,
+                tokensUsed: chatResult.usage.totalTokens
               };
             });
           },
@@ -399,7 +400,7 @@ export function createLlmRagPlugin(
               }
 
               const startTime = Date.now();
-              const vector = await embedder(text);
+              const { embedding: vector } = await embedder(text);
               const latencyMs = Date.now() - startTime;
 
               console.log(
@@ -408,12 +409,12 @@ export function createLlmRagPlugin(
 
               return {
                 vector,
-                dimensions: vector.length,
+                dimensions: vector.length
               };
             });
-          },
-        },
-      },
+          }
+        }
+      }
     };
   });
 
@@ -427,7 +428,7 @@ export function createLlmRagPlugin(
     after: [
       'LlmModulePlugin',
       'UnifiedSearchPlugin',
-      'VectorCodecPlugin',
-    ],
+      'VectorCodecPlugin'
+    ]
   };
 }

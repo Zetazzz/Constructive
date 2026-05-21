@@ -9,8 +9,8 @@
  * doesn't hit the database on every request.
  */
 
-import { Pool } from 'pg';
 import { ModuleConfigCache } from 'graphile-cache';
+import { Pool } from 'pg';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ export interface AgentDiscovery {
 
 const agentDiscoveryCache = new ModuleConfigCache<AgentDiscovery | null>({
   name: 'agent-discovery',
-  ttlMs: 60_000,
+  ttlMs: 60_000
 });
 
 /** Clear all cached discovery results (for testing) */
@@ -58,7 +58,7 @@ const DISCOVERY_SQL = `
  */
 export async function getAgentDiscovery(
   pool: Pool,
-  dbname: string,
+  dbname: string
 ): Promise<AgentDiscovery | null> {
   const cached = agentDiscoveryCache.get(dbname);
   if (cached !== undefined) {
@@ -83,7 +83,7 @@ export async function getAgentDiscovery(
           : null,
         task: row.task_table_name
           ? { schemaName, tableName: row.task_table_name }
-          : null,
+          : null
       };
     }
   } catch {

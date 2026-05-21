@@ -29,7 +29,7 @@
  */
 
 import type { GraphileConfig } from 'graphile-config';
-import type { EmbedderFunction } from '../types';
+
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ function hasVectorColumns(pgCodec: any): boolean {
  */
 async function embedTextInWhere(
   obj: any,
-  embedder: (text: string) => Promise<number[] | null>,
+  embedder: (text: string) => Promise<number[] | null>
 ): Promise<void> {
   if (!obj || typeof obj !== 'object') return;
 
@@ -127,7 +127,7 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
     after: [
       'LlmModulePlugin',
       'UnifiedSearchPlugin',
-      'VectorCodecPlugin',
+      'VectorCodecPlugin'
     ],
 
     schema: {
@@ -140,7 +140,7 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
          */
         GraphQLInputObjectType_fields(fields, build, context) {
           const {
-            scope: { inputObjectTypeName },
+            scope: { inputObjectTypeName }
           } = context as any;
 
           if (inputObjectTypeName !== 'VectorNearbyInput') {
@@ -148,7 +148,7 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
           }
 
           const {
-            graphql: { GraphQLString },
+            graphql: { GraphQLString }
           } = build;
 
           return build.extend(
@@ -159,8 +159,8 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
                 description:
                   'Natural language text to embed server-side for similarity search. ' +
                   'Mutually exclusive with `vector` — provide one or the other. ' +
-                  'Requires the LLM plugin to be configured with an embedding provider.',
-              },
+                  'Requires the LLM plugin to be configured with an embedding provider.'
+              }
             },
             'LlmTextSearchPlugin adding text field to VectorNearbyInput'
           );
@@ -176,7 +176,7 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
          */
         GraphQLObjectType_fields_field(field, build, context) {
           const {
-            scope: { isRootQuery, pgCodec },
+            scope: { isRootQuery, pgCodec }
           } = context as any;
 
           // Only wrap root query fields on tables with vector columns
@@ -206,7 +206,7 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
               }
 
               return oldResolve(source, args, graphqlContext, info);
-            },
+            }
           };
         },
 
@@ -221,8 +221,8 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
           }
 
           return schema;
-        },
-      },
-    },
+        }
+      }
+    }
   };
 }
