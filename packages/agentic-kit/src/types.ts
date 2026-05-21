@@ -95,6 +95,7 @@ export interface ToolCallContent {
 export interface Usage {
   input: number;
   output: number;
+  reasoning: number;
   cacheRead: number;
   cacheWrite: number;
   totalTokens: number;

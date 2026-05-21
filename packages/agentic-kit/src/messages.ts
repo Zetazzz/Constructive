@@ -15,6 +15,7 @@ export function createEmptyUsage(): Usage {
   return {
     input: 0,
     output: 0,
+    reasoning: 0,
     cacheRead: 0,
     cacheWrite: 0,
     totalTokens: 0,
@@ -28,7 +29,7 @@ export function createEmptyUsage(): Usage {
   };
 }
 
-export function calculateUsageCost(model: ModelDescriptor, usage: Usage): Usage['cost'] {
+export function calculateUsageCost(model: ModelDescriptor, usage: Usage): void {
   const schedule = model.cost;
   usage.cost.input = ((schedule?.input ?? 0) / 1_000_000) * usage.input;
   usage.cost.output = ((schedule?.output ?? 0) / 1_000_000) * usage.output;
@@ -36,7 +37,25 @@ export function calculateUsageCost(model: ModelDescriptor, usage: Usage): Usage[
   usage.cost.cacheWrite = ((schedule?.cacheWrite ?? 0) / 1_000_000) * usage.cacheWrite;
   usage.cost.total =
     usage.cost.input + usage.cost.output + usage.cost.cacheRead + usage.cost.cacheWrite;
-  return usage.cost;
+}
+
+export function snapshotUsage(usage: Usage): Usage {
+  return { ...usage, cost: { ...usage.cost } };
+}
+
+export function addUsage(target: Usage, delta: Usage): Usage {
+  target.input += delta.input;
+  target.output += delta.output;
+  target.reasoning += delta.reasoning;
+  target.cacheRead += delta.cacheRead;
+  target.cacheWrite += delta.cacheWrite;
+  target.totalTokens += delta.totalTokens;
+  target.cost.input += delta.cost.input;
+  target.cost.output += delta.cost.output;
+  target.cost.cacheRead += delta.cost.cacheRead;
+  target.cost.cacheWrite += delta.cost.cacheWrite;
+  target.cost.total += delta.cost.total;
+  return target;
 }
 
 export function createAssistantMessage(model: ModelDescriptor): AssistantMessage {
