@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/ollama@1.2.1...@agentic-kit/ollama@2.0.0) (2026-05-21)
+
+### Features
+
+- **ollama:** return real token counts from embedding endpoint ([942e121](https://github.com/constructive-io/agentic-kit/commit/942e1219213c9565f96c5bc9c219f403616da124))
+
+### BREAKING CHANGES
+
+- **ollama:** generateEmbedding() return type changed from
+  Promise<number[]> to Promise<EmbeddingResult>
+
 ## [1.2.1](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/ollama@1.2.0...@agentic-kit/ollama@1.2.1) (2026-05-21)
 
 ### Bug Fixes
