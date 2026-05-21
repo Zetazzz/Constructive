@@ -68,10 +68,10 @@ interface SendMessageBody {
 }
 
 /**
- * Estimate token count from text length (~4 chars per token for English).
- * Used as fallback when the provider doesn't return actual counts.
+ * Placeholder: replace with actual provider token counts once generateWithUsage() is approved.
+ * Estimates ~4 chars per token for English text.
  */
-function estimateTokens(text: string): number {
+function placeholderAmountTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
@@ -94,8 +94,8 @@ async function callWithUsage(
     content = await client.generate(input);
   }
 
-  const inputTokens = estimateTokens(promptText);
-  const outputTokens = estimateTokens(content);
+  const inputTokens = placeholderAmountTokens(promptText);
+  const outputTokens = placeholderAmountTokens(content);
   return {
     content,
     usage: { input: inputTokens, output: outputTokens, totalTokens: inputTokens + outputTokens },
@@ -526,8 +526,8 @@ async function handleSendMessage(
       const content = streamedContent;
       const promptText = llmMessages.map(m => m.content).join(' ');
       const latencyMs = Date.now() - startTime;
-      const inputTokens = estimateTokens(promptText);
-      const outputTokens = estimateTokens(content);
+      const inputTokens = placeholderAmountTokens(promptText);
+      const outputTokens = placeholderAmountTokens(content);
       const totalTokens = inputTokens + outputTokens;
 
       // Send [DONE] marker

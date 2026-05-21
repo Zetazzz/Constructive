@@ -251,7 +251,8 @@ export async function meteredEmbed(
   }
 
   if (!allowed) {
-    const estimatedTokens = Math.ceil(text.length / 4);
+    // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
+    const placeholderAmountTokens = Math.ceil(text.length / 4);
     logInferenceUsage(ctx, {
       databaseId: ctx.databaseId,
       entityId: ctx.entityId,
@@ -259,9 +260,9 @@ export async function meteredEmbed(
       model: options.embeddingModel ?? meterSlug,
       provider: options.provider ?? null,
       requestType: 'embedding',
-      inputTokens: estimatedTokens,
+      inputTokens: placeholderAmountTokens,
       outputTokens: 0,
-      totalTokens: estimatedTokens,
+      totalTokens: placeholderAmountTokens,
       latencyMs: Date.now() - startTime,
       ragEnabled: false,
       chunksRetrieved: null,
@@ -283,8 +284,8 @@ export async function meteredEmbed(
   const result = await embedder(text);
   const latencyMs = Date.now() - startTime;
 
-  // Record actual usage (input_chars as the metered amount)
-  const actualTokens = Math.ceil(text.length / 4);
+  // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
+  const placeholderAmountTokens = Math.ceil(text.length / 4);
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
     await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, text.length, {
       request_id: ctx.requestId,
@@ -302,9 +303,9 @@ export async function meteredEmbed(
     model: options.embeddingModel ?? meterSlug,
     provider: options.provider ?? null,
     requestType: 'embedding',
-    inputTokens: actualTokens,
+    inputTokens: placeholderAmountTokens,
     outputTokens: 0,
-    totalTokens: actualTokens,
+    totalTokens: placeholderAmountTokens,
     latencyMs,
     ragEnabled: false,
     chunksRetrieved: null,
@@ -378,7 +379,8 @@ export async function meteredChat(
   }
 
   if (!allowed) {
-    const estimatedInputTokens = Math.ceil(messages.reduce((sum, m) => sum + m.content.length, 0) / 4);
+    // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
+    const placeholderInputTokens = Math.ceil(messages.reduce((sum, m) => sum + m.content.length, 0) / 4);
     logInferenceUsage(ctx, {
       databaseId: ctx.databaseId,
       entityId: ctx.entityId,
@@ -386,9 +388,9 @@ export async function meteredChat(
       model: meteringOptions.chatModel ?? meterSlug,
       provider: meteringOptions.provider ?? null,
       requestType: 'chat',
-      inputTokens: estimatedInputTokens,
+      inputTokens: placeholderInputTokens,
       outputTokens: 0,
-      totalTokens: estimatedInputTokens,
+      totalTokens: placeholderInputTokens,
       latencyMs: Date.now() - startTime,
       ragEnabled: false,
       chunksRetrieved: null,
@@ -410,11 +412,11 @@ export async function meteredChat(
   const result = await chat(messages, chatOptions);
   const latencyMs = Date.now() - startTime;
 
-  // Record actual usage (input + output chars as the metered amount)
+  // Placeholder: replace with actual provider token counts once generateWithUsage() is approved
   const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
-  const estimatedInputTokens = Math.ceil(inputChars / 4);
-  const actualOutputTokens = Math.ceil(result.length / 4);
-  const actualTotal = estimatedInputTokens + actualOutputTokens;
+  const placeholderInputTokens = Math.ceil(inputChars / 4);
+  const placeholderOutputTokens = Math.ceil(result.length / 4);
+  const placeholderTotalTokens = placeholderInputTokens + placeholderOutputTokens;
   ctx.withPgClient(ctx.pgSettings, async (pgClient) => {
     await recordUsage(pgClient, ctx.billing, ctx.entityId, meterSlug, inputChars + result.length, {
       request_id: ctx.requestId,
@@ -433,9 +435,9 @@ export async function meteredChat(
     model: meteringOptions.chatModel ?? meterSlug,
     provider: meteringOptions.provider ?? null,
     requestType: 'chat',
-    inputTokens: estimatedInputTokens,
-    outputTokens: actualOutputTokens,
-    totalTokens: actualTotal,
+    inputTokens: placeholderInputTokens,
+    outputTokens: placeholderOutputTokens,
+    totalTokens: placeholderTotalTokens,
     latencyMs,
     ragEnabled: false,
     chunksRetrieved: null,
