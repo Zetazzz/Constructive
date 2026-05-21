@@ -64,6 +64,7 @@ interface ToolCallContent {
 interface Usage {
   input: number;
   output: number;
+  reasoning: number;
   cacheRead: number;
   cacheWrite: number;
   totalTokens: number;
@@ -762,6 +763,7 @@ function createAssistantMessage(model: ModelDescriptor): AssistantMessage {
     usage: {
       input: 0,
       output: 0,
+      reasoning: 0,
       cacheRead: 0,
       cacheWrite: 0,
       totalTokens: 0,

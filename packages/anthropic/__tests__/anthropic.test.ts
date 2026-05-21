@@ -74,6 +74,7 @@ describe('AnthropicAdapter', () => {
     expect(message.stopReason).toBe('toolUse');
     expect(message.usage.input).toBe(12);
     expect(message.usage.output).toBe(4);
+    expect(message.usage.reasoning).toBe(0);
     expect(toolCall).toMatchObject({
       type: 'toolCall',
       id: 'tool_1',
