@@ -19,14 +19,18 @@
  *
  * Auth: JWT from the auth middleware (req.token) → pg SET LOCAL context for RLS
  * Metering: check_billing_quota → LLM call → record_usage with real token counts
+ *
+ * Context: Uses `req.constructive` from @constructive-io/express-context
+ * for tenant-scoped database access, pgSettings, and withPgClient.
  */
 
 import express, { Router, Request, Response } from 'express';
 import { Logger } from '@pgpmjs/logger';
-import { Pool } from 'pg';
-import { getPgPool } from 'pg-cache';
+import type { Pool } from 'pg';
 import { OllamaAdapter } from '@agentic-kit/ollama';
 import { ModuleConfigCache } from 'graphile-cache';
+import { withPgClient } from '@constructive-io/express-context';
+import type { ConstructiveContext } from '@constructive-io/express-context';
 import {
   getLlmEnvOptions,
   getAgentDiscovery,
@@ -78,45 +82,6 @@ interface LlmUsageResult {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getPgSettings(req: Request): Record<string, string> {
-  const settings: Record<string, string> = {};
-
-  if (req.token?.user_id) {
-    settings['jwt.claims.user_id'] = req.token.user_id;
-    settings['role'] = 'authenticated';
-  }
-  if (req.databaseId) {
-    settings['jwt.claims.database_id'] = req.databaseId;
-  }
-  if (req.requestId) {
-    settings['request.id'] = req.requestId;
-  }
-
-  return settings;
-}
-
-async function withRlsClient<T>(
-  pool: Pool,
-  pgSettings: Record<string, string>,
-  fn: (client: any) => Promise<T>,
-): Promise<T> {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    for (const [key, value] of Object.entries(pgSettings)) {
-      await client.query('SELECT set_config($1, $2, true)', [key, value]);
-    }
-    const result = await fn(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
 function resolveOllamaAdapter(): { adapter: OllamaAdapter; model: string; baseUrl: string } | null {
   const { chat } = getLlmEnvOptions();
 
@@ -134,14 +99,13 @@ function resolveOllamaAdapter(): { adapter: OllamaAdapter; model: string; baseUr
 // ─── Billing Helpers ────────────────────────────────────────────────────────
 
 async function checkQuota(
-  pool: Pool,
-  pgSettings: Record<string, string>,
+  ctx: ConstructiveContext,
   billing: BillingConfig,
   entityId: string,
   meterSlug: string,
 ): Promise<boolean> {
   try {
-    return await withRlsClient(pool, pgSettings, async (client) => {
+    return await ctx.withPgClient(async (client) => {
       const sql = `SELECT "${billing.privateSchema}"."${billing.checkBillingQuotaFunction}"($1, $2::uuid, $3) AS allowed`;
       const result = await client.query(sql, [meterSlug, entityId, 1]);
       return result.rows[0]?.allowed !== false;
@@ -154,8 +118,7 @@ async function checkQuota(
 }
 
 async function recordUsage(
-  pool: Pool,
-  pgSettings: Record<string, string>,
+  ctx: ConstructiveContext,
   billing: BillingConfig,
   entityId: string,
   meterSlug: string,
@@ -163,7 +126,7 @@ async function recordUsage(
   metadata: Record<string, unknown>,
 ): Promise<void> {
   try {
-    await withRlsClient(pool, pgSettings, async (client) => {
+    await ctx.withPgClient(async (client) => {
       const sql = `SELECT "${billing.privateSchema}"."${billing.recordUsageFunction}"($1, $2::uuid, $3, $4::jsonb)`;
       await client.query(sql, [meterSlug, entityId, amount, JSON.stringify(metadata)]);
     });
@@ -174,14 +137,13 @@ async function recordUsage(
 }
 
 async function resolveBilling(
-  pool: Pool,
-  pgSettings: Record<string, string>,
-  databaseId: string,
+  ctx: ConstructiveContext,
 ): Promise<BillingConfig | null> {
+  if (!ctx.databaseId) return null;
   try {
     let billing: BillingConfig | null = null;
-    await withRlsClient(pool, pgSettings, async (client) => {
-      const entry = await getLlmBillingConfig(client, databaseId);
+    await ctx.withPgClient(async (client) => {
+      const entry = await getLlmBillingConfig(client, ctx.databaseId!);
       billing = entry.billing;
     });
     return billing;
@@ -231,8 +193,7 @@ async function getInferenceLogInfo(pool: Pool, dbname: string): Promise<Inferenc
 }
 
 async function logInference(
-  pool: Pool,
-  pgSettings: Record<string, string>,
+  ctx: ConstructiveContext,
   logInfo: InferenceLogInfo,
   data: {
     entityId: string;
@@ -249,7 +210,7 @@ async function logInference(
   },
 ): Promise<void> {
   try {
-    await withRlsClient(pool, pgSettings, async (client) => {
+    await ctx.withPgClient(async (client) => {
       await client.query(
         `INSERT INTO "${logInfo.schemaName}"."${logInfo.tableName}"
          (entity_id, actor_id, model, provider, service, operation, input_tokens, output_tokens, total_tokens, latency_ms, status)
@@ -282,19 +243,18 @@ async function handleCreateThread(
   res: Response,
   entityId: string,
 ): Promise<void> {
-  if (!req.token?.user_id) {
+  const ctx = req.constructive;
+  if (!ctx?.userId) {
     res.status(401).json({ error: 'Authentication required' });
     return;
   }
 
-  const dbname = req.api?.dbname;
-  if (!dbname) {
+  if (!ctx.api.dbname) {
     res.status(400).json({ error: 'Database not resolved' });
     return;
   }
 
-  const pool = getPgPool({ database: dbname });
-  const discovery = await getAgentDiscovery(pool, dbname);
+  const discovery = await getAgentDiscovery(ctx.pool, ctx.api.dbname);
   if (!discovery?.thread) {
     res.status(404).json({ error: 'Agent module not provisioned for this database' });
     return;
@@ -302,9 +262,8 @@ async function handleCreateThread(
 
   const body: CreateThreadBody = req.body || {};
   const { thread } = discovery;
-  const pgSettings = getPgSettings(req);
 
-  const result = await withRlsClient(pool, pgSettings, async (client) => {
+  const result = await ctx.withPgClient(async (client) => {
     const { rows } = await client.query(
       `INSERT INTO "${thread.schemaName}"."${thread.tableName}"
        (entity_id, owner_id, mode, model, system_prompt, title)
@@ -312,7 +271,7 @@ async function handleCreateThread(
        RETURNING id, mode, model, system_prompt, status, created_at`,
       [
         entityId,
-        req.token!.user_id,
+        ctx.userId,
         body.mode ?? 'ask',
         body.model ?? null,
         body.system_prompt ?? null,
@@ -337,19 +296,18 @@ async function handleSendMessage(
   res: Response,
   entityId: string,
 ): Promise<void> {
-  if (!req.token?.user_id) {
+  const ctx = req.constructive;
+  if (!ctx?.userId) {
     res.status(401).json({ error: 'Authentication required' });
     return;
   }
 
-  const dbname = req.api?.dbname;
-  if (!dbname) {
+  if (!ctx.api.dbname) {
     res.status(400).json({ error: 'Database not resolved' });
     return;
   }
 
-  const pool = getPgPool({ database: dbname });
-  const discovery = await getAgentDiscovery(pool, dbname);
+  const discovery = await getAgentDiscovery(ctx.pool, ctx.api.dbname);
   if (!discovery?.thread || !discovery?.message) {
     res.status(404).json({ error: 'Agent module not provisioned for this database' });
     return;
@@ -362,13 +320,11 @@ async function handleSendMessage(
   }
 
   const { thread, message: msgTable } = discovery;
-  const pgSettings = getPgSettings(req);
   const threadId = req.params.thread_id;
-  const userId = req.token.user_id;
-  const databaseId = req.databaseId;
+  const userId = ctx.userId;
 
   // 1. Verify thread exists and user owns it (RLS enforced)
-  const threadRow = await withRlsClient(pool, pgSettings, async (client) => {
+  const threadRow = await ctx.withPgClient(async (client) => {
     const { rows } = await client.query(
       `SELECT id, mode, model, system_prompt, status
        FROM "${thread.schemaName}"."${thread.tableName}"
@@ -384,10 +340,8 @@ async function handleSendMessage(
   }
 
   // 2. Resolve billing config + inference log discovery
-  const billing = databaseId
-    ? await resolveBilling(pool, pgSettings, databaseId)
-    : null;
-  const inferenceLog = await getInferenceLogInfo(pool, dbname);
+  const billing = await resolveBilling(ctx);
+  const inferenceLog = await getInferenceLogInfo(ctx.pool, ctx.api.dbname);
 
   const ollama = resolveOllamaAdapter();
   if (!ollama) {
@@ -399,7 +353,7 @@ async function handleSendMessage(
   const meterSlug = model;
 
   if (billing) {
-    const allowed = await checkQuota(pool, pgSettings, billing, entityId, meterSlug);
+    const allowed = await checkQuota(ctx, billing, entityId, meterSlug);
     if (!allowed) {
       res.status(429).json({
         error: 'Token quota exceeded',
@@ -411,7 +365,7 @@ async function handleSendMessage(
   }
 
   // 3. Persist user message(s)
-  await withRlsClient(pool, pgSettings, async (client) => {
+  await ctx.withPgClient(async (client) => {
     for (const msg of body.messages) {
       if (msg.role === 'user') {
         await client.query(
@@ -430,7 +384,7 @@ async function handleSendMessage(
   });
 
   // 4. Load full thread history for context
-  const history = await withRlsClient(pool, pgSettings, async (client) => {
+  const history = await ctx.withPgClient(async (client) => {
     const { rows } = await client.query(
       `SELECT author_role, parts, created_at
        FROM "${msgTable.schemaName}"."${msgTable.tableName}"
@@ -528,7 +482,7 @@ async function handleSendMessage(
 
       // 6. Persist assistant message with model (fire-and-forget)
       if (content) {
-        withRlsClient(pool, pgSettings, async (client) => {
+        ctx.withPgClient(async (client) => {
           await client.query(
             `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
              (thread_id, owner_id, entity_id, author_role, parts, model)
@@ -548,7 +502,7 @@ async function handleSendMessage(
 
       // 7. Record billing usage (fire-and-forget)
       if (billing && usage.totalTokens > 0) {
-        recordUsage(pool, pgSettings, billing, entityId, meterSlug, usage.totalTokens, {
+        recordUsage(ctx, billing, entityId, meterSlug, usage.totalTokens, {
           input_tokens: usage.input,
           output_tokens: usage.output,
           cache_read_tokens: usage.cacheRead,
@@ -561,7 +515,7 @@ async function handleSendMessage(
 
       // 8. Inference log (fire-and-forget)
       if (inferenceLog) {
-        logInference(pool, pgSettings, inferenceLog, {
+        logInference(ctx, inferenceLog, {
           entityId,
           actorId: userId,
           model,
@@ -617,7 +571,7 @@ async function handleSendMessage(
     };
 
     // Persist assistant message with model
-    await withRlsClient(pool, pgSettings, async (client) => {
+    await ctx.withPgClient(async (client) => {
       await client.query(
         `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
          (thread_id, owner_id, entity_id, author_role, parts, model)
@@ -634,7 +588,7 @@ async function handleSendMessage(
 
     // Record billing usage
     if (billing && usage.totalTokens > 0) {
-      recordUsage(pool, pgSettings, billing, entityId, meterSlug, usage.totalTokens, {
+      recordUsage(ctx, billing, entityId, meterSlug, usage.totalTokens, {
         input_tokens: usage.input,
         output_tokens: usage.output,
         cache_read_tokens: usage.cacheRead,
@@ -647,7 +601,7 @@ async function handleSendMessage(
 
     // Inference log
     if (inferenceLog) {
-      logInference(pool, pgSettings, inferenceLog, {
+      logInference(ctx, inferenceLog, {
         entityId,
         actorId: userId,
         model,
@@ -717,7 +671,7 @@ export function createLlmApiRouter(): Router {
 
   router.post('/v1/threads', async (req: Request, res: Response) => {
     try {
-      const userId = req.token?.user_id;
+      const userId = req.constructive?.userId;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -735,7 +689,7 @@ export function createLlmApiRouter(): Router {
     '/v1/threads/:thread_id/messages',
     async (req: Request, res: Response) => {
       try {
-        const userId = req.token?.user_id;
+        const userId = req.constructive?.userId;
         if (!userId) {
           res.status(401).json({ error: 'Authentication required' });
           return;

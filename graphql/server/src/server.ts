@@ -39,6 +39,7 @@ import { createCaptchaMiddleware } from './middleware/captcha';
 import { parseCookieValue, SESSION_COOKIE_NAME } from './middleware/cookie';
 import { createUploadAuthenticateMiddleware, uploadRoute } from './middleware/upload';
 import { createLlmApiRouter } from './middleware/llm-api';
+import { createContextMiddleware, requestIdMiddleware } from '@constructive-io/express-context';
 import { startDebugSampler } from './diagnostics/debug-sampler';
 
 const log = new Logger('server');
@@ -161,10 +162,12 @@ class Server {
     app.use('/graphql', multipartBridge);
     app.use(parseDomains() as RequestHandler);
     app.use(requestIp.mw());
+    app.use(requestIdMiddleware());
     app.use(requestLogger);
     app.use(api);
     app.post('/upload', uploadAuthenticate, ...uploadRoute);
     app.use(authenticate);
+    app.use(createContextMiddleware({ pg: effectiveOpts.pg }));
     app.use(createCaptchaMiddleware());
 
     // CSRF protection for cookie-authenticated requests
