@@ -167,6 +167,10 @@ export interface ConstructiveContext {
 declare global {
   namespace Express {
     interface Request {
+      api?: ApiStructure;
+      clientIp?: string;
+      requestId?: string;
+      token?: ConstructiveAPIToken;
       constructive?: ConstructiveContext;
     }
   }
