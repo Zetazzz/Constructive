@@ -18,10 +18,10 @@ import express, { Router, Request, Response } from 'express';
 import { Logger } from '@pgpmjs/logger';
 import { OllamaAdapter } from '@agentic-kit/ollama';
 
+import type { BillingConfig, InferenceLogConfig } from '@constructive-io/express-context';
+
 import { checkQuota, logInference, recordUsage } from './billing';
 import type { InferenceLogEntry } from './billing';
-import { getAgentDiscovery, getDatabaseConfig } from './discovery';
-import type { AgentDiscovery, BillingConfig, InferenceLogConfig } from './discovery';
 import { getEnvOptions } from './env';
 
 const log = new Logger('agentic-server');
@@ -109,23 +109,18 @@ async function handleCreateThread(
     return;
   }
 
-  if (!ctx.api.dbname) {
-    res.status(400).json({ error: 'Database not resolved' });
-    return;
-  }
-
-  const discovery = await getAgentDiscovery(ctx.pool, ctx.api.dbname);
-  if (!discovery?.thread) {
+  const agentChat = await ctx.useModule('agentChat');
+  if (!agentChat?.threadTableName) {
     res.status(404).json({ error: 'Agent module not provisioned for this database' });
     return;
   }
 
   const body: CreateThreadBody = req.body || {};
-  const { thread } = discovery;
+  const { schemaName, threadTableName } = agentChat;
 
   const result = await ctx.withPgClient(async (client) => {
     const { rows } = await client.query(
-      `INSERT INTO "${thread.schemaName}"."${thread.tableName}"
+      `INSERT INTO "${schemaName}"."${threadTableName}"
        (entity_id, owner_id, mode, model, system_prompt, title)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, mode, model, system_prompt, status, created_at`,
@@ -162,13 +157,8 @@ async function handleSendMessage(
     return;
   }
 
-  if (!ctx.api.dbname) {
-    res.status(400).json({ error: 'Database not resolved' });
-    return;
-  }
-
-  const discovery = await getAgentDiscovery(ctx.pool, ctx.api.dbname);
-  if (!discovery?.thread || !discovery?.message) {
+  const agentChat = await ctx.useModule('agentChat');
+  if (!agentChat?.threadTableName || !agentChat?.messageTableName) {
     res.status(404).json({ error: 'Agent module not provisioned for this database' });
     return;
   }
@@ -179,7 +169,7 @@ async function handleSendMessage(
     return;
   }
 
-  const { thread, message: msgTable } = discovery;
+  const { schemaName, threadTableName, messageTableName } = agentChat;
   const threadId = req.params.thread_id;
   const userId = ctx.userId;
 
@@ -187,7 +177,7 @@ async function handleSendMessage(
   const threadRow = await ctx.withPgClient(async (client) => {
     const { rows } = await client.query(
       `SELECT id, mode, model, system_prompt, status
-       FROM "${thread.schemaName}"."${thread.tableName}"
+       FROM "${schemaName}"."${threadTableName}"
        WHERE id = $1`,
       [threadId],
     );
@@ -199,10 +189,12 @@ async function handleSendMessage(
     return;
   }
 
-  // Resolve billing + inference log config
-  const dbConfig = ctx.databaseId
-    ? await getDatabaseConfig(ctx.pool, ctx.databaseId)
-    : { billing: null, inferenceLog: null };
+  // Resolve billing + inference log config via loaders
+  const [billing, inferenceLog] = await Promise.all([
+    ctx.useModule('billing'),
+    ctx.useModule('inferenceLog'),
+  ]);
+  const dbConfig = { billing: billing ?? null, inferenceLog: inferenceLog ?? null };
 
   const ollama = resolveOllamaAdapter();
   if (!ollama) {
@@ -231,9 +223,9 @@ async function handleSendMessage(
     for (const msg of body.messages) {
       if (msg.role === 'user') {
         await client.query(
-          `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
+          `INSERT INTO "${schemaName}"."${messageTableName}"
            (thread_id, owner_id, entity_id, author_role, parts)
-           VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4)`,
+           VALUES ($1, $2, (SELECT entity_id FROM "${schemaName}"."${threadTableName}" WHERE id = $1), $3, $4)`,
           [threadId, userId, 'user', JSON.stringify([{ type: 'text', text: msg.content }])],
         );
       }
@@ -244,7 +236,7 @@ async function handleSendMessage(
   const history = await ctx.withPgClient(async (client) => {
     const { rows } = await client.query(
       `SELECT author_role, parts, created_at
-       FROM "${msgTable.schemaName}"."${msgTable.tableName}"
+       FROM "${schemaName}"."${messageTableName}"
        WHERE thread_id = $1
        ORDER BY created_at ASC`,
       [threadId],
@@ -277,13 +269,15 @@ async function handleSendMessage(
     await handleStreamingResponse(req, res, {
       ctx, ollama, model, llmMessages, body,
       entityId, userId, threadId,
-      thread, msgTable, dbConfig, startTime, meterSlug,
+      schemaName, threadTableName, messageTableName,
+      dbConfig, startTime, meterSlug,
     });
   } else {
     await handleBatchResponse(req, res, {
       ctx, ollama, model, llmMessages, body,
       entityId, userId, threadId,
-      thread, msgTable, dbConfig, startTime, meterSlug,
+      schemaName, threadTableName, messageTableName,
+      dbConfig, startTime, meterSlug,
     });
   }
 }
@@ -297,8 +291,9 @@ interface MessageContext {
   entityId: string;
   userId: string;
   threadId: string;
-  thread: NonNullable<AgentDiscovery['thread']>;
-  msgTable: NonNullable<AgentDiscovery['message']>;
+  schemaName: string;
+  threadTableName: string;
+  messageTableName: string;
   dbConfig: { billing: BillingConfig | null; inferenceLog: InferenceLogConfig | null };
   startTime: number;
   meterSlug: string;
@@ -309,7 +304,7 @@ async function handleStreamingResponse(
   res: Response,
   mc: MessageContext,
 ): Promise<void> {
-  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, thread, msgTable, dbConfig, startTime, meterSlug } = mc;
+  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, dbConfig, startTime, meterSlug } = mc;
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -372,9 +367,9 @@ async function handleStreamingResponse(
     if (content) {
       ctx.withPgClient(async (client) => {
         await client.query(
-          `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
+          `INSERT INTO "${schemaName}"."${messageTableName}"
            (thread_id, owner_id, entity_id, author_role, parts, model)
-           VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4, $5)`,
+           VALUES ($1, $2, (SELECT entity_id FROM "${schemaName}"."${threadTableName}" WHERE id = $1), $3, $4, $5)`,
           [threadId, userId, 'assistant', JSON.stringify([{ type: 'text', text: content }]), model],
         );
       }).catch((err) => log.error('Failed to persist assistant message:', err));
@@ -416,7 +411,7 @@ async function handleBatchResponse(
   res: Response,
   mc: MessageContext,
 ): Promise<void> {
-  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, thread, msgTable, dbConfig, startTime, meterSlug } = mc;
+  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, dbConfig, startTime, meterSlug } = mc;
 
   const systemMsg = llmMessages.find(m => m.role === 'system');
   const nonSystem = llmMessages.filter(m => m.role !== 'system');
@@ -451,9 +446,9 @@ async function handleBatchResponse(
   // Persist assistant message
   await ctx.withPgClient(async (client) => {
     await client.query(
-      `INSERT INTO "${msgTable.schemaName}"."${msgTable.tableName}"
+      `INSERT INTO "${schemaName}"."${messageTableName}"
        (thread_id, owner_id, entity_id, author_role, parts, model)
-       VALUES ($1, $2, (SELECT entity_id FROM "${thread.schemaName}"."${thread.tableName}" WHERE id = $1), $3, $4, $5)`,
+       VALUES ($1, $2, (SELECT entity_id FROM "${schemaName}"."${threadTableName}" WHERE id = $1), $3, $4, $5)`,
       [threadId, userId, 'assistant', JSON.stringify([{ type: 'text', text: content }]), model],
     );
   });
@@ -520,9 +515,12 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
   const model = body.model ?? embedder.model;
   const inputs = Array.isArray(body.input) ? body.input : [body.input];
 
-  const dbConfig = ctx.databaseId
-    ? await getDatabaseConfig(ctx.pool, ctx.databaseId)
-    : { billing: null, inferenceLog: null };
+  // Resolve billing + inference log config via loaders
+  const [billing, inferenceLog] = await Promise.all([
+    ctx.useModule('billing'),
+    ctx.useModule('inferenceLog'),
+  ]);
+  const dbConfig = { billing: billing ?? null, inferenceLog: inferenceLog ?? null };
 
   // Quota check
   if (dbConfig.billing) {
