@@ -26,9 +26,11 @@
  * app.use(authMiddleware);       // sets req.token (your JWT verifier)
  * app.use(createContextMiddleware({ loaders })); // builds req.constructive
  *
- * app.post('/v1/chat', (req, res) => {
- *   const { withPgClient, pgSettings, userId, databaseId, modules } = req.constructive;
- *   // modules.rlsModule, modules.authSettings, etc.
+ * app.post('/v1/chat', async (req, res) => {
+ *   const ctx = req.constructive;
+ *   const rls = await ctx.useModule('rlsModule');       // only fires if not cached
+ *   const auth = await ctx.useModule('authSettings');    // only fires if not cached
+ *   // webauthnSettings loader never fires if nobody asks for it
  * });
  * ```
  */
@@ -47,7 +49,7 @@ export type {
   GenericModuleData,
   PublicKeyChallengeData,
   PubkeyChallengeSettings,
-  ResolvedModules,
+  BuiltinModuleMap,
   RlsModule,
   WebauthnSettings,
   WithPgClient,
