@@ -63,6 +63,36 @@ console.log(result.rows);
 | `query`     | `string`                 | ✅        | SQL query to run                                       |
 | `variables` | `any[]`                  | ❌        | Parameterized query variables                          |
 
+## Callback-based API (`withPgClient`)
+
+For multi-query RLS transactions, use `withPgClient` which gives you a connected client within a scoped transaction:
+
+```ts
+import { withPgClient } from 'pg-query-context';
+import { Pool } from 'pg';
+
+const pool = new Pool();
+
+const user = await withPgClient(
+  pool,
+  { 'role': 'authenticated', 'jwt.claims.user_id': userId },
+  async (client) => {
+    const { rows: [row] } = await client.query('SELECT * FROM app_public.current_user()');
+    await client.query('UPDATE app_public.users SET last_seen = now() WHERE id = $1', [row.id]);
+    return row;
+  }
+);
+```
+
+### `withPgClient<T>(pool, context, fn, opts?): Promise<T>`
+
+| Name      | Type                          | Required | Description                                            |
+| --------- | ----------------------------- | -------- | ------------------------------------------------------ |
+| `pool`    | `Pool`                        | ✅        | The PostgreSQL pool to acquire a client from           |
+| `context` | `Record<string, string>`      | ✅        | Session variables set via `set_config`                 |
+| `fn`      | `(client: PoolClient) => T`   | ✅        | Callback receiving the connected client                |
+| `opts`    | `{ skipTransaction?: boolean }` | ❌      | Skip BEGIN/COMMIT wrapping (e.g., inside existing txn) |
+
 ## Example with `express`
 
 ```ts
