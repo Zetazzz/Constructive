@@ -1,0 +1,68 @@
+/**
+ * Module Loaders — pluggable per-database cached lookups.
+ *
+ * Each loader encapsulates a SQL query + type transform + LRU cache
+ * for one piece of per-database configuration. Register loaders in
+ * a LoaderRegistry and pass it to createContextMiddleware().
+ *
+ * Built-in loaders cover the standard Constructive modules:
+ *   - rlsModule       (services_public.rls_settings)
+ *   - corsOrigins     (services_public.cors_settings)
+ *   - databaseSettings(services_public.database_settings)
+ *   - pubkeyChallengeSettings (services_public.pubkey_settings)
+ *   - webauthnSettings(services_public.webauthn_settings)
+ *   - authSettings    (metaschema_modules_public.sessions_module → tenant DB)
+ *
+ * To add a new per-db lookup, implement a ModuleLoader and register it:
+ *
+ *   const myLoader = createModuleLoader({
+ *     name: 'myModule',
+ *     ttlMs: 60_000,
+ *     async resolve(ctx) {
+ *       const { rows } = await ctx.tenantPool.query(MY_SQL, [ctx.databaseId]);
+ *       return rows[0] ? transform(rows[0]) : undefined;
+ *     },
+ *   });
+ *   registry.register(myLoader);
+ */
+
+// Core types
+export type { LoaderContext, ModuleLoader } from './types';
+
+// Factory
+export type { CreateLoaderOptions } from './create-loader';
+export { createModuleLoader } from './create-loader';
+
+// Registry
+export type { LoaderRegistry } from './registry';
+export { createLoaderRegistry } from './registry';
+
+// Built-in loaders
+export { rlsLoader } from './rls';
+export { corsLoader } from './cors';
+export { databaseSettingsLoader } from './database-settings';
+export { pubkeyLoader } from './pubkey';
+export { webauthnLoader } from './webauthn';
+export { authSettingsLoader } from './auth-settings';
+
+/**
+ * Convenience: create a registry pre-loaded with all built-in loaders.
+ */
+import { createLoaderRegistry } from './registry';
+import { rlsLoader } from './rls';
+import { corsLoader } from './cors';
+import { databaseSettingsLoader } from './database-settings';
+import { pubkeyLoader } from './pubkey';
+import { webauthnLoader } from './webauthn';
+import { authSettingsLoader } from './auth-settings';
+
+export function createDefaultRegistry() {
+  const registry = createLoaderRegistry();
+  registry.register(rlsLoader);
+  registry.register(corsLoader);
+  registry.register(databaseSettingsLoader);
+  registry.register(pubkeyLoader);
+  registry.register(webauthnLoader);
+  registry.register(authSettingsLoader);
+  return registry;
+}

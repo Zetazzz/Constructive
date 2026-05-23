@@ -129,6 +129,25 @@ export type ConstructiveAPIToken = {
   [key: string]: unknown;
 };
 
+// ─── Module Types Map ───────────────────────────────────────────────────────
+
+/**
+ * Maps built-in loader names to their resolved types.
+ *
+ * This enables typed access via `useModule`:
+ *   const rls = await ctx.useModule('rlsModule'); // typed as RlsModule | undefined
+ *
+ * Custom loaders (not in this map) return `unknown`.
+ */
+export interface BuiltinModuleMap {
+  rlsModule: RlsModule;
+  corsOrigins: string[];
+  databaseSettings: DatabaseSettings;
+  authSettings: AuthSettings;
+  pubkeyChallengeSettings: PubkeyChallengeSettings;
+  webauthnSettings: WebauthnSettings;
+}
+
 // ─── Constructive Context ───────────────────────────────────────────────────
 
 /**
@@ -160,6 +179,29 @@ export interface ConstructiveContext {
   pool: Pool;
   /** Execute a function within a tenant-scoped RLS transaction */
   withPgClient: WithPgClient;
+
+  /**
+   * Resolve a per-database module on demand (lazy, cached).
+   *
+   * Only fires the SQL query on the first call per databaseId per TTL window.
+   * Subsequent calls return the cached result instantly.
+   *
+   * Built-in modules are typed:
+   *   const rls = await ctx.useModule('rlsModule');     // RlsModule | undefined
+   *   const auth = await ctx.useModule('authSettings');  // AuthSettings | undefined
+   *
+   * Custom modules return unknown:
+   *   const custom = await ctx.useModule('myModule');    // unknown
+   *
+   * Returns undefined if:
+   *   - No loader registry was provided to the middleware
+   *   - The named loader isn't registered
+   *   - The module isn't provisioned for this database
+   */
+  useModule: {
+    <K extends keyof BuiltinModuleMap>(name: K): Promise<BuiltinModuleMap[K] | undefined>;
+    (name: string): Promise<unknown>;
+  };
 }
 
 // ─── Express Augmentation ───────────────────────────────────────────────────
