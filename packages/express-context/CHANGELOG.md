@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.1](https://github.com/constructive-io/constructive/compare/@constructive-io/express-context@0.2.0...@constructive-io/express-context@0.2.1) (2026-05-23)
+
+### Bug Fixes
+
+- **loaders:** use composite cache key (databaseId:apiId) ([9649164](https://github.com/constructive-io/constructive/commit/96491643e58e341626c5dafe845009663642ad3e))
+
 # 0.2.0 (2026-05-23)
 
 ### Bug Fixes
