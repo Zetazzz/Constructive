@@ -12,10 +12,7 @@ import type supertest from 'supertest';
 
 jest.setTimeout(30000);
 
-const localSeedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
 const sharedSeedRoot = path.join(__dirname, '..', '..', '..', '__fixtures__', 'seed');
-const sql = (seedDir: string, file: string) =>
-  path.join(localSeedRoot, seedDir, file);
 const shared = (...segments: string[]) =>
   path.join(sharedSeedRoot, ...segments);
 const schemas = ['simple-pets-public', 'simple-pets-pets-public'];
@@ -110,10 +107,11 @@ const seedFilesFor = (seedDir: Scenario['seedDir']) => {
       shared('app-schemas', 'simple-pets', 'test-data.sql'),
     ];
   }
+  // simple-seed: base setup + shared app-schemas
   return [
-    sql(seedDir, 'setup.sql'),
-    sql(seedDir, 'schema.sql'),
-    sql(seedDir, 'test-data.sql'),
+    shared('base', 'setup.sql'),
+    shared('app-schemas', 'simple-pets', 'schema.sql'),
+    shared('app-schemas', 'simple-pets', 'test-data.sql'),
   ];
 };
 
