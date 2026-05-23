@@ -1707,7 +1707,7 @@ export const preparePackage = async ({
           moduleName: name,
           moduleDesc: description,
           access: 'restricted',
-          license: 'CLOSED',
+          license: 'CONSTRUCTIVE',
           fullName,
           ...(email && { email }),
           // Use provided values or sensible defaults
