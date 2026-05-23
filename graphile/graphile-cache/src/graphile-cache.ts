@@ -47,17 +47,20 @@ export interface CacheConfig {
  * Get cache configuration from environment variables
  *
  * Supports:
- * - GRAPHILE_CACHE_MAX: Maximum number of entries (default: 15)
+ * - GRAPHILE_CACHE_MAX: Maximum number of entries (default: 50)
  * - GRAPHILE_CACHE_TTL_MS: TTL in milliseconds
  *   - Production default: ONE_YEAR
  *   - Development default: FIVE_MINUTES_MS
+ *
+ * NOTE: This value should be <= PG_CACHE_MAX (also default: 50) so that
+ * every cached PostGraphile instance has a live pool backing it.
  */
 export function getCacheConfig(): CacheConfig {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   const max = process.env.GRAPHILE_CACHE_MAX
     ? parseInt(process.env.GRAPHILE_CACHE_MAX, 10)
-    : 15;
+    : 50;
 
   const ttl = process.env.GRAPHILE_CACHE_TTL_MS
     ? parseInt(process.env.GRAPHILE_CACHE_TTL_MS, 10)

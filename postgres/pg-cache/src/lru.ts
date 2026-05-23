@@ -16,6 +16,35 @@ type PgPoolKey = string;
 // Cleanup callback type - called when a pg pool is disposed
 export type PoolCleanupCallback = (pgPoolKey: string) => void;
 
+// --- Cache Configuration ---
+
+export interface PgCacheConfig {
+  /** Maximum number of pools in the LRU cache (env: PG_CACHE_MAX, default: 50) */
+  max: number;
+  /** TTL for cached pools in ms (default: ONE_YEAR) */
+  ttl: number;
+}
+
+const parseEnvInt = (val: string | undefined, fallback: number): number => {
+  if (!val) return fallback;
+  const n = parseInt(val, 10);
+  return isNaN(n) ? fallback : n;
+};
+
+/**
+ * Read cache configuration from environment variables.
+ *
+ * Supports:
+ * - PG_CACHE_MAX: Maximum number of pools (default: 50)
+ * - PG_CACHE_TTL_MS: TTL in milliseconds (default: ONE_YEAR)
+ */
+export function getPgCacheConfig(): PgCacheConfig {
+  return {
+    max: parseEnvInt(process.env.PG_CACHE_MAX, 50),
+    ttl: parseEnvInt(process.env.PG_CACHE_TTL_MS, ONE_YEAR),
+  };
+}
+
 class ManagedPgPool {
   public isDisposed = false;
   private disposePromise: Promise<void> | null = null;
@@ -48,17 +77,25 @@ export class PgPoolCacheManager {
   private cleanupTasks: Promise<void>[] = [];
   private closed = false;
   private cleanupCallbacks: Set<PoolCleanupCallback> = new Set();
+  readonly config: PgCacheConfig;
 
-  private readonly pgCache = new LRUCache<PgPoolKey, ManagedPgPool>({
-    max: 10,
-    ttl: ONE_YEAR,
-    updateAgeOnGet: true,
-    dispose: (managedPool, key, reason) => {
-      log.debug(`Disposing pg pool [${key}] (${reason})`);
-      this.notifyCleanup(key);
-      this.disposePool(managedPool);
-    }
-  });
+  private readonly pgCache: LRUCache<PgPoolKey, ManagedPgPool>;
+
+  constructor(config?: Partial<PgCacheConfig>) {
+    const defaults = getPgCacheConfig();
+    this.config = { ...defaults, ...config };
+
+    this.pgCache = new LRUCache<PgPoolKey, ManagedPgPool>({
+      max: this.config.max,
+      ttl: this.config.ttl,
+      updateAgeOnGet: true,
+      dispose: (managedPool, key, reason) => {
+        log.debug(`Disposing pg pool [${key}] (${reason})`);
+        this.notifyCleanup(key);
+        this.disposePool(managedPool);
+      }
+    });
+  }
 
   // Register a cleanup callback to be called when pools are disposed
   registerCleanupCallback(callback: PoolCleanupCallback): () => void {
