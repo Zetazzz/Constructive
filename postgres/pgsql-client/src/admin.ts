@@ -134,7 +134,20 @@ export class DbAdmin {
       administrator: getRoleName('administrator', this.roleConfig)
     };
     const sql = generateCreateBaseRolesSQL(roles);
-    await this.streamSql(sql, db);
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.streamSql(sql, db);
+        return;
+      } catch (err: any) {
+        const msg = err?.message ?? '';
+        if (msg.includes('tuple concurrently updated') && attempt < maxRetries) {
+          log.warn(`createBaseRoles: concurrent update (attempt ${attempt}/${maxRetries}), retrying...`);
+          continue;
+        }
+        throw err;
+      }
+    }
   }
 
   async grantRole(role: string, user: string, dbName?: string): Promise<void> {
