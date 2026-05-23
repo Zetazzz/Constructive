@@ -1,7 +1,7 @@
 /**
  * create-loader — Factory for building cached ModuleLoader instances.
  *
- * Wraps a raw resolve function with an LRU cache keyed by databaseId.
+ * Wraps a raw resolve function with an LRU cache keyed by databaseId:apiId.
  * Each loader gets its own independent cache with configurable TTL and
  * max entries.
  */
@@ -38,7 +38,7 @@ export function createModuleLoader<T>(opts: CreateLoaderOptions<T>): ModuleLoade
     name: opts.name,
 
     async resolve(ctx: LoaderContext): Promise<T | undefined> {
-      const key = ctx.databaseId;
+      const key = ctx.apiId ? `${ctx.databaseId}:${ctx.apiId}` : ctx.databaseId;
 
       if (cache.has(key)) {
         log.debug(`Cache HIT databaseId=${key}`);
@@ -58,8 +58,15 @@ export function createModuleLoader<T>(opts: CreateLoaderOptions<T>): ModuleLoade
 
     invalidate(databaseId?: string): void {
       if (databaseId) {
-        cache.delete(databaseId);
-        log.debug(`Invalidated databaseId=${databaseId}`);
+        // Clear the plain databaseId key and any composite databaseId:apiId keys
+        let cleared = 0;
+        for (const k of cache.keys()) {
+          if (k === databaseId || k.startsWith(`${databaseId}:`)) {
+            cache.delete(k);
+            cleared++;
+          }
+        }
+        log.debug(`Invalidated ${cleared} entries for databaseId=${databaseId}`);
       } else {
         cache.clear();
         log.debug(`Invalidated all entries (was size=${cache.size})`);
