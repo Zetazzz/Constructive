@@ -8,6 +8,7 @@
  *   - Tenant database pool (via pg-cache)
  *   - withPgClient (transaction-scoped RLS helper)
  *   - Convenience fields (userId, databaseId, requestId)
+ *   - Module config (via LoaderRegistry, if provided)
  *
  * The result is a single `req.constructive` object that any downstream
  * route handler can use for tenant-scoped database operations.
@@ -18,13 +19,17 @@ import type { Pool } from 'pg';
 import { getPgPool } from 'pg-cache';
 import type { PgpmOptions } from '@pgpmjs/types';
 
+import type { LoaderRegistry } from './loaders/registry';
+import type { LoaderContext } from './loaders/types';
 import { withPgClient as withPgClientFn } from './pg-client';
 import { buildPgSettings } from './pg-settings';
-import type { ConstructiveContext } from './types';
+import type { ConstructiveContext, ResolvedModules } from './types';
 
 export interface ContextMiddlewareOptions {
   /** Base PG options for pool creation (host, port, user, password) */
   pg?: PgpmOptions['pg'];
+  /** Module loader registry for per-database cached lookups */
+  loaders?: LoaderRegistry;
 }
 
 /**
@@ -32,11 +37,14 @@ export interface ContextMiddlewareOptions {
  *
  * Requires `req.api` and `req.requestId` to be set by upstream middleware.
  * `req.token` is optional (anonymous requests get null).
+ *
+ * When a LoaderRegistry is provided, resolves all registered module
+ * loaders in parallel and attaches the results to `ctx.modules`.
  */
-export function buildContext(
+export async function buildContext(
   req: Request,
   opts: ContextMiddlewareOptions = {}
-): ConstructiveContext | null {
+): Promise<ConstructiveContext | null> {
   const api = req.api;
   if (!api) return null;
 
@@ -50,10 +58,24 @@ export function buildContext(
     clientIp: req.clientIp,
   });
 
-  const pool: Pool = getPgPool({
+  const tenantPool: Pool = getPgPool({
     ...opts.pg,
     database: api.dbname,
   });
+
+  // Resolve module loaders (if registry provided)
+  let modules: ResolvedModules = {};
+  if (opts.loaders && api.databaseId) {
+    const servicesPool: Pool = getPgPool(opts.pg);
+    const loaderCtx: LoaderContext = {
+      servicesPool,
+      tenantPool,
+      databaseId: api.databaseId,
+      apiId: api.apiId,
+      dbname: api.dbname,
+    };
+    modules = await opts.loaders.resolveAll(loaderCtx) as ResolvedModules;
+  }
 
   return {
     api,
@@ -62,9 +84,10 @@ export function buildContext(
     databaseId: api.databaseId ?? null,
     userId: token?.user_id ?? null,
     requestId,
-    pool,
+    pool: tenantPool,
     withPgClient: <T>(fn: (client: any) => Promise<T>) =>
-      withPgClientFn(pool, pgSettings, fn),
+      withPgClientFn(tenantPool, pgSettings, fn),
+    modules,
   };
 }
 
@@ -75,19 +98,32 @@ export function buildContext(
  * Mount AFTER the API resolver and auth middleware:
  *
  * ```typescript
+ * import { createContextMiddleware, createDefaultRegistry } from '@constructive-io/express-context';
+ *
  * app.use(apiMiddleware);       // sets req.api
  * app.use(authMiddleware);      // sets req.token
- * app.use(contextMiddleware()); // sets req.constructive
+ * app.use(createContextMiddleware({
+ *   loaders: createDefaultRegistry(),
+ * }));
+ *
+ * app.post('/v1/chat', (req, res) => {
+ *   const { modules } = req.constructive;
+ *   if (modules.rlsModule) { ... }
+ * });
  * ```
  */
 export function createContextMiddleware(
   opts: ContextMiddlewareOptions = {}
 ): RequestHandler {
-  return (req: Request, _res: Response, next: NextFunction): void => {
-    const ctx = buildContext(req, opts);
-    if (ctx) {
-      req.constructive = ctx;
+  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const ctx = await buildContext(req, opts);
+      if (ctx) {
+        req.constructive = ctx;
+      }
+      next();
+    } catch (err) {
+      next(err);
     }
-    next();
   };
 }

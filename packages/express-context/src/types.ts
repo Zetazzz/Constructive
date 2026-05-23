@@ -140,6 +140,22 @@ export type WithPgClient = <T>(
 ) => Promise<T>;
 
 /**
+ * Per-database module config resolved by loaders.
+ *
+ * Built-in keys match the standard Constructive modules.
+ * Custom loaders add arbitrary keys via the registry.
+ */
+export interface ResolvedModules {
+  rlsModule?: RlsModule;
+  corsOrigins?: string[];
+  databaseSettings?: DatabaseSettings;
+  authSettings?: AuthSettings;
+  pubkeyChallengeSettings?: PubkeyChallengeSettings;
+  webauthnSettings?: WebauthnSettings;
+  [key: string]: unknown;
+}
+
+/**
  * The full tenant context attached to `req.constructive` by the middleware.
  * Any Express-based service can use this to interact with the tenant database.
  */
@@ -160,6 +176,8 @@ export interface ConstructiveContext {
   pool: Pool;
   /** Execute a function within a tenant-scoped RLS transaction */
   withPgClient: WithPgClient;
+  /** Per-database module config resolved by loaders (empty if no registry) */
+  modules: ResolvedModules;
 }
 
 // ─── Express Augmentation ───────────────────────────────────────────────────
