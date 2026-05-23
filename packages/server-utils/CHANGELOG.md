@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.12.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/server-utils@3.11.0...@pgpmjs/server-utils@3.12.0) (2026-05-23)
+
+### Features
+
+- **pg-cache:** make pool cache configurable via env vars + align cache limits ([c6326d7](https://github.com/constructive-io/constructive/commit/c6326d7913030554a12170cba4d4d5521d807d22))
+
 # [3.11.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/server-utils@3.10.1...@pgpmjs/server-utils@3.11.0) (2026-05-14)
 
 **Note:** Version bump only for package @pgpmjs/server-utils

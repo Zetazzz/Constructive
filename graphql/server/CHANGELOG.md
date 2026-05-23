@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.34.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.33.0...@constructive-io/graphql-server@4.34.0) (2026-05-23)
+
+### Bug Fixes
+
+- restore original server types, remove re-exports from express-context ([f4e7624](https://github.com/constructive-io/constructive/commit/f4e7624a36145b01f5d438a6177bf389cba80ae6))
+
+### Features
+
+- add @constructive-io/express-context package + wire into server ([2d46e0b](https://github.com/constructive-io/constructive/commit/2d46e0b419654c161ae90140b47515df16897ae4)), closes [constructive-io/constructive-planning#917](https://github.com/constructive-io/constructive-planning/issues/917)
+
 # [4.33.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.32.0...@constructive-io/graphql-server@4.33.0) (2026-05-21)
 
 ### Features

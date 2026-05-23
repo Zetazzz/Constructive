@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.16.0](https://github.com/constructive-io/constructive/compare/pg-query-context@2.15.1...pg-query-context@2.16.0) (2026-05-23)
+
+### Features
+
+- **pg-query-context:** add callback-based withPgClient API ([8f13b6d](https://github.com/constructive-io/constructive/commit/8f13b6d620ffdb001c017798c7deed6c8776bee0))
+
 ## [2.15.1](https://github.com/constructive-io/constructive/compare/pg-query-context@2.15.0...pg-query-context@2.15.1) (2026-05-21)
 
 **Note:** Version bump only for package pg-query-context
