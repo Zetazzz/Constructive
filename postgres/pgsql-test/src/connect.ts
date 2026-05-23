@@ -72,7 +72,6 @@ export const getConnections = async (
   const connOpts: PgTestConnectionOptions = cn.db;
 
   const root = getPgRootAdmin(config, connOpts);
-  await root.createBaseRoles(connOpts.rootDb!);
   await root.createUserRole(
     connOpts.connections!.app!.user!,
     connOpts.connections!.app!.password!,

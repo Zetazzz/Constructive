@@ -1,5 +1,4 @@
 import { 
-  generateCreateBaseRolesSQL,
   generateCreateUserWithGrantsSQL, 
   generateGrantRoleSQL
 } from '@pgpmjs/core';
@@ -126,30 +125,6 @@ export class DbAdmin {
     this.safeDropDb(template);
   }
   
-  async createBaseRoles(dbName?: string): Promise<void> {
-    const db = dbName ?? this.config.database;
-    const roles = {
-      anonymous: getRoleName('anonymous', this.roleConfig),
-      authenticated: getRoleName('authenticated', this.roleConfig),
-      administrator: getRoleName('administrator', this.roleConfig)
-    };
-    const sql = generateCreateBaseRolesSQL(roles);
-    const maxRetries = 3;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await this.streamSql(sql, db);
-        return;
-      } catch (err: any) {
-        const msg = err?.message ?? '';
-        if (msg.includes('tuple concurrently updated') && attempt < maxRetries) {
-          log.warn(`createBaseRoles: concurrent update (attempt ${attempt}/${maxRetries}), retrying...`);
-          continue;
-        }
-        throw err;
-      }
-    }
-  }
-
   async grantRole(role: string, user: string, dbName?: string): Promise<void> {
     const db = dbName ?? this.config.database;
     const sql = generateGrantRoleSQL(role, user);
