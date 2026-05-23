@@ -35,9 +35,12 @@ import type supertest from 'supertest';
 
 jest.setTimeout(120000);
 
-const seedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const localSeedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const sharedSeedRoot = path.join(__dirname, '..', '..', '..', '__fixtures__', 'seed');
 const sql = (seedDir: string, file: string) =>
-  path.join(seedRoot, seedDir, file);
+  path.join(localSeedRoot, seedDir, file);
+const shared = (...segments: string[]) =>
+  path.join(sharedSeedRoot, ...segments);
 
 // =========================================================================
 // Tenant constants
@@ -67,7 +70,7 @@ const metaSchemas = [
 ];
 
 const seedFiles = [
-  sql('simple-seed-services', 'setup.sql'),
+  shared('services', 'setup.sql'),
   sql('simple-seed-storage', 'setup.sql'),
   sql('simple-seed-storage', 'schema.sql'),
   sql('simple-seed-storage', 'test-data.sql'),

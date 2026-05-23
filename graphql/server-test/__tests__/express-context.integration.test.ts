@@ -7,8 +7,8 @@
  *
  *   parseDomains → requestId → API resolver → auth → createContextMiddleware
  *
- * Uses the shared seed fixtures from __fixtures__/seed/ (root-level)
- * and the local simple-seed-services fixtures for the full services stack.
+ * Uses the shared seed fixtures from __fixtures__/seed/ (repo root-level)
+ * for the full metaschema + services + app-schemas stack.
  *
  * Run tests:
  *   pnpm test -- --testPathPattern=express-context.integration
@@ -21,9 +21,9 @@ import type supertest from 'supertest';
 
 jest.setTimeout(30000);
 
-const seedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
-const sql = (seedDir: string, file: string) =>
-  path.join(seedRoot, seedDir, file);
+const sharedSeedRoot = path.join(__dirname, '..', '..', '..', '__fixtures__', 'seed');
+const shared = (...segments: string[]) =>
+  path.join(sharedSeedRoot, ...segments);
 const schemas = ['simple-pets-public', 'simple-pets-pets-public'];
 const metaSchemas = [
   'services_public',
@@ -32,9 +32,10 @@ const metaSchemas = [
 ];
 
 const seedFiles = [
-  sql('simple-seed-services', 'setup.sql'),
-  sql('simple-seed-services', 'schema.sql'),
-  sql('simple-seed-services', 'test-data.sql'),
+  shared('services', 'setup.sql'),
+  shared('app-schemas', 'simple-pets', 'schema.sql'),
+  shared('services', 'test-data.sql'),
+  shared('app-schemas', 'simple-pets', 'test-data.sql'),
 ];
 
 let server: ServerInfo;
