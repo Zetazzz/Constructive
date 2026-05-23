@@ -1,8 +1,11 @@
 -- Shared fixture: minimal base setup
 --
--- Creates extensions, roles, and the stamps schema needed by all test
--- scenarios.  This is the smallest common denominator — tests that also
--- need metaschema / services should load services/setup.sql instead
+-- Creates extensions and the stamps schema needed by all test scenarios.
+-- Roles (administrator, authenticated, anonymous) are created upstream by
+-- pgsql-test's createUserRole() — do NOT recreate them here.
+--
+-- This is the smallest common denominator — tests that also need
+-- metaschema / services should load services/setup.sql instead
 -- (which is self-contained and includes everything here).
 --
 -- Usage:
@@ -16,24 +19,6 @@
 -- =====================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- =====================================================
--- ROLES
--- =====================================================
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'administrator') THEN
-    CREATE ROLE administrator;
-  END IF;
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN
-    CREATE ROLE authenticated;
-  END IF;
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'anonymous') THEN
-    CREATE ROLE anonymous;
-  END IF;
-END
-$$;
 
 -- =====================================================
 -- STAMPS (timestamp triggers)

@@ -2,6 +2,8 @@
 --
 -- Creates the minimum tables needed to emulate a production Constructive
 -- database with API resolution, domain routing, and RLS module support.
+-- Roles (administrator, authenticated, anonymous) are created upstream by
+-- pgsql-test's createUserRole() — do NOT recreate them here.
 --
 -- Usage (via pgsql-test seed adapter):
 --   seed.sqlfile([
@@ -16,26 +18,6 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "citext";
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'administrator') THEN
-    CREATE ROLE administrator;
-  END IF;
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN
-    CREATE ROLE authenticated;
-  END IF;
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'anonymous') THEN
-    CREATE ROLE anonymous;
-  END IF;
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
-    CREATE ROLE app_user;
-  END IF;
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_admin') THEN
-    CREATE ROLE app_admin;
-  END IF;
-END
-$$;
 
 CREATE SCHEMA IF NOT EXISTS stamps;
 

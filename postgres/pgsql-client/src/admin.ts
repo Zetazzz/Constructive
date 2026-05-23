@@ -1,4 +1,5 @@
 import { 
+  generateCreateBaseRolesSQL,
   generateCreateUserWithGrantsSQL, 
   generateGrantRoleSQL
 } from '@pgpmjs/core';
@@ -125,6 +126,17 @@ export class DbAdmin {
     this.safeDropDb(template);
   }
   
+  async createBaseRoles(dbName?: string): Promise<void> {
+    const db = dbName ?? this.config.database;
+    const roles = {
+      anonymous: getRoleName('anonymous', this.roleConfig),
+      authenticated: getRoleName('authenticated', this.roleConfig),
+      administrator: getRoleName('administrator', this.roleConfig)
+    };
+    const sql = generateCreateBaseRolesSQL(roles);
+    await this.streamSql(sql, db);
+  }
+
   async grantRole(role: string, user: string, dbName?: string): Promise<void> {
     const db = dbName ?? this.config.database;
     const sql = generateGrantRoleSQL(role, user);

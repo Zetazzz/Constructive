@@ -6,11 +6,13 @@ Composable SQL seed layers for integration testing. Each layer builds on the pre
 
 | Layer | Files | What it provides |
 |-------|-------|-----------------|
-| **base** | `base/setup.sql` | Roles (`administrator`, `authenticated`, `anonymous`), `uuid-ossp` extension, `stamps` schema + `timestamps()` trigger |
+| **base** | `base/setup.sql` | `uuid-ossp` extension, `stamps` schema + `timestamps()` trigger |
 | **services** | `services/setup.sql` | Everything in base + `citext`, metaschema tables, services tables, settings tables, modules tables, grants (self-contained) |
 | **services data** | `services/test-data.sql` | Example database (`simple-pets`), 3 schemas, 5 APIs, 2 domains, API→schema linkage, animals metaschema entries |
 | **app-schemas** | `app-schemas/simple-pets/schema.sql` | `simple-pets-*` schemas, animals table with constraints/indexes/triggers |
 | **app data** | `app-schemas/simple-pets/test-data.sql` | 5 test animals (Buddy, Max, Whiskers, Mittens, Tweety) |
+
+> **Note:** Roles (`administrator`, `authenticated`, `anonymous`) are created upstream by `pgsql-test`'s `createBaseRoles()` — seed SQL should never create roles.
 
 ## Usage with pgsql-test
 
@@ -20,7 +22,7 @@ Composable SQL seed layers for integration testing. Each layer builds on the pre
 const SEED = path.resolve(__dirname, '../../../__fixtures__/seed');
 
 seed.sqlfile([
-  `${SEED}/base/setup.sql`,          // roles, extensions, stamps
+  `${SEED}/base/setup.sql`,          // extensions, stamps
   // ... your app-specific schema + data
 ])
 ```
@@ -40,7 +42,7 @@ seed.sqlfile([
 
 Pick only the layers you need:
 
-- **Base only** (roles + stamps, no metaschema): `base/setup.sql` + your own schema/data
+- **Base only** (extensions + stamps, no metaschema): `base/setup.sql` + your own schema/data
 - **Metaschema + services only** (no app tables): `services/setup.sql` + `services/test-data.sql`
 - **Full stack with app data**: `services/setup.sql` + `app-schemas/*` + `services/test-data.sql` + `app-schemas/*/test-data.sql`
 - **Custom app schema**: `services/setup.sql` + `services/test-data.sql` + your own schema/data SQL
