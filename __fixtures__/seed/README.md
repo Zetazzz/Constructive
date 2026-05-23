@@ -17,7 +17,7 @@ Composable SQL seed layers for integration testing. Each layer builds on the pre
 import { getConnections } from 'pgsql-test';
 import path from 'path';
 
-const SEED = path.resolve(__dirname, '../../../../__fixtures__/seed');
+const SEED = path.resolve(__dirname, '../../../__fixtures__/seed');
 
 const { db, teardown } = await getConnections({
   seed: seed.sqlfile([
@@ -36,6 +36,16 @@ Pick only the layers you need:
 - **Metaschema + services only** (no app tables): `services/setup.sql` + `services/test-data.sql`
 - **Full stack with app data**: all four files in order
 - **Custom app schema**: `services/setup.sql` + `services/test-data.sql` + your own schema/data SQL
+
+## Consumers
+
+These test files use the shared fixtures (no local duplicates):
+
+| Test file | Seed files used |
+|-----------|----------------|
+| `graphql/server-test/__tests__/server.integration.test.ts` | `services/*` + `app-schemas/simple-pets/*` (services scenarios) |
+| `graphql/server-test/__tests__/express-context.integration.test.ts` | `services/*` + `app-schemas/simple-pets/*` |
+| `graphql/server-test/__tests__/upload.integration.test.ts` | `services/setup.sql` (DDL only, storage data is local) |
 
 ## Well-Known IDs
 
