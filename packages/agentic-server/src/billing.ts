@@ -6,9 +6,7 @@
  */
 
 import { Logger } from '@pgpmjs/logger';
-import type { ConstructiveContext } from '@constructive-io/express-context';
-
-import type { BillingConfig, InferenceLogConfig } from './discovery';
+import type { BillingConfig, ConstructiveContext, InferenceLogConfig } from '@constructive-io/express-context';
 
 const log = new Logger('agentic-server:billing');
 

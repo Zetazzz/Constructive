@@ -129,6 +129,27 @@ export type ConstructiveAPIToken = {
   [key: string]: unknown;
 };
 
+// ─── Billing & Metering Types ───────────────────────────────────────────────
+
+export interface BillingConfig {
+  publicSchema: string;
+  privateSchema: string;
+  recordUsageFunction: string;
+  checkBillingQuotaFunction: string;
+}
+
+export interface InferenceLogConfig {
+  schema: string;
+  tableName: string;
+}
+
+export interface AgentChatConfig {
+  schemaName: string;
+  threadTableName: string | null;
+  messageTableName: string | null;
+  taskTableName: string | null;
+}
+
 // ─── Module Types Map ───────────────────────────────────────────────────────
 
 /**
@@ -146,6 +167,9 @@ export interface BuiltinModuleMap {
   authSettings: AuthSettings;
   pubkeyChallengeSettings: PubkeyChallengeSettings;
   webauthnSettings: WebauthnSettings;
+  billing: BillingConfig;
+  inferenceLog: InferenceLogConfig;
+  agentChat: AgentChatConfig;
 }
 
 // ─── Constructive Context ───────────────────────────────────────────────────

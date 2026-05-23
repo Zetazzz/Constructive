@@ -44,6 +44,9 @@ export { databaseSettingsLoader } from './database-settings';
 export { pubkeyLoader } from './pubkey';
 export { webauthnLoader } from './webauthn';
 export { authSettingsLoader } from './auth-settings';
+export { billingLoader } from './billing';
+export { inferenceLogLoader } from './inference-log';
+export { agentChatLoader } from './agent-chat';
 
 /**
  * Convenience: create a registry pre-loaded with all built-in loaders.
@@ -55,6 +58,9 @@ import { databaseSettingsLoader } from './database-settings';
 import { pubkeyLoader } from './pubkey';
 import { webauthnLoader } from './webauthn';
 import { authSettingsLoader } from './auth-settings';
+import { billingLoader } from './billing';
+import { inferenceLogLoader } from './inference-log';
+import { agentChatLoader } from './agent-chat';
 
 export function createDefaultRegistry() {
   const registry = createLoaderRegistry();
@@ -64,5 +70,8 @@ export function createDefaultRegistry() {
   registry.register(pubkeyLoader);
   registry.register(webauthnLoader);
   registry.register(authSettingsLoader);
+  registry.register(billingLoader);
+  registry.register(inferenceLogLoader);
+  registry.register(agentChatLoader);
   return registry;
 }
