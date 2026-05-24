@@ -54,7 +54,7 @@
     "@pgsql/quotes": "^17.1.0",
     "appstash": "^0.7.0",
     "find-and-require-package-json": "^0.9.1",
-    "genomic": "^5.3.11",
+    "genomic": "^5.4.0",
     "inquirerer": "^4.8.1",
     "js-yaml": "^4.1.0",
     "pg-cache": "workspace:^",
