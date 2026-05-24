@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.18.0...@pgpmjs/export@0.19.0) (2026-05-24)
+
+### Features
+
+- **pgpm/export:** default to Constructive license on export ([2f62bcb](https://github.com/constructive-io/constructive/commit/2f62bcbdba6828b818eba66cdbfe685ad95849c4))
+
 # [0.18.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.17.1...@pgpmjs/export@0.18.0) (2026-05-23)
 
 **Note:** Version bump only for package @pgpmjs/export

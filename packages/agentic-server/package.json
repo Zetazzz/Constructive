@@ -1,6 +1,6 @@
 {
   "name": "agentic-server",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Standalone Express LLM service — agent threads, chat streaming, billing metering, and inference logging via express-context",
   "author": "Constructive <developers@constructive.io>",
   "homepage": "https://github.com/constructive-io/constructive",
