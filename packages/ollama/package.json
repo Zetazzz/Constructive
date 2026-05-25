@@ -39,5 +39,8 @@
     "test:live:extended": "node ./scripts/run-live-tests.js extended",
     "test:watch": "jest --watch"
   },
+  "dependencies": {
+    "@agentic-kit/protocol": "workspace:*"
+  },
   "keywords": []
 }

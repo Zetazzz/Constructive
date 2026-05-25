@@ -36,5 +36,8 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
+  "dependencies": {
+    "@agentic-kit/protocol": "workspace:*"
+  },
   "keywords": []
 }
