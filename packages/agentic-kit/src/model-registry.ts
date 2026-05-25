@@ -1,4 +1,4 @@
-import type { ModelDescriptor } from './types.js';
+import type { ModelDescriptor } from '@agentic-kit/protocol';
 
 const modelsByProvider = new Map<string, Map<string, ModelDescriptor>>();
 

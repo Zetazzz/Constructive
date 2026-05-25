@@ -5,9 +5,25 @@ import {
   OpenAIAdapter,
   type OpenAIOptions,
 } from '@agentic-kit/openai';
+import type {
+  AssistantMessage,
+  AssistantMessageEventStream,
+  Context,
+  LegacyChatMessage,
+  LegacyGenerateInput,
+  LegacyStreamingOptions,
+  ModelDescriptor,
+  ProviderAdapter,
+  StreamOptions,
+} from '@agentic-kit/protocol';
+import {
+  createAssistantMessageEventStream,
+  createEmptyUsage,
+  EventStream,
+  getMessageText,
+  normalizeContext,
+} from '@agentic-kit/protocol';
 
-import { createAssistantMessageEventStream, EventStream } from './event-stream.js';
-import { createEmptyUsage, getMessageText, normalizeContext } from './messages.js';
 import {
   clearModels,
   getModel,
@@ -24,22 +40,9 @@ import {
   unregisterProviders,
 } from './provider-registry.js';
 import { transformMessages } from './transform-messages.js';
-import type {
-  AssistantMessage,
-  AssistantMessageEventStream,
-  Context,
-  LegacyChatMessage,
-  LegacyGenerateInput,
-  LegacyStreamingOptions,
-  ModelDescriptor,
-  ProviderAdapter,
-  StreamOptions,
-} from './types.js';
 
-export * from './event-stream.js';
-export * from './messages.js';
 export * from './transform-messages.js';
-export * from './types.js';
+export * from '@agentic-kit/protocol';
 
 export { createAssistantMessageEventStream, EventStream, OllamaClient };
 export { AnthropicAdapter, OllamaAdapter, OpenAIAdapter };

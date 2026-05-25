@@ -5,7 +5,7 @@ import type {
   ThinkingContent,
   ToolCallContent,
   ToolResultMessage,
-} from './types.js';
+} from '@agentic-kit/protocol';
 
 export function transformMessages(messages: Message[], model: ModelDescriptor): Message[] {
   const toolCallIdMap = new Map<string, string>();

@@ -1,4 +1,4 @@
-import type { ProviderAdapter } from './types.js';
+import type { ProviderAdapter } from '@agentic-kit/protocol';
 
 type RegisteredProvider = {
   adapter: ProviderAdapter;
