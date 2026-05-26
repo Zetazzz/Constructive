@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.42.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.41.0...node-type-registry@0.42.0) (2026-05-26)
+
+### Features
+
+- **node-type-registry:** add AuthzMemberOwner + DataMemberOwner types ([e778ec9](https://github.com/constructive-io/constructive/commit/e778ec9523e5e6fdcc2b65fb2c9ef692963764a0)), closes [#1327](https://github.com/constructive-io/constructive/issues/1327)
+- **node-type-registry:** upstream knowledge finish + blueprint types from constructive-db ([7899c15](https://github.com/constructive-io/constructive/commit/7899c15ca28e9e0c0404b9077640c4832e625959))
+
 # [0.41.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.40.0...node-type-registry@0.41.0) (2026-05-21)
 
 ### Features
