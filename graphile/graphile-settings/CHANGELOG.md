@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.3.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.3.0...graphile-settings@5.3.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.3.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.4...graphile-settings@5.3.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.2.4](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.3...graphile-settings@5.2.4) (2026-05-21)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.2.3](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.2...graphile-settings@5.2.3) (2026-05-20)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.2.2](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.1...graphile-settings@5.2.2) (2026-05-19)
+
+**Note:** Version bump only for package graphile-settings
+
 ## [5.2.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.0...graphile-settings@5.2.1) (2026-05-17)
 
 **Note:** Version bump only for package graphile-settings

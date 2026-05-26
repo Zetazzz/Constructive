@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.19.2](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.19.1...@constructive-io/knative-job-service@2.19.2) (2026-05-24)
+
+**Note:** Version bump only for package @constructive-io/knative-job-service
+
+## [2.19.1](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.19.0...@constructive-io/knative-job-service@2.19.1) (2026-05-23)
+
+**Note:** Version bump only for package @constructive-io/knative-job-service
+
+# [2.19.0](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.18.7...@constructive-io/knative-job-service@2.19.0) (2026-05-23)
+
+**Note:** Version bump only for package @constructive-io/knative-job-service
+
+## [2.18.7](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.18.6...@constructive-io/knative-job-service@2.18.7) (2026-05-21)
+
+**Note:** Version bump only for package @constructive-io/knative-job-service
+
+## [2.18.6](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.18.5...@constructive-io/knative-job-service@2.18.6) (2026-05-21)
+
+**Note:** Version bump only for package @constructive-io/knative-job-service
+
+## [2.18.5](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.18.4...@constructive-io/knative-job-service@2.18.5) (2026-05-20)
+
+**Note:** Version bump only for package @constructive-io/knative-job-service
+
+## [2.18.4](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.18.3...@constructive-io/knative-job-service@2.18.4) (2026-05-19)
+
+**Note:** Version bump only for package @constructive-io/knative-job-service
+
 ## [2.18.3](https://github.com/constructive-io/jobs/compare/@constructive-io/knative-job-service@2.18.2...@constructive-io/knative-job-service@2.18.3) (2026-05-17)
 
 **Note:** Version bump only for package @constructive-io/knative-job-service

@@ -1,6 +1,6 @@
 {
   "name": "graphile-test",
-  "version": "4.15.1",
+  "version": "4.16.1",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostGraphile Testing",
   "main": "index.js",
@@ -29,7 +29,7 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "graphql-tag": "2.12.6",
     "makage": "^0.3.0"
   },
@@ -37,15 +37,15 @@
     "@constructive-io/graphql-env": "workspace:^",
     "@constructive-io/graphql-types": "workspace:^",
     "@pgpmjs/types": "workspace:^",
-    "grafast": "1.0.0",
-    "graphile-build": "5.0.0",
-    "graphile-build-pg": "5.0.0",
-    "graphile-config": "1.0.0",
+    "grafast": "1.0.2",
+    "graphile-build": "5.0.2",
+    "graphile-build-pg": "5.0.2",
+    "graphile-config": "1.0.1",
     "graphql": "16.13.0",
     "mock-req": "^0.2.0",
-    "pg": "^8.20.0",
+    "pg": "^8.21.0",
     "pgsql-test": "workspace:^",
-    "postgraphile": "5.0.0"
+    "postgraphile": "5.0.3"
   },
   "keywords": [
     "testing",

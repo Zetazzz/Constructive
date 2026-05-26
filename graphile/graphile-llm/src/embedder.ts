@@ -11,20 +11,23 @@
  */
 
 import OllamaClient from '@agentic-kit/ollama';
-import { getEnvOptions } from '@constructive-io/graphql-env';
-import type { EmbedderConfig, EmbedderFunction, LlmModuleData } from './types';
+
+import { getLlmEnvOptions } from './env';
+import type { EmbedderConfig, EmbedderFunction, EmbeddingResult, LlmModuleData } from './types';
 
 // ─── Built-in Providers ─────────────────────────────────────────────────────
 
 /**
  * Create an Ollama-based embedder function.
+ *
+ * Uses the /api/embed endpoint which returns prompt_eval_count (real token count).
  */
 function createOllamaEmbedder(
   baseUrl: string = 'http://localhost:11434',
-  model: string = 'nomic-embed-text',
+  model: string = 'nomic-embed-text'
 ): EmbedderFunction {
   const client = new OllamaClient(baseUrl);
-  return async (text: string): Promise<number[]> => {
+  return async (text: string): Promise<EmbeddingResult> => {
     return client.generateEmbedding(text, model);
   };
 }
@@ -38,11 +41,11 @@ function createOllamaEmbedder(
  */
 export function buildEmbedder(config: EmbedderConfig): EmbedderFunction | null {
   switch (config.provider) {
-    case 'ollama':
-      return createOllamaEmbedder(config.baseUrl, config.model);
+  case 'ollama':
+    return createOllamaEmbedder(config.baseUrl, config.model);
     // Future: 'openai', 'anthropic', 'custom'
-    default:
-      return null;
+  default:
+    return null;
   }
 }
 
@@ -58,28 +61,20 @@ export function buildEmbedderFromModule(data: LlmModuleData): EmbedderFunction |
   return buildEmbedder({
     provider: data.embedding_provider,
     model: data.embedding_model,
-    baseUrl: data.embedding_base_url,
-    apiKey: data.api_key_ref,
+    baseUrl: data.embedding_base_url
   });
 }
 
 /**
- * Resolve an embedder from environment variables via getEnvOptions().
+ * Resolve an embedder from environment variables.
  * This is a fallback for development when no llm_module or defaultEmbedder is configured.
  *
- * Environment variables (parsed by @constructive-io/graphql-env):
- *   EMBEDDER_PROVIDER - Provider name ('ollama')
- *   EMBEDDER_MODEL    - Model identifier
- *   EMBEDDER_BASE_URL - Provider base URL
+ * Environment variables (with defaults from env.ts):
+ *   EMBEDDER_PROVIDER  - Provider name (default: 'ollama')
+ *   EMBEDDER_MODEL     - Model identifier (default: 'nomic-embed-text')
+ *   EMBEDDER_BASE_URL  - Provider base URL (default: 'http://localhost:11434')
  */
 export function buildEmbedderFromEnv(): EmbedderFunction | null {
-  const { llm } = getEnvOptions();
-  const provider = llm?.embedder?.provider;
-  if (!provider) return null;
-
-  return buildEmbedder({
-    provider,
-    model: llm?.embedder?.model,
-    baseUrl: llm?.embedder?.baseUrl,
-  });
+  const { embedding } = getLlmEnvOptions();
+  return buildEmbedder(embedding);
 }

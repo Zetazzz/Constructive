@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.20.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.20.0...@pgpmjs/core@6.20.1) (2026-05-24)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.20.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.19.1...@pgpmjs/core@6.20.0) (2026-05-23)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+## [6.19.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.19.0...@pgpmjs/core@6.19.1) (2026-05-21)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.19.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.18.1...@pgpmjs/core@6.19.0) (2026-05-20)
+
+### Bug Fixes
+
+- remove pgpm-uuid from required extensions and module map ([e84ef56](https://github.com/constructive-io/constructive/commit/e84ef5682aa3210838a5b5bec151a33da69c7a12))
+
+### Features
+
+- add missing modules to export flow ([827dc87](https://github.com/constructive-io/constructive/commit/827dc8727dc4a47c8b41bea0ace4dca4fc2def49))
+
 ## [6.18.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.18.0...@pgpmjs/core@6.18.1) (2026-05-17)
 
 ### Bug Fixes

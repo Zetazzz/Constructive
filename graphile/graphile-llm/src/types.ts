@@ -7,9 +7,19 @@
 // ─── Embedder Types ─────────────────────────────────────────────────────────
 
 /**
- * A function that converts text into a vector embedding.
+ * Result from an embedding call, including real token usage from the provider.
  */
-export type EmbedderFunction = (text: string) => Promise<number[]>;
+export interface EmbeddingResult {
+  /** The vector embedding */
+  embedding: number[];
+  /** Number of prompt tokens consumed (from provider; 0 if unavailable) */
+  promptTokens: number;
+}
+
+/**
+ * A function that converts text into a vector embedding with token usage.
+ */
+export type EmbedderFunction = (text: string) => Promise<EmbeddingResult>;
 
 /**
  * Configuration for an embedding provider.
@@ -21,8 +31,27 @@ export interface EmbedderConfig {
   model?: string;
   /** Base URL for the provider (e.g. 'http://localhost:11434' for Ollama) */
   baseUrl?: string;
-  /** API key for providers that require authentication (e.g. OpenAI) */
-  apiKey?: string;
+}
+
+// ─── Token Usage Types ──────────────────────────────────────────────────────
+
+/**
+ * Token usage metadata returned by LLM providers.
+ * Maps to the billing schema's inference_log columns.
+ */
+export interface LlmUsage {
+  /** Prompt / input tokens consumed */
+  input: number;
+  /** Completion / output tokens generated (includes reasoning for providers that count it) */
+  output: number;
+  /** Reasoning tokens (subset of output — not additive) */
+  reasoning: number;
+  /** Tokens served from prompt cache (zero cost) */
+  cacheRead: number;
+  /** Tokens written to prompt cache */
+  cacheWrite: number;
+  /** input + output + cacheRead + cacheWrite */
+  totalTokens: number;
 }
 
 // ─── Chat Completion Types ──────────────────────────────────────────────────
@@ -46,9 +75,18 @@ export interface ChatOptions {
 }
 
 /**
- * A function that sends messages to a chat completion provider and returns the response.
+ * Result from a chat completion call, including real token usage.
  */
-export type ChatFunction = (messages: ChatMessage[], options?: ChatOptions) => Promise<string>;
+export interface ChatResult {
+  content: string;
+  usage: LlmUsage;
+}
+
+/**
+ * A function that sends messages to a chat completion provider
+ * and returns the response with token usage metadata.
+ */
+export type ChatFunction = (messages: ChatMessage[], options?: ChatOptions) => Promise<ChatResult>;
 
 /**
  * Configuration for a chat completion provider.
@@ -60,8 +98,6 @@ export interface ChatConfig {
   model?: string;
   /** Base URL for the provider */
   baseUrl?: string;
-  /** API key for providers that require authentication */
-  apiKey?: string;
 }
 
 // ─── LLM Module Types ───────────────────────────────────────────────────────
@@ -87,8 +123,6 @@ export interface LlmModuleData {
   chat_model?: string;
   /** Base URL for the chat provider */
   chat_base_url?: string;
-  /** API key reference (e.g. 'vault://openai-key' or env var name) */
-  api_key_ref?: string;
   /** Rate limit: requests per minute */
   rate_limit_rpm?: number;
   /** Maximum tokens per request */
@@ -152,6 +186,47 @@ export interface ChunkTableInfo {
   contentField: string;
 }
 
+// ─── Metering Types ─────────────────────────────────────────────────────────
+
+/**
+ * Configuration for billing/metering integration.
+ * When provided, embedding and chat calls are wrapped with quota checks
+ * and usage recording via the billing_module functions.
+ */
+export interface MeteringConfig {
+  /**
+   * Meter slug for embedding operations.
+   * Must match a slug in the billing_module meters table.
+   *
+   * @default the embedding model name (e.g. 'text-embedding-3-small')
+   * — meter slug = model name, so each model has its own meter
+   * in the three-level waterfall (per-model → inference pool → universal).
+   */
+  embeddingMeterSlug?: string;
+
+  /**
+   * Meter slug for chat completion operations.
+   *
+   * @default the chat model name (e.g. 'gpt-4o-mini')
+   */
+  chatMeterSlug?: string;
+
+  /**
+   * Disable metering entirely (e.g. for local dev).
+   * When true, billing functions are never called.
+   * @default false
+   */
+  skipMetering?: boolean;
+
+  /**
+   * Resolve the billing entity_id from pgSettings.
+   * The entity_id identifies who gets billed (user, org, etc.).
+   *
+   * @default reads jwt.claims.user_id
+   */
+  resolveEntityId?: (pgSettings: Record<string, string>) => string | null;
+}
+
 // ─── Plugin Options ─────────────────────────────────────────────────────────
 
 /**
@@ -198,4 +273,18 @@ export interface GraphileLlmOptions {
    * Individual queries can override these values.
    */
   ragDefaults?: RagDefaults;
+
+  /**
+   * Billing/metering configuration (opt-in).
+   * When truthy, loads the LlmMeteringPlugin which wraps the embedder
+   * with billing quota checks + usage recording.
+   *
+   * Set to `true` to enable metering with defaults (entity_id from jwt.claims.user_id).
+   * Provide a MeteringConfig object for fine-grained control (custom entity_id, meter slugs).
+   * Set to `false` or omit to disable metering entirely.
+   *
+   * @default undefined (metering disabled)
+   */
+  metering?: boolean | MeteringConfig;
+
 }

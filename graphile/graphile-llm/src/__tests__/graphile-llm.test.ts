@@ -1,27 +1,28 @@
-import { join } from 'path';
 import OllamaClient from '@agentic-kit/ollama';
-import { getConnections, seed } from 'graphile-test';
-import type { GraphQLResponse } from 'graphile-test';
-import type { PgTestClient } from 'pgsql-test';
+import type { GraphileConfig } from 'graphile-config';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
+import { createPgvectorAdapter } from 'graphile-search/adapters/pgvector';
 import { VectorCodecPlugin } from 'graphile-search/codecs/vector-codec';
 import { createUnifiedSearchPlugin } from 'graphile-search/plugin';
-import { createPgvectorAdapter } from 'graphile-search/adapters/pgvector';
-import type { GraphileConfig } from 'graphile-config';
-import { createLlmModulePlugin } from '../../src/plugins/llm-module-plugin';
-import { createLlmTextSearchPlugin } from '../../src/plugins/text-search-plugin';
-import { createLlmTextMutationPlugin } from '../../src/plugins/text-mutation-plugin';
-import { createLlmRagPlugin } from '../../src/plugins/rag-plugin';
-import {
-  buildEmbedder,
-  buildEmbedderFromModule,
-  buildEmbedderFromEnv,
-} from '../../src/embedder';
+import type { GraphQLResponse } from 'graphile-test';
+import { getConnections, seed } from 'graphile-test';
+import { join } from 'path';
+import type { PgTestClient } from 'pgsql-test';
+
 import {
   buildChatCompleter,
-  buildChatCompleterFromModule,
   buildChatCompleterFromEnv,
+  buildChatCompleterFromModule
 } from '../../src/chat';
+import {
+  buildEmbedder,
+  buildEmbedderFromEnv,
+  buildEmbedderFromModule
+} from '../../src/embedder';
+import { createLlmModulePlugin } from '../../src/plugins/llm-module-plugin';
+import { createLlmRagPlugin } from '../../src/plugins/rag-plugin';
+import { createLlmTextMutationPlugin } from '../../src/plugins/text-mutation-plugin';
+import { createLlmTextSearchPlugin } from '../../src/plugins/text-search-plugin';
 import type { LlmModuleData } from '../../src/types';
 
 // ─── @agentic-kit/ollama client ─────────────────────────────────────────────
@@ -54,7 +55,7 @@ describe('Embedder abstraction', () => {
       const embedder = buildEmbedder({
         provider: 'ollama',
         model: 'nomic-embed-text',
-        baseUrl: 'http://localhost:11434',
+        baseUrl: 'http://localhost:11434'
       });
       expect(embedder).not.toBeNull();
       expect(typeof embedder).toBe('function');
@@ -62,7 +63,7 @@ describe('Embedder abstraction', () => {
 
     it('returns null for unknown provider', () => {
       const embedder = buildEmbedder({
-        provider: 'unknown-provider',
+        provider: 'unknown-provider'
       });
       expect(embedder).toBeNull();
     });
@@ -79,7 +80,7 @@ describe('Embedder abstraction', () => {
       const moduleData: LlmModuleData = {
         embedding_provider: 'ollama',
         embedding_model: 'nomic-embed-text',
-        embedding_base_url: 'http://localhost:11434',
+        embedding_base_url: 'http://localhost:11434'
       };
       const embedder = buildEmbedderFromModule(moduleData);
       expect(embedder).not.toBeNull();
@@ -88,7 +89,7 @@ describe('Embedder abstraction', () => {
 
     it('returns null for unsupported provider in module data', () => {
       const moduleData: LlmModuleData = {
-        embedding_provider: 'unsupported',
+        embedding_provider: 'unsupported'
       };
       const embedder = buildEmbedderFromModule(moduleData);
       expect(embedder).toBeNull();
@@ -102,11 +103,12 @@ describe('Embedder abstraction', () => {
       process.env = originalEnv;
     });
 
-    it('returns null when EMBEDDER_PROVIDER is not set', () => {
+    it('returns default ollama embedder when EMBEDDER_PROVIDER is not set', () => {
       process.env = { ...originalEnv };
       delete process.env.EMBEDDER_PROVIDER;
       const embedder = buildEmbedderFromEnv();
-      expect(embedder).toBeNull();
+      expect(embedder).not.toBeNull();
+      expect(typeof embedder).toBe('function');
     });
 
     it('builds embedder from environment variables', () => {
@@ -114,7 +116,7 @@ describe('Embedder abstraction', () => {
         ...originalEnv,
         EMBEDDER_PROVIDER: 'ollama',
         EMBEDDER_MODEL: 'nomic-embed-text',
-        EMBEDDER_BASE_URL: 'http://localhost:11434',
+        EMBEDDER_BASE_URL: 'http://localhost:11434'
       };
       const embedder = buildEmbedderFromEnv();
       expect(embedder).not.toBeNull();
@@ -135,7 +137,7 @@ describe('graphile-llm schema enrichment', () => {
 
   beforeAll(async () => {
     const unifiedPlugin = createUnifiedSearchPlugin({
-      adapters: [createPgvectorAdapter()],
+      adapters: [createPgvectorAdapter()]
     });
 
     const testPreset = {
@@ -149,12 +151,12 @@ describe('graphile-llm schema enrichment', () => {
           defaultEmbedder: {
             provider: 'ollama',
             model: 'nomic-embed-text',
-            baseUrl: 'http://localhost:11434',
-          },
+            baseUrl: 'http://localhost:11434'
+          }
         }),
         createLlmTextSearchPlugin(),
-        createLlmTextMutationPlugin(),
-      ],
+        createLlmTextMutationPlugin()
+      ]
     };
 
     const connections = await getConnections(
@@ -162,9 +164,9 @@ describe('graphile-llm schema enrichment', () => {
         schemas: ['llm_test'],
         preset: testPreset,
         useRoot: true,
-        authRole: 'postgres',
+        authRole: 'postgres'
       },
-      [seed.sqlfile([join(__dirname, './setup.sql')])],
+      [seed.sqlfile([join(__dirname, './setup.sql')])]
     );
 
     db = connections.db;
@@ -279,7 +281,7 @@ describe('graphile-llm schema enrichment', () => {
       expect(fieldNames).toContain('embeddingText');
 
       const textField = inputType!.inputFields.find(
-        (f) => f.name === 'embeddingText',
+        (f) => f.name === 'embeddingText'
       );
       expect(textField).toBeDefined();
       expect(textField!.type.name).toBe('String');
@@ -307,7 +309,7 @@ describe('graphile-llm schema enrichment', () => {
       expect(fieldNames).toContain('embeddingText');
 
       const textField = inputType!.inputFields.find(
-        (f) => f.name === 'embeddingText',
+        (f) => f.name === 'embeddingText'
       );
       expect(textField).toBeDefined();
       expect(textField!.type.name).toBe('String');
@@ -329,25 +331,26 @@ describe('graphile-llm with real Ollama embedding', () => {
     const embedder = buildEmbedder({
       provider: 'ollama',
       model: 'nomic-embed-text',
-      baseUrl: 'http://localhost:11434',
+      baseUrl: 'http://localhost:11434'
     });
 
     expect(embedder).not.toBeNull();
 
-    const vector = await embedder!('Machine learning is transforming AI');
+    const result = await embedder!('Machine learning is transforming AI');
 
     // nomic-embed-text produces 768-dimensional vectors
-    expect(Array.isArray(vector)).toBe(true);
-    expect(vector.length).toBe(768);
+    expect(Array.isArray(result.embedding)).toBe(true);
+    expect(result.embedding.length).toBe(768);
+    expect(result.promptTokens).toBeGreaterThan(0);
 
     // All elements should be numbers
-    for (const v of vector) {
+    for (const v of result.embedding) {
       expect(typeof v).toBe('number');
       expect(Number.isFinite(v)).toBe(true);
     }
 
     // Vector should not be all zeros
-    const magnitude = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0));
+    const magnitude = Math.sqrt(result.embedding.reduce((sum, v) => sum + v * v, 0));
     expect(magnitude).toBeGreaterThan(0);
 
   });
@@ -356,15 +359,17 @@ describe('graphile-llm with real Ollama embedding', () => {
     const embedder = buildEmbedder({
       provider: 'ollama',
       model: 'nomic-embed-text',
-      baseUrl: 'http://localhost:11434',
+      baseUrl: 'http://localhost:11434'
     });
 
     expect(embedder).not.toBeNull();
 
-    const [vecA, vecB] = await Promise.all([
+    const [resultA, resultB] = await Promise.all([
       embedder!('Artificial intelligence and machine learning'),
-      embedder!('Cooking recipes for Italian pasta dishes'),
+      embedder!('Cooking recipes for Italian pasta dishes')
     ]);
+    const vecA = resultA.embedding;
+    const vecB = resultB.embedding;
 
     expect(vecA.length).toBe(768);
     expect(vecB.length).toBe(768);
@@ -388,15 +393,17 @@ describe('graphile-llm with real Ollama embedding', () => {
     const embedder = buildEmbedder({
       provider: 'ollama',
       model: 'nomic-embed-text',
-      baseUrl: 'http://localhost:11434',
+      baseUrl: 'http://localhost:11434'
     });
 
     expect(embedder).not.toBeNull();
 
-    const [vecA, vecB] = await Promise.all([
+    const [resultA, resultB] = await Promise.all([
       embedder!('Machine learning and artificial intelligence'),
-      embedder!('AI and ML are subfields of computer science'),
+      embedder!('AI and ML are subfields of computer science')
     ]);
+    const vecA = resultA.embedding;
+    const vecB = resultB.embedding;
 
     expect(vecA.length).toBe(768);
     expect(vecB.length).toBe(768);
@@ -416,16 +423,19 @@ describe('graphile-llm with real Ollama embedding', () => {
     expect(cosineSimilarity).toBeGreaterThan(0.5);
   });
 
-  it('should produce embeddings via @agentic-kit/ollama OllamaClient directly', async () => {
-    const vector = await ollamaClient.generateEmbedding(
+  it('should produce embeddings with token count via @agentic-kit/ollama OllamaClient directly', async () => {
+    const result = await ollamaClient.generateEmbedding(
       'Testing the agentic-kit Ollama client directly',
-      'nomic-embed-text',
+      'nomic-embed-text'
     );
 
-    expect(Array.isArray(vector)).toBe(true);
-    expect(vector.length).toBe(768);
+    expect(result).toHaveProperty('embedding');
+    expect(result).toHaveProperty('promptTokens');
+    expect(Array.isArray(result.embedding)).toBe(true);
+    expect(result.embedding.length).toBe(768);
+    expect(result.promptTokens).toBeGreaterThan(0);
 
-    for (const v of vector) {
+    for (const v of result.embedding) {
       expect(typeof v).toBe('number');
       expect(Number.isFinite(v)).toBe(true);
     }
@@ -442,7 +452,7 @@ describe('Chat completion abstraction', () => {
       const chat = buildChatCompleter({
         provider: 'ollama',
         model: 'llama3',
-        baseUrl: 'http://localhost:11434',
+        baseUrl: 'http://localhost:11434'
       });
       expect(chat).not.toBeNull();
       expect(typeof chat).toBe('function');
@@ -450,7 +460,7 @@ describe('Chat completion abstraction', () => {
 
     it('returns null for unknown provider', () => {
       const chat = buildChatCompleter({
-        provider: 'unknown-provider',
+        provider: 'unknown-provider'
       });
       expect(chat).toBeNull();
     });
@@ -468,7 +478,7 @@ describe('Chat completion abstraction', () => {
         embedding_provider: 'ollama',
         chat_provider: 'ollama',
         chat_model: 'llama3',
-        chat_base_url: 'http://localhost:11434',
+        chat_base_url: 'http://localhost:11434'
       };
       const chat = buildChatCompleterFromModule(moduleData);
       expect(chat).not.toBeNull();
@@ -477,7 +487,7 @@ describe('Chat completion abstraction', () => {
 
     it('returns null when chat_provider is not set', () => {
       const moduleData: LlmModuleData = {
-        embedding_provider: 'ollama',
+        embedding_provider: 'ollama'
       };
       const chat = buildChatCompleterFromModule(moduleData);
       expect(chat).toBeNull();
@@ -491,11 +501,12 @@ describe('Chat completion abstraction', () => {
       process.env = originalEnv;
     });
 
-    it('returns null when CHAT_PROVIDER is not set', () => {
+    it('returns default ollama chat completer when CHAT_PROVIDER is not set', () => {
       process.env = { ...originalEnv };
       delete process.env.CHAT_PROVIDER;
       const chat = buildChatCompleterFromEnv();
-      expect(chat).toBeNull();
+      expect(chat).not.toBeNull();
+      expect(typeof chat).toBe('function');
     });
 
     it('builds chat completer from environment variables', () => {
@@ -503,7 +514,7 @@ describe('Chat completion abstraction', () => {
         ...originalEnv,
         CHAT_PROVIDER: 'ollama',
         CHAT_MODEL: 'llama3',
-        CHAT_BASE_URL: 'http://localhost:11434',
+        CHAT_BASE_URL: 'http://localhost:11434'
       };
       const chat = buildChatCompleterFromEnv();
       expect(chat).not.toBeNull();
@@ -546,10 +557,10 @@ function makeTestSmartTagsPlugin(
               Object.assign(c.extensions.tags, tags);
             }
             return _;
-          },
-        },
-      },
-    },
+          }
+        }
+      }
+    }
   };
 }
 
@@ -560,7 +571,7 @@ describe('RAG plugin schema enrichment', () => {
 
   beforeAll(async () => {
     const unifiedPlugin = createUnifiedSearchPlugin({
-      adapters: [createPgvectorAdapter()],
+      adapters: [createPgvectorAdapter()]
     });
 
     const smartTagsPlugin = makeTestSmartTagsPlugin({
@@ -570,20 +581,26 @@ describe('RAG plugin schema enrichment', () => {
           parentFk: 'parent_id',
           parentPk: 'id',
           embeddingField: 'embedding',
-          contentField: 'content',
-        },
-      },
+          contentField: 'content'
+        }
+      }
     });
 
-    // Mock embedder that returns a fixed 3-dim vector
-    const mockEmbedder = async (_text: string): Promise<number[]> => [1, 0, 0];
+    // Mock embedder that returns a fixed 3-dim vector with token count
+    const mockEmbedder = async (_text: string) => ({
+      embedding: [1, 0, 0],
+      promptTokens: 5
+    });
 
-    // Mock chat completer that returns a canned response
+    // Mock chat completer that returns a canned response with usage
     const mockChatCompleter = async (
-      messages: Array<{ role: string; content: string }>,
-    ): Promise<string> => {
+      messages: Array<{ role: string; content: string }>
+    ) => {
       const userMessage = messages.find((m) => m.role === 'user');
-      return `Mock answer for: ${userMessage?.content || 'unknown'}`;
+      return {
+        content: `Mock answer for: ${userMessage?.content || 'unknown'}`,
+        usage: { input: 10, output: 15, reasoning: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 25 }
+      };
     };
 
     const testPreset = {
@@ -596,13 +613,13 @@ describe('RAG plugin schema enrichment', () => {
           defaultEmbedder: {
             provider: 'ollama',
             model: 'nomic-embed-text',
-            baseUrl: 'http://localhost:11434',
-          },
+            baseUrl: 'http://localhost:11434'
+          }
         }),
         createLlmTextSearchPlugin(),
         createLlmTextMutationPlugin(),
-        createLlmRagPlugin(),
-      ],
+        createLlmRagPlugin()
+      ]
     };
 
     // Override the embedder and chat completer on the build context
@@ -618,13 +635,13 @@ describe('RAG plugin schema enrichment', () => {
               build,
               {
                 llmEmbedder: mockEmbedder,
-                llmChatCompleter: mockChatCompleter,
+                llmChatCompleter: mockChatCompleter
               },
               'TestOverridePlugin overriding embedder and chat completer'
             );
-          },
-        },
-      },
+          }
+        }
+      }
     };
 
     const connections = await getConnections(
@@ -632,12 +649,12 @@ describe('RAG plugin schema enrichment', () => {
         schemas: ['llm_test'],
         preset: {
           ...testPreset,
-          plugins: [...testPreset.plugins, overridePlugin],
+          plugins: [...testPreset.plugins, overridePlugin]
         },
         useRoot: true,
-        authRole: 'postgres',
+        authRole: 'postgres'
       },
-      [seed.sqlfile([join(__dirname, './setup.sql')])],
+      [seed.sqlfile([join(__dirname, './setup.sql')])]
     );
 
     db = connections.db;
@@ -805,7 +822,7 @@ describe('GraphileLlmPreset toggles', () => {
   it('enableRag=false excludes RAG plugin (no ragQuery field)', async () => {
     const { GraphileLlmPreset } = await import('../../src/preset');
     const preset = GraphileLlmPreset({
-      enableRag: false,
+      enableRag: false
     });
 
     const pluginNames = preset.plugins!.map((p: any) => p.name);
@@ -815,7 +832,7 @@ describe('GraphileLlmPreset toggles', () => {
   it('enableRag=true includes RAG plugin', async () => {
     const { GraphileLlmPreset } = await import('../../src/preset');
     const preset = GraphileLlmPreset({
-      enableRag: true,
+      enableRag: true
     });
 
     const pluginNames = preset.plugins!.map((p: any) => p.name);
@@ -825,7 +842,7 @@ describe('GraphileLlmPreset toggles', () => {
   it('enableTextSearch=false excludes text search plugin', async () => {
     const { GraphileLlmPreset } = await import('../../src/preset');
     const preset = GraphileLlmPreset({
-      enableTextSearch: false,
+      enableTextSearch: false
     });
 
     const pluginNames = preset.plugins!.map((p: any) => p.name);
@@ -837,7 +854,7 @@ describe('GraphileLlmPreset toggles', () => {
   it('enableTextMutations=false excludes text mutation plugin', async () => {
     const { GraphileLlmPreset } = await import('../../src/preset');
     const preset = GraphileLlmPreset({
-      enableTextMutations: false,
+      enableTextMutations: false
     });
 
     const pluginNames = preset.plugins!.map((p: any) => p.name);
@@ -849,7 +866,7 @@ describe('GraphileLlmPreset toggles', () => {
     const preset = GraphileLlmPreset({
       enableTextSearch: false,
       enableTextMutations: false,
-      enableRag: false,
+      enableRag: false
     });
 
     const pluginNames = preset.plugins!.map((p: any) => p.name);

@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.4.1](https://github.com/constructive-io/constructive/compare/graphile-pg-aggregates@1.4.0...graphile-pg-aggregates@1.4.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-pg-aggregates
+
+# [1.4.0](https://github.com/constructive-io/constructive/compare/graphile-pg-aggregates@1.3.3...graphile-pg-aggregates@1.4.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-pg-aggregates
+
+## [1.3.3](https://github.com/constructive-io/constructive/compare/graphile-pg-aggregates@1.3.2...graphile-pg-aggregates@1.3.3) (2026-05-21)
+
+**Note:** Version bump only for package graphile-pg-aggregates
+
+## [1.3.2](https://github.com/constructive-io/constructive/compare/graphile-pg-aggregates@1.3.1...graphile-pg-aggregates@1.3.2) (2026-05-20)
+
+**Note:** Version bump only for package graphile-pg-aggregates
+
 ## [1.3.1](https://github.com/constructive-io/constructive/compare/graphile-pg-aggregates@1.3.0...graphile-pg-aggregates@1.3.1) (2026-05-17)
 
 **Note:** Version bump only for package graphile-pg-aggregates

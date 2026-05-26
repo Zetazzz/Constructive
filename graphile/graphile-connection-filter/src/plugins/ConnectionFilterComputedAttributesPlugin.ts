@@ -1,5 +1,6 @@
 import '../augmentations';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType } from 'graphql';
 import {
   isComputedScalarAttributeResource,
   getComputedAttributeResources,
@@ -118,7 +119,7 @@ export const ConnectionFilterComputedAttributesPlugin: GraphileConfig.Plugin = {
 
           const OperatorsType = build.getTypeByName(
             digest.operatorsTypeName
-          );
+          ) as GraphQLInputType | undefined;
           if (!OperatorsType) {
             continue;
           }

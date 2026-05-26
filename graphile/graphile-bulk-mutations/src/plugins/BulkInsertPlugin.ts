@@ -2,6 +2,7 @@ import '../augmentations';
 
 import { sideEffectWithPgClient } from '@dataplan/pg';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType, GraphQLOutputType } from 'graphql';
 
 import type { NestedRelationInfo } from '../utils/relations';
 import { discoverNestedRelations } from '../utils/relations';
@@ -72,8 +73,8 @@ export const BulkInsertPlugin: GraphileConfig.Plugin = {
           const inputTypeName = inflection.bulkInsertInputType(typeName);
           const payloadTypeName = inflection.bulkInsertPayloadType(typeName);
 
-          const inputType = build.getTypeByName(inputTypeName);
-          const payloadType = build.getTypeByName(payloadTypeName);
+          const inputType = build.getTypeByName(inputTypeName) as GraphQLInputType | undefined;
+          const payloadType = build.getTypeByName(payloadTypeName) as GraphQLOutputType | undefined;
           if (!inputType || !payloadType) continue;
 
           // Pre-compute column specs for SQL generation

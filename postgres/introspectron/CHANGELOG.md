@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.19.1](https://github.com/constructive-io/constructive/compare/introspectron@4.19.0...introspectron@4.19.1) (2026-05-24)
+
+**Note:** Version bump only for package introspectron
+
+# [4.19.0](https://github.com/constructive-io/constructive/compare/introspectron@4.18.7...introspectron@4.19.0) (2026-05-23)
+
+**Note:** Version bump only for package introspectron
+
+## [4.18.7](https://github.com/constructive-io/constructive/compare/introspectron@4.18.6...introspectron@4.18.7) (2026-05-21)
+
+**Note:** Version bump only for package introspectron
+
+## [4.18.6](https://github.com/constructive-io/constructive/compare/introspectron@4.18.5...introspectron@4.18.6) (2026-05-21)
+
+**Note:** Version bump only for package introspectron
+
+## [4.18.5](https://github.com/constructive-io/constructive/compare/introspectron@4.18.4...introspectron@4.18.5) (2026-05-20)
+
+**Note:** Version bump only for package introspectron
+
+## [4.18.4](https://github.com/constructive-io/constructive/compare/introspectron@4.18.3...introspectron@4.18.4) (2026-05-19)
+
+**Note:** Version bump only for package introspectron
+
 ## [4.18.3](https://github.com/constructive-io/constructive/compare/introspectron@4.18.2...introspectron@4.18.3) (2026-05-17)
 
 **Note:** Version bump only for package introspectron

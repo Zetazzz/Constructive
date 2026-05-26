@@ -1,0 +1,62 @@
+{
+  "name": "@constructive-io/express-context",
+  "version": "0.3.0",
+  "description": "Extractable Express middleware for Constructive tenant context — domain resolution, JWT auth, pgSettings, and withPgClient",
+  "author": "Constructive <developers@constructive.io>",
+  "homepage": "https://github.com/constructive-io/constructive",
+  "license": "MIT",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/constructive-io/constructive"
+  },
+  "bugs": {
+    "url": "https://github.com/constructive-io/constructive/issues"
+  },
+  "scripts": {
+    "clean": "makage clean",
+    "prepack": "npm run build",
+    "build": "makage build",
+    "build:dev": "makage build --dev",
+    "lint": "eslint . --fix",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@constructive-io/url-domains": "workspace:^",
+    "@pgpmjs/env": "workspace:^",
+    "@pgpmjs/logger": "workspace:^",
+    "@pgpmjs/server-utils": "workspace:^",
+    "@pgpmjs/types": "workspace:^",
+    "lru-cache": "^11.2.7",
+    "pg": "^8.21.0",
+    "pg-cache": "workspace:^",
+    "pg-query-context": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/pg": "^8.20.0",
+    "express": "^5.2.1",
+    "makage": "^0.3.0"
+  },
+  "peerDependencies": {
+    "express": "^5.0.0"
+  },
+  "keywords": [
+    "constructive",
+    "express",
+    "middleware",
+    "context",
+    "tenant",
+    "domain",
+    "auth",
+    "jwt",
+    "pgSettings"
+  ]
+}

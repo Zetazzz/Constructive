@@ -30,7 +30,6 @@ export const DB_REQUIRED_EXTENSIONS = [
   'ltree',
   'metaschema-schema',
   'pgpm-inflection',
-  'pgpm-uuid',
   'pgpm-utils',
   'pgpm-database-jobs',
   'pgpm-jwt-claims',
@@ -38,7 +37,8 @@ export const DB_REQUIRED_EXTENSIONS = [
   'pgpm-base32',
   'pgpm-totp',
   'pgpm-types',
-  'pgpm-ltree-helpers'
+  'pgpm-ltree-helpers',
+  'pgpm-partman'
 ] as const;
 
 /**
@@ -133,7 +133,7 @@ export const META_TABLE_ORDER = [
   'memberships_module',
   'permissions_module',
   'limits_module',
-  'levels_module',
+  'events_module',
   'users_module',
   'hierarchy_module',
   'membership_types_module',
@@ -153,7 +153,8 @@ export const META_TABLE_ORDER = [
   'uuid_module',
   'default_ids_module',
   'denormalized_table_field',
-  'table_template_module',
+  // NOTE: blueprint_template, blueprint, and blueprint_construction are intentionally
+  // excluded from the export flow — they are runtime-only tables not exported as metadata.
   'relation_provision',
   'entity_type_provision',
   'rate_limits_module',
@@ -168,7 +169,9 @@ export const META_TABLE_ORDER = [
   'session_secrets_module',
   'config_secrets_org_module',
   'webauthn_auth_module',
-  'webauthn_credentials_module'
+  'webauthn_credentials_module',
+  'inference_log_module',
+  'rate_limit_meters_module'
 ] as const;
 
 // =============================================================================
@@ -440,10 +443,7 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
     schema: 'metaschema_modules_public',
     table: 'table_module'
   },
-  table_template_module: {
-    schema: 'metaschema_modules_public',
-    table: 'table_template_module'
-  },
+  // NOTE: table_template_module has been removed from pgpm-modules (superseded by blueprints)
   secure_table_provision: {
     schema: 'metaschema_modules_public',
     table: 'secure_table_provision'
@@ -519,6 +519,14 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
   webauthn_credentials_module: {
     schema: 'metaschema_modules_public',
     table: 'webauthn_credentials_module'
+  },
+  inference_log_module: {
+    schema: 'metaschema_modules_public',
+    table: 'inference_log_module',
+  },
+  rate_limit_meters_module: {
+    schema: 'metaschema_modules_public',
+    table: 'rate_limit_meters_module',
   },
   spatial_relation: {
     schema: 'metaschema_public',
@@ -718,7 +726,7 @@ export const preparePackage = async ({
           moduleName: name,
           moduleDesc: description,
           access: 'restricted',
-          license: 'CLOSED',
+          license: 'CONSTRUCTIVE',
           fullName,
           ...(email && { email }),
           // Use provided values or sensible defaults

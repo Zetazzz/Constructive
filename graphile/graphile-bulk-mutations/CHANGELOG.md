@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/constructive-io/constructive/compare/graphile-bulk-mutations@0.4.0...graphile-bulk-mutations@0.4.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-bulk-mutations
+
+# [0.4.0](https://github.com/constructive-io/constructive/compare/graphile-bulk-mutations@0.3.3...graphile-bulk-mutations@0.4.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-bulk-mutations
+
+## [0.3.3](https://github.com/constructive-io/constructive/compare/graphile-bulk-mutations@0.3.2...graphile-bulk-mutations@0.3.3) (2026-05-21)
+
+### Bug Fixes
+
+- add type assertions for all bulk-mutations plugins ([818877a](https://github.com/constructive-io/constructive/commit/818877a7bdf42da02829f511aed79d70c67dcf19))
+- add type assertions for graphql@16.13.0 stricter types ([0687bd0](https://github.com/constructive-io/constructive/commit/0687bd06a2d5053af587f6f06cc0ae8564e909ba))
+
+## [0.3.2](https://github.com/constructive-io/constructive/compare/graphile-bulk-mutations@0.3.1...graphile-bulk-mutations@0.3.2) (2026-05-20)
+
+**Note:** Version bump only for package graphile-bulk-mutations
+
 ## [0.3.1](https://github.com/constructive-io/constructive/compare/graphile-bulk-mutations@0.3.0...graphile-bulk-mutations@0.3.1) (2026-05-17)
 
 **Note:** Version bump only for package graphile-bulk-mutations

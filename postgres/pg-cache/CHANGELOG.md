@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.11.0](https://github.com/constructive-io/constructive/compare/pg-cache@3.10.1...pg-cache@3.11.0) (2026-05-23)
+
+### Features
+
+- **pg-cache:** make pool cache configurable via env vars + align cache limits ([c6326d7](https://github.com/constructive-io/constructive/commit/c6326d7913030554a12170cba4d4d5521d807d22))
+
+## [3.10.1](https://github.com/constructive-io/constructive/compare/pg-cache@3.10.0...pg-cache@3.10.1) (2026-05-21)
+
+**Note:** Version bump only for package pg-cache
+
 # [3.10.0](https://github.com/constructive-io/constructive/compare/pg-cache@3.9.1...pg-cache@3.10.0) (2026-05-14)
 
 **Note:** Version bump only for package pg-cache

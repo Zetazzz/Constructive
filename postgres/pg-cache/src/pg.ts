@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { getPgEnvOptions, PgConfig } from 'pg-env';
+import { getPgEnvOptions, PgConfig, PgPoolConfig } from 'pg-env';
 import { Logger } from '@pgpmjs/logger';
 
 import { pgCache } from './lru';
@@ -15,7 +15,30 @@ export const buildConnectionString = (
 ): string =>
   `postgres://${user}:${password}@${host}:${port}/${database}`;
 
-export const getPgPool = (pgConfig: Partial<PgConfig>): pg.Pool => {
+const parseEnvInt = (val: string | undefined, fallback: number): number => {
+  if (!val) return fallback;
+  const n = parseInt(val, 10);
+  return isNaN(n) ? fallback : n;
+};
+
+/**
+ * Read per-pool configuration from environment variables.
+ *
+ * Supports:
+ * - PG_POOL_MAX: Maximum clients per pool (default: 5)
+ * - PG_POOL_IDLE_TIMEOUT_MS: Close idle clients after ms (default: 30000)
+ * - PG_POOL_CONNECTION_TIMEOUT_MS: Fail connect() after ms (default: 5000)
+ */
+export function getPgPoolConfig(overrides?: PgPoolConfig): pg.PoolConfig {
+  return {
+    max: overrides?.max ?? parseEnvInt(process.env.PG_POOL_MAX, 5),
+    idleTimeoutMillis: overrides?.idleTimeoutMillis ?? parseEnvInt(process.env.PG_POOL_IDLE_TIMEOUT_MS, 30000),
+    connectionTimeoutMillis: overrides?.connectionTimeoutMillis ?? parseEnvInt(process.env.PG_POOL_CONNECTION_TIMEOUT_MS, 5000),
+    ...(overrides?.allowExitOnIdle !== undefined && { allowExitOnIdle: overrides.allowExitOnIdle }),
+  };
+}
+
+export const getPgPool = (pgConfig: Partial<PgConfig> & { pool?: PgPoolConfig }): pg.Pool => {
   const config = getPgEnvOptions(pgConfig);
   const { user, password, host, port, database, } = config;
   if (pgCache.has(database)) {
@@ -23,7 +46,8 @@ export const getPgPool = (pgConfig: Partial<PgConfig>): pg.Pool => {
     if (cached) return cached;
   }
   const connectionString = buildConnectionString(user, password, host, port, database);
-  const pgPool = new pg.Pool({ connectionString });
+  const poolConfig = getPgPoolConfig(pgConfig.pool);
+  const pgPool = new pg.Pool({ connectionString, ...poolConfig });
 
   /**
    * IMPORTANT: Pool-level error handler for idle connection errors.

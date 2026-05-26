@@ -7,6 +7,7 @@ export { AuthzDirectOwner } from './authz-direct-owner';
 export { AuthzDirectOwnerAny } from './authz-direct-owner-any';
 export { AuthzEntityMembership } from './authz-entity-membership';
 export { AuthzMemberList } from './authz-member-list';
+export { AuthzMemberOwner } from './authz-member-owner';
 export { AuthzNotReadOnly } from './authz-not-read-only';
 export { AuthzOrgHierarchy } from './authz-org-hierarchy';
 export { AuthzPeerOwnership } from './authz-peer-ownership';

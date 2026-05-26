@@ -79,9 +79,12 @@ function resolveNodePaths(): string[] {
   return [...dirs];
 }
 
-const seedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const localSeedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const sharedSeedRoot = path.join(__dirname, '..', '..', '..', '__fixtures__', 'seed');
 const sql = (seedDir: string, file: string) =>
-  path.join(seedRoot, seedDir, file);
+  path.join(localSeedRoot, seedDir, file);
+const shared = (...segments: string[]) =>
+  path.join(sharedSeedRoot, ...segments);
 
 const TOOL_NAME = 'cli-e2e-test';
 
@@ -395,9 +398,9 @@ describe('CLI E2E — generated CLI against real DB', () => {
       },
       [
         seed.sqlfile([
-          sql('simple-seed', 'setup.sql'),
-          sql('simple-seed', 'schema.sql'),
-          sql('simple-seed', 'test-data.sql'),
+          shared('base', 'setup.sql'),
+          shared('app-schemas', 'simple-pets', 'schema.sql'),
+          shared('app-schemas', 'simple-pets', 'test-data.sql'),
         ]),
       ],
     );
@@ -783,7 +786,8 @@ describe('CLI E2E — search commands against real DB', () => {
       },
       [
         seed.sqlfile([
-          sql('search-seed', 'setup.sql'),
+          shared('base', 'setup.sql'),
+          sql('search-seed', 'extensions.sql'),
           sql('search-seed', 'schema.sql'),
           sql('search-seed', 'test-data.sql'),
         ]),
@@ -1126,7 +1130,8 @@ describe('CLI E2E — embedder / --auto-embed', () => {
       },
       [
         seed.sqlfile([
-          sql('search-seed', 'setup.sql'),
+          shared('base', 'setup.sql'),
+          sql('search-seed', 'extensions.sql'),
           sql('search-seed', 'schema.sql'),
           sql('search-seed', 'test-data.sql'),
         ]),

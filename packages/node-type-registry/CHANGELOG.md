@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.41.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.40.0...node-type-registry@0.41.0) (2026-05-21)
+
+### Features
+
+- **node-type-registry:** sync latest from constructive-db ([0a457ba](https://github.com/constructive-io/constructive/commit/0a457bad52bfaa185ae77158d81e171860eeb9a5))
+
+# [0.40.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.39.0...node-type-registry@0.40.0) (2026-05-20)
+
+### Features
+
+- **node-type-registry:** add max_depth parameter to EventReferral ([e4305c5](https://github.com/constructive-io/constructive/commit/e4305c5ec6e27d1fd473cb0bb24fe1d3b257faf7)), closes [constructive-io/constructive-planning#904](https://github.com/constructive-io/constructive-planning/issues/904)
+
+# [0.39.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.38.0...node-type-registry@0.39.0) (2026-05-20)
+
+### Features
+
+- add scope field to BlueprintStorageConfig — 'app' or 'org' only ([b00e134](https://github.com/constructive-io/constructive/commit/b00e134a2176dc5f8e08b056bffc12c555f3efc8))
+- make name optional on BlueprintEntityType for extend path ([ff59f11](https://github.com/constructive-io/constructive/commit/ff59f11f6b5184d3d48f01a919657adbf9ad16e4)), closes [constructive-db#1250](https://github.com/constructive-db/issues/1250)
+
+# [0.38.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.37.0...node-type-registry@0.38.0) (2026-05-19)
+
+### Bug Fixes
+
+- regenerate blueprint types from main base — storage changes only ([bfbcc36](https://github.com/constructive-io/constructive/commit/bfbcc36a78bfde4938fdbec792af882f6ed82bf5))
+
+### Features
+
+- add EventReferral node type definition ([433cace](https://github.com/constructive-io/constructive/commit/433cace84fc8d5ead1b4ef4f6ad33b8d0195fb9f)), closes [#877](https://github.com/constructive-io/constructive/issues/877)
+- rename secrets_module to user_state_module and encrypted_secrets_module to user_secrets_module in presets and export pipeline ([2bb18f8](https://github.com/constructive-io/constructive/commit/2bb18f8c3c519bbe3df1e665dce32b9be64eab70))
+- rename user_secrets_module/org_secrets_module to config_secrets_user_module/config_secrets_org_module ([4228cf8](https://github.com/constructive-io/constructive/commit/4228cf8f05e5fcefc8fd5a6a221a5cc098e71b76))
+- update blueprint types for array-only multi-module storage ([f3ded0f](https://github.com/constructive-io/constructive/commit/f3ded0f41a7c2ba2d70ba08b34e86a3f08bfd38c))
+
 # [0.37.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.36.0...node-type-registry@0.37.0) (2026-05-17)
 
 ### Bug Fixes

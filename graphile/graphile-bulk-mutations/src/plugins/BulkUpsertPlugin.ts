@@ -2,6 +2,7 @@ import '../augmentations';
 
 import { sideEffectWithPgClient } from '@dataplan/pg';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType, GraphQLOutputType } from 'graphql';
 
 import type { ColumnSpec } from '../utils/sql-builder';
 import { buildBulkInsertSQL } from '../utils/sql-builder';
@@ -60,8 +61,8 @@ export const BulkUpsertPlugin: GraphileConfig.Plugin = {
           const inputTypeName = inflection.bulkUpsertInputType(typeName);
           const payloadTypeName = inflection.bulkUpsertPayloadType(typeName);
 
-          const inputType = build.getTypeByName(inputTypeName);
-          const payloadType = build.getTypeByName(payloadTypeName);
+          const inputType = build.getTypeByName(inputTypeName) as GraphQLInputType | undefined;
+          const payloadType = build.getTypeByName(payloadTypeName) as GraphQLOutputType | undefined;
           if (!inputType || !payloadType) continue;
 
           const columnSpecs: ColumnSpec[] = [];

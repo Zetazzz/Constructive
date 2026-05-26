@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.12.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.11.2...graphile-cache@3.12.0) (2026-05-23)
+
+### Features
+
+- **pg-cache:** make pool cache configurable via env vars + align cache limits ([c6326d7](https://github.com/constructive-io/constructive/commit/c6326d7913030554a12170cba4d4d5521d807d22))
+
+## [3.11.2](https://github.com/constructive-io/constructive/compare/graphile-cache@3.11.1...graphile-cache@3.11.2) (2026-05-21)
+
+**Note:** Version bump only for package graphile-cache
+
 ## [3.11.1](https://github.com/constructive-io/constructive/compare/graphile-cache@3.11.0...graphile-cache@3.11.1) (2026-05-14)
 
 **Note:** Version bump only for package graphile-cache

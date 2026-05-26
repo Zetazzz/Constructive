@@ -1,6 +1,6 @@
 {
   "name": "pgsql-seed",
-  "version": "2.14.1",
+  "version": "2.15.1",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL seeding utilities with pgpm integration - batteries included",
   "main": "index.js",
@@ -42,13 +42,13 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "makage": "^0.3.0"
   },
   "dependencies": {
     "@pgpmjs/core": "workspace:^",
     "@pgpmjs/env": "workspace:^",
-    "pg": "^8.20.0",
+    "pg": "^8.21.0",
     "pg-env": "workspace:^",
     "pg-seed": "workspace:^"
   }

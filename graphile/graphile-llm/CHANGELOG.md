@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.1](https://github.com/constructive-io/constructive/compare/graphile-llm@0.10.0...graphile-llm@0.10.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-llm
+
+# [0.10.0](https://github.com/constructive-io/constructive/compare/graphile-llm@0.9.0...graphile-llm@0.10.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-llm
+
+# [0.9.0](https://github.com/constructive-io/constructive/compare/graphile-llm@0.8.0...graphile-llm@0.9.0) (2026-05-21)
+
+### Features
+
+- replace placeholder token estimates with real counts from agentic-kit v1.2.1 ([d61e92b](https://github.com/constructive-io/constructive/commit/d61e92bf4345e887e326a4625dafc6fb4474376b))
+- use real embedding token counts from @agentic-kit/ollama@2.0.0 ([1e84f7f](https://github.com/constructive-io/constructive/commit/1e84f7f8d5ea4440174aefb565ddc385e0f7285f))
+
+# [0.8.0](https://github.com/constructive-io/constructive/compare/graphile-llm@0.7.3...graphile-llm@0.8.0) (2026-05-21)
+
+### Bug Fixes
+
+- **graphile-llm:** add latency timing to search embed and unmetered embed paths ([e90630b](https://github.com/constructive-io/constructive/commit/e90630b3a19d4b7fe27c1efe0027ca14e3cdfc01))
+- **graphile-llm:** remove estimatedEmbeddingTokens, estimate from text length ([95ce8fc](https://github.com/constructive-io/constructive/commit/95ce8fc3e2676bb0427c9ab01e8fe54e16065cea))
+- **graphile-llm:** rename encrypted_secrets_module to config_secrets_user_module ([57adfb4](https://github.com/constructive-io/constructive/commit/57adfb43ab557701fe24a5d1cab27b8c7c37001b))
+- **graphile-llm:** restore embed latency timing in text-mutation-plugin ([6dd823b](https://github.com/constructive-io/constructive/commit/6dd823b065ad178040bcac1469837b6b2d7e9a52))
+- restore inline documentation comments removed in previous commits ([ac85f01](https://github.com/constructive-io/constructive/commit/ac85f014c915ee6ec2082343803b5d13711fe6d0))
+- restore remaining inline comments (inject/remove, recurse, replace, where/filter) ([941d909](https://github.com/constructive-io/constructive/commit/941d909a23a9c63a3b42cd98bf58f31ca66f6812))
+
+### Features
+
+- **graphile-llm:** add agent discovery plugin and REST streaming endpoint ([47dab61](https://github.com/constructive-io/constructive/commit/47dab619a536c136b0f100e3f682c2f2a1c9ce56))
+- **graphile-llm:** add inference usage logging to metering plugin ([d16e323](https://github.com/constructive-io/constructive/commit/d16e32385e056ce4bb8479a5380e78eadc0f82d3))
+- **graphile-llm:** meter slug = model name, three-level waterfall ([b0c52d6](https://github.com/constructive-io/constructive/commit/b0c52d6b573ff9c26c5c2bb39bbd6898434e1f82))
+- **graphile-llm:** wire billing metering into LLM plugins ([42fce32](https://github.com/constructive-io/constructive/commit/42fce32db500e13aa52f073ad4800014aa7da706))
+- propagate request_id through pgSettings and metering context ([37c3cd1](https://github.com/constructive-io/constructive/commit/37c3cd186fc277776c196bcdf2bf1455f6954c2c))
+- replace request_type with service + operation in inference log inserts ([01c98c7](https://github.com/constructive-io/constructive/commit/01c98c7d8882681a68f400556aa7d673d1cc2d47)), closes [#1281](https://github.com/constructive-io/constructive/issues/1281)
+
+## [0.7.3](https://github.com/constructive-io/constructive/compare/graphile-llm@0.7.2...graphile-llm@0.7.3) (2026-05-20)
+
+**Note:** Version bump only for package graphile-llm
+
+## [0.7.2](https://github.com/constructive-io/constructive/compare/graphile-llm@0.7.1...graphile-llm@0.7.2) (2026-05-19)
+
+**Note:** Version bump only for package graphile-llm
+
 ## [0.7.1](https://github.com/constructive-io/constructive/compare/graphile-llm@0.7.0...graphile-llm@0.7.1) (2026-05-17)
 
 **Note:** Version bump only for package graphile-llm

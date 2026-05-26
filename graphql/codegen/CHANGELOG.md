@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.45.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.45.0...@constructive-io/graphql-codegen@4.45.1) (2026-05-24)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
+# [4.45.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.44.0...@constructive-io/graphql-codegen@4.45.0) (2026-05-23)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
+# [4.44.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.43.0...@constructive-io/graphql-codegen@4.44.0) (2026-05-21)
+
+### Features
+
+- use real embedding token counts from @agentic-kit/ollama@2.0.0 ([1e84f7f](https://github.com/constructive-io/constructive/commit/1e84f7f8d5ea4440174aefb565ddc385e0f7285f))
+
+# [4.43.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.42.5...@constructive-io/graphql-codegen@4.43.0) (2026-05-21)
+
+### Bug Fixes
+
+- **codegen:** collect input types referenced by table field arguments ([62061ea](https://github.com/constructive-io/constructive/commit/62061ea0e9b4e5bbcf147d2777d5e71823a365c8))
+
+### Features
+
+- **codegen:** re-export FetchAdapter from ORM barrel ([93bc05e](https://github.com/constructive-io/constructive/commit/93bc05ebb8c1035d5b71c3432b1781290d13657e))
+
+## [4.42.5](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.42.4...@constructive-io/graphql-codegen@4.42.5) (2026-05-20)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
+## [4.42.4](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.42.3...@constructive-io/graphql-codegen@4.42.4) (2026-05-19)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
 ## [4.42.3](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.42.2...@constructive-io/graphql-codegen@4.42.3) (2026-05-17)
 
 **Note:** Version bump only for package @constructive-io/graphql-codegen

@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.34.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.34.1...@constructive-io/graphql-server@4.34.2) (2026-05-24)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
+## [4.34.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.34.0...@constructive-io/graphql-server@4.34.1) (2026-05-23)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
+# [4.34.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.33.0...@constructive-io/graphql-server@4.34.0) (2026-05-23)
+
+### Bug Fixes
+
+- restore original server types, remove re-exports from express-context ([f4e7624](https://github.com/constructive-io/constructive/commit/f4e7624a36145b01f5d438a6177bf389cba80ae6))
+
+### Features
+
+- add @constructive-io/express-context package + wire into server ([2d46e0b](https://github.com/constructive-io/constructive/commit/2d46e0b419654c161ae90140b47515df16897ae4)), closes [constructive-io/constructive-planning#917](https://github.com/constructive-io/constructive-planning/issues/917)
+
+# [4.33.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.32.0...@constructive-io/graphql-server@4.33.0) (2026-05-21)
+
+### Features
+
+- replace placeholder token estimates with real counts from agentic-kit v1.2.1 ([d61e92b](https://github.com/constructive-io/constructive/commit/d61e92bf4345e887e326a4625dafc6fb4474376b))
+- use real embedding token counts from @agentic-kit/ollama@2.0.0 ([1e84f7f](https://github.com/constructive-io/constructive/commit/1e84f7f8d5ea4440174aefb565ddc385e0f7285f))
+
+# [4.32.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.5...@constructive-io/graphql-server@4.32.0) (2026-05-21)
+
+### Features
+
+- **graphile-llm:** add agent discovery plugin and REST streaming endpoint ([47dab61](https://github.com/constructive-io/constructive/commit/47dab619a536c136b0f100e3f682c2f2a1c9ce56))
+- **llm-api:** add inference logging to usage_log_inference table ([10a1b4b](https://github.com/constructive-io/constructive/commit/10a1b4b125265ecc8c30cf73094f65918df38f6f))
+- **llm-api:** wire metering + add global /v1/threads routes ([5d407c2](https://github.com/constructive-io/constructive/commit/5d407c2d93d6dc0df49afdbc652572b64214b53b))
+- propagate request_id through pgSettings and metering context ([37c3cd1](https://github.com/constructive-io/constructive/commit/37c3cd186fc277776c196bcdf2bf1455f6954c2c))
+- replace request_type with service + operation in inference log inserts ([01c98c7](https://github.com/constructive-io/constructive/commit/01c98c7d8882681a68f400556aa7d673d1cc2d47)), closes [#1281](https://github.com/constructive-io/constructive/issues/1281)
+
+## [4.31.5](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.4...@constructive-io/graphql-server@4.31.5) (2026-05-20)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
+## [4.31.4](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.3...@constructive-io/graphql-server@4.31.4) (2026-05-19)
+
+**Note:** Version bump only for package @constructive-io/graphql-server
+
 ## [4.31.3](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-server@4.31.2...@constructive-io/graphql-server@4.31.3) (2026-05-17)
 
 **Note:** Version bump only for package @constructive-io/graphql-server

@@ -514,6 +514,17 @@ export interface JobTriggerParams {
   conditions?: TriggerCondition | TriggerCondition[];
   /* For UPDATE triggers, only fire when these fields change (uses DISTINCT FROM) */
   watch_fields?: string[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from */
+    obj_table: string;
+    /* Schema of the related table (optional — resolved by table name if omitted) */
+    obj_schema?: string;
+    /* Column on the related table that holds the entity_id */
+    obj_field: string;
+  };
   /* Static job key for upsert semantics (prevents duplicate jobs) */
   job_key?: string;
   /* Job queue name for routing to specific workers */
@@ -549,6 +560,16 @@ export interface ProcessChunksParams {
   chunks_table_name?: string;
   /* Field names from the parent table to copy into chunk metadata */
   metadata_fields?: string[];
+  /* Text search indexes to create on the chunks content column */
+  search_indexes?: ('fulltext' | 'bm25' | 'trigram')[];
+  /* Column on the parent table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Whether to create a job trigger that auto-enqueues chunking on parent INSERT/UPDATE */
   enqueue_chunking_job?: boolean;
   /* Task identifier for the chunking job queue */
@@ -580,6 +601,14 @@ export interface ProcessFileEmbeddingParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks, field guards, etc. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Text extraction configuration. When present, the generator creates extraction output fields on the table and configures SearchVector with source_fields + stale tracking. When absent, the node operates in direct mode (single vector per file, no text extraction). */
   extraction?: {
     /* Field to store extracted text/markdown */text_field?: string;
@@ -624,6 +653,14 @@ export interface ProcessImageEmbeddingParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Text extraction configuration. Forwarded to ProcessFileEmbedding. When present, enables extract mode (e.g., OCR for images). */
   extraction?: {
     /* Field to store extracted text */text_field?: string;
@@ -660,6 +697,14 @@ export interface ProcessExtractionParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks (e.g., status = 'uploaded'). */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Job queue name for extraction tasks */
   queue_name?: string;
   /* Maximum number of retry attempts */
@@ -690,6 +735,14 @@ export interface ProcessImageVersionsParams {
   };
   /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table */
+  entity_lookup?: {
+    obj_table: string;
+    obj_schema?: string;
+    obj_field: string;
+  };
   /* Job queue name for image processing tasks */
   queue_name?: string;
   /* Maximum number of retry attempts */
@@ -1207,9 +1260,13 @@ export interface BlueprintBucketSeed {
   /** CORS allowed origins for this bucket. */
   allowed_origins?: string[];
 }
-/** Storage configuration for an entity type. Seeds initial buckets, overrides module-level settings (expiry times, file size limits, CORS), and provides per-table provisioning overrides via provisions. */
+/** Storage configuration with optional scope. When used at the top level of a blueprint, the scope field controls whether storage is app-level ("app", default) or org-level ("org"). Seeds initial buckets, overrides module-level settings (expiry times, file size limits, CORS), and provides per-table provisioning overrides via provisions. */
 export interface BlueprintStorageConfig {
-  /** Initial bucket seed entries. Each creates a row in {prefix}_buckets during provisioning. Only used for app-level storage (not entity-scoped). */
+  /** Storage scope. "app" (default) creates app-level storage (no owner_id). "org" creates per-org/user storage (owner_id = org entity id, buckets seeded per-entity via AFTER INSERT trigger). Only "app" and "org" are allowed — child entity types get storage via entity_types[].storage. */
+  scope?: 'app' | 'org';
+  /** Discriminator for multi-module storage. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{storage_key}_buckets. Max 16 chars, lowercase snake_case. */
+  storage_key?: string;
+  /** Initial bucket seed entries. Each creates a row in {prefix}_buckets during provisioning. */
   buckets?: BlueprintBucketSeed[];
   /** Override for presigned upload URL expiry time in seconds. */
   upload_url_expiry_seconds?: number;
@@ -1280,10 +1337,10 @@ export interface BlueprintEntityTableProvision {
   /** RLS policies for the entity table. When present, these policies fully replace the five default entity-table policies (is_visible becomes a no-op). */
   policies?: BlueprintPolicy[];
 }
-/** An entity type entry for Phase 0 of construct_blueprint(). Provisions a full entity type with its own entity table, membership modules, and security policies via entity_type_provision. */
+/** An entity type entry for Phase 0 of construct_blueprint(). When name is provided, provisions a new entity type with its own entity table, membership modules, and security policies via entity_type_provision. When name is omitted and only prefix is given, extends an existing entity type (e.g., the built-in "org") with additional capabilities like storage — without creating a new entity type. */
 export interface BlueprintEntityType {
-  /** Entity type name (e.g., "data_room", "channel", "department"). Must be unique per database. */
-  name: string;
+  /** Entity type name (e.g., "data_room", "channel", "department"). Required when creating a new entity type. Omit when extending an existing entity type (e.g., prefix: "org") — the entry will add storage/config to the existing type without creating a new one. */
+  name?: string;
   /** Short prefix for generated objects (e.g., "dr", "ch", "dept"). Used in table/trigger naming. */
   prefix: string;
   /** Human-readable description of this entity type. */
@@ -1300,8 +1357,7 @@ export interface BlueprintEntityType {
   has_profiles?: boolean;
   /** Whether to provision a levels module for this entity type. Defaults to false. */
   has_levels?: boolean;
-  /** Whether to provision a storage module (buckets, files tables) for this entity type. Defaults to false. */
-  has_storage?: boolean;
+
   /** Whether to provision entity-scoped invite tables ({prefix}_invites, {prefix}_claimed_invites) and a submit_{prefix}_invite_code() function. Defaults to false. */
   has_invites?: boolean;
   /** Whether to auto-attach an EventTracker to the claimed_invites table for invite-based achievements. Requires has_invites=true AND has_levels=true. When true, records 'invite_claimed' events credited to the sender (inviter) on each claimed invite. Defaults to false. */
@@ -1310,8 +1366,8 @@ export interface BlueprintEntityType {
   skip_entity_policies?: boolean;
   /** Override for the entity table. Shape mirrors BlueprintTable / secure_table_provision vocabulary. When supplied, its policies[] replaces the five default entity-table policies; is_visible becomes a no-op. When NULL (default), the five default policies are applied (gated by is_visible). */
   table_provision?: BlueprintEntityTableProvision;
-  /** Storage configuration. Only used when has_storage is true. Controls RLS policies on storage tables, seeds initial buckets, and overrides module-level settings (expiry times, file size limits, CORS). */
-  storage?: BlueprintStorageConfig;
+  /** Storage configuration (array-only). A non-empty array enables storage provisioning. Each entry creates a separate storage module with its own tables ({prefix}_{storage_key}_buckets/files). Controls RLS policies, bucket seeding, and module-level settings. */
+  storage?: BlueprintStorageConfig[];
 }
 /**
  * ===========================================================================
@@ -1594,8 +1650,8 @@ export interface BlueprintDefinition {
   unique_constraints?: BlueprintUniqueConstraint[];
   /** Entity types to provision in Phase 0 (before tables). Each entry creates an entity table with membership modules and security. */
   entity_types?: BlueprintEntityType[];
-  /** App-level storage configuration. Creates a storage_module (membership_type = NULL), seeds initial buckets, and overrides module-level settings (expiry times, file size limits, CORS). Use provisions for per-table policy overrides. For entity-scoped storage, use entity_types[].has_storage + entity_types[].storage instead. */
-  storage?: BlueprintStorageConfig;
+  /** Top-level storage configuration array. Each entry has an optional scope ("app" or "org"). App-scoped (default) creates storage_module with membership_type = NULL. Org-scoped creates per-org/user storage with owner_id and AFTER INSERT bucket seeding. When infra is installed, a private "functions" bucket is auto-injected into org-scoped entries. For child entity type storage, use entity_types[].storage instead. */
+  storage?: BlueprintStorageConfig[];
   /** Achievement definitions. Each entry creates a level with requirements and optional rewards in the events_module. Requires events_module to be provisioned (e.g., via entity_types[].has_levels = true or modules includes events_module). */
   achievements?: BlueprintAchievement[];
 }
