@@ -90,7 +90,7 @@ export const PresetFull: ModulePreset = {
   omits_notes: {
     compute_log_module: 'Usage logging is opt-in. Add explicitly if needed.',
     inference_log_module: 'Usage logging is opt-in. Add explicitly if needed.',
-    agent_chat_module: 'Agent infrastructure is opt-in.'
+    agent_module: 'Agent infrastructure is opt-in.'
   },
   extends: ['b2b']
 };
