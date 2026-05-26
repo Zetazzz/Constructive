@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.2](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/agent@0.4.1...@agentic-kit/agent@0.4.2) (2026-05-26)
+
+**Note:** Version bump only for package @agentic-kit/agent
+
 ## [0.4.1](https://github.com/constructive-io/agentic-kit/compare/@agentic-kit/agent@0.4.0...@agentic-kit/agent@0.4.1) (2026-05-21)
 
 **Note:** Version bump only for package @agentic-kit/agent

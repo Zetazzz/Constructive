@@ -1,0 +1,10 @@
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+# 1.1.0 (2026-05-26)
+
+### Features
+
+- **protocol:** add zero-dep @agentic-kit/protocol kernel package ([75dc6e2](https://github.com/constructive-io/agentic-kit/commit/75dc6e2132579b9b19b28e2fc29ee467589461e5))
