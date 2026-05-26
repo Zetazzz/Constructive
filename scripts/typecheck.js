@@ -3,11 +3,12 @@
 const { spawnSync } = require('node:child_process');
 
 const packageDirs = [
+  'packages/protocol',
+  'packages/agentic-kit',
   'packages/anthropic',
   'packages/openai',
   'packages/ollama',
   'packages/agent',
-  'packages/agentic-kit',
 ];
 
 const configs = packageDirs.flatMap((dir) => [

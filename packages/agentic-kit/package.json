@@ -39,7 +39,8 @@
   "dependencies": {
     "@agentic-kit/anthropic": "workspace:*",
     "@agentic-kit/ollama": "workspace:*",
-    "@agentic-kit/openai": "workspace:*"
+    "@agentic-kit/openai": "workspace:*",
+    "@agentic-kit/protocol": "workspace:*"
   },
   "keywords": []
 }

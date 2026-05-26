@@ -1,260 +1,27 @@
+import {
+  type AssistantMessage,
+  type AssistantMessageEventStream,
+  calculateUsageCost,
+  clone,
+  type Context,
+  createAssistantMessage,
+  DefaultAssistantMessageEventStream,
+  type Message,
+  type ModelDescriptor,
+  normalizeBaseUrl,
+  type OpenAICompatibleCompat,
+  parsePartialJson,
+  type StreamOptions,
+  type TextContent,
+  type ThinkingContent,
+  type ToolCallContent,
+  type Usage,
+} from '@agentic-kit/protocol';
+
 // Use the runtime's native fetch. Node 18.17+ (engine requirement),
 // browsers, Bun, and Deno all provide it with a Web ReadableStream body —
 // which is what SSE parsing here requires.
 const fetch: typeof globalThis.fetch = globalThis.fetch.bind(globalThis);
-
-type JsonPrimitive = string | number | boolean | null;
-type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
-
-interface JsonObject {
-  [key: string]: JsonValue | undefined;
-}
-
-interface JsonSchema {
-  additionalProperties?: boolean | JsonSchema;
-  description?: string;
-  enum?: JsonValue[];
-  items?: JsonSchema | JsonSchema[];
-  properties?: Record<string, JsonSchema>;
-  required?: string[];
-  type?: string | string[];
-}
-
-interface OpenAICompatibleCompat {
-  maxTokensField?: 'max_completion_tokens' | 'max_tokens';
-  reasoningFormat?: 'none' | 'openai';
-  supportsReasoningEffort?: boolean;
-  supportsStrictToolSchema?: boolean;
-  supportsUsageInStreaming?: boolean;
-  toolCallIdFormat?: 'passthrough' | 'safe64' | 'mistral9';
-  requiresToolResultName?: boolean;
-}
-
-interface ModelDescriptor {
-  id: string;
-  name: string;
-  api: string;
-  provider: string;
-  baseUrl: string;
-  input: Array<'text' | 'image'>;
-  reasoning: boolean;
-  tools?: boolean;
-  contextWindow?: number;
-  maxOutputTokens?: number;
-  cost?: {
-    input?: number;
-    output?: number;
-    cacheRead?: number;
-    cacheWrite?: number;
-  };
-  headers?: Record<string, string>;
-  compat?: OpenAICompatibleCompat;
-}
-
-interface TextContent {
-  type: 'text';
-  text: string;
-}
-
-interface ImageContent {
-  type: 'image';
-  data: string;
-  mimeType: string;
-}
-
-interface ThinkingContent {
-  type: 'thinking';
-  thinking: string;
-  signature?: string;
-}
-
-interface ToolCallContent {
-  type: 'toolCall';
-  id: string;
-  name: string;
-  arguments: Record<string, JsonValue | undefined>;
-  rawArguments?: string;
-}
-
-type Message =
-  | {
-      role: 'user';
-      content: string | Array<TextContent | ImageContent>;
-      timestamp: number;
-    }
-  | {
-      role: 'assistant';
-      content: Array<TextContent | ThinkingContent | ToolCallContent>;
-      api: string;
-      provider: string;
-      model: string;
-      usage: Usage;
-      stopReason: 'stop' | 'length' | 'toolUse' | 'error' | 'aborted';
-      errorMessage?: string;
-      timestamp: number;
-    }
-  | {
-      role: 'toolResult';
-      toolCallId: string;
-      toolName: string;
-      content: Array<TextContent | ImageContent>;
-      isError: boolean;
-      details?: unknown;
-      timestamp: number;
-    };
-
-interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: JsonSchema;
-}
-
-interface Context {
-  systemPrompt?: string;
-  messages: Message[];
-  tools?: ToolDefinition[];
-}
-
-interface StreamOptions {
-  apiKey?: string;
-  headers?: Record<string, string>;
-  maxTokens?: number;
-  onPayload?: (payload: unknown) => void;
-  reasoning?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
-  signal?: AbortSignal;
-  temperature?: number;
-}
-
-interface Usage {
-  input: number;
-  output: number;
-  reasoning: number;
-  cacheRead: number;
-  cacheWrite: number;
-  totalTokens: number;
-  cost: {
-    input: number;
-    output: number;
-    cacheRead: number;
-    cacheWrite: number;
-    total: number;
-  };
-}
-
-type AssistantMessage =
-  Extract<Message, { role: 'assistant' }>;
-
-type AssistantMessageEvent =
-  | { type: 'start'; partial: AssistantMessage }
-  | { type: 'text_start'; contentIndex: number; partial: AssistantMessage }
-  | { type: 'text_delta'; contentIndex: number; delta: string; partial: AssistantMessage }
-  | { type: 'text_end'; contentIndex: number; content: string; partial: AssistantMessage }
-  | { type: 'thinking_start'; contentIndex: number; partial: AssistantMessage }
-  | { type: 'thinking_delta'; contentIndex: number; delta: string; partial: AssistantMessage }
-  | { type: 'thinking_end'; contentIndex: number; content: string; partial: AssistantMessage }
-  | { type: 'toolcall_start'; contentIndex: number; partial: AssistantMessage }
-  | { type: 'toolcall_delta'; contentIndex: number; delta: string; partial: AssistantMessage }
-  | { type: 'toolcall_end'; contentIndex: number; toolCall: ToolCallContent; partial: AssistantMessage }
-  | { type: 'done'; reason: 'stop' | 'length' | 'toolUse'; message: AssistantMessage }
-  | { type: 'error'; reason: 'error' | 'aborted'; error: AssistantMessage };
-
-interface AssistantMessageEventStream extends AsyncIterable<AssistantMessageEvent> {
-  result(): Promise<AssistantMessage>;
-}
-
-class EventStream<TEvent, TResult = TEvent> implements AsyncIterable<TEvent> {
-  private readonly queue: TEvent[] = [];
-  private readonly waiting: Array<(result: IteratorResult<TEvent>) => void> = [];
-  private done = false;
-  private readonly finalResultPromise: Promise<TResult>;
-  private resolveFinalResult!: (result: TResult) => void;
-
-  constructor(
-    private readonly isTerminal: (event: TEvent) => boolean,
-    private readonly extractResult: (event: TEvent) => TResult
-  ) {
-    this.finalResultPromise = new Promise<TResult>((resolve) => {
-      this.resolveFinalResult = resolve;
-    });
-  }
-
-  push(event: TEvent): void {
-    if (this.done) {
-      return;
-    }
-
-    if (this.isTerminal(event)) {
-      this.done = true;
-      this.resolveFinalResult(this.extractResult(event));
-    }
-
-    const waiter = this.waiting.shift();
-    if (waiter) {
-      waiter({ value: event, done: false });
-      return;
-    }
-
-    this.queue.push(event);
-  }
-
-  end(result?: TResult): void {
-    this.done = true;
-    if (result !== undefined) {
-      this.resolveFinalResult(result);
-    }
-
-    while (this.waiting.length > 0) {
-      this.waiting.shift()!({ value: undefined as never, done: true });
-    }
-  }
-
-  async *[Symbol.asyncIterator](): AsyncIterator<TEvent> {
-    while (true) {
-      if (this.queue.length > 0) {
-        yield this.queue.shift()!;
-        continue;
-      }
-
-      if (this.done) {
-        return;
-      }
-
-      const next = await new Promise<IteratorResult<TEvent>>((resolve) => {
-        this.waiting.push(resolve);
-      });
-
-      if (next.done) {
-        return;
-      }
-
-      yield next.value;
-    }
-  }
-
-  result(): Promise<TResult> {
-    return this.finalResultPromise;
-  }
-}
-
-class DefaultAssistantMessageEventStream
-  extends EventStream<AssistantMessageEvent, AssistantMessage>
-  implements AssistantMessageEventStream
-{
-  constructor() {
-    super(
-      (event) => event.type === 'done' || event.type === 'error',
-      (event) => {
-        if (event.type === 'done') {
-          return event.message;
-        }
-        if (event.type === 'error') {
-          return event.error;
-        }
-        throw new Error('Unexpected terminal event');
-      }
-    );
-  }
-}
 
 interface OpenAIModelDefinition extends ModelDescriptor {}
 
@@ -788,36 +555,6 @@ function toOpenAIMessage(
   };
 }
 
-function createAssistantMessage(model: ModelDescriptor): AssistantMessage {
-  return {
-    role: 'assistant',
-    api: model.api,
-    provider: model.provider,
-    model: model.id,
-    content: [],
-    usage: {
-      input: 0,
-      output: 0,
-      reasoning: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-      totalTokens: 0,
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-    },
-    stopReason: 'stop',
-    timestamp: Date.now(),
-  };
-}
-
-function calculateUsageCost(model: ModelDescriptor, usage: Usage): void {
-  usage.cost.input = ((model.cost?.input ?? 0) / 1_000_000) * usage.input;
-  usage.cost.output = ((model.cost?.output ?? 0) / 1_000_000) * usage.output;
-  usage.cost.cacheRead = ((model.cost?.cacheRead ?? 0) / 1_000_000) * usage.cacheRead;
-  usage.cost.cacheWrite = ((model.cost?.cacheWrite ?? 0) / 1_000_000) * usage.cacheWrite;
-  usage.cost.total =
-    usage.cost.input + usage.cost.output + usage.cost.cacheRead + usage.cost.cacheWrite;
-}
-
 function applyUsage(
   usage: Usage,
   model: ModelDescriptor,
@@ -875,88 +612,6 @@ function emitFinalBlockEvents(
       partial: clone(message),
     });
   }
-}
-
-function normalizeBaseUrl(baseUrl: string): string {
-  const trimmed = baseUrl.replace(/\/+$/, '');
-  if (/\/v\d+$/.test(trimmed)) {
-    return trimmed;
-  }
-  return `${trimmed}/v1`;
-}
-
-function parsePartialJson(raw: string): Record<string, JsonValue | undefined> {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(trimmed) as Record<string, JsonValue | undefined>;
-  } catch {
-    // continue
-  }
-
-  const completed = completePartialJson(trimmed);
-  if (!completed) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(completed) as Record<string, JsonValue | undefined>;
-  } catch {
-    return {};
-  }
-}
-
-function completePartialJson(input: string): string | undefined {
-  let output = input;
-  let inString = false;
-  let escaping = false;
-  const stack: string[] = [];
-
-  for (const char of input) {
-    if (escaping) {
-      escaping = false;
-      continue;
-    }
-
-    if (char === '\\') {
-      escaping = true;
-      continue;
-    }
-
-    if (char === '"') {
-      inString = !inString;
-      continue;
-    }
-
-    if (inString) {
-      continue;
-    }
-
-    if (char === '{') {
-      stack.push('}');
-    } else if (char === '[') {
-      stack.push(']');
-    } else if (char === '}' || char === ']') {
-      stack.pop();
-    }
-  }
-
-  if (inString) {
-    output += '"';
-  }
-
-  while (stack.length > 0) {
-    output += stack.pop();
-  }
-
-  return output;
-}
-
-function clone<TValue>(value: TValue): TValue {
-  return JSON.parse(JSON.stringify(value)) as TValue;
 }
 
 function firstNonEmpty(...values: Array<string | undefined>): string | undefined {

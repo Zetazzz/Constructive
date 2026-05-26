@@ -7,7 +7,8 @@
     "paths": {
       "@test/*": ["tools/test/*"],
       "agentic-kit": ["packages/agentic-kit/src"],
-      "@agentic-kit/agent": ["packages/agent/src"]
+      "@agentic-kit/agent": ["packages/agent/src"],
+      "@agentic-kit/protocol": ["packages/protocol/src"]
     },
     "types": ["jest", "node"]
   },
