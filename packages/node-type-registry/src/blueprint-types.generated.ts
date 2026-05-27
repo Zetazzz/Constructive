@@ -294,8 +294,14 @@ export interface EventReferralParams {
   events?: ('INSERT' | 'UPDATE' | 'DELETE')[];
   /* Column containing the invitee (actor) ID on the source table — used to look up the referrer via claimed_invites.receiver_id */
   actor_field?: string;
-  /* Column containing the entity ID (org/group) for entity-scoped referral events. Omit for user-only events. */
+  /* Column containing the entity ID (org/group) for entity-scoped referral events. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. Omit for user-only events. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Maximum depth to walk up the invite chain. Default 1 (direct inviter only). Set 2–10 to enable multi-level referral rewards. App-level only — must not be combined with entity_field. */
   max_depth?: number;
   /* Automatically register the event_name in event_types during provisioning */
@@ -321,8 +327,14 @@ export interface EventTrackerParams {
   toggle?: boolean;
   /* Column containing the actor (user) ID to attribute the event to */
   actor_field?: string;
-  /* Column containing the entity ID (org/group) for entity-scoped events. Omit for user-only events. */
+  /* Column containing the entity ID (org/group) for entity-scoped events. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. Omit for user-only events. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Automatically register the event_name in event_types during provisioning */
   auto_register_type?: boolean;
   /* Column name for conditional WHEN clause (fires only when field equals condition_value) */
@@ -344,8 +356,16 @@ export interface EventTrackerParams {
 export interface LimitEnforceAggregateParams {
   /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
   limit_name: string;
-  /* Column on the target table that holds the entity id for aggregate limit lookup */
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for aggregate limit lookup. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Which DML events to attach triggers for */
   events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
 }
@@ -353,10 +373,18 @@ export interface LimitEnforceAggregateParams {
 export interface LimitEnforceCounterParams {
   /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
   limit_name: string;
-  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
-  scope?: 'app' | 'org';
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
   /* Column on the target table that holds the actor or entity id used for limit lookup */
   actor_field?: string;
+  /* Column on the target table that holds (or references) the entity id for entity context resolution. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Which DML events to attach triggers for */
   events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
 }
@@ -364,17 +392,29 @@ export interface LimitEnforceCounterParams {
 export interface LimitEnforceFeatureParams {
   /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
   feature_name: string;
-  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
-  scope?: 'app' | 'org';
-  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for per-entity cap lookups (only used for org scope). For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
 }
 /** Attaches a BEFORE trigger that calls check_rate_limit() to enforce sliding-window rate limits before allowing mutations. The function checks all three scopes (entity, actor-in-entity, actor) in a single call; which scopes are actually enforced is controlled by what rows exist in rate_window_limits (plan-based config). Requires a provisioned meter_rate_limits_module and billing_module for the target database. */
 export interface LimitEnforceRateParams {
   /* Slug of the billing meter to check rate limits against (must match a meters table entry, e.g. "messaging", "inference") */
   meter_slug: string;
-  /* Column on the target table that holds the entity id (org) for rate limiting */
+  /* Column on the target table that holds (or references) the entity id for rate limiting. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Column on the target table that holds the actor id (user) for rate limiting */
   actor_field?: string;
   /* Which DML events to enforce rate limits on (DELETE is excluded since it reduces load) */
@@ -390,8 +430,14 @@ export interface LimitEnforceRateParams {
 export interface LimitTrackUsageParams {
   /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
   meter_slug: string;
-  /* Column on the target table that holds the entity id for billing */
+  /* Column on the target table that holds (or references) the entity id for billing. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Units to record per event (default 1) */
   quantity?: number;
   /* Which DML events to attach triggers for */
@@ -407,24 +453,48 @@ export interface LimitTrackUsageParams {
 export interface LimitWarningAggregateParams {
   /* Name of the aggregate limit to watch (must match a limit_warnings.name entry, e.g. "databases", "members") */
   limit_name: string;
-  /* Column on the target table that holds the entity id for aggregate limit lookup */
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for aggregate limit lookup. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
 }
 /** Attaches an AFTER INSERT trigger that checks if the actor's current usage has crossed any warning threshold configured in the limit_warnings table. If a threshold is reached for the first time, enqueues a background job (e.g. email notification). Uses limit_warning_state for one-time dedup per warning/actor pair. Requires a provisioned limits_module with limit_warnings enabled. */
 export interface LimitWarningCounterParams {
   /* Name of the limit to watch (must match a limit_warnings.name entry, e.g. "projects", "members") */
   limit_name: string;
-  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
-  scope?: 'app' | 'org';
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
   /* Column on the target table that holds the actor id for limit lookup */
   actor_field?: string;
+  /* Column on the target table that holds (or references) the entity id. When provided, entity_id is included in the job payload and dedup state. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
 }
 /** Attaches an AFTER INSERT trigger that checks if the actor's current request count in the active sliding window has crossed any warning threshold configured in the limit_warnings table. If a threshold is reached for the first time, enqueues a background job (e.g. email notification). Uses limit_warning_state for one-time dedup per warning/actor pair. Requires both a limits_module with limit_warnings enabled and a rate_limit_meters_module. */
 export interface LimitWarningRateParams {
   /* Slug of the billing meter to check rate limits against (must match a meters table entry) */
   meter_slug: string;
-  /* Column on the target table that holds the entity id for rate limit lookup */
+  /* Membership type prefix that determines which limits_module row to use for warnings and warning_state tables. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for rate limit lookup. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Column on the target table that holds the actor id for rate limit lookup */
   actor_field?: string;
 }
