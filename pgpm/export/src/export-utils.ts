@@ -286,7 +286,7 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       database_id: 'uuid',
       table_id: 'uuid',
       name: 'text',
-      type: 'text',
+      type: 'jsonb',
       description: 'text'
     }
   },
