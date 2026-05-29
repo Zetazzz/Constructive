@@ -8,7 +8,7 @@ export * from './limit';
 export * from './module-presets';
 export * from './process';
 export * from './relation';
-export type { JSONSchema,NodeTypeDefinition } from './types';
+export type { FieldDefault, FieldDefaultArg, FieldType, JSONSchema, NodeTypeDefinition } from './types';
 export * from './view';
 
 import * as authz from './authz';

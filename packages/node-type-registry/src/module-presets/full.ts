@@ -79,7 +79,7 @@ export const PresetFull: ModulePreset = {
     'user_auth_module',
     'webauthn_auth_module',
     // Storage (full features)
-    'storage_module:full',
+    'storage_module:full'
   ],
   includes_notes: {
     'storage_module:full': 'All storage feature flags enabled: versioning, content hash, custom keys, audit log.',

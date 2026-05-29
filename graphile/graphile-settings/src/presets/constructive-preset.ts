@@ -3,12 +3,11 @@ import { BulkMutationPreset } from 'graphile-bulk-mutations';
 import type { GraphileConfig } from 'graphile-config';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
 import { createFolderOperatorFactory, GraphileLtreePreset } from 'graphile-ltree';
-import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-postgis';
 import { PgAggregatesPreset } from 'graphile-pg-aggregates';
+import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-postgis';
 import { PresignedUrlPreset } from 'graphile-presigned-url-plugin';
-import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearchPreset } from 'graphile-search';
 import { RealtimeSubscriptionsPreset } from 'graphile-realtime-subscriptions';
-import { SqlExpressionValidatorPreset } from 'graphile-sql-expression-validator';
+import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearchPreset } from 'graphile-search';
 import { UploadPreset } from 'graphile-upload-plugin';
 
 import { getBucketProvisionerConnection } from '../bucket-provisioner-resolver';
@@ -61,7 +60,7 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
   enableLtree: true,
   enableLlm: false,
   enableRealtime: false,
-  enableBulk: false,
+  enableBulk: false
 };
 
 /**
@@ -81,7 +80,6 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
  * - InflectorLoggerPreset (debugging, INFLECTOR_LOG=1)
  * - NoUniqueLookupPreset (primary-key-only lookups)
  * - MetaSchemaPreset (_meta introspection)
- * - SqlExpressionValidatorPreset (@sqlExpression validation)
  * - PgTypeMappingsPreset (email, url, etc.)
  * - RequiredInputPreset (@requiredInput support)
  *
@@ -120,7 +118,7 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
  * ```
  */
 export function createConstructivePreset(
-  options?: ConstructivePresetOptions,
+  options?: ConstructivePresetOptions
 ): GraphileConfig.Preset {
   const opts = { ...DEFAULTS, ...options };
 
@@ -133,15 +131,14 @@ export function createConstructivePreset(
     InflectorLoggerPreset,
     NoUniqueLookupPreset,
     MetaSchemaPreset,
-    SqlExpressionValidatorPreset(),
     PgTypeMappingsPreset,
-    RequiredInputPreset,
+    RequiredInputPreset
   ];
 
   if (opts.enableConnectionFilter) {
     presets.push(
       ConnectionFilterPreset({ connectionFilterRelations: true }),
-      EnableAllFilterColumnsPreset,
+      EnableAllFilterColumnsPreset
     );
   }
 
@@ -151,7 +148,7 @@ export function createConstructivePreset(
 
   if (opts.enableSearch) {
     presets.push(
-      UnifiedSearchPreset({ fullTextScalarName: 'FullText', tsConfig: 'english' }),
+      UnifiedSearchPreset({ fullTextScalarName: 'FullText', tsConfig: 'english' })
     );
   }
 
@@ -167,8 +164,8 @@ export function createConstructivePreset(
     presets.push(
       UploadPreset({
         uploadFieldDefinitions: constructiveUploadFieldDefinitions,
-        maxFileSize: 10 * 1024 * 1024, // 10MB
-      }),
+        maxFileSize: 10 * 1024 * 1024 // 10MB
+      })
     );
   }
 
@@ -177,12 +174,12 @@ export function createConstructivePreset(
       PresignedUrlPreset({
         s3: getPresignedUrlS3Config,
         resolveBucketName: createBucketNameResolver(),
-        ensureBucketProvisioned: createEnsureBucketProvisioned(),
+        ensureBucketProvisioned: createEnsureBucketProvisioned()
       }),
       BucketProvisionerPreset({
         connection: getBucketProvisionerConnection,
-        allowedOrigins: getAllowedOrigins(),
-      }),
+        allowedOrigins: getAllowedOrigins()
+      })
     );
   }
 
@@ -207,7 +204,7 @@ export function createConstructivePreset(
     if (opts.enableSearch) {
       operatorFactories.push(
         createMatchesOperatorFactory('FullText', 'english'),
-        createTrgmOperatorFactories(),
+        createTrgmOperatorFactories()
       );
     }
     if (opts.enablePostgis) {
@@ -238,7 +235,7 @@ export function createConstructivePreset(
   }
 
   const preset: GraphileConfig.Preset = {
-    extends: presets,
+    extends: presets
   };
 
   if (disablePlugins.length > 0) {

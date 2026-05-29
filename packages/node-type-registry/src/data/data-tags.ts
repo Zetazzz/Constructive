@@ -16,9 +16,10 @@ export const DataTags: NodeTypeDefinition = {
         default: 'tags'
       },
       default_value: {
-        type: 'string',
-        description: 'Default value expression for the tags column',
-        default: 'ARRAY[]::citext[]'
+        type: 'object',
+        description: 'Default value as a FieldDefault object',
+        'x-codegen-type': 'FieldDefault',
+        default: { value: [], cast: { name: 'citext', array_dimensions: 1 } }
       },
       is_required: {
         type: 'boolean',

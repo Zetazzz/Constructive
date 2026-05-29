@@ -226,6 +226,70 @@ function buildTriggerConditionInterface(): t.ExportNamedDeclaration {
 }
 
 // ---------------------------------------------------------------------------
+// FieldType — structured PostgreSQL type representation.
+// ---------------------------------------------------------------------------
+
+function buildFieldTypeInterface(): t.ExportNamedDeclaration {
+  const argType = t.tsUnionType([
+    t.tsStringKeyword(),
+    t.tsNumberKeyword(),
+    t.tsBooleanKeyword()
+  ]);
+
+  return addJSDoc(
+    exportInterface('FieldType', [
+      addJSDoc(requiredProp('name', t.tsStringKeyword()), 'Type name. Must be a valid SQL identifier.'),
+      addJSDoc(optionalProp('schema', t.tsStringKeyword()), 'Schema qualifier.'),
+      addJSDoc(optionalProp('args', t.tsArrayType(argType)), 'Type arguments (e.g., [10, 2] for numeric(10,2), ["Point", 4326] for geometry).'),
+      addJSDoc(optionalProp('array_dimensions', t.tsNumberKeyword()), 'Number of array dimensions. 1 = text[], 2 = text[][].'),
+      addJSDoc(optionalProp('range', t.tsArrayType(t.tsStringKeyword())), 'Interval field range. 1-2 elements: ["day"] or ["day", "second"].')
+    ]),
+    'Structured representation of a PostgreSQL data type. Stored as JSONB in metaschema_public.field.type.'
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FieldDefault — structured PostgreSQL default value expression.
+// ---------------------------------------------------------------------------
+
+function buildFieldDefaultInterface(): t.ExportNamedDeclaration {
+  const defaultRef = t.tsTypeReference(t.identifier('FieldDefault'));
+  const fieldTypeRef = t.tsTypeReference(t.identifier('FieldType'));
+
+  const valueType = t.tsUnionType([
+    t.tsStringKeyword(),
+    t.tsNumberKeyword(),
+    t.tsBooleanKeyword(),
+    t.tsNullKeyword(),
+    t.tsArrayType(t.tsUnknownKeyword()),
+    recordType(t.tsStringKeyword(), t.tsUnknownKeyword())
+  ]);
+
+  const argType = t.tsUnionType([
+    t.tsStringKeyword(),
+    t.tsNumberKeyword(),
+    t.tsBooleanKeyword(),
+    t.tsNullKeyword(),
+    defaultRef
+  ]);
+
+  return addJSDoc(
+    exportInterface('FieldDefault', [
+      addJSDoc(optionalProp('value', valueType), 'Literal value (string, number, boolean, null, array, or object).'),
+      addJSDoc(optionalProp('function', t.tsStringKeyword()), 'Function name. Must be a valid SQL identifier.'),
+      addJSDoc(optionalProp('schema', t.tsStringKeyword()), 'Schema qualifier for function.'),
+      addJSDoc(optionalProp('args', t.tsArrayType(argType)), 'Function arguments (recursive).'),
+      addJSDoc(optionalProp('cast', fieldTypeRef), 'Output type cast.'),
+      addJSDoc(optionalProp('operator', t.tsStringKeyword()), 'Binary operator (e.g., "+", "-", "||").'),
+      addJSDoc(optionalProp('left', defaultRef), 'Left operand for operator expression.'),
+      addJSDoc(optionalProp('right', defaultRef), 'Right operand for operator expression.'),
+      addJSDoc(optionalProp('sql_keyword', t.tsStringKeyword()), 'SQL keyword (e.g., "CURRENT_TIMESTAMP", "CURRENT_USER").')
+    ]),
+    'Structured representation of a PostgreSQL default value expression. Stored as JSONB in metaschema_public.field.default_value.'
+  );
+}
+
+// ---------------------------------------------------------------------------
 // x-codegen-type post-processing — replaces properties that have an
 // 'x-codegen-type' marker in their JSON Schema with a hand-written TS type
 // reference.  This lets node type definitions delegate complex types
@@ -426,12 +490,14 @@ function buildBlueprintField(
     );
   }
   // Static fallback
+  const fieldTypeRef = t.tsTypeReference(t.identifier('FieldType'));
+  const fieldDefaultRef = t.tsTypeReference(t.identifier('FieldDefault'));
   return addJSDoc(
     exportInterface('BlueprintField', [
       addJSDoc(requiredProp('name', t.tsStringKeyword()), 'The column name.'),
-      addJSDoc(requiredProp('type', t.tsStringKeyword()), 'The PostgreSQL type (e.g., "text", "integer", "boolean", "uuid").'),
+      addJSDoc(requiredProp('type', t.tsUnionType([fieldTypeRef, t.tsStringKeyword()])), 'PostgreSQL type as a FieldType object (e.g., { name: "text" }) or legacy string.'),
       addJSDoc(optionalProp('is_required', t.tsBooleanKeyword()), 'Whether the column has a NOT NULL constraint.'),
-      addJSDoc(optionalProp('default_value', t.tsStringKeyword()), 'SQL default value expression (e.g., "true", "now()").'),
+      addJSDoc(optionalProp('default_value', t.tsUnionType([fieldDefaultRef, t.tsStringKeyword()])), 'Default value as a FieldDefault object (e.g., { function: "now" }) or legacy string.'),
       addJSDoc(optionalProp('description', t.tsStringKeyword()), 'Comment/description for this field.')
     ]),
     'A custom field (column) to add to a blueprint table.'
@@ -1565,6 +1631,8 @@ function buildProgram(meta?: MetaTableInfo[]): string {
   // -- Shared recursive types (emitted before parameter interfaces) --
   statements.push(sectionComment('Shared recursive types'));
   statements.push(buildTriggerConditionInterface());
+  statements.push(buildFieldTypeInterface());
+  statements.push(buildFieldDefaultInterface());
 
   // -- Parameter interfaces grouped by category --
   const categoryOrder = ['billing', 'check', 'data', 'event', 'limit', 'limit_enforce', 'limit_track', 'limit_warning', 'search', 'job', 'process', 'authz', 'relation', 'view'];
