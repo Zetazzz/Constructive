@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.43.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.42.0...node-type-registry@0.43.0) (2026-05-29)
+
+### Features
+
+- add FieldType/FieldDefault TS interfaces, remove SqlExpressionValidatorPreset from constructive-preset ([b79342c](https://github.com/constructive-io/constructive/commit/b79342cb1224fb74971abfa97c54cf2823d08d46))
+- sync entity_lookup + dynamic scope resolution from constructive-db ([05224f5](https://github.com/constructive-io/constructive/commit/05224f569459fd51428b9fb08a0df06cd5680553)), closes [#1361](https://github.com/constructive-io/constructive/issues/1361) [#1368](https://github.com/constructive-io/constructive/issues/1368)
+
 # [0.42.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.41.0...node-type-registry@0.42.0) (2026-05-26)
 
 ### Features

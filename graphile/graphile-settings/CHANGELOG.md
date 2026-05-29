@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [5.4.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.3.1...graphile-settings@5.4.0) (2026-05-29)
+
+### Features
+
+- add FieldType/FieldDefault TS interfaces, remove SqlExpressionValidatorPreset from constructive-preset ([b79342c](https://github.com/constructive-io/constructive/commit/b79342cb1224fb74971abfa97c54cf2823d08d46))
+
 ## [5.3.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.3.0...graphile-settings@5.3.1) (2026-05-24)
 
 **Note:** Version bump only for package graphile-settings
