@@ -13,26 +13,26 @@ export const AuthzAppMembership: NodeTypeDefinition = {
       permission: {
         type: 'string',
         description:
-          'Single permission name to check (resolved to bitstring mask)',
+          'Single permission name to check (resolved to bitstring mask)'
       },
       permissions: {
         type: 'array',
         items: {
-          type: 'string',
+          type: 'string'
         },
         description:
-          'Multiple permission names to check (ORed together into mask)',
+          'Multiple permission names to check (ORed together into mask)'
       },
       is_admin: {
         type: 'boolean',
-        description: 'If true, require is_admin flag',
+        description: 'If true, require is_admin flag'
       },
       is_owner: {
         type: 'boolean',
-        description: 'If true, require is_owner flag',
-      },
+        description: 'If true, require is_owner flag'
+      }
     },
-    required: [],
+    required: []
   },
-  tags: ['membership', 'authz'],
+  tags: ['membership', 'authz']
 };
