@@ -35,6 +35,40 @@ export interface TriggerCondition {
   /** Negated condition. */
   NOT?: TriggerCondition;
 }
+/** Structured representation of a PostgreSQL data type. Stored as JSONB in metaschema_public.field.type. */
+export interface FieldType {
+  /** Type name. Must be a valid SQL identifier. */
+  name: string;
+  /** Schema qualifier. */
+  schema?: string;
+  /** Type arguments (e.g., [10, 2] for numeric(10,2), ["Point", 4326] for geometry). */
+  args?: (string | number | boolean)[];
+  /** Number of array dimensions. 1 = text[], 2 = text[][]. */
+  array_dimensions?: number;
+  /** Interval field range. 1-2 elements: ["day"] or ["day", "second"]. */
+  range?: string[];
+}
+/** Structured representation of a PostgreSQL default value expression. Stored as JSONB in metaschema_public.field.default_value. */
+export interface FieldDefault {
+  /** Literal value (string, number, boolean, null, array, or object). */
+  value?: string | number | boolean | null | unknown[] | Record<string, unknown>;
+  /** Function name. Must be a valid SQL identifier. */
+  function?: string;
+  /** Schema qualifier for function. */
+  schema?: string;
+  /** Function arguments (recursive). */
+  args?: (string | number | boolean | null | FieldDefault)[];
+  /** Output type cast. */
+  cast?: FieldType;
+  /** Binary operator (e.g., "+", "-", "||"). */
+  operator?: string;
+  /** Left operand for operator expression. */
+  left?: FieldDefault;
+  /** Right operand for operator expression. */
+  right?: FieldDefault;
+  /** SQL keyword (e.g., "CURRENT_TIMESTAMP", "CURRENT_USER"). */
+  sql_keyword?: string;
+}
 /**
  * ===========================================================================
  * Check node type parameters
@@ -156,8 +190,8 @@ export interface DataInheritFromParentParams {
 export interface DataJsonbParams {
   /* Column name for the JSONB field */
   field_name?: string;
-  /* Default value expression */
-  default_value?: string;
+  /* Default value as a FieldDefault object */
+  default_value?: FieldDefault;
   /* Whether the column has a NOT NULL constraint */
   is_required?: boolean;
   /* Whether to create a GIN index */
@@ -247,8 +281,8 @@ export interface DataSoftDeleteParams {
 export interface DataStatusFieldParams {
   /* Column name for the status field */
   field_name?: string;
-  /* Column type (text or citext) */
-  type?: string;
+  /* Column type as a FieldType object */
+  type?: FieldType;
   /* Default value expression (e.g., active) */
   default_value?: string;
   /* Whether the column has a NOT NULL constraint */
@@ -260,8 +294,8 @@ export interface DataStatusFieldParams {
 export interface DataTagsParams {
   /* Column name for the tags array */
   field_name?: string;
-  /* Default value expression for the tags column */
-  default_value?: string;
+  /* Default value as a FieldDefault object */
+  default_value?: FieldDefault;
   /* Whether the column has a NOT NULL constraint */
   is_required?: boolean;
 }
@@ -1354,12 +1388,12 @@ export interface ViewTableProjectionParams {
 export interface BlueprintField {
   /** The column name. */
   name: string;
-  /** The PostgreSQL type (e.g., "text", "integer", "boolean", "uuid"). */
-  type: string;
+  /** PostgreSQL type as a FieldType object (e.g., { name: "text" }) or legacy string. */
+  type: FieldType | string;
   /** Whether the column has a NOT NULL constraint. */
   is_required?: boolean;
-  /** SQL default value expression (e.g., "true", "now()"). */
-  default_value?: string;
+  /** Default value as a FieldDefault object (e.g., { function: "now" }) or legacy string. */
+  default_value?: FieldDefault | string;
   /** Comment/description for this field. */
   description?: string;
 }

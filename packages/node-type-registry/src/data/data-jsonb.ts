@@ -16,9 +16,10 @@ export const DataJsonb: NodeTypeDefinition = {
         default: 'metadata'
       },
       default_value: {
-        type: 'string',
-        description: 'Default value expression',
-        default: "'{}'::jsonb"
+        type: 'object',
+        description: 'Default value as a FieldDefault object',
+        'x-codegen-type': 'FieldDefault',
+        default: { value: {}, cast: { name: 'jsonb' } }
       },
       is_required: {
         type: 'boolean',
