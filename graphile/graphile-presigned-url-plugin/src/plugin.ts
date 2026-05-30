@@ -692,7 +692,7 @@ async function processSingleFile(
   const derivedPath = isCustomKey && storageConfig.hasPathShares ? derivePathFromKey(s3Key) : null;
 
   // Create file record
-  const hasOwnerColumn = storageConfig.membershipType !== null;
+  const hasOwnerColumn = storageConfig.scope !== 'app';
   const columns = ['bucket_id', 'key', 'content_hash', 'mime_type', 'size', 'filename', 'is_public'];
   const values: any[] = [bucket.id, s3Key, contentHash, contentType, size, filename || null, bucket.is_public];
 

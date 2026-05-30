@@ -51,12 +51,12 @@ const log = new Logger('graphile-bucket-provisioner:plugin');
 // --- Storage module queries ---
 
 /**
- * Resolve the app-level storage module (membership_type IS NULL).
+ * Resolve the app-level storage module (scope = 'app').
  */
 const APP_STORAGE_MODULE_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
@@ -68,7 +68,7 @@ const APP_STORAGE_MODULE_QUERY = `
   JOIN metaschema_public.table bt ON bt.id = sm.buckets_table_id
   JOIN metaschema_public.schema bs ON bs.id = bt.schema_id
   WHERE sm.database_id = $1
-    AND sm.membership_type IS NULL
+    AND sm.scope = 'app'
   LIMIT 1
 `;
 
@@ -78,7 +78,7 @@ const APP_STORAGE_MODULE_QUERY = `
 const ALL_STORAGE_MODULES_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
@@ -98,7 +98,7 @@ const ALL_STORAGE_MODULES_QUERY = `
 
 interface StorageModuleRow {
   id: string;
-  membership_type: number | null;
+  scope: string;
   entity_table_id: string | null;
   buckets_schema: string;
   buckets_table: string;
@@ -426,7 +426,7 @@ export function createBucketProvisionerPlugin(
               }
 
               // Look up the bucket row (RLS enforced via pgSettings)
-              const hasOwner = ownerId && storageModule.membership_type !== null;
+              const hasOwner = ownerId && storageModule.scope !== 'app';
               const bucketsTable = QuoteUtils.quoteQualifiedIdentifier(storageModule.buckets_schema, storageModule.buckets_table);
               const bucketResult = await pgClient.query(
                 hasOwner

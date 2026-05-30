@@ -37,14 +37,14 @@ const storageModuleCache = new LRUCache<string, StorageModuleConfig>({
  * SQL query to resolve the app-level storage module config for a database.
  *
  * Joins storage_module → table → schema to get fully-qualified table names.
- * Filters to app-level (membership_type IS NULL) by default.
+ * Filters to app-level (scope = 'app') by default.
  *
- * Requires the multi-scope schema (membership_type column on storage_module).
+ * Requires the multi-scope schema (scope column on storage_module).
  */
 const APP_STORAGE_MODULE_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
@@ -70,7 +70,7 @@ const APP_STORAGE_MODULE_QUERY = `
   JOIN metaschema_public.table ft ON ft.id = sm.files_table_id
   JOIN metaschema_public.schema fs ON fs.id = ft.schema_id
   WHERE sm.database_id = $1
-    AND sm.membership_type IS NULL
+    AND sm.scope = 'app'
   LIMIT 1
 `;
 
@@ -83,7 +83,7 @@ const APP_STORAGE_MODULE_QUERY = `
 const ALL_STORAGE_MODULES_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
@@ -115,7 +115,7 @@ const ALL_STORAGE_MODULES_QUERY = `
 
 interface StorageModuleRow {
   id: string;
-  membership_type: number | null;
+  scope: string;
   entity_table_id: string | null;
   buckets_schema: string;
   buckets_table: string;
@@ -149,7 +149,7 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
     schemaName: row.buckets_schema,
     bucketsTableName: row.buckets_table,
     filesTableName: row.files_table,
-    membershipType: row.membership_type,
+    scope: row.scope,
     entityTableId: row.entity_table_id,
     entityQualifiedName: row.entity_schema && row.entity_table
       ? QuoteUtils.quoteQualifiedIdentifier(row.entity_schema, row.entity_table)
@@ -173,7 +173,7 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
  * Resolve the app-level storage module config for a database, using the LRU cache.
  *
  * This is the default path when no ownerId is provided. It returns the
- * storage module with membership_type IS NULL (app-level / database-wide).
+ * storage module with scope = 'app' (app-level / database-wide).
  *
  * @param pgClient - A pg client from the Graphile context (withPgClient or pgClient)
  * @param databaseId - The metaschema database UUID
@@ -249,11 +249,9 @@ export async function getStorageModuleConfigForOwner(
     const result = await pgClient.query({ text: ALL_STORAGE_MODULES_QUERY, values: [databaseId] });
     allConfigs = (result.rows as StorageModuleRow[]).map(buildConfig);
 
-    // Cache each individual config by its membership type
+    // Cache each individual config by its scope
     for (const config of allConfigs) {
-      const key = config.membershipType === null
-        ? `storage:${databaseId}:app`
-        : `storage:${databaseId}:mt:${config.membershipType}`;
+      const key = `storage:${databaseId}:scope:${config.scope}`;
       storageModuleCache.set(key, config);
     }
   }
@@ -271,7 +269,7 @@ export async function getStorageModuleConfigForOwner(
       storageModuleCache.set(ownerCacheKey, mod);
       log.debug(
         `Resolved ownerId ${ownerId} to storage module ${mod.id} ` +
-        `(membershipType=${mod.membershipType}, table=${mod.bucketsQualifiedName})`,
+        `(scope=${mod.scope}, table=${mod.bucketsQualifiedName})`,
       );
       return mod;
     }
@@ -341,11 +339,9 @@ export async function loadAllStorageModules(
   const result = await pgClient.query({ text: ALL_STORAGE_MODULES_QUERY, values: [databaseId] });
   const configs = (result.rows as StorageModuleRow[]).map(buildConfig);
 
-  // Cache each individual config by its membership type
+  // Cache each individual config by its scope
   for (const config of configs) {
-    const key = config.membershipType === null
-      ? `storage:${databaseId}:app`
-      : `storage:${databaseId}:mt:${config.membershipType}`;
+    const key = `storage:${databaseId}:scope:${config.scope}`;
     storageModuleCache.set(key, config);
   }
 
@@ -433,14 +429,15 @@ export async function getBucketConfig(
 
   // Entity-scoped buckets use (owner_id, key) composite lookup;
   // app-level buckets just use key.
-  const hasOwner = ownerId && storageConfig.membershipType !== null;
+  const isEntityScoped = storageConfig.scope !== 'app';
+  const hasOwner = ownerId && isEntityScoped;
   const result = await pgClient.query({
     text: hasOwner
       ? `SELECT id, key, type, is_public, owner_id, allowed_mime_types, max_file_size, allow_custom_keys
          FROM ${storageConfig.bucketsQualifiedName}
          WHERE key = $1 AND owner_id = $2
          LIMIT 1`
-      : `SELECT id, key, type, is_public, ${storageConfig.membershipType !== null ? 'owner_id,' : ''} allowed_mime_types, max_file_size, allow_custom_keys
+      : `SELECT id, key, type, is_public, ${isEntityScoped ? 'owner_id,' : ''} allowed_mime_types, max_file_size, allow_custom_keys
          FROM ${storageConfig.bucketsQualifiedName}
          WHERE key = $1
          LIMIT 1`,
@@ -474,7 +471,7 @@ export async function getBucketConfig(
   };
 
   bucketCache.set(cacheKey, config);
-  log.debug(`Cached bucket config for ${databaseId}:${bucketKey} (id=${config.id}, scope=${storageConfig.membershipType ?? 'app'})`);
+  log.debug(`Cached bucket config for ${databaseId}:${bucketKey} (id=${config.id}, scope=${storageConfig.scope})`);
 
   return config;
 }
