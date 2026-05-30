@@ -37,14 +37,14 @@ const storageModuleCache = new LRUCache<string, StorageModuleConfig>({
  * SQL query to resolve the app-level storage module config for a database.
  *
  * Joins storage_module → table → schema to get fully-qualified table names.
- * Filters to app-level (membership_type IS NULL) by default.
+ * Filters to app-level (scope = 'app') by default.
  *
- * Requires the multi-scope schema (membership_type column on storage_module).
+ * Requires the multi-scope schema (scope column on storage_module).
  */
 const APP_STORAGE_MODULE_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
@@ -70,7 +70,7 @@ const APP_STORAGE_MODULE_QUERY = `
   JOIN metaschema_public.table ft ON ft.id = sm.files_table_id
   JOIN metaschema_public.schema fs ON fs.id = ft.schema_id
   WHERE sm.database_id = $1
-    AND sm.membership_type IS NULL
+    AND sm.scope = 'app'
   LIMIT 1
 `;
 
@@ -83,7 +83,7 @@ const APP_STORAGE_MODULE_QUERY = `
 const ALL_STORAGE_MODULES_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
@@ -115,7 +115,7 @@ const ALL_STORAGE_MODULES_QUERY = `
 
 interface StorageModuleRow {
   id: string;
-  membership_type: number | null;
+  scope: string;
   entity_table_id: string | null;
   buckets_schema: string;
   buckets_table: string;
@@ -149,7 +149,7 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
     schemaName: row.buckets_schema,
     bucketsTableName: row.buckets_table,
     filesTableName: row.files_table,
-    membershipType: row.membership_type,
+    membershipType: row.scope === 'app' ? null : row.scope,
     entityTableId: row.entity_table_id,
     entityQualifiedName: row.entity_schema && row.entity_table
       ? QuoteUtils.quoteQualifiedIdentifier(row.entity_schema, row.entity_table)
@@ -173,7 +173,7 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
  * Resolve the app-level storage module config for a database, using the LRU cache.
  *
  * This is the default path when no ownerId is provided. It returns the
- * storage module with membership_type IS NULL (app-level / database-wide).
+ * storage module with scope = 'app' (app-level / database-wide).
  *
  * @param pgClient - A pg client from the Graphile context (withPgClient or pgClient)
  * @param databaseId - The metaschema database UUID
