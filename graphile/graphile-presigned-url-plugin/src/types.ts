@@ -33,8 +33,8 @@ export interface StorageModuleConfig {
 
   // --- Scope identity ---
 
-  /** Scope (null for app-level, scope string for entity-scoped) */
-  membershipType: string | null;
+  /** Scope name (e.g., 'app', 'org', 'team') */
+  scope: string;
   /** Entity table ID for entity-scoped storage (NULL for app-level) */
   entityTableId: string | null;
   /** Qualified entity table name for ownerId lookups (NULL for app-level) */
