@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.25.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.24.4...graphql-server-test@2.25.0) (2026-05-30)
+
+### Bug Fixes
+
+- add scope/prefix columns to storage_module test fixture ([5afb93f](https://github.com/constructive-io/constructive/commit/5afb93f6756a9dd181c4945b37697dd463f64f66))
+
 ## [2.24.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.24.3...graphql-server-test@2.24.4) (2026-05-29)
 
 **Note:** Version bump only for package graphql-server-test

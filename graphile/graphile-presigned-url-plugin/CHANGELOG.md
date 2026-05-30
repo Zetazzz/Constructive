@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.19.2...graphile-presigned-url-plugin@0.20.0) (2026-05-30)
+
+### Bug Fixes
+
+- rename membershipType to scope in storage plugin interfaces ([f7ffb26](https://github.com/constructive-io/constructive/commit/f7ffb26dc1924514a59f7f41a4f56d64556d0dd6))
+- update storage plugins to use scope instead of membership_type ([5c4cd30](https://github.com/constructive-io/constructive/commit/5c4cd30c08d541f3e9b0c22d31cf39a977599615))
+
 ## [0.19.2](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.19.1...graphile-presigned-url-plugin@0.19.2) (2026-05-29)
 
 **Note:** Version bump only for package graphile-presigned-url-plugin

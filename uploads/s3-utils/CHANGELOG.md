@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.18.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-utils@2.17.2...@constructive-io/s3-utils@2.18.0) (2026-05-30)
+
+**Note:** Version bump only for package @constructive-io/s3-utils
+
 ## [2.17.2](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-utils@2.17.1...@constructive-io/s3-utils@2.17.2) (2026-05-29)
 
 **Note:** Version bump only for package @constructive-io/s3-utils
