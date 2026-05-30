@@ -4,7 +4,7 @@ import type { ModulePreset } from './types';
  * `full` — install every standard module.
  *
  * This is the maximalist preset: every module Constructive ships, including
- * `storage_module:full` for file uploads with all feature flags and
+ * `storage_module` with all feature flags enabled and
  * `crypto_addresses_module` for wallet-based sign-in.
  *
  * Usage logging modules (compute_log, inference_log, transfer_log,
@@ -19,7 +19,7 @@ export const PresetFull: ModulePreset = {
   summary: 'Install every standard Constructive module with explicit module list.',
   description:
     'Installs every standard module in the catalog: everything in `b2b` plus ' +
-    '`storage_module:full` for file uploads (versioning, content hash, custom keys, audit log), ' +
+    '`storage_module` with all feature flags (versioning, content hash, custom keys, audit log), ' +
     '`crypto_addresses_module` for wallet-based sign-in, `plans_module` and `billing_module` ' +
     'for subscription management, `notifications_module` for in-app notifications, and ' +
     '`events_module` at both app and org scopes. Usage logging modules are opt-in only — ' +
@@ -38,19 +38,19 @@ export const PresetFull: ModulePreset = {
     'users_module',
     'membership_types_module',
     // App-level (membership_type = 1)
-    'permissions_module:app',
-    'limits_module:app',
-    'memberships_module:app',
-    'events_module:app',
-    'profiles_module:app',
+    ['permissions_module', { scope: 'app' }],
+    ['limits_module', { scope: 'app' }],
+    ['memberships_module', { scope: 'app' }],
+    ['events_module', { scope: 'app' }],
+    ['profiles_module', { scope: 'app' }],
     // Org-level (membership_type = 2)
-    'permissions_module:org',
-    'limits_module:org',
-    'memberships_module:org',
-    'events_module:org',
-    'profiles_module:org',
+    ['permissions_module', { scope: 'org' }],
+    ['limits_module', { scope: 'org' }],
+    ['memberships_module', { scope: 'org' }],
+    ['events_module', { scope: 'org' }],
+    ['profiles_module', { scope: 'org' }],
     // Hierarchy
-    'hierarchy_module:org',
+    ['hierarchy_module', { scope: 'org' }],
     // Billing & Plans
     'plans_module',
     'billing_module',
@@ -75,15 +75,15 @@ export const PresetFull: ModulePreset = {
     'connected_accounts_module',
     'identity_providers_module',
     // Invites & Auth
-    'invites_module:app',
-    'invites_module:org',
+    ['invites_module', { scope: 'app' }],
+    ['invites_module', { scope: 'org' }],
     'user_auth_module',
     'webauthn_auth_module',
     // Storage (full features)
-    'storage_module:full'
+    ['storage_module', { has_versioning: true, has_content_hash: true, has_custom_keys: true, has_audit_log: true }]
   ],
   includes_notes: {
-    'storage_module:full': 'All storage feature flags enabled: versioning, content hash, custom keys, audit log.',
+    storage_module: 'All storage feature flags enabled: versioning, content hash, custom keys, audit log.',
     billing_module: 'Metered billing with credits waterfall and period reset.',
     plans_module: 'Subscription plan management with plan-governed caps.',
     notifications_module: 'In-app notification system with read/unread tracking.'

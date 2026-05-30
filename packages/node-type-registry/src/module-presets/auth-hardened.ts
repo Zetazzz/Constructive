@@ -33,10 +33,10 @@ export const PresetAuthHardened: ModulePreset = {
   modules: [
     'users_module',
     'membership_types_module',
-    'permissions_module:app',
-    'limits_module:app',
-    'levels_module:app',
-    'memberships_module:app',
+    ['permissions_module', { scope: 'app' }],
+    ['limits_module', { scope: 'app' }],
+    ['levels_module', { scope: 'app' }],
+    ['memberships_module', { scope: 'app' }],
     'sessions_module',
     'user_state_module',
     'user_credentials_module',
@@ -64,7 +64,7 @@ export const PresetAuthHardened: ModulePreset = {
     devices_module: 'Device tracking and trusted-device MFA bypass.'
   },
   omits_notes: {
-    'memberships_module:org': 'No orgs / teams — use `b2b` when you need multi-tenancy.',
+    'memberships_module (org)': 'No orgs / teams — use `b2b` when you need multi-tenancy.',
     invites_module: 'No invite flow — add via `b2b`.',
     storage_module: 'Add separately if you need file uploads.',
     crypto_addresses_module: 'Not a web3 preset; omit unless doing wallet sign-in.'

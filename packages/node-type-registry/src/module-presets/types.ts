@@ -40,12 +40,18 @@ export interface ModulePreset {
   not_for: string[];
 
   /**
-   * Flat list of module names to install. Module names must match the
-   * canonical list accepted by
+   * List of modules to install. Each entry is either a plain module name
+   * (string) or a Babel-style tuple [name, options] for modules that need
+   * configuration. Module names must match the canonical list accepted by
    * `metaschema_generators.provision_database_modules` in constructive-db.
    * Order doesn't matter — provisioning resolves dependencies.
+   *
+   * Examples:
+   *   'users_module'                              — simple module
+   *   ['permissions_module', { scope: 'app' }]    — scoped module
+   *   ['agent_module', { has_plans: true }]        — feature-flagged module
    */
-  modules: string[];
+  modules: (string | [string, Record<string, unknown>])[];
 
   /**
    * Optional per-module justifications. Map from module name to a short
