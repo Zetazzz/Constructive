@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.45.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.44.0...node-type-registry@0.45.0) (2026-05-30)
+
+### Features
+
+- add DataI18n node type definition for i18n translation tables ([185b2fc](https://github.com/constructive-io/constructive/commit/185b2fc7e6dac236891a2058878863b575b62047)), closes [constructive-planning#975](https://github.com/constructive-planning/issues/975)
+- rename config_secrets_user_module to user_credentials_module in presets ([71e026e](https://github.com/constructive-io/constructive/commit/71e026ed204d15371725afe27bec5aabf7b519fa)), closes [constructive-db#1418](https://github.com/constructive-db/issues/1418)
+
 # [0.44.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.43.1...node-type-registry@0.44.0) (2026-05-30)
 
 **Note:** Version bump only for package node-type-registry
