@@ -43,6 +43,7 @@ async function main() {
 
   const { results, hasError } = await generateMulti({
     configs: expanded,
+    cleanStaleTargets: true,
   });
 
   let realError = false;
