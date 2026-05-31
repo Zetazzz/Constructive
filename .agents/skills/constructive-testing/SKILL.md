@@ -1,7 +1,8 @@
 ---
 name: constructive-testing
-description: "All PostgreSQL and database testing frameworks — pgsql-test (RLS, seeding, snapshots, JWT context, scenario setup), drizzle-orm-test (type-safe Drizzle testing), supabase-test (Supabase RLS testing), drizzle-orm (schema patterns), and pgsql-parser testing. Use when writing database tests, testing RLS policies, seeding test data, or testing with any Constructive test framework."
+description: "PostgreSQL testing frameworks — pgsql-test (RLS, seeding, snapshots, JWT context, scenario setup), drizzle-orm-test (type-safe Drizzle testing), supabase-test (Supabase RLS testing). Use when writing database tests, testing RLS policies, seeding test data, or testing with any Constructive test framework."
 compatibility: pgsql-test, drizzle-orm-test, supabase-test, Jest/Vitest, PostgreSQL
+  triggers: "user, model"
 metadata:
   author: constructive-io
   version: "2.0.0"
@@ -18,8 +19,6 @@ Use this skill when:
 - Testing RLS policies, permissions, multi-tenant security
 - Seeding test data (fixtures, JSON, SQL, CSV)
 - Testing with Drizzle ORM or Supabase
-- Working in the pgsql-parser repository
-- Choosing which test framework to use
 
 ## Which Framework to Use
 
@@ -32,7 +31,6 @@ Use this skill when:
 | HTTP endpoints, auth headers, middleware | `@constructive-io/graphql-server-test` | (part of constructive monorepo) |
 | Type-safe Drizzle ORM tests | `drizzle-orm-test` | [drizzle-orm-test.md](./references/drizzle-orm-test.md) |
 | Supabase applications, auth.users | `supabase-test` | [supabase-test.md](./references/supabase-test.md) |
-| pgsql-parser repo specifically | pgsql-parser workflow | [pgsql-parser-testing.md](./references/pgsql-parser-testing.md) |
 
 ## Quick Start (pgsql-test)
 
@@ -100,17 +98,7 @@ Choose the **highest-level framework** that fits your test scenario:
 | Reference | Topic | Consult When |
 |-----------|-------|--------------|
 | [drizzle-orm-test.md](./references/drizzle-orm-test.md) | Drizzle ORM testing | Type-safe database tests with Drizzle |
-| [drizzle-orm.md](./references/drizzle-orm.md) | Drizzle ORM schema patterns | Schema design, query building with Drizzle |
 | [supabase-test.md](./references/supabase-test.md) | Supabase testing | Testing Supabase apps, auth.users, anon/authenticated roles |
-| [pgsql-parser-testing.md](./references/pgsql-parser-testing.md) | pgsql-parser repo testing | SQL parser/deparser tests, round-trip validation |
-
-### Test Authoring & CI (from constructive-db)
-
-| Reference | Topic | Consult When |
-|-----------|-------|--------------|
-| [references/test-authoring.md](references/test-authoring.md) | Writing lean, readable tests | Choosing presets, test file structure, utility usage |
-| [references/ci-test-optimization.md](references/ci-test-optimization.md) | CI/CD speed optimization | Shard balancing, test compression, runner sizing |
-| [references/integration-testing.md](references/integration-testing.md) | SQL-first integration tests | pg/db client pattern, RLS testing, multi-actor design |
 
 ## Cross-References
 

@@ -113,14 +113,6 @@ See [local-email-services.md](./references/local-email-services.md) for Docker C
 
 For full navigation, see the repo's `AGENTS.md`.
 
-### Local Development (from constructive-db)
-
-| Reference | Topic | Consult When |
-|-----------|-------|--------------|
-| [references/local-dev-setup.md](references/local-dev-setup.md) | Quick-start local dev | Docker Postgres + pgpm deploy + GraphQL server startup |
-| [references/local-env.md](references/local-env.md) | Full local environment | CLI testing, e2e tests, subdomain routing, troubleshooting |
-| [references/full-pipeline.md](references/full-pipeline.md) | End-to-end pipeline | Docker → deploy → provision → codegen → verify |
-
 ## Cross-References
 
 - **pgpm** skill — Database migrations, Docker, environment, CLI commands
