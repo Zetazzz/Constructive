@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [5.6.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.5.0...graphile-settings@5.6.0) (2026-05-31)
+
+### Features
+
+- wire enableI18n through DatabaseSettings, loader, and ConstructivePreset ([7b709b9](https://github.com/constructive-io/constructive/commit/7b709b9069e462da77e5d1cda9e7c1df9d8569ea))
+
 # [5.5.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.4.1...graphile-settings@5.5.0) (2026-05-30)
 
 **Note:** Version bump only for package graphile-settings

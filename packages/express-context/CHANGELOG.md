@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/constructive-io/constructive/compare/@constructive-io/express-context@0.4.0...@constructive-io/express-context@0.5.0) (2026-05-31)
+
+### Features
+
+- wire enableI18n through DatabaseSettings, loader, and ConstructivePreset ([7b709b9](https://github.com/constructive-io/constructive/commit/7b709b9069e462da77e5d1cda9e7c1df9d8569ea))
+
 # [0.4.0](https://github.com/constructive-io/constructive/compare/@constructive-io/express-context@0.3.1...@constructive-io/express-context@0.4.0) (2026-05-30)
 
 **Note:** Version bump only for package @constructive-io/express-context

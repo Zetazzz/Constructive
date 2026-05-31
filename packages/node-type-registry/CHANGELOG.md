@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.46.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.45.0...node-type-registry@0.46.0) (2026-05-31)
+
+### Bug Fixes
+
+- remove user_settings_module from b2b/b2b:storage (no extenders), clarify ordering in full ([923b0bd](https://github.com/constructive-io/constructive/commit/923b0bd775b7d20d6dc9e9f7acf980e7d4c8115c))
+
+### Features
+
+- add user_settings_module and i18n_module to presets ([88ecfbc](https://github.com/constructive-io/constructive/commit/88ecfbcfda38acd2d49e3214fda085d8e136cf0d))
+- **node-type-registry:** update module presets to jsonb tuple syntax ([e35a637](https://github.com/constructive-io/constructive/commit/e35a6370fbba09c0bf14e5ae9c4179accf3afc5f))
+
 # [0.45.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.44.0...node-type-registry@0.45.0) (2026-05-30)
 
 ### Features
