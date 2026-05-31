@@ -17,8 +17,6 @@
  * Any changes here will affect all generated CLI embedder modules.
  */
 
-import OllamaClient from '@agentic-kit/ollama';
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type EmbedderFunction = (text: string) => Promise<number[]>;
@@ -38,8 +36,18 @@ function createOllamaEmbedder(
   baseUrl: string = 'http://localhost:11434',
   model: string = 'nomic-embed-text'
 ): EmbedderFunction {
-  const client = new OllamaClient(baseUrl);
+  let clientP: Promise<{ generateEmbedding: (text: string, model: string) => Promise<{ embedding: number[] }> }> | undefined;
   return async (text: string): Promise<number[]> => {
+    if (!clientP) {
+      clientP = import('@agentic-kit/ollama')
+        .then((m) => new m.default(baseUrl))
+        .catch(() => {
+          throw new Error(
+            'The ollama embedder requires @agentic-kit/ollama. Install it: npm i @agentic-kit/ollama'
+          );
+        });
+    }
+    const client = await clientP;
     const result = await client.generateEmbedding(text, model);
     return result.embedding;
   };
