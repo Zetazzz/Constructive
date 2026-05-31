@@ -145,17 +145,30 @@ When the requested language has no translation, the plugin falls back through th
 
 ## Constructive Integration
 
-When used with the Constructive framework, the `DataI18n` node type automates translation table creation:
+When used with the Constructive framework, the `DataI18n` node type automates translation table creation and optionally composes with `SearchFullText` for multilingual full-text search:
 
 ```json
 {
   "nodes": [
     {
       "$type": "DataI18n",
-      "data": { "fields": ["name", "description"] }
+      "data": {
+        "fields": ["name", "description"],
+        "search": {
+          "field_name": "search",
+          "source_fields": [
+            { "field": "name", "weight": "A" },
+            { "field": "description", "weight": "B" }
+          ]
+        }
+      }
     }
   ]
 }
 ```
 
+When `search` is provided, the tsvector is created on the **translations table** with dynamic per-row language stemming — each row is stemmed using its own `lang_code` value (e.g., `'spanish'` → Spanish stemmer, `'french'` → French stemmer). PostgreSQL ships with 30+ built-in text search configurations, so multilingual search works out of the box with no per-language configuration.
+
 The `i18n_module` provides app-level configuration via `app_settings_i18n` with supported languages, default language, and fallback chain — all manageable via GraphQL mutations.
+
+For the full i18n guide (blueprint patterns, ORM queries, SQL search examples), see the [constructive-sdk-i18n skill](https://github.com/constructive-io/constructive-skills/tree/main/.agents/skills/constructive-sdk-i18n).
