@@ -510,6 +510,8 @@ export interface GenerateMultiOptions {
   dryRun?: boolean;
   schema?: SchemaConfig;
   unifiedCli?: CliConfig | boolean;
+  /** Remove subdirectories in the output root that don't match any current target name. */
+  cleanStaleTargets?: boolean;
 }
 
 export interface GenerateMultiResult {
@@ -624,10 +626,37 @@ function applySharedPgpmDb(
   };
 }
 
+/**
+ * Remove subdirectories in `outputRoot` that are not in `currentTargetNames`.
+ * Useful for cleaning up stale target output before a fresh multi-target generate.
+ * Returns the list of directory names that were removed.
+ */
+export function removeStaleTargetDirs(
+  outputRoot: string,
+  currentTargetNames: string[],
+  verbose?: boolean,
+): string[] {
+  const removed: string[] = [];
+  if (!fs.existsSync(outputRoot)) return removed;
+
+  const currentTargets = new Set(currentTargetNames);
+  const entries = fs.readdirSync(outputRoot, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isDirectory() && !currentTargets.has(entry.name)) {
+      fs.rmSync(path.join(outputRoot, entry.name), { recursive: true, force: true });
+      removed.push(entry.name);
+      if (verbose) {
+        console.log(`Removed stale target directory: ${entry.name}`);
+      }
+    }
+  }
+  return removed;
+}
+
 export async function generateMulti(
   options: GenerateMultiOptions,
 ): Promise<GenerateMultiResult> {
-  const { configs, cliOverrides, verbose, dryRun, schema, unifiedCli } = options;
+  const { configs, cliOverrides, verbose, dryRun, schema, unifiedCli, cleanStaleTargets } = options;
   const names = Object.keys(configs);
   const results: Array<{ name: string; result: GenerateResult }> = [];
   let hasError = false;
@@ -637,6 +666,13 @@ export async function generateMulti(
   const useUnifiedCli = !schemaEnabled && !!unifiedCli && names.length > 1;
 
   const cliTargets: MultiTargetCliTarget[] = [];
+
+  // Remove stale target directories before generating
+  if (cleanStaleTargets && names.length > 0 && !dryRun) {
+    const firstOutput = getConfigOptions(configs[names[0]]).output;
+    const outputRoot = path.dirname(firstOutput);
+    removeStaleTargetDirs(outputRoot, names, verbose);
+  }
 
   const sharedSources = await prepareSharedPgpmSources(configs, cliOverrides);
 
