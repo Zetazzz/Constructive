@@ -294,6 +294,10 @@ This architecture eliminates the traditional ORM layer and API boilerplate, lett
 - **[@pgsql/enums](https://www.npmjs.com/package/@pgsql/enums)** - TypeScript enums for PostgreSQL AST for safe parsing logic
 - **[@pgsql/utils](https://www.npmjs.com/package/@pgsql/utils)** - AST manipulation utilities for constructing and transforming syntax trees
 
+### 📚 Documentation & Skills
+
+- **[constructive-skills](https://github.com/constructive-io/constructive-skills)** - Platform documentation and AI agent skills — feature catalog, blueprint reference, SDK guides (i18n, billing, limits, events, uploads, security, entities, search, AI), and deployment guides
+
 ## Disclaimer
 
 AS DESCRIBED IN THE LICENSES, THE SOFTWARE IS PROVIDED "AS IS", AT YOUR OWN RISK, AND WITHOUT WARRANTIES OF ANY KIND.
