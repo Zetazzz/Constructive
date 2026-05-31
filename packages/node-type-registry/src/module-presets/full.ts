@@ -70,6 +70,7 @@ export const PresetFull: ModulePreset = {
     'phone_numbers_module',
     'crypto_addresses_module',
     'webauthn_credentials_module',
+    // User settings + notifications (user_settings_module must precede notifications_module)
     'user_settings_module',
     'notifications_module',
     // Connected accounts

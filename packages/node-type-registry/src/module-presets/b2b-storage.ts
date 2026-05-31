@@ -63,8 +63,7 @@ export const PresetB2bStorage: ModulePreset = {
     ['invites_module', { scope: 'app' }],
     ['invites_module', { scope: 'org' }],
     'storage_module',
-    'devices_module',
-    'user_settings_module'
+    'devices_module'
   ],
   extends: ['b2b']
 };

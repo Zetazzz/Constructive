@@ -64,8 +64,7 @@ export const PresetB2b: ModulePreset = {
     ['hierarchy_module', { scope: 'org' }],
     ['invites_module', { scope: 'app' }],
     ['invites_module', { scope: 'org' }],
-    'devices_module',
-    'user_settings_module'
+    'devices_module'
   ],
   extends: ['auth:hardened']
 };
