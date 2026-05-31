@@ -165,37 +165,32 @@ await db.appPlanSubscription.update({
 
 ---
 
-## Reading Feature Flags
+## Reading Feature Flags from the SDK
 
-### From SQL (inside RLS policies, triggers, checks)
-
-```sql
--- Returns 0 (disabled) or 1+ (enabled/value)
-SELECT resolve_cap('advanced_analytics');           -- app-scope default
-SELECT resolve_cap('advanced_analytics', org_id);   -- per-entity override → default → 0
-```
-
-### From the SDK
-
-Query `limit_caps` directly:
+Query `appLimitCap` for per-entity overrides, or `appLimitCapsDefault` for
+app-scope defaults:
 
 ```typescript
+// Per-entity cap (e.g. does this org have advanced_analytics?)
 const cap = await db.appLimitCap.findFirst({
   where: { name: { equalTo: 'advanced_analytics' }, entityId: { equalTo: orgId } },
   select: { max: true }
 }).execute();
 
 const isEnabled = cap && Number(cap.max) > 0;
-```
 
-Or query the defaults:
-
-```typescript
+// App-scope default (fallback when no per-entity override exists)
 const defaultCap = await db.appLimitCapsDefault.findFirst({
   where: { name: { equalTo: 'advanced_analytics' } },
   select: { max: true }
 }).execute();
 ```
+
+Convention: `0 = disabled`, `1 = enabled`, `>1 = numeric config` (e.g. max file size in MB).
+
+For SQL-level details on the `resolve_cap()` COALESCE chain used inside RLS
+policies and triggers, see the `constructive-db-plan-cascade` skill in the
+constructive-db repo.
 
 ---
 
