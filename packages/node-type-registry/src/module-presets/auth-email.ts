@@ -58,26 +58,5 @@ export const PresetAuthEmail: ModulePreset = {
     'emails_module',
     'rls_module',
     'user_auth_module'
-  ],
-  includes_notes: {
-    'memberships_module (app)': 'Required by `user_auth_module`: every user gets an app-level membership row at sign-up.',
-    membership_types_module: "Required by app-scoped memberships; defines the 'app' scope.",
-    'permissions_module (app)': 'Required by app-scoped memberships: NOT NULL FK to grants table.',
-    'limits_module (app)': 'Required by app-scoped memberships: NOT NULL FK to caps table.',
-    'levels_module (app)': 'Required by app-scoped memberships: NOT NULL FK to levels table.',
-    emails_module: 'Required by the `user_auth_module` insert trigger (`RAISE EXCEPTION REQUIRES emails_module`).',
-    user_credentials_module: 'Per-user bcrypt credential store for password hashing; referenced by `set_password`, `verify_password`, and reset flows.',
-    config_secrets_module: 'App-level PGP secrets + config; required for app_secrets_get.',
-    user_state_module: 'API-key storage (`create_api_key`, `revoke_api_key`, `my_api_keys`).'
-  },
-  omits_notes: {
-    rate_limits_module: 'Omitted intentionally; throttle_* helpers are null-safe and the auth procs compile without it. Add later via `auth:hardened`.',
-    connected_accounts_module: 'No OAuth / SSO in this preset — add `auth:sso`.',
-    identity_providers_module: 'No OAuth provider configs without connected_accounts.',
-    webauthn_credentials_module: 'No passkeys — add `auth:passkey`.',
-    phone_numbers_module: 'No SMS login — add `auth:hardened` or the SMS-only refactor path.',
-    'memberships_module (org)': 'No org/team structure — move to `b2b` when you need one.',
-    invites_module: 'Self-serve signup only.',
-    session_secrets_module: 'No magic-link / email-OTP nonces; add `auth:email+magic`.'
-  }
+  ]
 };

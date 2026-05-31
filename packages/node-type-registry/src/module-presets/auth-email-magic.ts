@@ -49,14 +49,5 @@ export const PresetAuthEmailMagic: ModulePreset = {
     'user_auth_module',
     'session_secrets_module'
   ],
-  includes_notes: {
-    session_secrets_module: 'Stores nonces for magic-link and email-OTP flows. Without it those procedures are not emitted.'
-  },
-  omits_notes: {
-    rate_limits_module: 'Same reasoning as `auth:email` — add later via `auth:hardened`.',
-    connected_accounts_module: 'No OAuth / SSO in this preset.',
-    webauthn_credentials_module: 'No passkeys — add `auth:passkey`.',
-    phone_numbers_module: 'No SMS — add `auth:hardened`.'
-  },
   extends: ['auth:email']
 };

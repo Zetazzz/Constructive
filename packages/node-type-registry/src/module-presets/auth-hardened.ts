@@ -53,21 +53,5 @@ export const PresetAuthHardened: ModulePreset = {
     'phone_numbers_module',
     'devices_module'
   ],
-  includes_notes: {
-    rate_limits_module: 'Throttling for sign-in, password reset, sign-up, and IP-based gates.',
-    connected_accounts_module: 'OAuth / SSO linkage.',
-    identity_providers_module: 'OAuth provider configs (required for `connected_accounts_module`).',
-    webauthn_credentials_module: 'Per-user passkey storage.',
-    webauthn_auth_module: 'Passkey challenge + assertion runtime.',
-    session_secrets_module: 'Nonces for magic links, email OTP, and WebAuthn challenges.',
-    phone_numbers_module: 'SMS sign-in / MFA support.',
-    devices_module: 'Device tracking and trusted-device MFA bypass.'
-  },
-  omits_notes: {
-    'memberships_module (org)': 'No orgs / teams — use `b2b` when you need multi-tenancy.',
-    invites_module: 'No invite flow — add via `b2b`.',
-    storage_module: 'Add separately if you need file uploads.',
-    crypto_addresses_module: 'Not a web3 preset; omit unless doing wallet sign-in.'
-  },
   extends: ['auth:email', 'auth:email+magic', 'auth:sso', 'auth:passkey']
 };

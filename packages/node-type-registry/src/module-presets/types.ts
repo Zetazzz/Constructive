@@ -53,19 +53,6 @@ export interface ModulePreset {
    */
   modules: (string | [string, Record<string, unknown>])[];
 
-  /**
-   * Optional per-module justifications. Map from module name to a short
-   * "why this module is in this preset" note. Rendered in docs and CLI
-   * `--explain` output.
-   */
-  includes_notes?: Record<string, string>;
-
-  /**
-   * Optional per-module "why we deliberately leave this out" notes. Only
-   * list modules that a user might reasonably expect to be here; don't
-   * enumerate every omitted module.
-   */
-  omits_notes?: Record<string, string>;
 
   /**
    * Optional: name(s) of presets this one builds on. Purely documentary —

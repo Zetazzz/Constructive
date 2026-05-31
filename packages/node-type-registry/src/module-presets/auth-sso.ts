@@ -57,16 +57,5 @@ export const PresetAuthSso: ModulePreset = {
     'connected_accounts_module',
     'identity_providers_module'
   ],
-  includes_notes: {
-    connected_accounts_module: 'Junction table for (user, provider, external_id). Without it, `sign_in_identity` does not compile.',
-    identity_providers_module: 'Provider config table (URLs, client_id, encrypted client_secret, scopes, PKCE knobs).',
-    config_secrets_module: 'Required by `auth:email` already; also used by SSO to decrypt the provider client_secret at auth time.'
-  },
-  omits_notes: {
-    webauthn_credentials_module: 'No passkeys — add `auth:passkey` or move to `auth:hardened`.',
-    rate_limits_module: 'Omitted; add via `auth:hardened` for production.',
-    session_secrets_module: "Not required for authorization-code OAuth; add if you also want magic-link flows. PKCE doesn't require it for stateless OAuth flows today.",
-    phone_numbers_module: 'No SMS in this preset.'
-  },
   extends: ['auth:email']
 };

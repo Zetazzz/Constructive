@@ -82,16 +82,5 @@ export const PresetFull: ModulePreset = {
     // Storage (full features)
     ['storage_module', { has_versioning: true, has_content_hash: true, has_custom_keys: true, has_audit_log: true }]
   ],
-  includes_notes: {
-    storage_module: 'All storage feature flags enabled: versioning, content hash, custom keys, audit log.',
-    billing_module: 'Metered billing with credits waterfall and period reset.',
-    plans_module: 'Subscription plan management with plan-governed caps.',
-    notifications_module: 'In-app notification system with read/unread tracking.'
-  },
-  omits_notes: {
-    compute_log_module: 'Usage logging is opt-in. Add explicitly if needed.',
-    inference_log_module: 'Usage logging is opt-in. Add explicitly if needed.',
-    agent_module: 'Agent infrastructure is opt-in.'
-  },
   extends: ['b2b']
 };

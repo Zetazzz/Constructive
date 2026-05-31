@@ -36,16 +36,5 @@ export const PresetMinimal: ModulePreset = {
     'sessions_module',
     'rls_module',
     'user_state_module'
-  ],
-  includes_notes: {
-    users_module: 'The canonical users table. Required by every preset.',
-    sessions_module: 'Session/token storage; needed so whatever upstream auth can mint a session row.',
-    rls_module: 'RLS policy infrastructure. Without it, row-level security is not enforced.',
-    user_state_module: 'API-key storage. Optional for this preset but almost always wanted alongside upstream auth.'
-  },
-  omits_notes: {
-    user_auth_module: 'No server-side sign_up/sign_in procedures in this preset.',
-    emails_module: 'Not needed without password/magic-link flows; upstream auth handles identity.',
-    memberships_module: 'No memberships without a user_auth_module wiring them up.'
-  }
+  ]
 };
