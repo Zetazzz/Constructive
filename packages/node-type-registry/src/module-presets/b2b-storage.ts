@@ -21,7 +21,7 @@ export const PresetB2bStorage: ModulePreset = {
     '`app_buckets` and `app_files` tables with full RLS: AuthzPublishable for public reads, ' +
     'AuthzAppMembership for member access, AuthzDirectOwner for uploader-only modify/delete. ' +
     'Entity-type provisioning with a non-empty `storage` array adds per-scope storage tables ' +
-    'automatically (multiple modules per entity via storage_key). Choose this when your B2B ' +
+    'automatically (multiple modules per entity via key). Choose this when your B2B ' +
     'app needs file uploads, avatars, attachments, or any object storage tied to workspaces.',
   good_for: [
     'B2B SaaS with file uploads (documents, avatars, attachments)',

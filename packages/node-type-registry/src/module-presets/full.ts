@@ -80,7 +80,10 @@ export const PresetFull: ModulePreset = {
     'user_auth_module',
     'webauthn_auth_module',
     // Storage (full features)
-    ['storage_module', { has_versioning: true, has_content_hash: true, has_custom_keys: true, has_audit_log: true }]
+    ['storage_module', { has_versioning: true, has_content_hash: true, has_custom_keys: true, has_audit_log: true }],
+    // Infrastructure (functions, namespaces)
+    'namespace_module',
+    'function_module',
   ],
   extends: ['b2b']
 };
