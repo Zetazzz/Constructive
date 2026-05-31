@@ -2,6 +2,7 @@ import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
 import { BulkMutationPreset } from 'graphile-bulk-mutations';
 import type { GraphileConfig } from 'graphile-config';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
+import { I18nPreset } from 'graphile-i18n';
 import { createFolderOperatorFactory, GraphileLtreePreset } from 'graphile-ltree';
 import { PgAggregatesPreset } from 'graphile-pg-aggregates';
 import { createPostgisOperatorFactory,GraphilePostgisPreset } from 'graphile-postgis';
@@ -47,6 +48,7 @@ export interface ConstructivePresetOptions {
   enableLlm?: boolean;
   enableRealtime?: boolean;
   enableBulk?: boolean;
+  enableI18n?: boolean;
 }
 
 const DEFAULTS: Required<ConstructivePresetOptions> = {
@@ -60,7 +62,8 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
   enableLtree: true,
   enableLlm: false,
   enableRealtime: false,
-  enableBulk: false
+  enableBulk: false,
+  enableI18n: false
 };
 
 /**
@@ -94,6 +97,7 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
  * - enableAggregates        -> PgAggregatesPreset (off by default)
  * - enableRealtime          -> RealtimeSubscriptionsPreset (off by default)
  * - enableBulk              -> BulkMutationPreset (off by default)
+ * - enableI18n              -> I18nPreset (off by default)
  * - enableLlm               -> (no plugin yet, reserved for future use)
  *
  * RELATION FILTERS (when enableConnectionFilter is true):
@@ -193,6 +197,10 @@ export function createConstructivePreset(
 
   if (opts.enableBulk) {
     presets.push(BulkMutationPreset());
+  }
+
+  if (opts.enableI18n) {
+    presets.push(I18nPreset());
   }
 
   // ----- connectionFilterOperatorFactories -----
