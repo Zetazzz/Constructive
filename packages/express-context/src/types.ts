@@ -40,6 +40,7 @@ export interface DatabaseSettings {
   enableLlm: boolean;
   enableRealtime: boolean;
   enableBulk: boolean;
+  enableI18n: boolean;
 }
 
 export interface PubkeyChallengeSettings {
