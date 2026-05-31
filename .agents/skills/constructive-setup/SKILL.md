@@ -120,8 +120,6 @@ For full navigation, see the repo's `AGENTS.md`.
 | [local-dev-setup.md](references/local-dev-setup.md) | Quick-start local dev | Docker Postgres + GraphQL server startup |
 | [local-env.md](references/local-env.md) | Full local environment | Detailed setup, endpoint reference, troubleshooting |
 
-> **Note:** Platform database deployment requires `pgpm deploy` from the `constructive-db` repo — see the `constructive-db-local-env` skill there for those steps.
-
 ## Cross-References
 
 - **pgpm** skill — Database migrations, Docker, environment, CLI commands

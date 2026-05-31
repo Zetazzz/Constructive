@@ -19,16 +19,31 @@ pgpm admin-users add --test --yes
 
 > **Important:** `eval "$(pgpm env)"` must be run as a separate command (not chained with `&&`) so the env vars are available for subsequent commands.
 
-## Deploy Platform Database
+## Deploy Your Database
 
-> Database deployment uses `pgpm deploy` from the `constructive-db` repo. See the `constructive-db-local-env` skill in `constructive-io/constructive-db` for step-by-step instructions.
+Navigate to your pgpm database workspace and deploy:
+
+```bash
+cd /path/to/your-database
+pgpm deploy
+```
+
+This runs all migrations in your `pgpm.plan` and provisions the schema. If your module hasn't been deployed before, add `--createdb` to create the database:
+
+```bash
+pgpm deploy --database myapp --createdb --yes
+```
+
+For full deploy options, see the **pgpm** skill: [references/deploy.md](../pgpm/references/deploy.md)
 
 ## Start GraphQL Server
 
 ```bash
 cd graphql/server
-PGDATABASE=constructive pnpm dev
+PGDATABASE=myapp pnpm dev
 ```
+
+Set `PGDATABASE` to match the database name you deployed to.
 
 Health check: `curl -s -o /dev/null -w "%{http_code}" http://api.localhost:3000/graphql` → 405
 
@@ -44,5 +59,5 @@ Health check: `curl -s -o /dev/null -w "%{http_code}" http://api.localhost:3000/
 
 ## Related
 
-- `constructive-db-local-env` skill (in constructive-db repo) — platform database deployment
+- **pgpm** skill — full deploy/revert/verify reference, Docker options, environment variables
 - `constructive-sdk` skill — provision a user database after setup

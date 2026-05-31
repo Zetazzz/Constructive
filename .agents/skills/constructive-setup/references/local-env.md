@@ -48,9 +48,22 @@ pgpm admin-users bootstrap --yes
 pgpm admin-users add --test --yes
 ```
 
-### 5. Deploy the platform database
+### 5. Deploy your database
 
-> This step uses `pgpm deploy` from the `constructive-db` repo. See the `constructive-db-local-env` skill in `constructive-io/constructive-db` for deployment instructions.
+Navigate to your pgpm database workspace and deploy:
+
+```bash
+cd /path/to/your-database
+pgpm deploy --database myapp --createdb --yes
+```
+
+This runs all migrations in your `pgpm.plan` and provisions the full schema (tables, functions, triggers, RLS policies). For an existing database, omit `--createdb`:
+
+```bash
+pgpm deploy
+```
+
+For full deploy options, see the **pgpm** skill.
 
 ### 6. Install dependencies and start server
 
@@ -59,8 +72,10 @@ cd /path/to/constructive
 pnpm install
 pnpm build
 cd graphql/server
-PGDATABASE=constructive pnpm dev
+PGDATABASE=myapp pnpm dev
 ```
+
+Set `PGDATABASE` to match the database name you deployed to.
 
 The server starts with subdomain-based routing:
 
