@@ -70,6 +70,8 @@ export const PresetFull: ModulePreset = {
     'phone_numbers_module',
     'crypto_addresses_module',
     'webauthn_credentials_module',
+    // User settings + notifications (user_settings_module must precede notifications_module)
+    'user_settings_module',
     'notifications_module',
     // Connected accounts
     'connected_accounts_module',
@@ -79,6 +81,8 @@ export const PresetFull: ModulePreset = {
     ['invites_module', { scope: 'org' }],
     'user_auth_module',
     'webauthn_auth_module',
+    // Internationalization
+    'i18n_module',
     // Storage (full features)
     ['storage_module', { has_versioning: true, has_content_hash: true, has_custom_keys: true, has_audit_log: true }],
     // Infrastructure (functions, namespaces)
