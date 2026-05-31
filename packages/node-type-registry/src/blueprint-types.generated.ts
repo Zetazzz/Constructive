@@ -1529,6 +1529,8 @@ export interface BlueprintStorageConfig {
   scope?: 'app' | 'org';
   /** Discriminator for multi-module storage. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{storage_key}_buckets. Max 16 chars, lowercase snake_case. */
   storage_key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "buckets" instead of "org_buckets"). */
+  prefix?: string;
   /** Initial bucket seed entries. Each creates a row in {prefix}_buckets during provisioning. */
   buckets?: BlueprintBucketSeed[];
   /** Override for presigned upload URL expiry time in seconds. */
@@ -1590,6 +1592,8 @@ export interface BlueprintNamespaceConfig {
   scope?: 'app' | 'org';
   /** Module discriminator for multi-module namespaces. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_namespaces. */
   key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "namespaces" instead of "org_namespaces"). */
+  prefix?: string;
   /** RLS policy overrides for the namespaces table. NULL = apply defaults from apply_namespace_security(). */
   policies?: BlueprintPolicy[];
   /** Per-table overrides for namespace tables. Each key targets a specific table (namespaces, namespace_events) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision. */
@@ -1604,6 +1608,8 @@ export interface BlueprintFunctionConfig {
   scope?: 'app' | 'org';
   /** Module discriminator for multi-module functions. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_function_definitions. */
   key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "function_definitions" instead of "org_function_definitions"). */
+  prefix?: string;
   /** RLS policy overrides for the function tables. NULL = apply defaults from apply_function_security(). */
   policies?: BlueprintPolicy[];
   /** Per-table overrides for function tables. Each key targets a specific table (definitions, invocations, execution_logs) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision. */
@@ -1619,6 +1625,8 @@ export interface BlueprintAgentConfig {
   scope?: 'app' | 'org';
   /** Module discriminator for multi-module agents. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_agent_thread. */
   key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "agent_thread" instead of "org_agent_thread"). */
+  prefix?: string;
   /** API name for the agent module. Used in GraphQL naming. Defaults to "agent". */
   api_name?: string;
   /** Whether to provision the agent_plan table for workflow plans with ordered tasks and approval gates. When true, tasks belong to plans (plan_id NOT NULL) instead of directly to threads. Defaults to false. */

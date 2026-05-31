@@ -868,6 +868,10 @@ function buildBlueprintStorageConfig(): t.ExportNamedDeclaration {
         'Discriminator for multi-module storage. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{storage_key}_buckets. Max 16 chars, lowercase snake_case.'
       ),
       addJSDoc(
+        optionalProp('prefix', t.tsStringKeyword()),
+        'Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "buckets" instead of "org_buckets").'
+      ),
+      addJSDoc(
         optionalProp(
           'buckets',
           t.tsArrayType(
@@ -1048,6 +1052,10 @@ function buildBlueprintNamespaceConfig(): t.ExportNamedDeclaration {
         'Module discriminator for multi-module namespaces. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_namespaces.'
       ),
       addJSDoc(
+        optionalProp('prefix', t.tsStringKeyword()),
+        'Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "namespaces" instead of "org_namespaces").'
+      ),
+      addJSDoc(
         optionalProp(
           'policies',
           t.tsArrayType(t.tsTypeReference(t.identifier('BlueprintPolicy')))
@@ -1097,6 +1105,10 @@ function buildBlueprintFunctionConfig(): t.ExportNamedDeclaration {
       addJSDoc(
         optionalProp('key', t.tsStringKeyword()),
         'Module discriminator for multi-module functions. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_function_definitions.'
+      ),
+      addJSDoc(
+        optionalProp('prefix', t.tsStringKeyword()),
+        'Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "function_definitions" instead of "org_function_definitions").'
       ),
       addJSDoc(
         optionalProp(
@@ -1152,6 +1164,10 @@ function buildBlueprintAgentConfig(): t.ExportNamedDeclaration {
       addJSDoc(
         optionalProp('key', t.tsStringKeyword()),
         'Module discriminator for multi-module agents. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_agent_thread.'
+      ),
+      addJSDoc(
+        optionalProp('prefix', t.tsStringKeyword()),
+        'Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "agent_thread" instead of "org_agent_thread").'
       ),
       addJSDoc(
         optionalProp('api_name', t.tsStringKeyword()),
