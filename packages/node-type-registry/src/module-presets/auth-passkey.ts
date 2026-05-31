@@ -49,15 +49,5 @@ export const PresetAuthPasskey: ModulePreset = {
     'webauthn_credentials_module',
     'webauthn_auth_module'
   ],
-  includes_notes: {
-    webauthn_credentials_module: 'Per-user WebAuthn credential storage. Without it, passkey registration does not compile.',
-    webauthn_auth_module: 'Runtime challenge + assertion flow.',
-    session_secrets_module: 'Challenge nonces for registration and assertion.'
-  },
-  omits_notes: {
-    rate_limits_module: 'Add via `auth:hardened` for production.',
-    connected_accounts_module: 'No OAuth / SSO — add via `auth:hardened`.',
-    phone_numbers_module: 'No SMS.'
-  },
   extends: ['auth:email']
 };

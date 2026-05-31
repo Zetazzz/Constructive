@@ -66,24 +66,5 @@ export const PresetB2b: ModulePreset = {
     ['invites_module', { scope: 'org' }],
     'devices_module'
   ],
-  includes_notes: {
-    'memberships_module (org)': 'Org-scoped membership rows — every user in an org gets one.',
-    'permissions_module (app)': 'App-wide permission grants (e.g. platform admins).',
-    'permissions_module (org)': 'Org-scoped permission grants (per-workspace admins, members, viewers, ...).',
-    'limits_module (app)': 'App-level quotas (e.g. max users per plan).',
-    'limits_module (org)': 'Org-level quotas (e.g. per-workspace API call caps).',
-    'levels_module (app)': 'Role/level bundles at the app scope.',
-    'levels_module (org)': 'Role/level bundles at the org scope (admin / member / viewer, etc.).',
-    'profiles_module (app)': 'App-scoped user profile (one per user).',
-    'profiles_module (org)': 'Org-scoped user profile (per org a user belongs to).',
-    'hierarchy_module (org)': 'Nested org structures (parent / child orgs).',
-    'invites_module (app)': 'App-level invites (rare — usually platform admin adds another admin).',
-    'invites_module (org)': 'Org-level invites (the common case — invite a teammate into a workspace).',
-    devices_module: 'Device tracking and trusted-device MFA bypass.'
-  },
-  omits_notes: {
-    storage_module: 'Add separately if you need file uploads tied to orgs.',
-    crypto_addresses_module: 'Not a web3 preset.'
-  },
   extends: ['auth:hardened']
 };
