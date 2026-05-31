@@ -1158,41 +1158,51 @@ function buildBlueprintAgentConfig(): t.ExportNamedDeclaration {
         'API name for the agent module. Used in GraphQL naming. Defaults to "agent".'
       ),
       addJSDoc(
-        optionalProp('has_knowledge', t.tsBooleanKeyword()),
-        'Whether to provision the agent_knowledge table with vector embeddings, tags, and trigger_phrases. Also inferred when a "knowledge" key is present. Defaults to false.'
+        optionalProp('has_plans', t.tsBooleanKeyword()),
+        'Whether to provision the agent_plan table for workflow plans with ordered tasks and approval gates. When true, tasks belong to plans (plan_id NOT NULL) instead of directly to threads. Defaults to false.'
+      ),
+      addJSDoc(
+        optionalProp('has_resources', t.tsBooleanKeyword()),
+        'Whether to provision the unified agent_resource table (kind: skill/knowledge/convention) with auto-chunking (ProcessChunks) and vector embeddings. Defaults to false.'
+      ),
+      addJSDoc(
+        optionalProp('has_agents', t.tsBooleanKeyword()),
+        'Whether to provision agent + agent_persona tables for agent registry and templates. Implies has_resources. Defaults to false.'
       ),
       addJSDoc(
         optionalProp(
-          'knowledge',
-          t.tsTypeLiteral([
-            optionalProp('has_chunks', t.tsBooleanKeyword()),
-            optionalProp('dimensions', t.tsNumberKeyword()),
-            optionalProp('chunk_size', t.tsNumberKeyword()),
-            optionalProp('chunk_overlap', t.tsNumberKeyword()),
-            optionalProp(
-              'chunk_strategy',
-              t.tsUnionType([
-                t.tsLiteralType(t.stringLiteral('fixed')),
-                t.tsLiteralType(t.stringLiteral('sentence')),
-                t.tsLiteralType(t.stringLiteral('paragraph')),
-                t.tsLiteralType(t.stringLiteral('semantic'))
-              ])
-            ),
-            optionalProp('embedding_model', t.tsStringKeyword()),
-            optionalProp('embedding_provider', t.tsStringKeyword()),
-            optionalProp(
-              'search_indexes',
-              t.tsArrayType(
+          'resources',
+          t.tsArrayType(
+            t.tsTypeLiteral([
+              optionalProp('has_chunks', t.tsBooleanKeyword()),
+              optionalProp('dimensions', t.tsNumberKeyword()),
+              optionalProp('chunk_size', t.tsNumberKeyword()),
+              optionalProp('chunk_overlap', t.tsNumberKeyword()),
+              optionalProp(
+                'chunk_strategy',
                 t.tsUnionType([
-                  t.tsLiteralType(t.stringLiteral('fulltext')),
-                  t.tsLiteralType(t.stringLiteral('bm25')),
-                  t.tsLiteralType(t.stringLiteral('trigram'))
+                  t.tsLiteralType(t.stringLiteral('fixed')),
+                  t.tsLiteralType(t.stringLiteral('sentence')),
+                  t.tsLiteralType(t.stringLiteral('paragraph')),
+                  t.tsLiteralType(t.stringLiteral('semantic'))
                 ])
+              ),
+              optionalProp('embedding_model', t.tsStringKeyword()),
+              optionalProp('embedding_provider', t.tsStringKeyword()),
+              optionalProp(
+                'search_indexes',
+                t.tsArrayType(
+                  t.tsUnionType([
+                    t.tsLiteralType(t.stringLiteral('tsvector')),
+                    t.tsLiteralType(t.stringLiteral('bm25')),
+                    t.tsLiteralType(t.stringLiteral('trigram'))
+                  ])
+                )
               )
-            )
-          ])
+            ])
+          )
         ),
-        'Knowledge configuration overrides. Set has_chunks to false to disable the chunking pipeline. Controls vector dimensions, chunking strategy, embedding model/provider, and text search indexes for the agent_knowledge table. Presence implies has_knowledge = true.'
+        'Resource configuration array. Controls vector dimensions, chunking strategy, embedding model/provider, and text search indexes for the agent_resource table. Set has_chunks to false to disable the ProcessChunks pipeline. Defaults: 768 dimensions, 1000 chunk_size, 200 chunk_overlap, paragraph strategy, ["tsvector"] search indexes.'
       ),
       addJSDoc(
         optionalProp(
@@ -1222,15 +1232,27 @@ function buildBlueprintAgentConfig(): t.ExportNamedDeclaration {
               t.tsTypeReference(t.identifier('BlueprintEntityTableProvision'))
             ),
             optionalProp(
-              'knowledge',
+              'plan',
+              t.tsTypeReference(t.identifier('BlueprintEntityTableProvision'))
+            ),
+            optionalProp(
+              'resource',
+              t.tsTypeReference(t.identifier('BlueprintEntityTableProvision'))
+            ),
+            optionalProp(
+              'agent',
+              t.tsTypeReference(t.identifier('BlueprintEntityTableProvision'))
+            ),
+            optionalProp(
+              'persona',
               t.tsTypeReference(t.identifier('BlueprintEntityTableProvision'))
             )
           ])
         ),
-        'Per-table overrides for agent tables. Each key targets a specific table (thread, message, task, prompt, knowledge) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision.'
+        'Per-table overrides for agent tables. Each key targets a specific table (thread, message, task, prompt, plan, resource, agent, persona) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision.'
       )
     ]),
-    'Agent module configuration. When used at the top level of a blueprint, the scope field controls whether agents are app-level ("app", default) or org-level ("org"). When used inside entity_types[], scope is inherited from the entity type. Provisions thread, message, task, prompt tables (and optionally knowledge with vector embeddings).'
+    'Agent module configuration. When used at the top level of a blueprint, the scope field controls whether agents are app-level ("app", default) or org-level ("org"). When used inside entity_types[], scope is inherited from the entity type. Provisions thread, message, task, prompt tables. Opt-in: has_plans (plan + approval workflow), has_resources (unified skills/knowledge with chunking), has_agents (agent registry + personas, implies has_resources).'
   );
 }
 

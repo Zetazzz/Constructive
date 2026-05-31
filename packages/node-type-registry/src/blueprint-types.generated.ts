@@ -158,6 +158,17 @@ export interface DataForceCurrentUserParams {
   /* Name of the field to force to current_user_id() */
   field_name?: string;
 }
+/** Creates a companion _translations table with lang_code + translatable fields. Copies SELECT policies and column-ref fields from the base table. Adds @i18n smart comment so the Graphile i18n plugin discovers it. Requires i18n_module to be provisioned for the database. */
+export interface DataI18nParams {
+  /* Field names on the base table to make translatable. Each field is duplicated on the translation table with the same type. */
+  fields: string[];
+  /* Suffix for the translation table name */
+  table_suffix?: string;
+  /* Type for the lang_code column */
+  lang_code_type?: 'citext' | 'text';
+  /* Whether to also copy INSERT/UPDATE/DELETE policies (not just SELECT). Default true — translations should be editable by the same users who can edit the base row. */
+  copy_mutation_policies?: boolean;
+}
 /** Adds a UUID primary key column with auto-generation default (uuidv7). This is the standard primary key pattern for all tables. */
 export interface DataIdParams {
   /* Column name for the primary key */
@@ -1016,23 +1027,6 @@ export interface AuthzCompositeParams {
 }
 /** Denies all access. Generates FALSE expression. */
 export type AuthzDenyAllParams = {};
-/** Path-scoped file sharing via ltree containment. Grants access when a path_shares row matches the current user, bucket, and an ancestor path with the required permission. */
-export interface AuthzFilePathParams {
-  /* Schema of the path_shares table */
-  shares_schema: string;
-  /* Name of the path_shares table */
-  shares_table: string;
-  /* Schema of the files table (used to qualify column references inside the EXISTS subquery) */
-  files_schema?: string;
-  /* Name of the files table (used to qualify column references inside the EXISTS subquery) */
-  files_table: string;
-  /* Boolean column on the path_shares table that grants the required permission (e.g. can_read, can_write) */
-  permission_field: string;
-  /* Column on the files table referencing the bucket */
-  bucket_field?: string;
-  /* Ltree column on the files table representing the file path */
-  path_field?: string;
-}
 /** Direct equality comparison between a table column and the current user ID. Simplest authorization pattern with no subqueries. */
 export interface AuthzDirectOwnerParams {
   /* Column name containing the owner user ID (e.g., owner_id) */
@@ -1062,10 +1056,44 @@ export interface AuthzEntityMembershipParams {
   /* If true, require is_owner flag */
   is_owner?: boolean;
 }
+/** Path-scoped file sharing via ltree containment. Grants access when a path_shares row matches the current user, bucket, and an ancestor path with the required permission. */
+export interface AuthzFilePathParams {
+  /* Schema of the path_shares table */
+  shares_schema: string;
+  /* Name of the path_shares table */
+  shares_table: string;
+  /* Schema of the files table (used to qualify column references inside the EXISTS subquery) */
+  files_schema?: string;
+  /* Name of the files table (used to qualify column references inside the EXISTS subquery) */
+  files_table: string;
+  /* Boolean column on the path_shares table that grants the required permission (e.g. can_read, can_write) */
+  permission_field: string;
+  /* Column on the files table referencing the bucket */
+  bucket_field?: string;
+  /* Ltree column on the files table representing the file path */
+  path_field?: string;
+}
 /** Check if current user is in an array column on the same row. */
 export interface AuthzMemberListParams {
   /* Column name containing the array of user IDs */
   array_field: string;
+}
+/** Compound policy: the row must be owned by the current user (owner_field = current_user_id) AND the current user must be a member of the entity referenced by entity_field. Combines direct ownership with entity membership — the actor can only access rows they own within entities they belong to. */
+export interface AuthzMemberOwnerParams {
+  /* Column name containing the owner user ID (e.g., owner_id) */
+  owner_field: string;
+  /* Column name referencing the entity (e.g., entity_id) */
+  entity_field: string;
+  /* SPRT column to select for the entity match */
+  sel_field?: string;
+  /* Scope: 1=app, 2=org, 3+=dynamic entity types (or string name resolved via membership_types_module) */
+  membership_type?: number | string;
+  /* Entity type prefix (e.g. 'channel', 'department'). Resolved to membership_type integer via memberships_module lookup. */
+  entity_type?: string;
+  /* Single permission name to check (resolved to bitstring mask) */
+  permission?: string;
+  /* Multiple permission names to check (ORed together into mask) */
+  permissions?: string[];
 }
 /** Restrictive policy that blocks read-only members from mutations. Checks actor_id + is_read_only IS NOT TRUE on the SPRT. Designed to run as a restrictive counterpart after a permissive AuthzEntityMembership policy has already verified membership. */
 export interface AuthzNotReadOnlyParams {
@@ -1084,23 +1112,6 @@ export interface AuthzOrgHierarchyParams {
   anchor_field: string;
   /* Optional max depth to limit visibility */
   max_depth?: number;
-}
-/** Compound policy: the row must be owned by the current user (owner_field = current_user_id) AND the current user must be a member of the entity referenced by entity_field. Combines direct ownership with entity membership — the actor can only access rows they own within entities they belong to. */
-export interface AuthzMemberOwnerParams {
-  /* Column name containing the owner user ID (e.g., owner_id) */
-  owner_field: string;
-  /* Column name referencing the entity (e.g., entity_id) */
-  entity_field: string;
-  /* SPRT column to select for the entity match */
-  sel_field?: string;
-  /* Scope: 1=app, 2=org, 3+=dynamic entity types (or string name resolved via membership_types_module) */
-  membership_type?: number | string;
-  /* Entity type prefix (e.g. 'channel', 'department'). Resolved to membership_type integer via memberships_module lookup. */
-  entity_type?: string;
-  /* Single permission name to check (resolved to bitstring mask) */
-  permission?: string;
-  /* Multiple permission names to check (ORed together into mask) */
-  permissions?: string[];
 }
 /** Peer visibility through shared entity membership. Authorizes access to user-owned rows when the owner and current user are both members of the same entity. Self-joins the SPRT table to find peers. */
 export interface AuthzPeerOwnershipParams {
@@ -1400,7 +1411,7 @@ export interface BlueprintField {
 /** An RLS policy entry for a blueprint table. Uses $type to match the blueprint JSON convention. */
 export interface BlueprintPolicy {
   /** Authz* policy type name (e.g., "AuthzDirectOwner", "AuthzAllowAll"). */
-  $type: 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzMemberOwner' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
+  $type: 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzFilePath' | 'AuthzMemberList' | 'AuthzMemberOwner' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
   /** Privileges this policy applies to (e.g., ["select"], ["insert", "update", "delete"]). */
   privileges?: string[];
   /** Whether this policy is permissive (true) or restrictive (false). Defaults to true. */
@@ -1602,7 +1613,7 @@ export interface BlueprintFunctionConfig {
     execution_logs?: BlueprintEntityTableProvision;
   };
 }
-/** Agent module configuration. When used at the top level of a blueprint, the scope field controls whether agents are app-level ("app", default) or org-level ("org"). When used inside entity_types[], scope is inherited from the entity type. Provisions thread, message, task, prompt tables (and optionally knowledge with vector embeddings). */
+/** Agent module configuration. When used at the top level of a blueprint, the scope field controls whether agents are app-level ("app", default) or org-level ("org"). When used inside entity_types[], scope is inherited from the entity type. Provisions thread, message, task, prompt tables. Opt-in: has_plans (plan + approval workflow), has_resources (unified skills/knowledge with chunking), has_agents (agent registry + personas, implies has_resources). */
 export interface BlueprintAgentConfig {
   /** Agent scope. "app" (default) creates app-level agent tables (membership_type = NULL). "org" creates per-org agent tables. Only used at the top level of a blueprint definition — entity-scoped agents inherit scope from the entity type. */
   scope?: 'app' | 'org';
@@ -1610,10 +1621,14 @@ export interface BlueprintAgentConfig {
   key?: string;
   /** API name for the agent module. Used in GraphQL naming. Defaults to "agent". */
   api_name?: string;
-  /** Whether to provision the agent_knowledge table with vector embeddings, tags, and trigger_phrases. Also inferred when a "knowledge" key is present. Defaults to false. */
-  has_knowledge?: boolean;
-  /** Knowledge configuration overrides. Set has_chunks to false to disable the chunking pipeline. Controls vector dimensions, chunking strategy, embedding model/provider, and text search indexes for the agent_knowledge table. Presence implies has_knowledge = true. */
-  knowledge?: {
+  /** Whether to provision the agent_plan table for workflow plans with ordered tasks and approval gates. When true, tasks belong to plans (plan_id NOT NULL) instead of directly to threads. Defaults to false. */
+  has_plans?: boolean;
+  /** Whether to provision the unified agent_resource table (kind: skill/knowledge/convention) with auto-chunking (ProcessChunks) and vector embeddings. Defaults to false. */
+  has_resources?: boolean;
+  /** Whether to provision agent + agent_persona tables for agent registry and templates. Implies has_resources. Defaults to false. */
+  has_agents?: boolean;
+  /** Resource configuration array. Controls vector dimensions, chunking strategy, embedding model/provider, and text search indexes for the agent_resource table. Set has_chunks to false to disable the ProcessChunks pipeline. Defaults: 768 dimensions, 1000 chunk_size, 200 chunk_overlap, paragraph strategy, ["tsvector"] search indexes. */
+  resources?: {
     has_chunks?: boolean;
     dimensions?: number;
     chunk_size?: number;
@@ -1621,17 +1636,20 @@ export interface BlueprintAgentConfig {
     chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
     embedding_model?: string;
     embedding_provider?: string;
-    search_indexes?: ('fulltext' | 'bm25' | 'trigram')[];
-  };
+    search_indexes?: ('tsvector' | 'bm25' | 'trigram')[];
+  }[];
   /** RLS policy overrides for the agent tables. NULL = apply defaults from apply_agent_security(). */
   policies?: BlueprintPolicy[];
-  /** Per-table overrides for agent tables. Each key targets a specific table (thread, message, task, prompt, knowledge) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision. */
+  /** Per-table overrides for agent tables. Each key targets a specific table (thread, message, task, prompt, plan, resource, agent, persona) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision. */
   provisions?: {
     thread?: BlueprintEntityTableProvision;
     message?: BlueprintEntityTableProvision;
     task?: BlueprintEntityTableProvision;
     prompt?: BlueprintEntityTableProvision;
-    knowledge?: BlueprintEntityTableProvision;
+    plan?: BlueprintEntityTableProvision;
+    resource?: BlueprintEntityTableProvision;
+    agent?: BlueprintEntityTableProvision;
+    persona?: BlueprintEntityTableProvision;
   };
 }
 /** Graph module configuration. Presence triggers permission registration (manage_graphs, execute_graphs). The graph module requires a merkle_store_module_id dependency, so entity_type_provision only registers permissions here — the graph module itself must be provisioned separately. */
@@ -1703,7 +1721,7 @@ export interface BlueprintEntityType {
  */
 ;
 /** String shorthand -- just the node type name. */
-export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzMemberOwner' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'DataBulk' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataForceCurrentUser' | 'DataId' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJsonb' | 'DataMemberOwner' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings' | 'EventReferral' | 'EventTracker' | 'JobTrigger' | 'LimitEnforceAggregate' | 'LimitEnforceCounter' | 'LimitEnforceFeature' | 'LimitEnforceRate' | 'LimitTrackUsage' | 'LimitWarningAggregate' | 'LimitWarningCounter' | 'LimitWarningRate' | 'ProcessChunks' | 'ProcessExtraction' | 'ProcessFileEmbedding' | 'ProcessImageEmbedding' | 'ProcessImageVersions';
+export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzFilePath' | 'AuthzMemberList' | 'AuthzMemberOwner' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'DataBulk' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataForceCurrentUser' | 'DataI18n' | 'DataId' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJsonb' | 'DataMemberOwner' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings' | 'EventReferral' | 'EventTracker' | 'JobTrigger' | 'LimitEnforceAggregate' | 'LimitEnforceCounter' | 'LimitEnforceFeature' | 'LimitEnforceRate' | 'LimitTrackUsage' | 'LimitWarningAggregate' | 'LimitWarningCounter' | 'LimitWarningRate' | 'ProcessChunks' | 'ProcessExtraction' | 'ProcessFileEmbedding' | 'ProcessImageEmbedding' | 'ProcessImageVersions';
 /** Object form -- { $type, data } with typed parameters. */
 export type BlueprintNodeObject = {
   $type: 'AuthzAllowAll';
@@ -1718,9 +1736,6 @@ export type BlueprintNodeObject = {
   $type: 'AuthzDenyAll';
   data?: Record<string, never>;
 } | {
-  $type: 'AuthzFilePath';
-  data: AuthzFilePathParams;
-} | {
   $type: 'AuthzDirectOwner';
   data: AuthzDirectOwnerParams;
 } | {
@@ -1730,17 +1745,20 @@ export type BlueprintNodeObject = {
   $type: 'AuthzEntityMembership';
   data: AuthzEntityMembershipParams;
 } | {
+  $type: 'AuthzFilePath';
+  data: AuthzFilePathParams;
+} | {
   $type: 'AuthzMemberList';
   data: AuthzMemberListParams;
+} | {
+  $type: 'AuthzMemberOwner';
+  data: AuthzMemberOwnerParams;
 } | {
   $type: 'AuthzNotReadOnly';
   data: AuthzNotReadOnlyParams;
 } | {
   $type: 'AuthzOrgHierarchy';
   data: AuthzOrgHierarchyParams;
-} | {
-  $type: 'AuthzMemberOwner';
-  data: AuthzMemberOwnerParams;
 } | {
   $type: 'AuthzPeerOwnership';
   data: AuthzPeerOwnershipParams;
@@ -1786,6 +1804,9 @@ export type BlueprintNodeObject = {
 } | {
   $type: 'DataForceCurrentUser';
   data: DataForceCurrentUserParams;
+} | {
+  $type: 'DataI18n';
+  data: DataI18nParams;
 } | {
   $type: 'DataId';
   data: DataIdParams;
