@@ -119,6 +119,6 @@ await generateMulti({
 
 ## Cross-References
 
-- `constructive-sdk-graphql` skill (in constructive-skills) — Full codegen pipeline (hooks, ORM, CLI generation)
+- `constructive-codegen` skill (in constructive-skills) — Full codegen pipeline (hooks, ORM, CLI generation)
 - `pgpm` skill — Database migrations (deploy before generating CLI)
 - `constructive-setup` skill — Monorepo setup and local development
