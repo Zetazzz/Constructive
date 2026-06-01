@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { expandApiNamesToMultiTarget, expandSchemaDirToMultiTarget, removeStaleTargetDirs } from '../../core/generate';
+import { expandApiNamesToMultiTarget, expandSchemaDirToMultiTarget, removeStaleTargetDirs, TARGETS_MANIFEST } from '../../core/generate';
 
 describe('expandApiNamesToMultiTarget', () => {
   it('returns null for no apiNames', () => {
@@ -151,7 +151,13 @@ describe('removeStaleTargetDirs', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('removes directories not in current target list', () => {
+  /** Write a .targets manifest listing the given names. */
+  function writeManifest(names: string[]) {
+    fs.writeFileSync(path.join(tempDir, TARGETS_MANIFEST), JSON.stringify(names));
+  }
+
+  it('removes previous targets that are no longer current', () => {
+    writeManifest(['admin', 'auth', 'public', 'objects']);
     fs.mkdirSync(path.join(tempDir, 'admin'));
     fs.mkdirSync(path.join(tempDir, 'auth'));
     fs.mkdirSync(path.join(tempDir, 'public'));
@@ -166,14 +172,30 @@ describe('removeStaleTargetDirs', () => {
     expect(fs.existsSync(path.join(tempDir, 'objects'))).toBe(false);
   });
 
-  it('preserves files (only removes directories)', () => {
+  it('preserves directories not listed in manifest', () => {
+    writeManifest(['admin', 'auth']);
     fs.mkdirSync(path.join(tempDir, 'admin'));
-    fs.writeFileSync(path.join(tempDir, 'index.ts'), 'export {}');
+    fs.mkdirSync(path.join(tempDir, 'auth'));
+    fs.mkdirSync(path.join(tempDir, 'config'));
+    fs.mkdirSync(path.join(tempDir, 'utils'));
+
+    const removed = removeStaleTargetDirs(tempDir, ['admin']);
+
+    expect(removed).toEqual(['auth']);
+    expect(fs.existsSync(path.join(tempDir, 'admin'))).toBe(true);
+    expect(fs.existsSync(path.join(tempDir, 'auth'))).toBe(false);
+    expect(fs.existsSync(path.join(tempDir, 'config'))).toBe(true);
+    expect(fs.existsSync(path.join(tempDir, 'utils'))).toBe(true);
+  });
+
+  it('returns empty array when no manifest exists', () => {
+    fs.mkdirSync(path.join(tempDir, 'admin'));
+    fs.mkdirSync(path.join(tempDir, 'config'));
 
     const removed = removeStaleTargetDirs(tempDir, ['admin']);
 
     expect(removed).toEqual([]);
-    expect(fs.existsSync(path.join(tempDir, 'index.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(tempDir, 'config'))).toBe(true);
   });
 
   it('returns empty array when output root does not exist', () => {
@@ -181,7 +203,8 @@ describe('removeStaleTargetDirs', () => {
     expect(removed).toEqual([]);
   });
 
-  it('returns empty array when no stale directories exist', () => {
+  it('returns empty array when no stale targets exist', () => {
+    writeManifest(['admin', 'auth']);
     fs.mkdirSync(path.join(tempDir, 'admin'));
     fs.mkdirSync(path.join(tempDir, 'auth'));
 
@@ -189,12 +212,21 @@ describe('removeStaleTargetDirs', () => {
     expect(removed).toEqual([]);
   });
 
-  it('removes all directories when target list is empty', () => {
+  it('removes all previous targets when current list is empty', () => {
+    writeManifest(['old-target']);
     fs.mkdirSync(path.join(tempDir, 'old-target'));
 
     const removed = removeStaleTargetDirs(tempDir, []);
 
     expect(removed).toEqual(['old-target']);
     expect(fs.existsSync(path.join(tempDir, 'old-target'))).toBe(false);
+  });
+
+  it('handles corrupt manifest gracefully', () => {
+    fs.writeFileSync(path.join(tempDir, TARGETS_MANIFEST), 'not json');
+    fs.mkdirSync(path.join(tempDir, 'admin'));
+
+    const removed = removeStaleTargetDirs(tempDir, []);
+    expect(removed).toEqual([]);
   });
 });
