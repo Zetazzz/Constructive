@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.47.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.46.0...node-type-registry@0.47.0) (2026-06-01)
+
+### Bug Fixes
+
+- **node-type-registry:** update BlueprintAgentConfig for has_resources/has_agents/has_plans ([e691aed](https://github.com/constructive-io/constructive/commit/e691aed0d26c630ae6715546addaa40f148e57ad))
+
+### Features
+
+- **node-type-registry:** add prefix override to all module config types ([5cd1852](https://github.com/constructive-io/constructive/commit/5cd1852ded5e739c74fd498eed45f6fe8074281e))
+
 # [0.46.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.45.0...node-type-registry@0.46.0) (2026-05-31)
 
 ### Bug Fixes
