@@ -57,6 +57,6 @@ See [pnpm-publishing.md](./references/pnpm-publishing.md) for the full explanati
 
 ## Cross-References
 
-- `inquirerer-cli` — CLI building with inquirerer, README formatting
+- `dev-utils` — CLI building with inquirerer, README formatting
 - `pgpm` — PGPM workspaces for SQL modules (different from pnpm workspaces)
 - `constructive-platform` — Platform core, environment configuration
