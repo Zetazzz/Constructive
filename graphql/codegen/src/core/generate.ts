@@ -626,9 +626,14 @@ function applySharedPgpmDb(
   };
 }
 
+/** Manifest file listing generated target names, written to the output root. */
+export const TARGETS_MANIFEST = '.targets';
+
 /**
- * Remove subdirectories in `outputRoot` that are not in `currentTargetNames`.
- * Useful for cleaning up stale target output before a fresh multi-target generate.
+ * Remove stale generated target directories from `outputRoot`.
+ * Reads the `.targets` manifest (written by `generateMulti`) to know which
+ * directories were previously generated. Only those are eligible for removal;
+ * hand-written directories (e.g. `config/`, `utils/`) are never touched.
  * Returns the list of directory names that were removed.
  */
 export function removeStaleTargetDirs(
@@ -639,14 +644,26 @@ export function removeStaleTargetDirs(
   const removed: string[] = [];
   if (!fs.existsSync(outputRoot)) return removed;
 
+  const manifestPath = path.join(outputRoot, TARGETS_MANIFEST);
+  if (!fs.existsSync(manifestPath)) return removed;
+
+  let previousTargets: string[];
+  try {
+    previousTargets = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  } catch {
+    return removed;
+  }
+
   const currentTargets = new Set(currentTargetNames);
-  const entries = fs.readdirSync(outputRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (entry.isDirectory() && !currentTargets.has(entry.name)) {
-      fs.rmSync(path.join(outputRoot, entry.name), { recursive: true, force: true });
-      removed.push(entry.name);
+  const staleTargets = previousTargets.filter((t) => !currentTargets.has(t));
+
+  for (const target of staleTargets) {
+    const dirPath = path.join(outputRoot, target);
+    if (fs.existsSync(dirPath)) {
+      fs.rmSync(dirPath, { recursive: true, force: true });
+      removed.push(target);
       if (verbose) {
-        console.log(`Removed stale target directory: ${entry.name}`);
+        console.log(`Removed stale target directory: ${target}`);
       }
     }
   }
@@ -832,6 +849,12 @@ export async function generateMulti(
         outputRoot,
         [],
         { pruneStaleFiles: false },
+      );
+
+      // Write manifest so removeStaleTargetDirs knows which dirs are generated
+      fs.writeFileSync(
+        path.join(outputRoot, TARGETS_MANIFEST),
+        JSON.stringify(successfulNames.sort()) + '\n',
       );
     }
   }
