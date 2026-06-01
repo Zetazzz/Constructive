@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.25.1](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.25.0...@constructive-sdk/cli@0.25.1) (2026-06-01)
+
+### Bug Fixes
+
+- restore deleted config/utils and add @agentic-kit/ollama dep to constructive-cli ([88c65e1](https://github.com/constructive-io/constructive/commit/88c65e1c3a3be48ac5db0f97df8d94568f484bc0))
+
 # [0.25.0](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.24.1...@constructive-sdk/cli@0.25.0) (2026-05-31)
 
 ### Features
