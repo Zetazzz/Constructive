@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.47.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.47.0...@constructive-io/graphql-codegen@4.47.1) (2026-06-01)
+
+### Bug Fixes
+
+- **codegen:** lazy-load @agentic-kit/ollama in embedder template ([6d605b1](https://github.com/constructive-io/constructive/commit/6d605b1bbece922c630720b4a204dfb10b1e49c3))
+
 # [4.47.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.46.1...@constructive-io/graphql-codegen@4.47.0) (2026-05-31)
 
 ### Features
