@@ -55,7 +55,7 @@ const buildDynamicFieldsFromGraphQL = async (
 ): Promise<DynamicFieldsResult> => {
   const emptyResult: DynamicFieldsResult = { fields: {}, enumFields: new Set() };
 
-  const typeName = getGraphQLTypeName(tableConfig.table);
+  const typeName = tableConfig.gqlTypeName || getGraphQLTypeName(tableConfig.table);
 
   try {
     const introspectedFields = await client.introspectType(typeName);
@@ -275,6 +275,7 @@ export const exportGraphQLMeta = async ({
     queryAndParse('permissions_module'),
     queryAndParse('limits_module'),
     queryAndParse('levels_module'),
+    queryAndParse('events_module'),
     queryAndParse('users_module'),
     queryAndParse('hierarchy_module'),
     queryAndParse('membership_types_module'),
@@ -284,13 +285,14 @@ export const exportGraphQLMeta = async ({
     queryAndParse('user_state_module'),
     queryAndParse('profiles_module'),
     queryAndParse('config_secrets_user_module'),
+    queryAndParse('user_credentials_module'),
+    queryAndParse('user_settings_module'),
     queryAndParse('connected_accounts_module'),
     queryAndParse('phone_numbers_module'),
     queryAndParse('crypto_addresses_module'),
     queryAndParse('crypto_auth_module'),
     queryAndParse('field_module'),
     queryAndParse('table_module'),
-    queryAndParse('table_template_module'),
     queryAndParse('secure_table_provision'),
     queryAndParse('uuid_module'),
     queryAndParse('default_ids_module'),
@@ -308,8 +310,21 @@ export const exportGraphQLMeta = async ({
     queryAndParse('realtime_module'),
     queryAndParse('session_secrets_module'),
     queryAndParse('config_secrets_org_module'),
+    queryAndParse('config_secrets_module'),
+    queryAndParse('i18n_module'),
+    queryAndParse('agent_module'),
+    queryAndParse('function_module'),
+    queryAndParse('namespace_module'),
+    queryAndParse('merkle_store_module'),
+    queryAndParse('graph_module'),
+    queryAndParse('compute_log_module'),
+    queryAndParse('db_usage_module'),
+    queryAndParse('storage_log_module'),
+    queryAndParse('transfer_log_module'),
     queryAndParse('webauthn_auth_module'),
-    queryAndParse('webauthn_credentials_module')
+    queryAndParse('webauthn_credentials_module'),
+    queryAndParse('inference_log_module'),
+    queryAndParse('rate_limit_meters_module')
   ]);
 
   return sql;

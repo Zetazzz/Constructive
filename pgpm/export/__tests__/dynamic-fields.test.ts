@@ -60,10 +60,19 @@ describe('Type mapping parity: mapPgTypeToFieldType vs mapGraphQLTypeToFieldType
 // =============================================================================
 
 describe('Round-trip field name verification: snake_case → camelCase → snake_case', () => {
+  /**
+   * Known table names that don't round-trip through camelCase.
+   * These use well-known abbreviations (e.g. i18n) that the inflekt library
+   * doesn't preserve when converting back to snake_case.
+   * Adding a gqlTypeName override in the config acknowledges the exception.
+   */
+  const knownNonRoundTrippingKeys = new Set(['i18n_module']);
+
   it('every META_TABLE_CONFIG table name round-trips through camelCase conversion', () => {
     const failures: string[] = [];
 
     for (const [key, config] of Object.entries(META_TABLE_CONFIG)) {
+      if (knownNonRoundTrippingKeys.has(key)) continue;
       const original = config.table;
       const camel = toCamelCase(original);
       const roundTrip = toSnakeCase(camel);
@@ -79,6 +88,7 @@ describe('Round-trip field name verification: snake_case → camelCase → snake
     const failures: string[] = [];
 
     for (const key of Object.keys(META_TABLE_CONFIG)) {
+      if (knownNonRoundTrippingKeys.has(key)) continue;
       const camel = toCamelCase(key);
       const roundTrip = toSnakeCase(camel);
       if (roundTrip !== key) {
@@ -87,6 +97,17 @@ describe('Round-trip field name verification: snake_case → camelCase → snake
     }
 
     expect(failures).toEqual([]);
+  });
+
+  it('known non-round-tripping table names have gqlTypeName overrides', () => {
+    // Verify that every known exception has a gqlTypeName override,
+    // ensuring the GraphQL flow still works correctly despite the naming mismatch.
+    for (const key of knownNonRoundTrippingKeys) {
+      const config = META_TABLE_CONFIG[key];
+      expect(config).toBeDefined();
+      expect(config.gqlTypeName).toBeDefined();
+      expect(config.gqlTypeName!.length).toBeGreaterThan(0);
+    }
   });
 
   it('common snake_case column names round-trip correctly', () => {
@@ -129,8 +150,10 @@ describe('mapPgTypeToFieldType', () => {
     expect(mapPgTypeToFieldType('varchar')).toBe('text');
     expect(mapPgTypeToFieldType('bpchar')).toBe('text');
     expect(mapPgTypeToFieldType('name')).toBe('text');
+    expect(mapPgTypeToFieldType('citext')).toBe('text');
     expect(mapPgTypeToFieldType('_text')).toBe('text[]');
     expect(mapPgTypeToFieldType('_varchar')).toBe('text[]');
+    expect(mapPgTypeToFieldType('_citext')).toBe('text[]');
   });
 
   it('maps boolean type correctly', () => {
@@ -159,7 +182,6 @@ describe('mapPgTypeToFieldType', () => {
   it('falls back to text for unknown types', () => {
     expect(mapPgTypeToFieldType('geometry')).toBe('text');
     expect(mapPgTypeToFieldType('unknown_array')).toBe('text');
-    expect(mapPgTypeToFieldType('citext')).toBe('text');
   });
 });
 

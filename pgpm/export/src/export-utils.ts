@@ -134,6 +134,7 @@ export const META_TABLE_ORDER = [
   'memberships_module',
   'permissions_module',
   'limits_module',
+  'levels_module',
   'events_module',
   'users_module',
   'hierarchy_module',
@@ -144,6 +145,8 @@ export const META_TABLE_ORDER = [
   'user_state_module',
   'profiles_module',
   'config_secrets_user_module',
+  'user_credentials_module',
+  'user_settings_module',
   'connected_accounts_module',
   'phone_numbers_module',
   'crypto_addresses_module',
@@ -169,6 +172,17 @@ export const META_TABLE_ORDER = [
   'realtime_module',
   'session_secrets_module',
   'config_secrets_org_module',
+  'config_secrets_module',
+  'i18n_module',
+  'agent_module',
+  'function_module',
+  'namespace_module',
+  'merkle_store_module',
+  'graph_module',
+  'compute_log_module',
+  'db_usage_module',
+  'storage_log_module',
+  'transfer_log_module',
   'webauthn_auth_module',
   'webauthn_credentials_module',
   'inference_log_module',
@@ -186,6 +200,7 @@ export interface TableConfig {
   table: string;
   conflictDoNothing?: boolean;
   typeOverrides?: Record<string, FieldType>; // only for special types (image, upload, url) that can't be inferred
+  gqlTypeName?: string; // override for GraphQL type name when automatic derivation doesn't match PostGraphile's inflector
 }
 
 /**
@@ -384,6 +399,10 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
     schema: 'metaschema_modules_public',
     table: 'levels_module'
   },
+  events_module: {
+    schema: 'metaschema_modules_public',
+    table: 'events_module'
+  },
   users_module: {
     schema: 'metaschema_modules_public',
     table: 'users_module'
@@ -419,6 +438,14 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
   config_secrets_user_module: {
     schema: 'metaschema_modules_public',
     table: 'config_secrets_user_module'
+  },
+  user_credentials_module: {
+    schema: 'metaschema_modules_public',
+    table: 'user_credentials_module'
+  },
+  user_settings_module: {
+    schema: 'metaschema_modules_public',
+    table: 'user_settings_module'
   },
   connected_accounts_module: {
     schema: 'metaschema_modules_public',
@@ -512,6 +539,51 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
   config_secrets_org_module: {
     schema: 'metaschema_modules_public',
     table: 'config_secrets_org_module'
+  },
+  config_secrets_module: {
+    schema: 'metaschema_modules_public',
+    table: 'config_secrets_module'
+  },
+  i18n_module: {
+    schema: 'metaschema_modules_public',
+    table: 'i18n_module',
+    gqlTypeName: 'I18NModule' // i18n is a well-known abbreviation; PostGraphile inflector capitalizes the N
+  },
+  agent_module: {
+    schema: 'metaschema_modules_public',
+    table: 'agent_module'
+  },
+  function_module: {
+    schema: 'metaschema_modules_public',
+    table: 'function_module'
+  },
+  namespace_module: {
+    schema: 'metaschema_modules_public',
+    table: 'namespace_module'
+  },
+  merkle_store_module: {
+    schema: 'metaschema_modules_public',
+    table: 'merkle_store_module'
+  },
+  graph_module: {
+    schema: 'metaschema_modules_public',
+    table: 'graph_module'
+  },
+  compute_log_module: {
+    schema: 'metaschema_modules_public',
+    table: 'compute_log_module'
+  },
+  db_usage_module: {
+    schema: 'metaschema_modules_public',
+    table: 'db_usage_module'
+  },
+  storage_log_module: {
+    schema: 'metaschema_modules_public',
+    table: 'storage_log_module'
+  },
+  transfer_log_module: {
+    schema: 'metaschema_modules_public',
+    table: 'transfer_log_module'
   },
   webauthn_auth_module: {
     schema: 'metaschema_modules_public',

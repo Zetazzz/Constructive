@@ -37,8 +37,8 @@ export interface TypeMapEntry {
 export const PG_TYPE_MAP: TypeMapEntry[] = [
   { pgUdtNames: ['uuid'],                              gqlTypeName: 'UUID',     fieldType: 'uuid',       gqlKind: 'SCALAR' },
   { pgUdtNames: ['_uuid'],                             gqlTypeName: 'UUID',     fieldType: 'uuid[]',     gqlKind: 'SCALAR', isArray: true },
-  { pgUdtNames: ['text', 'varchar', 'bpchar', 'name'], gqlTypeName: 'String',  fieldType: 'text',       gqlKind: 'SCALAR' },
-  { pgUdtNames: ['_text', '_varchar'],                 gqlTypeName: 'String',  fieldType: 'text[]',     gqlKind: 'SCALAR', isArray: true },
+  { pgUdtNames: ['text', 'varchar', 'bpchar', 'name', 'citext'], gqlTypeName: 'String',  fieldType: 'text',       gqlKind: 'SCALAR' },
+  { pgUdtNames: ['_text', '_varchar', '_citext'],           gqlTypeName: 'String',  fieldType: 'text[]',     gqlKind: 'SCALAR', isArray: true },
   { pgUdtNames: ['bool'],                              gqlTypeName: 'Boolean',  fieldType: 'boolean',    gqlKind: 'SCALAR' },
   { pgUdtNames: ['jsonb', 'json'],                     gqlTypeName: 'JSON',    fieldType: 'jsonb',      gqlKind: 'SCALAR' },
   { pgUdtNames: ['_jsonb'],                            gqlTypeName: 'JSON',    fieldType: 'jsonb[]',    gqlKind: 'SCALAR', isArray: true },
