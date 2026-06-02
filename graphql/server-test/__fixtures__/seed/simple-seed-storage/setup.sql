@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS metaschema_modules_public.storage_module (
   files_table_id uuid NOT NULL DEFAULT uuid_nil(),
   buckets_table_name text NOT NULL DEFAULT 'app_buckets',
   files_table_name text NOT NULL DEFAULT 'app_files',
+  scope text NOT NULL DEFAULT 'app',
+  prefix text NOT NULL DEFAULT 'app',
   membership_type int DEFAULT NULL,
   entity_table_id uuid NULL,
   endpoint text NULL,
@@ -72,6 +74,6 @@ CREATE INDEX IF NOT EXISTS storage_module_database_id_idx
   ON metaschema_modules_public.storage_module (database_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS storage_module_unique_scope
-  ON metaschema_modules_public.storage_module (database_id, COALESCE(membership_type, -1));
+  ON metaschema_modules_public.storage_module (database_id, scope);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON metaschema_modules_public.storage_module TO administrator, authenticated, anonymous;

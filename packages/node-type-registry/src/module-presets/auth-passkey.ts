@@ -34,13 +34,14 @@ export const PresetAuthPasskey: ModulePreset = {
   modules: [
     'users_module',
     'membership_types_module',
-    'permissions_module:app',
-    'limits_module:app',
-    'levels_module:app',
-    'memberships_module:app',
+    ['permissions_module', { scope: 'app' }],
+    ['limits_module', { scope: 'app' }],
+    ['levels_module', { scope: 'app' }],
+    ['memberships_module', { scope: 'app' }],
     'sessions_module',
     'user_state_module',
-    'config_secrets_user_module',
+    'user_credentials_module',
+    'config_secrets_module',
     'emails_module',
     'rls_module',
     'user_auth_module',
@@ -48,15 +49,5 @@ export const PresetAuthPasskey: ModulePreset = {
     'webauthn_credentials_module',
     'webauthn_auth_module'
   ],
-  includes_notes: {
-    webauthn_credentials_module: 'Per-user WebAuthn credential storage. Without it, passkey registration does not compile.',
-    webauthn_auth_module: 'Runtime challenge + assertion flow.',
-    session_secrets_module: 'Challenge nonces for registration and assertion.'
-  },
-  omits_notes: {
-    rate_limits_module: 'Add via `auth:hardened` for production.',
-    connected_accounts_module: 'No OAuth / SSO — add via `auth:hardened`.',
-    phone_numbers_module: 'No SMS.'
-  },
   extends: ['auth:email']
 };

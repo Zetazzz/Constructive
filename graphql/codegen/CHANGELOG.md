@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.47.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.47.1...@constructive-io/graphql-codegen@4.47.2) (2026-06-01)
+
+### Bug Fixes
+
+- **codegen:** use .targets manifest for stale target cleanup ([b0f09f9](https://github.com/constructive-io/constructive/commit/b0f09f9ec84fe07fa60c02484ac579538e72d97b))
+
+## [4.47.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.47.0...@constructive-io/graphql-codegen@4.47.1) (2026-06-01)
+
+### Bug Fixes
+
+- **codegen:** lazy-load @agentic-kit/ollama in embedder template ([6d605b1](https://github.com/constructive-io/constructive/commit/6d605b1bbece922c630720b4a204dfb10b1e49c3))
+
+# [4.47.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.46.1...@constructive-io/graphql-codegen@4.47.0) (2026-05-31)
+
+### Features
+
+- **codegen:** add cleanStaleTargets option to generateMulti ([a1cf8cd](https://github.com/constructive-io/constructive/commit/a1cf8cd55c70859949a4a6bac9607c2847a0f75f))
+
+## [4.46.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.46.0...@constructive-io/graphql-codegen@4.46.1) (2026-05-31)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
+# [4.46.0](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.45.3...@constructive-io/graphql-codegen@4.46.0) (2026-05-30)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
+## [4.45.3](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.45.2...@constructive-io/graphql-codegen@4.45.3) (2026-05-29)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
+## [4.45.2](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.45.1...@constructive-io/graphql-codegen@4.45.2) (2026-05-29)
+
+**Note:** Version bump only for package @constructive-io/graphql-codegen
+
 ## [4.45.1](https://github.com/constructive-io/constructive/compare/@constructive-io/graphql-codegen@4.45.0...@constructive-io/graphql-codegen@4.45.1) (2026-05-24)
 
 **Note:** Version bump only for package @constructive-io/graphql-codegen

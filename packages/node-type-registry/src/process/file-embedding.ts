@@ -148,7 +148,7 @@ export const ProcessFileEmbedding: NodeTypeDefinition = {
         description:
           'Whether to create a chunks table via ProcessChunks. Defaults to true ' +
           'when extraction is provided, false in direct mode. Set explicitly ' +
-          'to override.',
+          'to override.'
       },
       chunks: {
         type: 'object',

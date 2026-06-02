@@ -137,6 +137,19 @@ afterEach(async () => {
 - **Never** skip `beforeEach`/`afterEach` hooks — tests will leak state to each other
 - **Never** construct connection strings manually — use the env configuration system
 
+## Tooling Skills
+
+The `.agents/skills/` directory contains tooling-focused skills for this monorepo:
+
+| Skill | Description | When to Use |
+|-------|-------------|-------------|
+| `pgpm` | PostgreSQL Package Manager — migrations, CLI, Docker, CI/CD, project scaffolding, table creation rules, DB export | Database migrations, workspace/module creation, `pgpm init`, deploy/revert |
+| `constructive-pnpm` | PNPM workspace management — monorepo config, dist-folder publishing with makage/lerna, dependency management | Configuring pnpm workspaces, publishing packages, managing monorepo dependencies |
+| `constructive-setup` | Monorepo setup — install dependencies, start PostgreSQL, bootstrap users, build, run tests, local email services | Setting up the development environment, local dev, full pipeline |
+| `constructive-testing` | PostgreSQL testing frameworks — pgsql-test, drizzle-orm-test, supabase-test | Writing database tests, testing RLS policies, seeding test data |
+| `constructive-cli` | Generated CLI commands — how the CLI is generated from GraphQL schemas, codegen options, multi-target CLI | Generating CLI tools, running generated CLI, understanding codegen pipeline |
+| `graphile-search` | Unified PostGraphile v5 search plugin — tsvector, BM25, pg_trgm, pgvector adapters, composite searchScore | Adding search to GraphQL, configuring search adapters, querying search via SDK |
+
 ## Tips
 
 1. Start with `pgpm/core/AGENTS.md` to understand the migration and plan model.

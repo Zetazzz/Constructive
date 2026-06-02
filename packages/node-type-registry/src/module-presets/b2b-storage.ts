@@ -21,7 +21,7 @@ export const PresetB2bStorage: ModulePreset = {
     '`app_buckets` and `app_files` tables with full RLS: AuthzPublishable for public reads, ' +
     'AuthzAppMembership for member access, AuthzDirectOwner for uploader-only modify/delete. ' +
     'Entity-type provisioning with a non-empty `storage` array adds per-scope storage tables ' +
-    'automatically (multiple modules per entity via storage_key). Choose this when your B2B ' +
+    'automatically (multiple modules per entity via key). Choose this when your B2B ' +
     'app needs file uploads, avatars, attachments, or any object storage tied to workspaces.',
   good_for: [
     'B2B SaaS with file uploads (documents, avatars, attachments)',
@@ -35,17 +35,18 @@ export const PresetB2bStorage: ModulePreset = {
   modules: [
     'users_module',
     'membership_types_module',
-    'permissions_module:app',
-    'permissions_module:org',
-    'limits_module:app',
-    'limits_module:org',
-    'levels_module:app',
-    'levels_module:org',
-    'memberships_module:app',
-    'memberships_module:org',
+    ['permissions_module', { scope: 'app' }],
+    ['permissions_module', { scope: 'org' }],
+    ['limits_module', { scope: 'app' }],
+    ['limits_module', { scope: 'org' }],
+    ['levels_module', { scope: 'app' }],
+    ['levels_module', { scope: 'org' }],
+    ['memberships_module', { scope: 'app' }],
+    ['memberships_module', { scope: 'org' }],
     'sessions_module',
     'user_state_module',
-    'config_secrets_user_module',
+    'user_credentials_module',
+    'config_secrets_module',
     'emails_module',
     'rls_module',
     'user_auth_module',
@@ -56,20 +57,13 @@ export const PresetB2bStorage: ModulePreset = {
     'webauthn_credentials_module',
     'webauthn_auth_module',
     'phone_numbers_module',
-    'profiles_module:app',
-    'profiles_module:org',
-    'hierarchy_module:org',
-    'invites_module:app',
-    'invites_module:org',
+    ['profiles_module', { scope: 'app' }],
+    ['profiles_module', { scope: 'org' }],
+    ['hierarchy_module', { scope: 'org' }],
+    ['invites_module', { scope: 'app' }],
+    ['invites_module', { scope: 'org' }],
     'storage_module',
     'devices_module'
   ],
-  includes_notes: {
-    storage_module: 'File upload infrastructure: app_buckets + app_files tables with RLS. Entity-type storage scopes layered on top via the `storage` array (array-only format, supports multiple modules per entity via storage_key).',
-    devices_module: 'Device tracking and trusted-device MFA bypass.'
-  },
-  omits_notes: {
-    crypto_addresses_module: 'Not a web3 preset.'
-  },
   extends: ['b2b']
 };

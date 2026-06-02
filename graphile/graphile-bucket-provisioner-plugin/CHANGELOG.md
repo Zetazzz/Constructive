@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.12.0](https://github.com/constructive-io/constructive/compare/graphile-bucket-provisioner-plugin@0.11.2...graphile-bucket-provisioner-plugin@0.12.0) (2026-05-30)
+
+### Bug Fixes
+
+- update storage plugins to use scope instead of membership_type ([5c4cd30](https://github.com/constructive-io/constructive/commit/5c4cd30c08d541f3e9b0c22d31cf39a977599615))
+
+## [0.11.2](https://github.com/constructive-io/constructive/compare/graphile-bucket-provisioner-plugin@0.11.1...graphile-bucket-provisioner-plugin@0.11.2) (2026-05-29)
+
+**Note:** Version bump only for package graphile-bucket-provisioner-plugin
+
 ## [0.11.1](https://github.com/constructive-io/constructive/compare/graphile-bucket-provisioner-plugin@0.11.0...graphile-bucket-provisioner-plugin@0.11.1) (2026-05-21)
 
 **Note:** Version bump only for package graphile-bucket-provisioner-plugin

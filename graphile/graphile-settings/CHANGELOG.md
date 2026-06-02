@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [5.6.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.5.0...graphile-settings@5.6.0) (2026-05-31)
+
+### Features
+
+- wire enableI18n through DatabaseSettings, loader, and ConstructivePreset ([7b709b9](https://github.com/constructive-io/constructive/commit/7b709b9069e462da77e5d1cda9e7c1df9d8569ea))
+
+# [5.5.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.4.1...graphile-settings@5.5.0) (2026-05-30)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.4.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.4.0...graphile-settings@5.4.1) (2026-05-29)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.4.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.3.1...graphile-settings@5.4.0) (2026-05-29)
+
+### Features
+
+- add FieldType/FieldDefault TS interfaces, remove SqlExpressionValidatorPreset from constructive-preset ([b79342c](https://github.com/constructive-io/constructive/commit/b79342cb1224fb74971abfa97c54cf2823d08d46))
+
 ## [5.3.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.3.0...graphile-settings@5.3.1) (2026-05-24)
 
 **Note:** Version bump only for package graphile-settings

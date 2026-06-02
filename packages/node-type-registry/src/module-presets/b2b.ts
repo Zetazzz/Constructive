@@ -18,11 +18,11 @@ export const PresetB2b: ModulePreset = {
   summary: '`auth:hardened` + orgs, invites, fine-grained permissions, levels, profiles, hierarchy.',
   description:
     'Everything in `auth:hardened`, plus the full org/team/permission stack at both app and ' +
-    'org membership scopes. You get: `memberships_module:org` for org-scoped memberships, ' +
-    '`permissions_module:app/:org` for fine-grained RBAC, `limits_module:app/:org` for per-scope ' +
-    'quota enforcement, `levels_module:app/:org` for role bundles, `profiles_module:app/:org` ' +
-    'for per-scope user display info, `hierarchy_module:org` for nested org structures, and ' +
-    '`invites_module:app/:org` for invite flows at either scope. Choose this when the app has ' +
+    'org membership scopes. You get: memberships at org scope, permissions at app and org ' +
+    'scopes for fine-grained RBAC, limits at app and org scopes for per-scope quota ' +
+    'enforcement, levels at app and org scopes for role bundles, profiles at app and org ' +
+    'scopes for per-scope user display info, hierarchy at org scope for nested org structures, ' +
+    'and invites at app and org scopes for invite flows. Choose this when the app has ' +
     'the concept of a "workspace" / "team" / "tenant" that users belong to and act within.',
   good_for: [
     'B2B SaaS with multi-tenant workspaces / teams',
@@ -37,11 +37,12 @@ export const PresetB2b: ModulePreset = {
   modules: [
     'users_module',
     'membership_types_module',
-    'memberships_module:app',
-    'memberships_module:org',
+    ['memberships_module', { scope: 'app' }],
+    ['memberships_module', { scope: 'org' }],
     'sessions_module',
     'user_state_module',
-    'config_secrets_user_module',
+    'user_credentials_module',
+    'config_secrets_module',
     'emails_module',
     'rls_module',
     'user_auth_module',
@@ -52,37 +53,18 @@ export const PresetB2b: ModulePreset = {
     'webauthn_credentials_module',
     'webauthn_auth_module',
     'phone_numbers_module',
-    'permissions_module:app',
-    'permissions_module:org',
-    'limits_module:app',
-    'limits_module:org',
-    'levels_module:app',
-    'levels_module:org',
-    'profiles_module:app',
-    'profiles_module:org',
-    'hierarchy_module:org',
-    'invites_module:app',
-    'invites_module:org',
+    ['permissions_module', { scope: 'app' }],
+    ['permissions_module', { scope: 'org' }],
+    ['limits_module', { scope: 'app' }],
+    ['limits_module', { scope: 'org' }],
+    ['levels_module', { scope: 'app' }],
+    ['levels_module', { scope: 'org' }],
+    ['profiles_module', { scope: 'app' }],
+    ['profiles_module', { scope: 'org' }],
+    ['hierarchy_module', { scope: 'org' }],
+    ['invites_module', { scope: 'app' }],
+    ['invites_module', { scope: 'org' }],
     'devices_module'
   ],
-  includes_notes: {
-    'memberships_module:org': 'Org-scoped membership rows — every user in an org gets one.',
-    'permissions_module:app': 'App-wide permission grants (e.g. platform admins).',
-    'permissions_module:org': 'Org-scoped permission grants (per-workspace admins, members, viewers, ...).',
-    'limits_module:app': 'App-level quotas (e.g. max users per plan).',
-    'limits_module:org': 'Org-level quotas (e.g. per-workspace API call caps).',
-    'levels_module:app': 'Role/level bundles at the app scope.',
-    'levels_module:org': 'Role/level bundles at the org scope (admin / member / viewer, etc.).',
-    'profiles_module:app': 'App-scoped user profile (one per user).',
-    'profiles_module:org': 'Org-scoped user profile (per org a user belongs to).',
-    'hierarchy_module:org': 'Nested org structures (parent / child orgs).',
-    'invites_module:app': 'App-level invites (rare — usually platform admin adds another admin).',
-    'invites_module:org': 'Org-level invites (the common case — invite a teammate into a workspace).',
-    devices_module: 'Device tracking and trusted-device MFA bypass.'
-  },
-  omits_notes: {
-    storage_module: 'Add separately if you need file uploads tied to orgs.',
-    crypto_addresses_module: 'Not a web3 preset.'
-  },
   extends: ['auth:hardened']
 };

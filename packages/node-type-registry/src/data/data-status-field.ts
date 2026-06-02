@@ -16,9 +16,10 @@ export const DataStatusField: NodeTypeDefinition = {
         default: 'status'
       },
       type: {
-        type: 'string',
-        description: 'Column type (text or citext)',
-        default: 'text'
+        type: 'object',
+        description: 'Column type as a FieldType object',
+        'x-codegen-type': 'FieldType',
+        default: { name: 'text' }
       },
       default_value: {
         type: 'string',

@@ -7,6 +7,7 @@ export { DataCompositeField } from './data-composite-field';
 export { DataDirectOwner } from './data-direct-owner';
 export { DataEntityMembership } from './data-entity-membership';
 export { DataForceCurrentUser } from './data-force-current-user';
+export { DataI18n } from './data-i18n';
 export { DataId } from './data-id';
 export { DataImmutableFields } from './data-immutable-fields';
 export { DataInflection } from './data-inflection';

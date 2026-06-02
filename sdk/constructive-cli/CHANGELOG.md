@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.25.3](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.25.2...@constructive-sdk/cli@0.25.3) (2026-06-01)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.25.2](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.25.1...@constructive-sdk/cli@0.25.2) (2026-06-01)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.25.1](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.25.0...@constructive-sdk/cli@0.25.1) (2026-06-01)
+
+### Bug Fixes
+
+- restore deleted config/utils and add @agentic-kit/ollama dep to constructive-cli ([88c65e1](https://github.com/constructive-io/constructive/commit/88c65e1c3a3be48ac5db0f97df8d94568f484bc0))
+
+# [0.25.0](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.24.1...@constructive-sdk/cli@0.25.0) (2026-05-31)
+
+### Features
+
+- **sdk:** pass cleanStaleTargets and remove pregenerate scripts ([0c94622](https://github.com/constructive-io/constructive/commit/0c94622d1b446cf3bf9e38715504a305ab7787b4))
+
+## [0.24.1](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.24.0...@constructive-sdk/cli@0.24.1) (2026-05-31)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+# [0.24.0](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.23.3...@constructive-sdk/cli@0.24.0) (2026-05-30)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.23.3](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.23.2...@constructive-sdk/cli@0.23.3) (2026-05-29)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
+## [0.23.2](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.23.1...@constructive-sdk/cli@0.23.2) (2026-05-29)
+
+**Note:** Version bump only for package @constructive-sdk/cli
+
 ## [0.23.1](https://github.com/constructive-io/constructive/compare/@constructive-sdk/cli@0.23.0...@constructive-sdk/cli@0.23.1) (2026-05-24)
 
 **Note:** Version bump only for package @constructive-sdk/cli

@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.25.3](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.25.2...@constructive-io/sdk@0.25.3) (2026-06-01)
+
+**Note:** Version bump only for package @constructive-io/sdk
+
+## [0.25.2](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.25.1...@constructive-io/sdk@0.25.2) (2026-06-01)
+
+**Note:** Version bump only for package @constructive-io/sdk
+
+## [0.25.1](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.25.0...@constructive-io/sdk@0.25.1) (2026-06-01)
+
+**Note:** Version bump only for package @constructive-io/sdk
+
+# [0.25.0](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.24.1...@constructive-io/sdk@0.25.0) (2026-05-31)
+
+### Features
+
+- **sdk:** pass cleanStaleTargets and remove pregenerate scripts ([0c94622](https://github.com/constructive-io/constructive/commit/0c94622d1b446cf3bf9e38715504a305ab7787b4))
+
+## [0.24.1](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.24.0...@constructive-io/sdk@0.24.1) (2026-05-31)
+
+**Note:** Version bump only for package @constructive-io/sdk
+
+# [0.24.0](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.23.3...@constructive-io/sdk@0.24.0) (2026-05-30)
+
+**Note:** Version bump only for package @constructive-io/sdk
+
+## [0.23.3](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.23.2...@constructive-io/sdk@0.23.3) (2026-05-29)
+
+**Note:** Version bump only for package @constructive-io/sdk
+
+## [0.23.2](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.23.1...@constructive-io/sdk@0.23.2) (2026-05-29)
+
+**Note:** Version bump only for package @constructive-io/sdk
+
 ## [0.23.1](https://github.com/constructive-io/constructive/compare/@constructive-io/sdk@0.23.0...@constructive-io/sdk@0.23.1) (2026-05-24)
 
 **Note:** Version bump only for package @constructive-io/sdk

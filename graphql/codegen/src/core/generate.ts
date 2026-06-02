@@ -510,6 +510,8 @@ export interface GenerateMultiOptions {
   dryRun?: boolean;
   schema?: SchemaConfig;
   unifiedCli?: CliConfig | boolean;
+  /** Remove subdirectories in the output root that don't match any current target name. */
+  cleanStaleTargets?: boolean;
 }
 
 export interface GenerateMultiResult {
@@ -624,10 +626,54 @@ function applySharedPgpmDb(
   };
 }
 
+/** Manifest file listing generated target names, written to the output root. */
+export const TARGETS_MANIFEST = '.targets';
+
+/**
+ * Remove stale generated target directories from `outputRoot`.
+ * Reads the `.targets` manifest (written by `generateMulti`) to know which
+ * directories were previously generated. Only those are eligible for removal;
+ * hand-written directories (e.g. `config/`, `utils/`) are never touched.
+ * Returns the list of directory names that were removed.
+ */
+export function removeStaleTargetDirs(
+  outputRoot: string,
+  currentTargetNames: string[],
+  verbose?: boolean,
+): string[] {
+  const removed: string[] = [];
+  if (!fs.existsSync(outputRoot)) return removed;
+
+  const manifestPath = path.join(outputRoot, TARGETS_MANIFEST);
+  if (!fs.existsSync(manifestPath)) return removed;
+
+  let previousTargets: string[];
+  try {
+    previousTargets = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  } catch {
+    return removed;
+  }
+
+  const currentTargets = new Set(currentTargetNames);
+  const staleTargets = previousTargets.filter((t) => !currentTargets.has(t));
+
+  for (const target of staleTargets) {
+    const dirPath = path.join(outputRoot, target);
+    if (fs.existsSync(dirPath)) {
+      fs.rmSync(dirPath, { recursive: true, force: true });
+      removed.push(target);
+      if (verbose) {
+        console.log(`Removed stale target directory: ${target}`);
+      }
+    }
+  }
+  return removed;
+}
+
 export async function generateMulti(
   options: GenerateMultiOptions,
 ): Promise<GenerateMultiResult> {
-  const { configs, cliOverrides, verbose, dryRun, schema, unifiedCli } = options;
+  const { configs, cliOverrides, verbose, dryRun, schema, unifiedCli, cleanStaleTargets } = options;
   const names = Object.keys(configs);
   const results: Array<{ name: string; result: GenerateResult }> = [];
   let hasError = false;
@@ -637,6 +683,13 @@ export async function generateMulti(
   const useUnifiedCli = !schemaEnabled && !!unifiedCli && names.length > 1;
 
   const cliTargets: MultiTargetCliTarget[] = [];
+
+  // Remove stale target directories before generating
+  if (cleanStaleTargets && names.length > 0 && !dryRun) {
+    const firstOutput = getConfigOptions(configs[names[0]]).output;
+    const outputRoot = path.dirname(firstOutput);
+    removeStaleTargetDirs(outputRoot, names, verbose);
+  }
 
   const sharedSources = await prepareSharedPgpmSources(configs, cliOverrides);
 
@@ -796,6 +849,12 @@ export async function generateMulti(
         outputRoot,
         [],
         { pruneStaleFiles: false },
+      );
+
+      // Write manifest so removeStaleTargetDirs knows which dirs are generated
+      fs.writeFileSync(
+        path.join(outputRoot, TARGETS_MANIFEST),
+        JSON.stringify(successfulNames.sort()) + '\n',
       );
     }
   }

@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.20.0...@pgpmjs/export@0.20.1) (2026-05-31)
+
+**Note:** Version bump only for package @pgpmjs/export
+
+# [0.20.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.19.3...@pgpmjs/export@0.20.0) (2026-05-30)
+
+**Note:** Version bump only for package @pgpmjs/export
+
+## [0.19.3](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.19.2...@pgpmjs/export@0.19.3) (2026-05-29)
+
+**Note:** Version bump only for package @pgpmjs/export
+
+## [0.19.2](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.19.1...@pgpmjs/export@0.19.2) (2026-05-29)
+
+### Bug Fixes
+
+- **export:** change field.type from text to jsonb in META_TABLE_CONFIG ([c4ed9e4](https://github.com/constructive-io/constructive/commit/c4ed9e468a265c8d1c28908bfc455b86b12b5f31))
+
+## [0.19.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.19.0...@pgpmjs/export@0.19.1) (2026-05-29)
+
+**Note:** Version bump only for package @pgpmjs/export
+
 # [0.19.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/export@0.18.0...@pgpmjs/export@0.19.0) (2026-05-24)
 
 ### Features

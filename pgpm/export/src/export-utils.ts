@@ -30,6 +30,7 @@ export const DB_REQUIRED_EXTENSIONS = [
   'ltree',
   'metaschema-schema',
   'pgpm-inflection',
+  'pgpm-uuid',
   'pgpm-utils',
   'pgpm-database-jobs',
   'pgpm-jwt-claims',

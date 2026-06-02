@@ -44,6 +44,10 @@ Common issues and solutions for pgpm, PostgreSQL, and testing.
 * [@pgsql/types](https://www.npmjs.com/package/@pgsql/types): **📝 Type definitions** for PostgreSQL AST nodes in TypeScript.
 * [@pgsql/utils](https://www.npmjs.com/package/@pgsql/utils): **🛠️ AST utilities** for constructing and transforming PostgreSQL syntax trees.
 
+### 📚 Documentation & Skills
+
+* [constructive-skills](https://github.com/constructive-io/constructive-skills): **📖 Platform documentation and AI agent skills** — feature catalog, blueprint reference, SDK guides (i18n, billing, limits, events, uploads, security, entities, search, AI), and deployment guides.
+
 ## Credits
 
 **🛠 Built by the [Constructive](https://constructive.io) team — creators of modular Postgres tooling for secure, composable backends. If you like our work, contribute on [GitHub](https://github.com/constructive-io).**

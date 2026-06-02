@@ -35,22 +35,39 @@ export interface TriggerCondition {
   /** Negated condition. */
   NOT?: TriggerCondition;
 }
-/**
- * ===========================================================================
- * Billing node type parameters
- * ===========================================================================
- */
-;
-/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
-export interface BillingMeterParams {
-  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
-  meter_slug: string;
-  /* Column on the target table that holds the entity id for billing */
-  entity_field?: string;
-  /* Units to record per event (default 1) */
-  quantity?: number;
-  /* Which DML events to attach triggers for */
-  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+/** Structured representation of a PostgreSQL data type. Stored as JSONB in metaschema_public.field.type. */
+export interface FieldType {
+  /** Type name. Must be a valid SQL identifier. */
+  name: string;
+  /** Schema qualifier. */
+  schema?: string;
+  /** Type arguments (e.g., [10, 2] for numeric(10,2), ["Point", 4326] for geometry). */
+  args?: (string | number | boolean)[];
+  /** Number of array dimensions. 1 = text[], 2 = text[][]. */
+  array_dimensions?: number;
+  /** Interval field range. 1-2 elements: ["day"] or ["day", "second"]. */
+  range?: string[];
+}
+/** Structured representation of a PostgreSQL default value expression. Stored as JSONB in metaschema_public.field.default_value. */
+export interface FieldDefault {
+  /** Literal value (string, number, boolean, null, array, or object). */
+  value?: string | number | boolean | null | unknown[] | Record<string, unknown>;
+  /** Function name. Must be a valid SQL identifier. */
+  function?: string;
+  /** Schema qualifier for function. */
+  schema?: string;
+  /** Function arguments (recursive). */
+  args?: (string | number | boolean | null | FieldDefault)[];
+  /** Output type cast. */
+  cast?: FieldType;
+  /** Binary operator (e.g., "+", "-", "||"). */
+  operator?: string;
+  /** Left operand for operator expression. */
+  left?: FieldDefault;
+  /** Right operand for operator expression. */
+  right?: FieldDefault;
+  /** SQL keyword (e.g., "CURRENT_TIMESTAMP", "CURRENT_USER"). */
+  sql_keyword?: string;
 }
 /**
  * ===========================================================================
@@ -141,6 +158,17 @@ export interface DataForceCurrentUserParams {
   /* Name of the field to force to current_user_id() */
   field_name?: string;
 }
+/** Creates a companion _translations table with lang_code + translatable fields. Copies SELECT policies and column-ref fields from the base table. Adds @i18n smart comment so the Graphile i18n plugin discovers it. Requires i18n_module to be provisioned for the database. */
+export interface DataI18nParams {
+  /* Field names on the base table to make translatable. Each field is duplicated on the translation table with the same type. */
+  fields: string[];
+  /* Suffix for the translation table name */
+  table_suffix?: string;
+  /* Type for the lang_code column */
+  lang_code_type?: 'citext' | 'text';
+  /* Whether to also copy INSERT/UPDATE/DELETE policies (not just SELECT). Default true — translations should be editable by the same users who can edit the base row. */
+  copy_mutation_policies?: boolean;
+}
 /** Adds a UUID primary key column with auto-generation default (uuidv7). This is the standard primary key pattern for all tables. */
 export interface DataIdParams {
   /* Column name for the primary key */
@@ -173,12 +201,27 @@ export interface DataInheritFromParentParams {
 export interface DataJsonbParams {
   /* Column name for the JSONB field */
   field_name?: string;
-  /* Default value expression */
-  default_value?: string;
+  /* Default value as a FieldDefault object */
+  default_value?: FieldDefault;
   /* Whether the column has a NOT NULL constraint */
   is_required?: boolean;
   /* Whether to create a GIN index */
   create_index?: boolean;
+}
+/** Adds owner_id and entity_id columns with a compound AuthzMemberOwner policy. The actor must own the row (owner_id = current_user_id()) AND be a member of the entity (entity_id in SPRT). Use for private data within an entity scope — e.g., personal chat threads that belong to the company but only the author can see. */
+export interface DataMemberOwnerParams {
+  /* Column name for the owner reference */
+  owner_field_name?: string;
+  /* Column name for the entity reference */
+  entity_field_name?: string;
+  /* If true, also adds a UUID primary key column with auto-generation */
+  include_id?: boolean;
+  /* If true, adds foreign key constraints from owner_id and entity_id to the users table */
+  include_user_fk?: boolean;
+  /* If true, creates B-tree indexes on the owner and entity columns */
+  create_index?: boolean;
+  /* Membership type for SPRT resolution. Required for entity-scoped provisioning. */
+  membership_type?: number;
 }
 /** Restricts which user can modify specific columns in shared objects. Creates an AFTER UPDATE trigger that throws OWNED_PROPS when a non-owner tries to change protected fields. References fields by name in data jsonb. */
 export interface DataOwnedFieldsParams {
@@ -216,9 +259,9 @@ export interface DataPeoplestampsParams {
 /** Adds publish state columns (is_published, published_at) for content visibility. Enables AuthzPublishable and AuthzTemporal authorization. */
 export interface DataPublishableParams {
   /* Column name for the published boolean flag */
-  is_published_field?: string;
+  is_published_field_name?: string;
   /* Column name for the publish timestamp */
-  published_at_field?: string;
+  published_at_field_name?: string;
   /* If true, also adds a UUID primary key column with auto-generation */
   include_id?: boolean;
 }
@@ -249,8 +292,8 @@ export interface DataSoftDeleteParams {
 export interface DataStatusFieldParams {
   /* Column name for the status field */
   field_name?: string;
-  /* Column type (text or citext) */
-  type?: string;
+  /* Column type as a FieldType object */
+  type?: FieldType;
   /* Default value expression (e.g., active) */
   default_value?: string;
   /* Whether the column has a NOT NULL constraint */
@@ -262,8 +305,8 @@ export interface DataStatusFieldParams {
 export interface DataTagsParams {
   /* Column name for the tags array */
   field_name?: string;
-  /* Default value expression for the tags column */
-  default_value?: string;
+  /* Default value as a FieldDefault object */
+  default_value?: FieldDefault;
   /* Whether the column has a NOT NULL constraint */
   is_required?: boolean;
 }
@@ -284,38 +327,221 @@ export type TableUserProfilesParams = {};
 export type TableUserSettingsParams = {};
 /**
  * ===========================================================================
- * Limit node type parameters
+ * Event node type parameters
+ * ===========================================================================
+ */
+;
+/** Creates triggers that record events for the referrer (inviter) when their invitees perform actions on a watched table. Resolves the referrer automatically via the invites module's claimed_invites table using the membership_type context. Supports the same compound condition system as EventTracker. Use with achievements to unlock levels and grant credits based on invitee activity. */
+export interface EventReferralParams {
+  /* Event type name to record for the referrer (e.g., "invitee_uploaded_avatar", "invitee_completed_onboarding") */
+  event_name: string;
+  /* DML events that trigger recording */
+  events?: ('INSERT' | 'UPDATE' | 'DELETE')[];
+  /* Column containing the invitee (actor) ID on the source table — used to look up the referrer via claimed_invites.receiver_id */
+  actor_field?: string;
+  /* Column containing the entity ID (org/group) for entity-scoped referral events. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. Omit for user-only events. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+  /* Maximum depth to walk up the invite chain. Default 1 (direct inviter only). Set 2–10 to enable multi-level referral rewards. App-level only — must not be combined with entity_field. */
+  max_depth?: number;
+  /* Automatically register the event_name in event_types during provisioning */
+  auto_register_type?: boolean;
+  /* Column name for conditional WHEN clause (fires only when field equals condition_value) */
+  condition_field?: string;
+  /* Value to compare against condition_field in WHEN clause */
+  condition_value?: string;
+  /* Compound conditions for the trigger WHEN clause. Accepts a single leaf condition, an array of conditions (implicitly AND), or a nested combinator tree ({AND: [...], OR: [...], NOT: {...}}). Each leaf is {field, op, value?, row?, ref?}. Column types are resolved automatically from the table schema. Cannot be combined with condition_field or watch_fields. */
+  conditions?: TriggerCondition | TriggerCondition[];
+  /* For UPDATE triggers, only fire when these fields change (uses DISTINCT FROM) */
+  watch_fields?: string[];
+}
+/** Creates triggers that record events via the events module when table rows change. Supports the same compound condition system as JobTrigger (condition_field, watch_fields, or full AND/OR/NOT conditions). Events are recorded to app_events and aggregated automatically. Use with achievements (blueprint-level) to unlock levels and grant credits based on event accumulation. */
+export interface EventTrackerParams {
+  /* Event type name to record (e.g., "avatar_uploaded", "order_completed") */
+  event_name: string;
+  /* DML events that trigger recording */
+  events?: ('INSERT' | 'UPDATE' | 'DELETE')[];
+  /* Number of events to record per trigger fire */
+  count?: number;
+  /* Toggle mode: records event when condition is met, removes when condition is unmet */
+  toggle?: boolean;
+  /* Column containing the actor (user) ID to attribute the event to */
+  actor_field?: string;
+  /* Column containing the entity ID (org/group) for entity-scoped events. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. Omit for user-only events. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+  /* Automatically register the event_name in event_types during provisioning */
+  auto_register_type?: boolean;
+  /* Column name for conditional WHEN clause (fires only when field equals condition_value) */
+  condition_field?: string;
+  /* Value to compare against condition_field in WHEN clause */
+  condition_value?: string;
+  /* Compound conditions for the trigger WHEN clause. Accepts a single leaf condition, an array of conditions (implicitly AND), or a nested combinator tree ({AND: [...], OR: [...], NOT: {...}}). Each leaf is {field, op, value?, row?, ref?}. Column types are resolved automatically from the table schema. Cannot be combined with condition_field or watch_fields. */
+  conditions?: TriggerCondition | TriggerCondition[];
+  /* For UPDATE triggers, only fire when these fields change (uses DISTINCT FROM) */
+  watch_fields?: string[];
+}
+/**
+ * ===========================================================================
+ * Limit_enforce node type parameters
  * ===========================================================================
  */
 ;
 /** Declaratively attaches aggregate limit-tracking triggers to a table. On INSERT the named limit is incremented per entity; on DELETE it is decremented. Uses org_limit_aggregates_inc/dec for per-entity (org-level) aggregate limits rather than per-user limits. Requires a provisioned limits_module for the target database. */
-export interface LimitAggregateParams {
+export interface LimitEnforceAggregateParams {
   /* Name of the aggregate limit to track (must match a default_limits entry, e.g. "databases", "members") */
   limit_name: string;
-  /* Column on the target table that holds the entity id for aggregate limit lookup */
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for aggregate limit lookup. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+  /* Which DML events to attach triggers for */
+  events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
+export interface LimitEnforceCounterParams {
+  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
+  limit_name: string;
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds the actor or entity id used for limit lookup */
+  actor_field?: string;
+  /* Column on the target table that holds (or references) the entity id for entity context resolution. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
   /* Which DML events to attach triggers for */
   events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
 }
 /** Gates a table behind a feature flag backed by the cap tables. Attaches a BEFORE INSERT trigger that checks whether the named feature cap value is > 0. Features are modeled as caps with max=0 (disabled) or max=1 (enabled) in limit_caps / limit_caps_defaults tables. Resolution: COALESCE(per-entity cap, scope default, 0). */
-export interface LimitFeatureFlagParams {
+export interface LimitEnforceFeatureParams {
   /* Cap name representing this feature (must match a limit_caps_defaults entry with max=0 or max=1) */
   feature_name: string;
-  /* Feature scope: "app" (membership_type=1, app-level caps) or "org" (membership_type=2, per-entity caps) */
-  scope?: 'app' | 'org';
-  /* Column on the target table that holds the entity id for per-entity cap lookups (only used for org scope) */
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for per-entity cap lookups (only used for org scope). For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
 }
-/** Declaratively attaches limit-tracking triggers to a table. On INSERT the named limit is incremented; on DELETE it is decremented. Requires a provisioned limits_module for the target scope. */
-export interface LimitCounterParams {
-  /* Name of the limit to track (must match a default_limits entry, e.g. "projects", "members") */
-  limit_name: string;
-  /* Limit scope: "app" (membership_type=1, user-level) or "org" (membership_type=2, entity-level) */
-  scope?: 'app' | 'org';
-  /* Column on the target table that holds the actor or entity id used for limit lookup */
+/** Attaches a BEFORE trigger that calls check_rate_limit() to enforce sliding-window rate limits before allowing mutations. The function checks all three scopes (entity, actor-in-entity, actor) in a single call; which scopes are actually enforced is controlled by what rows exist in rate_window_limits (plan-based config). Requires a provisioned meter_rate_limits_module and billing_module for the target database. */
+export interface LimitEnforceRateParams {
+  /* Slug of the billing meter to check rate limits against (must match a meters table entry, e.g. "messaging", "inference") */
+  meter_slug: string;
+  /* Column on the target table that holds (or references) the entity id for rate limiting. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+  /* Column on the target table that holds the actor id (user) for rate limiting */
   actor_field?: string;
+  /* Which DML events to enforce rate limits on (DELETE is excluded since it reduces load) */
+  events?: ('INSERT' | 'UPDATE')[];
+}
+/**
+ * ===========================================================================
+ * Limit_track node type parameters
+ * ===========================================================================
+ */
+;
+/** Declaratively attaches billing usage-recording triggers to a table. On INSERT the named meter is incremented via record_usage; on DELETE it is decremented (reversal). On UPDATE, if the entity_field changes, the old entity is decremented and the new entity is incremented. Requires a provisioned billing_module for the target database. */
+export interface LimitTrackUsageParams {
+  /* Slug of the billing meter to record usage against (must match a meters table entry, e.g. "databases", "seats") */
+  meter_slug: string;
+  /* Column on the target table that holds (or references) the entity id for billing. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+  /* Units to record per event (default 1) */
+  quantity?: number;
   /* Which DML events to attach triggers for */
   events?: ('INSERT' | 'DELETE' | 'UPDATE')[];
+}
+/**
+ * ===========================================================================
+ * Limit_warning node type parameters
+ * ===========================================================================
+ */
+;
+/** Attaches an AFTER INSERT trigger that checks if the entity's aggregate usage has crossed any warning threshold configured in the limit_warnings table. If a threshold is reached for the first time, enqueues a background job (e.g. email notification). Uses limit_warning_state for one-time dedup per warning/actor/entity triple. Requires a provisioned limits_module with limit_warnings and aggregate limits enabled. */
+export interface LimitWarningAggregateParams {
+  /* Name of the aggregate limit to watch (must match a limit_warnings.name entry, e.g. "databases", "members") */
+  limit_name: string;
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for aggregate limit lookup. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+}
+/** Attaches an AFTER INSERT trigger that checks if the actor's current usage has crossed any warning threshold configured in the limit_warnings table. If a threshold is reached for the first time, enqueues a background job (e.g. email notification). Uses limit_warning_state for one-time dedup per warning/actor pair. Requires a provisioned limits_module with limit_warnings enabled. */
+export interface LimitWarningCounterParams {
+  /* Name of the limit to watch (must match a limit_warnings.name entry, e.g. "projects", "members") */
+  limit_name: string;
+  /* Membership type prefix that determines which limits_module row to use. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds the actor id for limit lookup */
+  actor_field?: string;
+  /* Column on the target table that holds (or references) the entity id. When provided, entity_id is included in the job payload and dedup state. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+}
+/** Attaches an AFTER INSERT trigger that checks if the actor's current request count in the active sliding window has crossed any warning threshold configured in the limit_warnings table. If a threshold is reached for the first time, enqueues a background job (e.g. email notification). Uses limit_warning_state for one-time dedup per warning/actor pair. Requires both a limits_module with limit_warnings enabled and a rate_limit_meters_module. */
+export interface LimitWarningRateParams {
+  /* Slug of the billing meter to check rate limits against (must match a meters table entry) */
+  meter_slug: string;
+  /* Membership type prefix that determines which limits_module row to use for warnings and warning_state tables. Resolved dynamically via memberships_module — supports any provisioned type (e.g. "app", "org", "data_room", "channel", "team"). */
+  scope?: string;
+  /* Column on the target table that holds (or references) the entity id for rate limit lookup. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
+  };
+  /* Column on the target table that holds the actor id for rate limit lookup */
+  actor_field?: string;
 }
 /**
  * ===========================================================================
@@ -419,6 +645,8 @@ export interface SearchUnifiedParams {
     index_method?: 'hnsw' | 'ivfflat';
     metric?: 'cosine' | 'l2' | 'ip';
     source_fields?: string[];
+    /* Embedding model identifier. When null, the worker falls back to runtime config. */embedding_model?: string;
+    /* Embedding provider name. When null, the worker falls back to runtime config. */embedding_provider?: string;
     search_score_weight?: number;
     /* Chunking configuration for long-text embedding. Creates an embedding_chunks record that drives automatic text splitting and per-chunk embedding. Omit to skip chunking. */chunks?: {
       /* Name of the text content column in the chunks table */content_field_name?: string;
@@ -465,6 +693,10 @@ export interface SearchVectorParams {
   };
   /* Column names that feed the embedding. Used by stale trigger to detect content changes. */
   source_fields?: string[];
+  /* Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small"). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config (llm_module / env vars). */
+  embedding_model?: string;
+  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
+  embedding_provider?: string;
   /* Auto-create trigger that enqueues embedding generation jobs */
   enqueue_job?: boolean;
   /* Task identifier for the job queue */
@@ -514,16 +746,13 @@ export interface JobTriggerParams {
   conditions?: TriggerCondition | TriggerCondition[];
   /* For UPDATE triggers, only fire when these fields change (uses DISTINCT FROM) */
   watch_fields?: string[];
-  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope. For direct entity_id columns, just set this field. For FK lookups (e.g., channel_id → channels.entity_id), combine with entity_lookup. */
   entity_field?: string;
-  /* FK lookup configuration for resolving entity_id through a related table */
+  /* FK lookup configuration for resolving entity_id through a related table. Used when entity_field is a FK (e.g., channel_id) rather than a direct entity_id. The generator validates all fields against metaschema within the same database_id. */
   entity_lookup?: {
-    /* Name of the related table to look up entity_id from */
-    obj_table: string;
-    /* Schema of the related table (optional — resolved by table name if omitted) */
-    obj_schema?: string;
-    /* Column on the related table that holds the entity_id */
-    obj_field: string;
+    /* Name of the related table to look up entity_id from (e.g., "channels"). Required. */obj_table: string;
+    /* Schema of the related table (user-facing name, e.g., "public"). Optional — if omitted, resolved by table name within the same database_id (raises error if ambiguous). */obj_schema?: string;
+    /* Column on the related table that holds the entity_id (e.g., "entity_id"). Required. */obj_field: string;
   };
   /* Static job key for upsert semantics (prevents duplicate jobs) */
   job_key?: string;
@@ -556,24 +785,65 @@ export interface ProcessChunksParams {
   dimensions?: number;
   /* Distance metric for the HNSW index on chunk embeddings */
   metric?: 'cosine' | 'l2' | 'ip';
+  /* Embedding model identifier for per-chunk embeddings. When null, the worker falls back to runtime config (llm_module / env vars). */
+  embedding_model?: string;
+  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
+  embedding_provider?: string;
   /* Override the chunks table name. Defaults to {parent_table}_chunks. */
   chunks_table_name?: string;
   /* Field names from the parent table to copy into chunk metadata */
   metadata_fields?: string[];
-  /* Text search indexes to create on the chunks content column */
+  /* Text search indexes to create on the chunks content column. Omit to mirror the parent table's text search indexes. Set explicitly to override (e.g. ["fulltext", "bm25"]). */
   search_indexes?: ('fulltext' | 'bm25' | 'trigram')[];
-  /* Column on the parent table that holds (or references) the entity_id for billing scope */
+  /* Column on the parent table that holds (or references) the entity_id for billing scope. Forwarded to the chunking job trigger. */
   entity_field?: string;
-  /* FK lookup configuration for resolving entity_id through a related table */
+  /* FK lookup configuration for resolving entity_id through a related table. Forwarded to the chunking job trigger. */
   entity_lookup?: {
-    obj_table: string;
-    obj_schema?: string;
-    obj_field: string;
+    /* Name of the related table to look up entity_id from */obj_table: string;
+    /* Schema of the related table (user-facing name, optional) */obj_schema?: string;
+    /* Column on the related table that holds the entity_id */obj_field: string;
   };
   /* Whether to create a job trigger that auto-enqueues chunking on parent INSERT/UPDATE */
   enqueue_chunking_job?: boolean;
   /* Task identifier for the chunking job queue */
   chunking_task_name?: string;
+}
+/** Creates extraction output fields and a job trigger for file text extraction. Fires when a file is uploaded (status = 'uploaded') or on INSERT. The external worker extracts text/metadata from the file (PDF, DOCX, HTML, etc.) and writes the result back to the configured output fields. Typically used upstream of ProcessFileEmbedding or ProcessChunks. */
+export interface ProcessExtractionParams {
+  /* Field to store extracted text/markdown */
+  text_field?: string;
+  /* JSONB field for extraction metadata (page count, language, etc.) */
+  metadata_field?: string;
+  /* Extraction model identifier (e.g. a vision model for OCR, an LLM for structured extraction). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config. */
+  extraction_model?: string;
+  /* Extraction provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
+  extraction_provider?: string;
+  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['application/pdf', 'text/%'], ['application/vnd.openxmlformats%']. */
+  mime_patterns?: string[];
+  /* Job task identifier for the extraction worker */
+  task_identifier?: string;
+  /* Trigger events that fire the job */
+  events?: ('INSERT' | 'UPDATE')[];
+  /* Custom payload key-to-column mapping for the job trigger */
+  payload_custom?: {
+    [key: string]: unknown;
+  };
+  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
+  trigger_conditions?: TriggerCondition | TriggerCondition[];
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope. Forwarded to the composed JobTrigger. */
+  entity_field?: string;
+  /* FK lookup configuration for resolving entity_id through a related table. Forwarded to the composed JobTrigger. */
+  entity_lookup?: {
+    /* Name of the related table to look up entity_id from */obj_table: string;
+    /* Schema of the related table (user-facing name, optional) */obj_schema?: string;
+    /* Column on the related table that holds the entity_id */obj_field: string;
+  };
+  /* Job queue name for extraction tasks */
+  queue_name?: string;
+  /* Maximum number of retry attempts */
+  max_attempts?: number;
+  /* Job priority (lower = higher priority) */
+  priority?: number;
 }
 /** Generic, MIME-scoped embedding node for file tables. Supports two modes: direct (whole-file to single vector, e.g. CLIP for images) when extraction is omitted, or extract (file to text to chunks to per-chunk vectors) when extraction config is provided. Composes SearchVector + JobTrigger + ProcessChunks (enabled by default in extract mode) internally. Multiple instances can coexist on the same table with different MIME scopes, field names, and embedding strategies. */
 export interface ProcessFileEmbeddingParams {
@@ -589,6 +859,10 @@ export interface ProcessFileEmbeddingParams {
   index_options?: {
     [key: string]: unknown;
   };
+  /* Embedding model identifier (e.g. "nomic-embed-text", "text-embedding-3-small", "clip-vit-base-patch32"). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config (llm_module / env vars). */
+  embedding_model?: string;
+  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
+  embedding_provider?: string;
   /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['image/%'], ['application/pdf', 'text/%'], ['audio/%']. */
   mime_patterns?: string[];
   /* Job task identifier for the worker. In direct mode this is the embedding worker; in extract mode this is the extraction worker. */
@@ -599,15 +873,15 @@ export interface ProcessFileEmbeddingParams {
   payload_custom?: {
     [key: string]: unknown;
   };
-  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks, field guards, etc. */
+  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
-  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope. Forwarded to the composed JobTrigger. */
   entity_field?: string;
-  /* FK lookup configuration for resolving entity_id through a related table */
+  /* FK lookup configuration for resolving entity_id through a related table. Forwarded to the composed JobTrigger. */
   entity_lookup?: {
-    obj_table: string;
-    obj_schema?: string;
-    obj_field: string;
+    /* Name of the related table to look up entity_id from */obj_table: string;
+    /* Schema of the related table (user-facing name, optional) */obj_schema?: string;
+    /* Column on the related table that holds the entity_id */obj_field: string;
   };
   /* Text extraction configuration. When present, the generator creates extraction output fields on the table and configures SearchVector with source_fields + stale tracking. When absent, the node operates in direct mode (single vector per file, no text extraction). */
   extraction?: {
@@ -623,6 +897,7 @@ export interface ProcessFileEmbeddingParams {
     /* Number of overlapping characters between consecutive chunks */chunk_overlap?: number;
     /* Strategy for splitting text into chunks */chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
     /* Field names from parent to copy into chunk metadata */metadata_fields?: string[];
+    /* Text search indexes to create on the chunks content column. Omit to mirror the parent table's text search indexes. Set explicitly to override. */search_indexes?: ('fulltext' | 'bm25' | 'trigram')[];
     /* Whether to auto-enqueue a chunking job on insert/update */enqueue_chunking_job?: boolean;
     /* Task identifier for the chunking job queue */chunking_task_name?: string;
   };
@@ -641,6 +916,10 @@ export interface ProcessImageEmbeddingParams {
   index_options?: {
     [key: string]: unknown;
   };
+  /* Embedding model identifier (e.g. "clip-vit-base-patch32"). Included in the job payload so the worker knows which model to use. When null, the worker falls back to runtime config (llm_module / env vars). */
+  embedding_model?: string;
+  /* Embedding provider name (e.g. "ollama", "openai"). When null, the worker falls back to runtime config. */
+  embedding_provider?: string;
   /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. */
   mime_patterns?: string[];
   /* Job task identifier for the image embedding worker */
@@ -651,15 +930,15 @@ export interface ProcessImageEmbeddingParams {
   payload_custom?: {
     [key: string]: unknown;
   };
-  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
+  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
-  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope. Forwarded to the composed JobTrigger. */
   entity_field?: string;
-  /* FK lookup configuration for resolving entity_id through a related table */
+  /* FK lookup configuration for resolving entity_id through a related table. Forwarded to the composed JobTrigger. */
   entity_lookup?: {
-    obj_table: string;
-    obj_schema?: string;
-    obj_field: string;
+    /* Name of the related table to look up entity_id from */obj_table: string;
+    /* Schema of the related table (user-facing name, optional) */obj_schema?: string;
+    /* Column on the related table that holds the entity_id */obj_field: string;
   };
   /* Text extraction configuration. Forwarded to ProcessFileEmbedding. When present, enables extract mode (e.g., OCR for images). */
   extraction?: {
@@ -678,39 +957,6 @@ export interface ProcessImageEmbeddingParams {
     enqueue_chunking_job?: boolean;
     chunking_task_name?: string;
   };
-}
-/** Creates extraction output fields and a job trigger for file text extraction. Fires when a file is uploaded (status = 'uploaded') or on INSERT. The external worker extracts text/metadata from the file (PDF, DOCX, HTML, etc.) and writes the result back to the configured output fields. Typically used upstream of ProcessFileEmbedding or ProcessChunks. */
-export interface ProcessExtractionParams {
-  /* Field to store extracted text/markdown */
-  text_field?: string;
-  /* JSONB field for extraction metadata (page count, language, etc.) */
-  metadata_field?: string;
-  /* MIME type LIKE patterns to match. Multiple patterns are OR'd together. Examples: ['application/pdf', 'text/%'], ['application/vnd.openxmlformats%']. */
-  mime_patterns?: string[];
-  /* Job task identifier for the extraction worker */
-  task_identifier?: string;
-  /* Trigger events that fire the job */
-  events?: ('INSERT' | 'UPDATE')[];
-  /* Custom payload key-to-column mapping for the job trigger */
-  payload_custom?: {
-    [key: string]: unknown;
-  };
-  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. Use this to add status checks (e.g., status = 'uploaded'). */
-  trigger_conditions?: TriggerCondition | TriggerCondition[];
-  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
-  entity_field?: string;
-  /* FK lookup configuration for resolving entity_id through a related table */
-  entity_lookup?: {
-    obj_table: string;
-    obj_schema?: string;
-    obj_field: string;
-  };
-  /* Job queue name for extraction tasks */
-  queue_name?: string;
-  /* Maximum number of retry attempts */
-  max_attempts?: number;
-  /* Job priority (lower = higher priority) */
-  priority?: number;
 }
 /** Creates a job trigger for image variant generation. Fires when an image file is uploaded (status = 'uploaded') or on INSERT. The external worker generates resized, cropped, or reformatted versions (thumbnails, previews, WebP conversions, etc.) and stores them as new file records linked to the source image. */
 export interface ProcessImageVersionsParams {
@@ -733,15 +979,15 @@ export interface ProcessImageVersionsParams {
   payload_custom?: {
     [key: string]: unknown;
   };
-  /* Additional compound conditions beyond MIME filtering. Merged with the auto-generated MIME conditions via AND. */
+  /* Additional compound conditions beyond auto-generated filtering. Merged with the auto-generated conditions via AND. */
   trigger_conditions?: TriggerCondition | TriggerCondition[];
-  /* Column on the trigger table that holds (or references) the entity_id for billing scope */
+  /* Column on the trigger table that holds (or references) the entity_id for billing scope. Forwarded to the composed JobTrigger. */
   entity_field?: string;
-  /* FK lookup configuration for resolving entity_id through a related table */
+  /* FK lookup configuration for resolving entity_id through a related table. Forwarded to the composed JobTrigger. */
   entity_lookup?: {
-    obj_table: string;
-    obj_schema?: string;
-    obj_field: string;
+    /* Name of the related table to look up entity_id from */obj_table: string;
+    /* Schema of the related table (user-facing name, optional) */obj_schema?: string;
+    /* Column on the related table that holds the entity_id */obj_field: string;
   };
   /* Job queue name for image processing tasks */
   queue_name?: string;
@@ -781,23 +1027,6 @@ export interface AuthzCompositeParams {
 }
 /** Denies all access. Generates FALSE expression. */
 export type AuthzDenyAllParams = {};
-/** Path-scoped file sharing via ltree containment. Grants access when a path_shares row matches the current user, bucket, and an ancestor path with the required permission. */
-export interface AuthzFilePathParams {
-  /* Schema of the path_shares table */
-  shares_schema: string;
-  /* Name of the path_shares table */
-  shares_table: string;
-  /* Schema of the files table (used to qualify column references inside the EXISTS subquery) */
-  files_schema?: string;
-  /* Name of the files table (used to qualify column references inside the EXISTS subquery) */
-  files_table: string;
-  /* Boolean column on the path_shares table that grants the required permission (e.g. can_read, can_write) */
-  permission_field: string;
-  /* Column on the files table referencing the bucket */
-  bucket_field?: string;
-  /* Ltree column on the files table representing the file path */
-  path_field?: string;
-}
 /** Direct equality comparison between a table column and the current user ID. Simplest authorization pattern with no subqueries. */
 export interface AuthzDirectOwnerParams {
   /* Column name containing the owner user ID (e.g., owner_id) */
@@ -827,10 +1056,44 @@ export interface AuthzEntityMembershipParams {
   /* If true, require is_owner flag */
   is_owner?: boolean;
 }
+/** Path-scoped file sharing via ltree containment. Grants access when a path_shares row matches the current user, bucket, and an ancestor path with the required permission. */
+export interface AuthzFilePathParams {
+  /* Schema of the path_shares table */
+  shares_schema: string;
+  /* Name of the path_shares table */
+  shares_table: string;
+  /* Schema of the files table (used to qualify column references inside the EXISTS subquery) */
+  files_schema?: string;
+  /* Name of the files table (used to qualify column references inside the EXISTS subquery) */
+  files_table: string;
+  /* Boolean column on the path_shares table that grants the required permission (e.g. can_read, can_write) */
+  permission_field: string;
+  /* Column on the files table referencing the bucket */
+  bucket_field?: string;
+  /* Ltree column on the files table representing the file path */
+  path_field?: string;
+}
 /** Check if current user is in an array column on the same row. */
 export interface AuthzMemberListParams {
   /* Column name containing the array of user IDs */
   array_field: string;
+}
+/** Compound policy: the row must be owned by the current user (owner_field = current_user_id) AND the current user must be a member of the entity referenced by entity_field. Combines direct ownership with entity membership — the actor can only access rows they own within entities they belong to. */
+export interface AuthzMemberOwnerParams {
+  /* Column name containing the owner user ID (e.g., owner_id) */
+  owner_field: string;
+  /* Column name referencing the entity (e.g., entity_id) */
+  entity_field: string;
+  /* SPRT column to select for the entity match */
+  sel_field?: string;
+  /* Scope: 1=app, 2=org, 3+=dynamic entity types (or string name resolved via membership_types_module) */
+  membership_type?: number | string;
+  /* Entity type prefix (e.g. 'channel', 'department'). Resolved to membership_type integer via memberships_module lookup. */
+  entity_type?: string;
+  /* Single permission name to check (resolved to bitstring mask) */
+  permission?: string;
+  /* Multiple permission names to check (ORed together into mask) */
+  permissions?: string[];
 }
 /** Restrictive policy that blocks read-only members from mutations. Checks actor_id + is_read_only IS NOT TRUE on the SPRT. Designed to run as a restrictive counterpart after a permissive AuthzEntityMembership policy has already verified membership. */
 export interface AuthzNotReadOnlyParams {
@@ -1136,19 +1399,19 @@ export interface ViewTableProjectionParams {
 export interface BlueprintField {
   /** The column name. */
   name: string;
-  /** The PostgreSQL type (e.g., "text", "integer", "boolean", "uuid"). */
-  type: string;
+  /** PostgreSQL type as a FieldType object (e.g., { name: "text" }) or legacy string. */
+  type: FieldType | string;
   /** Whether the column has a NOT NULL constraint. */
   is_required?: boolean;
-  /** SQL default value expression (e.g., "true", "now()"). */
-  default_value?: string;
+  /** Default value as a FieldDefault object (e.g., { function: "now" }) or legacy string. */
+  default_value?: FieldDefault | string;
   /** Comment/description for this field. */
   description?: string;
 }
 /** An RLS policy entry for a blueprint table. Uses $type to match the blueprint JSON convention. */
 export interface BlueprintPolicy {
   /** Authz* policy type name (e.g., "AuthzDirectOwner", "AuthzAllowAll"). */
-  $type: 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
+  $type: 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzFilePath' | 'AuthzMemberList' | 'AuthzMemberOwner' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal';
   /** Privileges this policy applies to (e.g., ["select"], ["insert", "update", "delete"]). */
   privileges?: string[];
   /** Whether this policy is permissive (true) or restrictive (false). Defaults to true. */
@@ -1245,7 +1508,7 @@ export interface BlueprintTableUniqueConstraint {
   /** Optional schema name override. */
   schema_name?: string;
 }
-/** A bucket seed entry for storage_config.buckets[]. Creates an initial bucket row in the {prefix}_buckets table during entity type provisioning. Only used for app-level storage (not entity-scoped). */
+/** A bucket seed entry for storage.buckets[]. Creates an initial bucket row in the {prefix}_buckets table during entity type provisioning. Only used for app-level storage (not entity-scoped). */
 export interface BlueprintBucketSeed {
   /** Bucket key name (e.g., "avatars", "documents"). Becomes the key column value. */
   name: string;
@@ -1266,6 +1529,8 @@ export interface BlueprintStorageConfig {
   scope?: 'app' | 'org';
   /** Discriminator for multi-module storage. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{storage_key}_buckets. Max 16 chars, lowercase snake_case. */
   storage_key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "buckets" instead of "org_buckets"). */
+  prefix?: string;
   /** Initial bucket seed entries. Each creates a row in {prefix}_buckets during provisioning. */
   buckets?: BlueprintBucketSeed[];
   /** Override for presigned upload URL expiry time in seconds. */
@@ -1321,6 +1586,87 @@ export interface BlueprintAchievement {
   /** Entity prefix to scope this achievement to (e.g., "org", "app"). Used to resolve the correct events_module. Defaults to "app". */
   entity_prefix?: string;
 }
+/** Namespace module configuration. When used at the top level of a blueprint, the scope field controls whether namespaces are app-level ("app", default) or org-level ("org"). When used inside entity_types[], scope is inherited from the entity type. Provisions a namespaces table with computed-name proxy, rename trigger, and entity-scoped RLS. */
+export interface BlueprintNamespaceConfig {
+  /** Namespace scope. "app" (default) creates app-level namespaces (membership_type = NULL). "org" creates per-org namespaces. Only used at the top level of a blueprint definition — entity-scoped namespaces inherit scope from the entity type. */
+  scope?: 'app' | 'org';
+  /** Module discriminator for multi-module namespaces. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_namespaces. */
+  key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "namespaces" instead of "org_namespaces"). */
+  prefix?: string;
+  /** RLS policy overrides for the namespaces table. NULL = apply defaults from apply_namespace_security(). */
+  policies?: BlueprintPolicy[];
+  /** Per-table overrides for namespace tables. Each key targets a specific table (namespaces, namespace_events) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision. */
+  provisions?: {
+    namespaces?: BlueprintEntityTableProvision;
+    namespace_events?: BlueprintEntityTableProvision;
+  };
+}
+/** Function module configuration. When used at the top level of a blueprint, the scope field controls whether functions are app-level ("app", default) or org-level ("org"). When used inside entity_types[], scope is inherited from the entity type. Provisions function_definitions, function_invocations (partitioned, 12-month retention), and function_execution_logs tables. */
+export interface BlueprintFunctionConfig {
+  /** Function scope. "app" (default) creates app-level functions (membership_type = NULL). "org" creates per-org functions. Only used at the top level of a blueprint definition — entity-scoped functions inherit scope from the entity type. */
+  scope?: 'app' | 'org';
+  /** Module discriminator for multi-module functions. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_function_definitions. */
+  key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "function_definitions" instead of "org_function_definitions"). */
+  prefix?: string;
+  /** RLS policy overrides for the function tables. NULL = apply defaults from apply_function_security(). */
+  policies?: BlueprintPolicy[];
+  /** Per-table overrides for function tables. Each key targets a specific table (definitions, invocations, execution_logs) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision. */
+  provisions?: {
+    definitions?: BlueprintEntityTableProvision;
+    invocations?: BlueprintEntityTableProvision;
+    execution_logs?: BlueprintEntityTableProvision;
+  };
+}
+/** Agent module configuration. When used at the top level of a blueprint, the scope field controls whether agents are app-level ("app", default) or org-level ("org"). When used inside entity_types[], scope is inherited from the entity type. Provisions thread, message, task, prompt tables. Opt-in: has_plans (plan + approval workflow), has_resources (unified skills/knowledge with chunking), has_agents (agent registry + personas, implies has_resources). */
+export interface BlueprintAgentConfig {
+  /** Agent scope. "app" (default) creates app-level agent tables (membership_type = NULL). "org" creates per-org agent tables. Only used at the top level of a blueprint definition — entity-scoped agents inherit scope from the entity type. */
+  scope?: 'app' | 'org';
+  /** Module discriminator for multi-module agents. Defaults to "default" (omitted from table names). Non-default keys appear as an infix: {prefix}_{key}_agent_thread. */
+  key?: string;
+  /** Override the table-name prefix. By default the prefix is derived from the scope (e.g. "org"). Set to an empty string to produce unprefixed table names (e.g. "agent_thread" instead of "org_agent_thread"). */
+  prefix?: string;
+  /** API name for the agent module. Used in GraphQL naming. Defaults to "agent". */
+  api_name?: string;
+  /** Whether to provision the agent_plan table for workflow plans with ordered tasks and approval gates. When true, tasks belong to plans (plan_id NOT NULL) instead of directly to threads. Defaults to false. */
+  has_plans?: boolean;
+  /** Whether to provision the unified agent_resource table (kind: skill/knowledge/convention) with auto-chunking (ProcessChunks) and vector embeddings. Defaults to false. */
+  has_resources?: boolean;
+  /** Whether to provision agent + agent_persona tables for agent registry and templates. Implies has_resources. Defaults to false. */
+  has_agents?: boolean;
+  /** Resource configuration array. Controls vector dimensions, chunking strategy, embedding model/provider, and text search indexes for the agent_resource table. Set has_chunks to false to disable the ProcessChunks pipeline. Defaults: 768 dimensions, 1000 chunk_size, 200 chunk_overlap, paragraph strategy, ["tsvector"] search indexes. */
+  resources?: {
+    has_chunks?: boolean;
+    dimensions?: number;
+    chunk_size?: number;
+    chunk_overlap?: number;
+    chunk_strategy?: 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+    embedding_model?: string;
+    embedding_provider?: string;
+    search_indexes?: ('tsvector' | 'bm25' | 'trigram')[];
+  }[];
+  /** RLS policy overrides for the agent tables. NULL = apply defaults from apply_agent_security(). */
+  policies?: BlueprintPolicy[];
+  /** Per-table overrides for agent tables. Each key targets a specific table (thread, message, task, prompt, plan, resource, agent, persona) and uses the same shape as table_provision: { nodes, fields, grants, use_rls, policies }. Fanned out to secure_table_provision. */
+  provisions?: {
+    thread?: BlueprintEntityTableProvision;
+    message?: BlueprintEntityTableProvision;
+    task?: BlueprintEntityTableProvision;
+    prompt?: BlueprintEntityTableProvision;
+    plan?: BlueprintEntityTableProvision;
+    resource?: BlueprintEntityTableProvision;
+    agent?: BlueprintEntityTableProvision;
+    persona?: BlueprintEntityTableProvision;
+  };
+}
+/** Graph module configuration. Presence triggers permission registration (manage_graphs, execute_graphs). The graph module requires a merkle_store_module_id dependency, so entity_type_provision only registers permissions here — the graph module itself must be provisioned separately. */
+export interface BlueprintGraphConfig {
+  /** Module discriminator for multi-module graphs. Defaults to "default". */
+  key?: string;
+  /** RLS policy overrides for the graph tables. NULL = apply defaults from apply_graph_security(). */
+  policies?: BlueprintPolicy[];
+}
 /** Override object for the entity table created by a BlueprintEntityType. Shape mirrors BlueprintTable / secure_table_provision vocabulary. When supplied, policies[] replaces the default entity-table policies entirely. */
 export interface BlueprintEntityTableProvision {
   /** Whether to enable RLS on the entity table. Forwarded to secure_table_provision. Defaults to true. */
@@ -1357,7 +1703,6 @@ export interface BlueprintEntityType {
   has_profiles?: boolean;
   /** Whether to provision a levels module for this entity type. Defaults to false. */
   has_levels?: boolean;
-
   /** Whether to provision entity-scoped invite tables ({prefix}_invites, {prefix}_claimed_invites) and a submit_{prefix}_invite_code() function. Defaults to false. */
   has_invites?: boolean;
   /** Whether to auto-attach an EventTracker to the claimed_invites table for invite-based achievements. Requires has_invites=true AND has_levels=true. When true, records 'invite_claimed' events credited to the sender (inviter) on each claimed invite. Defaults to false. */
@@ -1366,8 +1711,16 @@ export interface BlueprintEntityType {
   skip_entity_policies?: boolean;
   /** Override for the entity table. Shape mirrors BlueprintTable / secure_table_provision vocabulary. When supplied, its policies[] replaces the five default entity-table policies; is_visible becomes a no-op. When NULL (default), the five default policies are applied (gated by is_visible). */
   table_provision?: BlueprintEntityTableProvision;
-  /** Storage configuration (array-only). A non-empty array enables storage provisioning. Each entry creates a separate storage module with its own tables ({prefix}_{storage_key}_buckets/files). Controls RLS policies, bucket seeding, and module-level settings. */
+  /** Storage module configuration array. Presence triggers provisioning (same inference model as namespaces, functions, agents). Each entry provisions a separate storage module with its own tables, RLS, and settings. Each entry may specify a storage_key for multi-module support (defaults to "default"). */
   storage?: BlueprintStorageConfig[];
+  /** Namespace module configuration array. Presence triggers provisioning. Each entry provisions a namespace_module with its own tables, computed-name proxy, and entity-scoped RLS. Registers manage_namespaces permission bit. "[{}]" = provision one default namespace module. */
+  namespaces?: BlueprintNamespaceConfig[];
+  /** Function module configuration array. Presence triggers provisioning. Each entry provisions function_definitions, function_invocations (partitioned), and function_execution_logs tables. Registers manage_functions + invoke_functions permission bits. "[{}]" = provision one default function module. */
+  functions?: BlueprintFunctionConfig[];
+  /** Agent module configuration array. Presence triggers provisioning. Each entry provisions thread, message, task, prompt tables (and optionally knowledge with vector embeddings). "[{}]" = provision one default agent module. */
+  agents?: BlueprintAgentConfig[];
+  /** Graph module configuration array. Presence triggers permission registration (manage_graphs, execute_graphs). Graph module requires a merkle_store_module_id dependency, so entity_type_provision only registers permissions here. "[{}]" = register default graph permissions. */
+  graphs?: BlueprintGraphConfig[];
 }
 /**
  * ===========================================================================
@@ -1376,7 +1729,7 @@ export interface BlueprintEntityType {
  */
 ;
 /** String shorthand -- just the node type name. */
-export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzFilePath' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzMemberList' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'LimitAggregate' | 'BillingMeter' | 'DataBulk' | 'ProcessChunks' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'ProcessFileEmbedding' | 'LimitFeatureFlag' | 'DataForceCurrentUser' | 'DataId' | 'ProcessImageEmbedding' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'JobTrigger' | 'LimitCounter' | 'DataJsonb' | 'DataOwnedFields' | 'ProcessExtraction' | 'ProcessImageVersions' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings';
+export type BlueprintNodeShorthand = 'AuthzAllowAll' | 'AuthzAppMembership' | 'AuthzComposite' | 'AuthzDenyAll' | 'AuthzDirectOwner' | 'AuthzDirectOwnerAny' | 'AuthzEntityMembership' | 'AuthzFilePath' | 'AuthzMemberList' | 'AuthzMemberOwner' | 'AuthzNotReadOnly' | 'AuthzOrgHierarchy' | 'AuthzPeerOwnership' | 'AuthzPublishable' | 'AuthzRelatedEntityMembership' | 'AuthzRelatedMemberList' | 'AuthzRelatedPeerOwnership' | 'AuthzTemporal' | 'CheckGreaterThan' | 'CheckLessThan' | 'CheckNotEqual' | 'CheckOneOf' | 'DataBulk' | 'DataCompositeField' | 'DataDirectOwner' | 'DataEntityMembership' | 'DataForceCurrentUser' | 'DataI18n' | 'DataId' | 'DataImmutableFields' | 'DataInflection' | 'DataInheritFromParent' | 'DataJsonb' | 'DataMemberOwner' | 'DataOwnedFields' | 'DataOwnershipInEntity' | 'DataPeoplestamps' | 'DataPublishable' | 'DataRealtime' | 'DataSlug' | 'DataSoftDelete' | 'DataStatusField' | 'DataTags' | 'DataTimestamps' | 'SearchBm25' | 'SearchFullText' | 'SearchSpatial' | 'SearchSpatialAggregate' | 'SearchTrgm' | 'SearchUnified' | 'SearchVector' | 'TableOrganizationSettings' | 'TableUserProfiles' | 'TableUserSettings' | 'EventReferral' | 'EventTracker' | 'JobTrigger' | 'LimitEnforceAggregate' | 'LimitEnforceCounter' | 'LimitEnforceFeature' | 'LimitEnforceRate' | 'LimitTrackUsage' | 'LimitWarningAggregate' | 'LimitWarningCounter' | 'LimitWarningRate' | 'ProcessChunks' | 'ProcessExtraction' | 'ProcessFileEmbedding' | 'ProcessImageEmbedding' | 'ProcessImageVersions';
 /** Object form -- { $type, data } with typed parameters. */
 export type BlueprintNodeObject = {
   $type: 'AuthzAllowAll';
@@ -1391,9 +1744,6 @@ export type BlueprintNodeObject = {
   $type: 'AuthzDenyAll';
   data?: Record<string, never>;
 } | {
-  $type: 'AuthzFilePath';
-  data: AuthzFilePathParams;
-} | {
   $type: 'AuthzDirectOwner';
   data: AuthzDirectOwnerParams;
 } | {
@@ -1403,8 +1753,14 @@ export type BlueprintNodeObject = {
   $type: 'AuthzEntityMembership';
   data: AuthzEntityMembershipParams;
 } | {
+  $type: 'AuthzFilePath';
+  data: AuthzFilePathParams;
+} | {
   $type: 'AuthzMemberList';
   data: AuthzMemberListParams;
+} | {
+  $type: 'AuthzMemberOwner';
+  data: AuthzMemberOwnerParams;
 } | {
   $type: 'AuthzNotReadOnly';
   data: AuthzNotReadOnlyParams;
@@ -1442,17 +1798,8 @@ export type BlueprintNodeObject = {
   $type: 'CheckOneOf';
   data: CheckOneOfParams;
 } | {
-  $type: 'LimitAggregate';
-  data: LimitAggregateParams;
-} | {
-  $type: 'BillingMeter';
-  data: BillingMeterParams;
-} | {
   $type: 'DataBulk';
   data: DataBulkParams;
-} | {
-  $type: 'ProcessChunks';
-  data: ProcessChunksParams;
 } | {
   $type: 'DataCompositeField';
   data: DataCompositeFieldParams;
@@ -1463,20 +1810,14 @@ export type BlueprintNodeObject = {
   $type: 'DataEntityMembership';
   data: DataEntityMembershipParams;
 } | {
-  $type: 'ProcessFileEmbedding';
-  data: ProcessFileEmbeddingParams;
-} | {
-  $type: 'LimitFeatureFlag';
-  data: LimitFeatureFlagParams;
-} | {
   $type: 'DataForceCurrentUser';
   data: DataForceCurrentUserParams;
 } | {
+  $type: 'DataI18n';
+  data: DataI18nParams;
+} | {
   $type: 'DataId';
   data: DataIdParams;
-} | {
-  $type: 'ProcessImageEmbedding';
-  data: ProcessImageEmbeddingParams;
 } | {
   $type: 'DataImmutableFields';
   data: DataImmutableFieldsParams;
@@ -1487,23 +1828,14 @@ export type BlueprintNodeObject = {
   $type: 'DataInheritFromParent';
   data: DataInheritFromParentParams;
 } | {
-  $type: 'JobTrigger';
-  data: JobTriggerParams;
-} | {
-  $type: 'LimitCounter';
-  data: LimitCounterParams;
-} | {
   $type: 'DataJsonb';
   data: DataJsonbParams;
 } | {
+  $type: 'DataMemberOwner';
+  data: DataMemberOwnerParams;
+} | {
   $type: 'DataOwnedFields';
   data: DataOwnedFieldsParams;
-} | {
-  $type: 'ProcessExtraction';
-  data: ProcessExtractionParams;
-} | {
-  $type: 'ProcessImageVersions';
-  data: ProcessImageVersionsParams;
 } | {
   $type: 'DataOwnershipInEntity';
   data: DataOwnershipInEntityParams;
@@ -1561,6 +1893,54 @@ export type BlueprintNodeObject = {
 } | {
   $type: 'TableUserSettings';
   data?: Record<string, never>;
+} | {
+  $type: 'EventReferral';
+  data: EventReferralParams;
+} | {
+  $type: 'EventTracker';
+  data: EventTrackerParams;
+} | {
+  $type: 'JobTrigger';
+  data: JobTriggerParams;
+} | {
+  $type: 'LimitEnforceAggregate';
+  data: LimitEnforceAggregateParams;
+} | {
+  $type: 'LimitEnforceCounter';
+  data: LimitEnforceCounterParams;
+} | {
+  $type: 'LimitEnforceFeature';
+  data: LimitEnforceFeatureParams;
+} | {
+  $type: 'LimitEnforceRate';
+  data: LimitEnforceRateParams;
+} | {
+  $type: 'LimitTrackUsage';
+  data: LimitTrackUsageParams;
+} | {
+  $type: 'LimitWarningAggregate';
+  data: LimitWarningAggregateParams;
+} | {
+  $type: 'LimitWarningCounter';
+  data: LimitWarningCounterParams;
+} | {
+  $type: 'LimitWarningRate';
+  data: LimitWarningRateParams;
+} | {
+  $type: 'ProcessChunks';
+  data: ProcessChunksParams;
+} | {
+  $type: 'ProcessExtraction';
+  data: ProcessExtractionParams;
+} | {
+  $type: 'ProcessFileEmbedding';
+  data: ProcessFileEmbeddingParams;
+} | {
+  $type: 'ProcessImageEmbedding';
+  data: ProcessImageEmbeddingParams;
+} | {
+  $type: 'ProcessImageVersions';
+  data: ProcessImageVersionsParams;
 };
 /** A node entry in a blueprint table. Either a string shorthand or a typed object. */
 export type BlueprintNode = BlueprintNodeShorthand | BlueprintNodeObject;
@@ -1654,4 +2034,10 @@ export interface BlueprintDefinition {
   storage?: BlueprintStorageConfig[];
   /** Achievement definitions. Each entry creates a level with requirements and optional rewards in the events_module. Requires events_module to be provisioned (e.g., via entity_types[].has_levels = true or modules includes events_module). */
   achievements?: BlueprintAchievement[];
+  /** Top-level namespace configuration array (Phase 0.6). Each entry has an optional scope ("app" or "org"). App-scoped (default) creates namespace_module with membership_type = NULL. Org-scoped creates per-org namespaces. For entity-scoped namespaces, use entity_types[].namespaces instead. */
+  namespaces?: BlueprintNamespaceConfig[];
+  /** Top-level function configuration array (Phase 0.6). Each entry has an optional scope ("app" or "org"). App-scoped (default) creates function_module with membership_type = NULL. Org-scoped creates per-org functions. For entity-scoped functions, use entity_types[].functions instead. */
+  functions?: BlueprintFunctionConfig[];
+  /** Top-level agent configuration array (Phase 0.6). Each entry has an optional scope ("app" or "org"). App-scoped (default) creates agent_module with membership_type = NULL. Org-scoped creates per-org agents. For entity-scoped agents, use entity_types[].agents instead. */
+  agents?: BlueprintAgentConfig[];
 }

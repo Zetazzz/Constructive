@@ -3,6 +3,56 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.47.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.46.0...node-type-registry@0.47.0) (2026-06-01)
+
+### Bug Fixes
+
+- **node-type-registry:** update BlueprintAgentConfig for has_resources/has_agents/has_plans ([e691aed](https://github.com/constructive-io/constructive/commit/e691aed0d26c630ae6715546addaa40f148e57ad))
+
+### Features
+
+- **node-type-registry:** add prefix override to all module config types ([5cd1852](https://github.com/constructive-io/constructive/commit/5cd1852ded5e739c74fd498eed45f6fe8074281e))
+
+# [0.46.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.45.0...node-type-registry@0.46.0) (2026-05-31)
+
+### Bug Fixes
+
+- remove user_settings_module from b2b/b2b:storage (no extenders), clarify ordering in full ([923b0bd](https://github.com/constructive-io/constructive/commit/923b0bd775b7d20d6dc9e9f7acf980e7d4c8115c))
+
+### Features
+
+- add user_settings_module and i18n_module to presets ([88ecfbc](https://github.com/constructive-io/constructive/commit/88ecfbcfda38acd2d49e3214fda085d8e136cf0d))
+- **node-type-registry:** update module presets to jsonb tuple syntax ([e35a637](https://github.com/constructive-io/constructive/commit/e35a6370fbba09c0bf14e5ae9c4179accf3afc5f))
+
+# [0.45.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.44.0...node-type-registry@0.45.0) (2026-05-30)
+
+### Features
+
+- add DataI18n node type definition for i18n translation tables ([185b2fc](https://github.com/constructive-io/constructive/commit/185b2fc7e6dac236891a2058878863b575b62047)), closes [constructive-planning#975](https://github.com/constructive-planning/issues/975)
+- rename config_secrets_user_module to user_credentials_module in presets ([71e026e](https://github.com/constructive-io/constructive/commit/71e026ed204d15371725afe27bec5aabf7b519fa)), closes [constructive-db#1418](https://github.com/constructive-db/issues/1418)
+
+# [0.44.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.43.1...node-type-registry@0.44.0) (2026-05-30)
+
+**Note:** Version bump only for package node-type-registry
+
+## [0.43.1](https://github.com/constructive-io/constructive/compare/node-type-registry@0.43.0...node-type-registry@0.43.1) (2026-05-29)
+
+**Note:** Version bump only for package node-type-registry
+
+# [0.43.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.42.0...node-type-registry@0.43.0) (2026-05-29)
+
+### Features
+
+- add FieldType/FieldDefault TS interfaces, remove SqlExpressionValidatorPreset from constructive-preset ([b79342c](https://github.com/constructive-io/constructive/commit/b79342cb1224fb74971abfa97c54cf2823d08d46))
+- sync entity_lookup + dynamic scope resolution from constructive-db ([05224f5](https://github.com/constructive-io/constructive/commit/05224f569459fd51428b9fb08a0df06cd5680553)), closes [#1361](https://github.com/constructive-io/constructive/issues/1361) [#1368](https://github.com/constructive-io/constructive/issues/1368)
+
+# [0.42.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.41.0...node-type-registry@0.42.0) (2026-05-26)
+
+### Features
+
+- **node-type-registry:** add AuthzMemberOwner + DataMemberOwner types ([e778ec9](https://github.com/constructive-io/constructive/commit/e778ec9523e5e6fdcc2b65fb2c9ef692963764a0)), closes [#1327](https://github.com/constructive-io/constructive/issues/1327)
+- **node-type-registry:** upstream knowledge finish + blueprint types from constructive-db ([7899c15](https://github.com/constructive-io/constructive/commit/7899c15ca28e9e0c0404b9077640c4832e625959))
+
 # [0.41.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.40.0...node-type-registry@0.41.0) (2026-05-21)
 
 ### Features

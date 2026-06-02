@@ -266,40 +266,6 @@ export interface OrgPermission {
   /** Human-readable description of what this permission allows */
   description?: string | null;
 }
-/** Append-only ledger of code redemptions; AFTER INSERT trigger validates and cascades to limit_credits */
-export interface AppLimitCreditRedemption {
-  id: string;
-  /** FK to credit_codes — which code is being redeemed */
-  creditCodeId?: string | null;
-  /** Entity receiving the credits (personal org user_id or org entity_id) */
-  entityId?: string | null;
-}
-/** Items within a credit code — each row grants credits for a specific limit definition */
-export interface AppLimitCreditCodeItem {
-  id: string;
-  /** FK to credit_codes — which code this item belongs to */
-  creditCodeId?: string | null;
-  /** FK to default_limits — which limit this item grants credits for */
-  defaultLimitId?: string | null;
-  /** Number of credits this item grants per redemption */
-  amount?: string | null;
-  /** Credit durability: permanent (survives window reset) or period (resets on window expiry) */
-  creditType?: string | null;
-}
-/** Append-only ledger of credit grants that automatically update limit ceilings */
-export interface AppLimitCredit {
-  id: string;
-  /** FK to default_limits — which limit definition this credit applies to */
-  defaultLimitId?: string | null;
-  /** User this credit is for; NULL for aggregate entity-level credits */
-  actorId?: string | null;
-  /** Number of credits to grant (positive to add, negative to revoke) */
-  amount?: string | null;
-  /** Credit durability: permanent (survives window reset) or period (resets on window expiry) */
-  creditType?: string | null;
-  /** Optional reason for the credit grant (promo code, admin grant, etc.) */
-  reason?: string | null;
-}
 /** Simplified view of active members in an entity, used for listing who belongs to an org or group */
 export interface OrgMember {
   id: string;
@@ -315,18 +281,6 @@ export interface AppPermissionDefault {
   id: string;
   /** Default permission bitmask applied to new members */
   permissions?: string | null;
-}
-/** Redeemable credit codes managed by admins with the add_credits permission */
-export interface AppLimitCreditCode {
-  id: string;
-  /** Human-readable credit code (case-insensitive, unique) */
-  code?: string | null;
-  /** Maximum total redemptions allowed; NULL for unlimited */
-  maxRedemptions?: number | null;
-  /** Current number of redemptions (incremented by trigger on credit_redemptions) */
-  currentRedemptions?: number | null;
-  /** Expiration timestamp; NULL for no expiry */
-  expiresAt?: string | null;
 }
 /** Stores the default permission bitmask assigned to new members upon joining */
 export interface OrgPermissionDefault {
@@ -358,42 +312,6 @@ export interface AppOwnerGrant {
   createdAt?: string | null;
   updatedAt?: string | null;
 }
-/** Default cap values for static configuration limits (max file size, feature flags, etc.). Not metered — just read by consumers. */
-export interface AppLimitCapsDefault {
-  id: string;
-  /** Name identifier of the cap (e.g. max_file_upload_size, advanced_analytics) */
-  name?: string | null;
-  /** Default cap value. For feature flags: 0=disabled, 1=enabled. For size caps: the limit in bytes/units. */
-  max?: string | null;
-}
-/** Default cap values for static configuration limits (max file size, feature flags, etc.). Not metered — just read by consumers. */
-export interface OrgLimitCapsDefault {
-  id: string;
-  /** Name identifier of the cap (e.g. max_file_upload_size, advanced_analytics) */
-  name?: string | null;
-  /** Default cap value. For feature flags: 0=disabled, 1=enabled. For size caps: the limit in bytes/units. */
-  max?: string | null;
-}
-/** Per-entity cap overrides. Allows specific orgs/entities to have different cap values than the scope default. */
-export interface AppLimitCap {
-  id: string;
-  /** Name identifier of the cap being overridden */
-  name?: string | null;
-  /** Entity this cap override applies to */
-  entityId?: string | null;
-  /** Override cap value for this entity */
-  max?: string | null;
-}
-/** Per-entity cap overrides. Allows specific orgs/entities to have different cap values than the scope default. */
-export interface OrgLimitCap {
-  id: string;
-  /** Name identifier of the cap being overridden */
-  name?: string | null;
-  /** Entity this cap override applies to */
-  entityId?: string | null;
-  /** Override cap value for this entity */
-  max?: string | null;
-}
 /** Records of admin role grants and revocations between members */
 export interface OrgAdminGrant {
   id: string;
@@ -419,83 +337,6 @@ export interface OrgOwnerGrant {
   grantorId?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-}
-/** Defines the different scopes of membership (e.g. App Member, Organization Member, Group Member) */
-export interface MembershipType {
-  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
-  id: number;
-  /** Human-readable name of the membership type */
-  name?: string | null;
-  /** Description of what this membership type represents */
-  description?: string | null;
-  /** Short prefix used to namespace tables and functions for this membership scope */
-  prefix?: string | null;
-  /** Parent membership type ID for SPRT cascade chain (e.g. type 2 parent=1, type 3 parent=2) */
-  parentMembershipType?: number | null;
-  /** When true, entities of this membership type get a one-to-one ID in the users table and a corresponding role_type entry, enabling them to own resources via owner_id FKs */
-  hasUsersTableEntry?: boolean | null;
-}
-/** Default maximum values for each named limit, applied when no per-actor override exists */
-export interface AppLimitDefault {
-  id: string;
-  /** Name identifier of the limit this default applies to */
-  name?: string | null;
-  /** Default maximum usage allowed for this limit */
-  max?: string | null;
-  /** Default soft limit threshold for warnings; NULL means no soft limit */
-  softMax?: string | null;
-}
-/** Default maximum values for each named limit, applied when no per-actor override exists */
-export interface OrgLimitDefault {
-  id: string;
-  /** Name identifier of the limit this default applies to */
-  name?: string | null;
-  /** Default maximum usage allowed for this limit */
-  max?: string | null;
-  /** Default soft limit threshold for warnings; NULL means no soft limit */
-  softMax?: string | null;
-}
-/** Append-only ledger of credit grants that automatically update limit ceilings */
-export interface OrgLimitCredit {
-  id: string;
-  /** FK to default_limits — which limit definition this credit applies to */
-  defaultLimitId?: string | null;
-  /** User this credit is for; NULL for aggregate entity-level credits */
-  actorId?: string | null;
-  /** Entity this credit applies to; NULL for actor-only credits */
-  entityId?: string | null;
-  /** Number of credits to grant (positive to add, negative to revoke) */
-  amount?: string | null;
-  /** Credit durability: permanent (survives window reset) or period (resets on window expiry) */
-  creditType?: string | null;
-  /** Optional reason for the credit grant (promo code, admin grant, etc.) */
-  reason?: string | null;
-}
-/** Warning configuration for soft limits. Each row defines a warning threshold and the job task to enqueue when usage approaches it. */
-export interface AppLimitWarning {
-  id: string;
-  /** Limit name this warning applies to (must match a default_limits entry) */
-  name?: string | null;
-  /** Threshold type: absolute (fixed count) or percentage (of max) */
-  warningType?: string | null;
-  /** Threshold value — either an absolute count or a percentage (1-100) depending on warning_type */
-  thresholdValue?: string | null;
-  /** Job task name to enqueue when warning fires (e.g. email:limit_warning, notification:approaching_limit) */
-  taskIdentifier?: string | null;
-}
-/** Warning configuration for soft limits. Each row defines a warning threshold and the job task to enqueue when usage approaches it. */
-export interface OrgLimitWarning {
-  id: string;
-  /** Limit name this warning applies to (must match a default_limits entry) */
-  name?: string | null;
-  /** Threshold type: absolute (fixed count) or percentage (of max) */
-  warningType?: string | null;
-  /** Threshold value — either an absolute count or a percentage (1-100) depending on warning_type */
-  thresholdValue?: string | null;
-  /** Job task name to enqueue when warning fires (e.g. email:limit_warning, notification:approaching_limit) */
-  taskIdentifier?: string | null;
-  /** Per-entity override (NULL = scope default for all entities) */
-  entityId?: string | null;
 }
 /** Append-only log of hierarchy edge grants and revocations; triggers apply changes to the edges table */
 export interface OrgChartEdgeGrant {
@@ -528,6 +369,21 @@ export interface AppClaimedInvite {
   receiverId?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+}
+/** Defines the different scopes of membership (e.g. App Member, Organization Member, Group Member) */
+export interface MembershipType {
+  /** Integer identifier for the membership type (1=App, 2=Organization, 3=Group) */
+  id: number;
+  /** Human-readable name of the membership type */
+  name?: string | null;
+  /** Description of what this membership type represents */
+  description?: string | null;
+  /** Scope identifier for this membership type, used to resolve scope on module config tables */
+  scope?: string | null;
+  /** Parent membership type ID for SPRT cascade chain (e.g. type 2 parent=1, type 3 parent=2) */
+  parentMembershipType?: number | null;
+  /** When true, entities of this membership type get a one-to-one ID in the users table and a corresponding role_type entry, enabling them to own resources via owner_id FKs */
+  hasUsersTableEntry?: boolean | null;
 }
 /** Records of individual permission grants and revocations for members via bitmask */
 export interface AppGrant {
@@ -579,48 +435,6 @@ export interface OrgClaimedInvite {
   updatedAt?: string | null;
   entityId?: string | null;
 }
-/** Append-only log of limit events for historical reporting and audit */
-export interface AppLimitEvent {
-  /** Limit name this event applies to */
-  name?: string | null;
-  /** User who triggered this event; NULL for system/aggregate events */
-  actorId?: string | null;
-  /** Entity this event applies to; NULL for app-level events */
-  entityId?: string | null;
-  /** Event type: inc, dec, check, modify, transfer, apply_plan, reset */
-  eventType?: string | null;
-  /** Change amount: positive for increment, negative for decrement */
-  delta?: string | null;
-  /** Usage count before this event */
-  numBefore?: string | null;
-  /** Usage count after this event */
-  numAfter?: string | null;
-  /** Max limit ceiling at the time of this event */
-  maxAtEvent?: string | null;
-  /** Optional reason or source: achievement, invite, plan_change, purchase, etc. */
-  reason?: string | null;
-}
-/** Append-only log of limit events for historical reporting and audit */
-export interface OrgLimitEvent {
-  /** Limit name this event applies to */
-  name?: string | null;
-  /** User who triggered this event; NULL for system/aggregate events */
-  actorId?: string | null;
-  /** Entity this event applies to; NULL for app-level events */
-  entityId?: string | null;
-  /** Event type: inc, dec, check, modify, transfer, apply_plan, reset */
-  eventType?: string | null;
-  /** Change amount: positive for increment, negative for decrement */
-  delta?: string | null;
-  /** Usage count before this event */
-  numBefore?: string | null;
-  /** Usage count after this event */
-  numAfter?: string | null;
-  /** Max limit ceiling at the time of this event */
-  maxAtEvent?: string | null;
-  /** Optional reason or source: achievement, invite, plan_change, purchase, etc. */
-  reason?: string | null;
-}
 /** Records of individual permission grants and revocations for members via bitmask */
 export interface OrgGrant {
   id: string;
@@ -652,70 +466,6 @@ export interface OrgChartEdge {
   /** Numeric seniority level for this position (higher = more senior) */
   positionLevel?: number | null;
 }
-/** Periodic snapshot of a single metric for a database. Collected by the snapshot_usage() cron job in constructive-limits. Each row records one metric measurement (e.g. reads, writes, storage_bytes) at a point in time, with optional dimensions for sub-metric breakdowns. */
-export interface UsageSnapshot {
-  /** The database this snapshot belongs to. References metaschema_public.database.id but declared without an FK constraint — the snapshot collector runs in a platform context where the FK would add overhead without value. */
-  databaseId?: string | null;
-  /** Identifier for the metric being measured (e.g. 'reads', 'writes', 'storage_bytes', 'compute_time_ms'). */
-  metricName?: string | null;
-  /** The measured value at the time of capture. Interpretation depends on metric_name (count, bytes, milliseconds, etc.). */
-  metricValue?: string | null;
-  /** Optional sub-metric breakdowns as key-value pairs (e.g. {"query_type": "select"} for reads). Empty object when no breakdown is needed. */
-  dimensions?: Record<string, unknown> | null;
-  /** When this snapshot was taken. Defaults to the current timestamp; the snapshot collector may override this for backdated imports. */
-  capturedAt?: string | null;
-  id: string;
-}
-/** Tracks per-actor usage counts against configurable maximum limits */
-export interface AppLimit {
-  id: string;
-  /** Name identifier of the limit being tracked */
-  name?: string | null;
-  /** User whose usage is being tracked against this limit */
-  actorId?: string | null;
-  /** Current usage count for this actor and limit */
-  num?: string | null;
-  /** Maximum allowed usage; negative means unlimited. Modified by plans, credits, and achievements. */
-  max?: string | null;
-  /** Soft limit threshold for warnings; NULL means no soft limit. When num >= soft_max, consumers should warn but still allow until max is reached. */
-  softMax?: string | null;
-  /** Start of the current metering window; NULL means no time window */
-  windowStart?: string | null;
-  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
-  windowDuration?: string | null;
-  /** Ceiling set by the active plan via apply_plan(). Window reset does not change this value. */
-  planMax?: string | null;
-  /** Permanent credits from purchases, admin grants, or lifetime rewards. Survives window reset. */
-  purchasedCredits?: string | null;
-  /** Temporary credits for the current billing window. Resets to 0 on window expiry. */
-  periodCredits?: string | null;
-}
-/** Invitation records sent to prospective members via email, with token-based redemption and expiration */
-export interface AppInvite {
-  id: string;
-  /** Email address of the invited recipient */
-  email?: ConstructiveInternalTypeEmail | null;
-  /** User ID of the member who sent this invitation */
-  senderId?: string | null;
-  /** Unique random hex token used to redeem this invitation */
-  inviteToken?: string | null;
-  /** Whether this invitation is still valid and can be redeemed */
-  inviteValid?: boolean | null;
-  /** Maximum number of times this invite can be claimed; -1 means unlimited */
-  inviteLimit?: number | null;
-  /** Running count of how many times this invite has been claimed */
-  inviteCount?: number | null;
-  /** Whether this invite can be claimed by multiple recipients */
-  multiple?: boolean | null;
-  /** Optional JSON payload of additional invite metadata */
-  data?: Record<string, unknown> | null;
-  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
-  profileId?: string | null;
-  /** Timestamp after which this invitation can no longer be redeemed */
-  expiresAt?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
 /** Per-entity settings for the memberships module */
 export interface OrgMembershipSetting {
   id: string;
@@ -741,79 +491,6 @@ export interface OrgMembershipSetting {
   populateMemberEmail?: boolean | null;
   /** Allocation mode for sub-entity limits: pooled (shared parent cap, no per-entity budgets) or budgeted (explicit per-entity allocations, transfer enabled) */
   limitAllocationMode?: string | null;
-}
-/** Tracks aggregate entity-level usage counts (org-wide caps, no per-user breakdown) */
-export interface OrgLimitAggregate {
-  id: string;
-  /** Name identifier of the aggregate limit being tracked */
-  name?: string | null;
-  /** Entity (org) whose aggregate usage is being tracked */
-  entityId?: string | null;
-  /** Current aggregate usage count for this entity and limit */
-  num?: string | null;
-  /** Maximum allowed aggregate usage; negative means unlimited */
-  max?: string | null;
-  /** Soft limit threshold for warnings; NULL means no soft limit */
-  softMax?: string | null;
-  /** Start of the current metering window; NULL means no time window */
-  windowStart?: string | null;
-  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
-  windowDuration?: string | null;
-  /** Ceiling set by the active plan via apply_plan(). Window reset does not change this value. */
-  planMax?: string | null;
-  /** Permanent credits from purchases, admin grants, or lifetime rewards. Survives window reset. */
-  purchasedCredits?: string | null;
-  /** Temporary credits for the current billing window. Resets to 0 on window expiry. */
-  periodCredits?: string | null;
-  /** Capacity reserved by child entities in budgeted allocation mode. Available = max - num - reserved. */
-  reserved?: string | null;
-}
-/** Tracks per-actor usage counts against configurable maximum limits */
-export interface OrgLimit {
-  id: string;
-  /** Name identifier of the limit being tracked */
-  name?: string | null;
-  /** User whose usage is being tracked against this limit */
-  actorId?: string | null;
-  /** Current usage count for this actor and limit */
-  num?: string | null;
-  /** Maximum allowed usage; negative means unlimited. Modified by plans, credits, and achievements. */
-  max?: string | null;
-  /** Soft limit threshold for warnings; NULL means no soft limit. When num >= soft_max, consumers should warn but still allow until max is reached. */
-  softMax?: string | null;
-  /** Start of the current metering window; NULL means no time window */
-  windowStart?: string | null;
-  /** Duration of the metering window (e.g. 1 day, 1 month); NULL means no time window */
-  windowDuration?: string | null;
-  /** Ceiling set by the active plan via apply_plan(). Window reset does not change this value. */
-  planMax?: string | null;
-  /** Permanent credits from purchases, admin grants, or lifetime rewards. Survives window reset. */
-  purchasedCredits?: string | null;
-  /** Temporary credits for the current billing window. Resets to 0 on window expiry. */
-  periodCredits?: string | null;
-  entityId?: string | null;
-}
-/** Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) */
-export interface OrgMemberProfile {
-  id: string;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  /** References the membership this profile belongs to (1:1) */
-  membershipId?: string | null;
-  /** References the entity this profile belongs to (used for RLS lookups) */
-  entityId?: string | null;
-  /** References the user who owns this profile (for self-edit RLS) */
-  actorId?: string | null;
-  /** Display name shown to other entity members */
-  displayName?: string | null;
-  /** Email address visible to other entity members (auto-populated from verified primary email) */
-  email?: string | null;
-  /** Job title or role description visible to other entity members */
-  title?: string | null;
-  /** Short biography visible to other entity members */
-  bio?: string | null;
-  /** Profile picture visible to other entity members */
-  profilePicture?: ConstructiveInternalTypeImage | null;
 }
 /** Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status */
 export interface AppMembership {
@@ -845,14 +522,12 @@ export interface AppMembership {
   profileId?: string | null;
 }
 /** Invitation records sent to prospective members via email, with token-based redemption and expiration */
-export interface OrgInvite {
+export interface AppInvite {
   id: string;
   /** Email address of the invited recipient */
   email?: ConstructiveInternalTypeEmail | null;
   /** User ID of the member who sent this invitation */
   senderId?: string | null;
-  /** User ID of the intended recipient, if targeting a specific user */
-  receiverId?: string | null;
   /** Unique random hex token used to redeem this invitation */
   inviteToken?: string | null;
   /** Whether this invitation is still valid and can be redeemed */
@@ -867,13 +542,10 @@ export interface OrgInvite {
   data?: Record<string, unknown> | null;
   /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
   profileId?: string | null;
-  /** Whether the resulting membership should be read-only when this invite is claimed */
-  isReadOnly?: boolean | null;
   /** Timestamp after which this invitation can no longer be redeemed */
   expiresAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  entityId?: string | null;
 }
 /** Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status */
 export interface OrgMembership {
@@ -908,6 +580,59 @@ export interface OrgMembership {
   isReadOnly?: boolean | null;
   profileId?: string | null;
 }
+/** Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) */
+export interface OrgMemberProfile {
+  id: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  /** References the membership this profile belongs to (1:1) */
+  membershipId?: string | null;
+  /** References the entity this profile belongs to (used for RLS lookups) */
+  entityId?: string | null;
+  /** References the user who owns this profile (for self-edit RLS) */
+  actorId?: string | null;
+  /** Display name shown to other entity members */
+  displayName?: string | null;
+  /** Email address visible to other entity members (auto-populated from verified primary email) */
+  email?: string | null;
+  /** Job title or role description visible to other entity members */
+  title?: string | null;
+  /** Short biography visible to other entity members */
+  bio?: string | null;
+  /** Profile picture visible to other entity members */
+  profilePicture?: ConstructiveInternalTypeImage | null;
+}
+/** Invitation records sent to prospective members via email, with token-based redemption and expiration */
+export interface OrgInvite {
+  id: string;
+  /** Email address of the invited recipient */
+  email?: ConstructiveInternalTypeEmail | null;
+  /** User ID of the member who sent this invitation */
+  senderId?: string | null;
+  /** User ID of the intended recipient, if targeting a specific user */
+  receiverId?: string | null;
+  /** Unique random hex token used to redeem this invitation */
+  inviteToken?: string | null;
+  /** Whether this invitation is still valid and can be redeemed */
+  inviteValid?: boolean | null;
+  /** Maximum number of times this invite can be claimed; -1 means unlimited */
+  inviteLimit?: number | null;
+  /** Running count of how many times this invite has been claimed */
+  inviteCount?: number | null;
+  /** Whether this invite can be claimed by multiple recipients */
+  multiple?: boolean | null;
+  /** Optional JSON payload of additional invite metadata */
+  data?: Record<string, unknown> | null;
+  /** Optional profile (role) to assign to the member when they claim this invite. Only allowed on email invites. */
+  profileId?: string | null;
+  /** Whether the resulting membership should be read-only when this invite is claimed */
+  isReadOnly?: boolean | null;
+  /** Timestamp after which this invitation can no longer be redeemed */
+  expiresAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  entityId?: string | null;
+}
 // ============ Relation Helper Types ============
 export interface ConnectionResult<T> {
   nodes: T[];
@@ -925,68 +650,32 @@ export interface OrgGetManagersRecordRelations {}
 export interface OrgGetSubordinatesRecordRelations {}
 export interface AppPermissionRelations {}
 export interface OrgPermissionRelations {}
-export interface AppLimitCreditRedemptionRelations {
-  creditCode?: AppLimitCreditCode | null;
-}
-export interface AppLimitCreditCodeItemRelations {
-  creditCode?: AppLimitCreditCode | null;
-  defaultLimit?: AppLimitDefault | null;
-}
-export interface AppLimitCreditRelations {
-  defaultLimit?: AppLimitDefault | null;
-}
 export interface OrgMemberRelations {}
 export interface AppPermissionDefaultRelations {}
-export interface AppLimitCreditCodeRelations {
-  appLimitCreditCodeItemsByCreditCodeId?: ConnectionResult<AppLimitCreditCodeItem>;
-  appLimitCreditRedemptionsByCreditCodeId?: ConnectionResult<AppLimitCreditRedemption>;
-}
 export interface OrgPermissionDefaultRelations {}
 export interface AppAdminGrantRelations {}
 export interface AppOwnerGrantRelations {}
-export interface AppLimitCapsDefaultRelations {}
-export interface OrgLimitCapsDefaultRelations {}
-export interface AppLimitCapRelations {}
-export interface OrgLimitCapRelations {}
 export interface OrgAdminGrantRelations {}
 export interface OrgOwnerGrantRelations {}
-export interface MembershipTypeRelations {}
-export interface AppLimitDefaultRelations {
-  appLimitCreditsByDefaultLimitId?: ConnectionResult<AppLimitCredit>;
-  appLimitCreditCodeItemsByDefaultLimitId?: ConnectionResult<AppLimitCreditCodeItem>;
-}
-export interface OrgLimitDefaultRelations {
-  orgLimitCreditsByDefaultLimitId?: ConnectionResult<OrgLimitCredit>;
-}
-export interface OrgLimitCreditRelations {
-  defaultLimit?: OrgLimitDefault | null;
-}
-export interface AppLimitWarningRelations {}
-export interface OrgLimitWarningRelations {}
 export interface OrgChartEdgeGrantRelations {}
 export interface AppClaimedInviteRelations {}
+export interface MembershipTypeRelations {}
 export interface AppGrantRelations {}
 export interface AppMembershipDefaultRelations {}
 export interface OrgMembershipDefaultRelations {}
 export interface OrgClaimedInviteRelations {}
-export interface AppLimitEventRelations {}
-export interface OrgLimitEventRelations {}
 export interface OrgGrantRelations {}
 export interface OrgChartEdgeRelations {}
-export interface UsageSnapshotRelations {}
-export interface AppLimitRelations {}
-export interface AppInviteRelations {}
 export interface OrgMembershipSettingRelations {}
-export interface OrgLimitAggregateRelations {}
-export interface OrgLimitRelations {}
-export interface OrgMemberProfileRelations {
-  membership?: OrgMembership | null;
-}
 export interface AppMembershipRelations {}
-export interface OrgInviteRelations {}
+export interface AppInviteRelations {}
 export interface OrgMembershipRelations {
   orgMemberProfileByMembershipId?: OrgMemberProfile | null;
 }
+export interface OrgMemberProfileRelations {
+  membership?: OrgMembership | null;
+}
+export interface OrgInviteRelations {}
 // ============ Entity Types With Relations ============
 export type OrgGetManagersRecordWithRelations = OrgGetManagersRecord &
   OrgGetManagersRecordRelations;
@@ -994,54 +683,33 @@ export type OrgGetSubordinatesRecordWithRelations = OrgGetSubordinatesRecord &
   OrgGetSubordinatesRecordRelations;
 export type AppPermissionWithRelations = AppPermission & AppPermissionRelations;
 export type OrgPermissionWithRelations = OrgPermission & OrgPermissionRelations;
-export type AppLimitCreditRedemptionWithRelations = AppLimitCreditRedemption &
-  AppLimitCreditRedemptionRelations;
-export type AppLimitCreditCodeItemWithRelations = AppLimitCreditCodeItem &
-  AppLimitCreditCodeItemRelations;
-export type AppLimitCreditWithRelations = AppLimitCredit & AppLimitCreditRelations;
 export type OrgMemberWithRelations = OrgMember & OrgMemberRelations;
 export type AppPermissionDefaultWithRelations = AppPermissionDefault &
   AppPermissionDefaultRelations;
-export type AppLimitCreditCodeWithRelations = AppLimitCreditCode & AppLimitCreditCodeRelations;
 export type OrgPermissionDefaultWithRelations = OrgPermissionDefault &
   OrgPermissionDefaultRelations;
 export type AppAdminGrantWithRelations = AppAdminGrant & AppAdminGrantRelations;
 export type AppOwnerGrantWithRelations = AppOwnerGrant & AppOwnerGrantRelations;
-export type AppLimitCapsDefaultWithRelations = AppLimitCapsDefault & AppLimitCapsDefaultRelations;
-export type OrgLimitCapsDefaultWithRelations = OrgLimitCapsDefault & OrgLimitCapsDefaultRelations;
-export type AppLimitCapWithRelations = AppLimitCap & AppLimitCapRelations;
-export type OrgLimitCapWithRelations = OrgLimitCap & OrgLimitCapRelations;
 export type OrgAdminGrantWithRelations = OrgAdminGrant & OrgAdminGrantRelations;
 export type OrgOwnerGrantWithRelations = OrgOwnerGrant & OrgOwnerGrantRelations;
-export type MembershipTypeWithRelations = MembershipType & MembershipTypeRelations;
-export type AppLimitDefaultWithRelations = AppLimitDefault & AppLimitDefaultRelations;
-export type OrgLimitDefaultWithRelations = OrgLimitDefault & OrgLimitDefaultRelations;
-export type OrgLimitCreditWithRelations = OrgLimitCredit & OrgLimitCreditRelations;
-export type AppLimitWarningWithRelations = AppLimitWarning & AppLimitWarningRelations;
-export type OrgLimitWarningWithRelations = OrgLimitWarning & OrgLimitWarningRelations;
 export type OrgChartEdgeGrantWithRelations = OrgChartEdgeGrant & OrgChartEdgeGrantRelations;
 export type AppClaimedInviteWithRelations = AppClaimedInvite & AppClaimedInviteRelations;
+export type MembershipTypeWithRelations = MembershipType & MembershipTypeRelations;
 export type AppGrantWithRelations = AppGrant & AppGrantRelations;
 export type AppMembershipDefaultWithRelations = AppMembershipDefault &
   AppMembershipDefaultRelations;
 export type OrgMembershipDefaultWithRelations = OrgMembershipDefault &
   OrgMembershipDefaultRelations;
 export type OrgClaimedInviteWithRelations = OrgClaimedInvite & OrgClaimedInviteRelations;
-export type AppLimitEventWithRelations = AppLimitEvent & AppLimitEventRelations;
-export type OrgLimitEventWithRelations = OrgLimitEvent & OrgLimitEventRelations;
 export type OrgGrantWithRelations = OrgGrant & OrgGrantRelations;
 export type OrgChartEdgeWithRelations = OrgChartEdge & OrgChartEdgeRelations;
-export type UsageSnapshotWithRelations = UsageSnapshot & UsageSnapshotRelations;
-export type AppLimitWithRelations = AppLimit & AppLimitRelations;
-export type AppInviteWithRelations = AppInvite & AppInviteRelations;
 export type OrgMembershipSettingWithRelations = OrgMembershipSetting &
   OrgMembershipSettingRelations;
-export type OrgLimitAggregateWithRelations = OrgLimitAggregate & OrgLimitAggregateRelations;
-export type OrgLimitWithRelations = OrgLimit & OrgLimitRelations;
-export type OrgMemberProfileWithRelations = OrgMemberProfile & OrgMemberProfileRelations;
 export type AppMembershipWithRelations = AppMembership & AppMembershipRelations;
-export type OrgInviteWithRelations = OrgInvite & OrgInviteRelations;
+export type AppInviteWithRelations = AppInvite & AppInviteRelations;
 export type OrgMembershipWithRelations = OrgMembership & OrgMembershipRelations;
+export type OrgMemberProfileWithRelations = OrgMemberProfile & OrgMemberProfileRelations;
+export type OrgInviteWithRelations = OrgInvite & OrgInviteRelations;
 // ============ Entity Select Types ============
 export type OrgGetManagersRecordSelect = {
   userId?: boolean;
@@ -1065,38 +733,6 @@ export type OrgPermissionSelect = {
   bitstr?: boolean;
   description?: boolean;
 };
-export type AppLimitCreditRedemptionSelect = {
-  id?: boolean;
-  creditCodeId?: boolean;
-  entityId?: boolean;
-  creditCode?: {
-    select: AppLimitCreditCodeSelect;
-  };
-};
-export type AppLimitCreditCodeItemSelect = {
-  id?: boolean;
-  creditCodeId?: boolean;
-  defaultLimitId?: boolean;
-  amount?: boolean;
-  creditType?: boolean;
-  creditCode?: {
-    select: AppLimitCreditCodeSelect;
-  };
-  defaultLimit?: {
-    select: AppLimitDefaultSelect;
-  };
-};
-export type AppLimitCreditSelect = {
-  id?: boolean;
-  defaultLimitId?: boolean;
-  actorId?: boolean;
-  amount?: boolean;
-  creditType?: boolean;
-  reason?: boolean;
-  defaultLimit?: {
-    select: AppLimitDefaultSelect;
-  };
-};
 export type OrgMemberSelect = {
   id?: boolean;
   isAdmin?: boolean;
@@ -1106,25 +742,6 @@ export type OrgMemberSelect = {
 export type AppPermissionDefaultSelect = {
   id?: boolean;
   permissions?: boolean;
-};
-export type AppLimitCreditCodeSelect = {
-  id?: boolean;
-  code?: boolean;
-  maxRedemptions?: boolean;
-  currentRedemptions?: boolean;
-  expiresAt?: boolean;
-  appLimitCreditCodeItemsByCreditCodeId?: {
-    select: AppLimitCreditCodeItemSelect;
-    first?: number;
-    filter?: AppLimitCreditCodeItemFilter;
-    orderBy?: AppLimitCreditCodeItemOrderBy[];
-  };
-  appLimitCreditRedemptionsByCreditCodeId?: {
-    select: AppLimitCreditRedemptionSelect;
-    first?: number;
-    filter?: AppLimitCreditRedemptionFilter;
-    orderBy?: AppLimitCreditRedemptionOrderBy[];
-  };
 };
 export type OrgPermissionDefaultSelect = {
   id?: boolean;
@@ -1147,28 +764,6 @@ export type AppOwnerGrantSelect = {
   createdAt?: boolean;
   updatedAt?: boolean;
 };
-export type AppLimitCapsDefaultSelect = {
-  id?: boolean;
-  name?: boolean;
-  max?: boolean;
-};
-export type OrgLimitCapsDefaultSelect = {
-  id?: boolean;
-  name?: boolean;
-  max?: boolean;
-};
-export type AppLimitCapSelect = {
-  id?: boolean;
-  name?: boolean;
-  entityId?: boolean;
-  max?: boolean;
-};
-export type OrgLimitCapSelect = {
-  id?: boolean;
-  name?: boolean;
-  entityId?: boolean;
-  max?: boolean;
-};
 export type OrgAdminGrantSelect = {
   id?: boolean;
   isGrant?: boolean;
@@ -1186,71 +781,6 @@ export type OrgOwnerGrantSelect = {
   grantorId?: boolean;
   createdAt?: boolean;
   updatedAt?: boolean;
-};
-export type MembershipTypeSelect = {
-  id?: boolean;
-  name?: boolean;
-  description?: boolean;
-  prefix?: boolean;
-  parentMembershipType?: boolean;
-  hasUsersTableEntry?: boolean;
-};
-export type AppLimitDefaultSelect = {
-  id?: boolean;
-  name?: boolean;
-  max?: boolean;
-  softMax?: boolean;
-  appLimitCreditsByDefaultLimitId?: {
-    select: AppLimitCreditSelect;
-    first?: number;
-    filter?: AppLimitCreditFilter;
-    orderBy?: AppLimitCreditOrderBy[];
-  };
-  appLimitCreditCodeItemsByDefaultLimitId?: {
-    select: AppLimitCreditCodeItemSelect;
-    first?: number;
-    filter?: AppLimitCreditCodeItemFilter;
-    orderBy?: AppLimitCreditCodeItemOrderBy[];
-  };
-};
-export type OrgLimitDefaultSelect = {
-  id?: boolean;
-  name?: boolean;
-  max?: boolean;
-  softMax?: boolean;
-  orgLimitCreditsByDefaultLimitId?: {
-    select: OrgLimitCreditSelect;
-    first?: number;
-    filter?: OrgLimitCreditFilter;
-    orderBy?: OrgLimitCreditOrderBy[];
-  };
-};
-export type OrgLimitCreditSelect = {
-  id?: boolean;
-  defaultLimitId?: boolean;
-  actorId?: boolean;
-  entityId?: boolean;
-  amount?: boolean;
-  creditType?: boolean;
-  reason?: boolean;
-  defaultLimit?: {
-    select: OrgLimitDefaultSelect;
-  };
-};
-export type AppLimitWarningSelect = {
-  id?: boolean;
-  name?: boolean;
-  warningType?: boolean;
-  thresholdValue?: boolean;
-  taskIdentifier?: boolean;
-};
-export type OrgLimitWarningSelect = {
-  id?: boolean;
-  name?: boolean;
-  warningType?: boolean;
-  thresholdValue?: boolean;
-  taskIdentifier?: boolean;
-  entityId?: boolean;
 };
 export type OrgChartEdgeGrantSelect = {
   id?: boolean;
@@ -1270,6 +800,14 @@ export type AppClaimedInviteSelect = {
   receiverId?: boolean;
   createdAt?: boolean;
   updatedAt?: boolean;
+};
+export type MembershipTypeSelect = {
+  id?: boolean;
+  name?: boolean;
+  description?: boolean;
+  scope?: boolean;
+  parentMembershipType?: boolean;
+  hasUsersTableEntry?: boolean;
 };
 export type AppGrantSelect = {
   id?: boolean;
@@ -1307,28 +845,6 @@ export type OrgClaimedInviteSelect = {
   updatedAt?: boolean;
   entityId?: boolean;
 };
-export type AppLimitEventSelect = {
-  name?: boolean;
-  actorId?: boolean;
-  entityId?: boolean;
-  eventType?: boolean;
-  delta?: boolean;
-  numBefore?: boolean;
-  numAfter?: boolean;
-  maxAtEvent?: boolean;
-  reason?: boolean;
-};
-export type OrgLimitEventSelect = {
-  name?: boolean;
-  actorId?: boolean;
-  entityId?: boolean;
-  eventType?: boolean;
-  delta?: boolean;
-  numBefore?: boolean;
-  numAfter?: boolean;
-  maxAtEvent?: boolean;
-  reason?: boolean;
-};
 export type OrgGrantSelect = {
   id?: boolean;
   permissions?: boolean;
@@ -1349,42 +865,6 @@ export type OrgChartEdgeSelect = {
   positionTitle?: boolean;
   positionLevel?: boolean;
 };
-export type UsageSnapshotSelect = {
-  databaseId?: boolean;
-  metricName?: boolean;
-  metricValue?: boolean;
-  dimensions?: boolean;
-  capturedAt?: boolean;
-  id?: boolean;
-};
-export type AppLimitSelect = {
-  id?: boolean;
-  name?: boolean;
-  actorId?: boolean;
-  num?: boolean;
-  max?: boolean;
-  softMax?: boolean;
-  windowStart?: boolean;
-  windowDuration?: boolean;
-  planMax?: boolean;
-  purchasedCredits?: boolean;
-  periodCredits?: boolean;
-};
-export type AppInviteSelect = {
-  id?: boolean;
-  email?: boolean;
-  senderId?: boolean;
-  inviteToken?: boolean;
-  inviteValid?: boolean;
-  inviteLimit?: boolean;
-  inviteCount?: boolean;
-  multiple?: boolean;
-  data?: boolean;
-  profileId?: boolean;
-  expiresAt?: boolean;
-  createdAt?: boolean;
-  updatedAt?: boolean;
-};
 export type OrgMembershipSettingSelect = {
   id?: boolean;
   createdAt?: boolean;
@@ -1400,50 +880,6 @@ export type OrgMembershipSettingSelect = {
   inviteProfileAssignmentMode?: boolean;
   populateMemberEmail?: boolean;
   limitAllocationMode?: boolean;
-};
-export type OrgLimitAggregateSelect = {
-  id?: boolean;
-  name?: boolean;
-  entityId?: boolean;
-  num?: boolean;
-  max?: boolean;
-  softMax?: boolean;
-  windowStart?: boolean;
-  windowDuration?: boolean;
-  planMax?: boolean;
-  purchasedCredits?: boolean;
-  periodCredits?: boolean;
-  reserved?: boolean;
-};
-export type OrgLimitSelect = {
-  id?: boolean;
-  name?: boolean;
-  actorId?: boolean;
-  num?: boolean;
-  max?: boolean;
-  softMax?: boolean;
-  windowStart?: boolean;
-  windowDuration?: boolean;
-  planMax?: boolean;
-  purchasedCredits?: boolean;
-  periodCredits?: boolean;
-  entityId?: boolean;
-};
-export type OrgMemberProfileSelect = {
-  id?: boolean;
-  createdAt?: boolean;
-  updatedAt?: boolean;
-  membershipId?: boolean;
-  entityId?: boolean;
-  actorId?: boolean;
-  displayName?: boolean;
-  email?: boolean;
-  title?: boolean;
-  bio?: boolean;
-  profilePicture?: boolean;
-  membership?: {
-    select: OrgMembershipSelect;
-  };
 };
 export type AppMembershipSelect = {
   id?: boolean;
@@ -1463,11 +899,10 @@ export type AppMembershipSelect = {
   actorId?: boolean;
   profileId?: boolean;
 };
-export type OrgInviteSelect = {
+export type AppInviteSelect = {
   id?: boolean;
   email?: boolean;
   senderId?: boolean;
-  receiverId?: boolean;
   inviteToken?: boolean;
   inviteValid?: boolean;
   inviteLimit?: boolean;
@@ -1475,11 +910,9 @@ export type OrgInviteSelect = {
   multiple?: boolean;
   data?: boolean;
   profileId?: boolean;
-  isReadOnly?: boolean;
   expiresAt?: boolean;
   createdAt?: boolean;
   updatedAt?: boolean;
-  entityId?: boolean;
 };
 export type OrgMembershipSelect = {
   id?: boolean;
@@ -1503,6 +936,40 @@ export type OrgMembershipSelect = {
   orgMemberProfileByMembershipId?: {
     select: OrgMemberProfileSelect;
   };
+};
+export type OrgMemberProfileSelect = {
+  id?: boolean;
+  createdAt?: boolean;
+  updatedAt?: boolean;
+  membershipId?: boolean;
+  entityId?: boolean;
+  actorId?: boolean;
+  displayName?: boolean;
+  email?: boolean;
+  title?: boolean;
+  bio?: boolean;
+  profilePicture?: boolean;
+  membership?: {
+    select: OrgMembershipSelect;
+  };
+};
+export type OrgInviteSelect = {
+  id?: boolean;
+  email?: boolean;
+  senderId?: boolean;
+  receiverId?: boolean;
+  inviteToken?: boolean;
+  inviteValid?: boolean;
+  inviteLimit?: boolean;
+  inviteCount?: boolean;
+  multiple?: boolean;
+  data?: boolean;
+  profileId?: boolean;
+  isReadOnly?: boolean;
+  expiresAt?: boolean;
+  createdAt?: boolean;
+  updatedAt?: boolean;
+  entityId?: boolean;
 };
 // ============ Table Filter Types ============
 export interface OrgGetManagersRecordFilter {
@@ -1555,66 +1022,6 @@ export interface OrgPermissionFilter {
   /** Negates the expression. */
   not?: OrgPermissionFilter;
 }
-export interface AppLimitCreditRedemptionFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `creditCodeId` field. */
-  creditCodeId?: UUIDFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditRedemptionFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditRedemptionFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditRedemptionFilter;
-  /** Filter by the object’s `creditCode` relation. */
-  creditCode?: AppLimitCreditCodeFilter;
-}
-export interface AppLimitCreditCodeItemFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `creditCodeId` field. */
-  creditCodeId?: UUIDFilter;
-  /** Filter by the object’s `defaultLimitId` field. */
-  defaultLimitId?: UUIDFilter;
-  /** Filter by the object’s `amount` field. */
-  amount?: BigIntFilter;
-  /** Filter by the object’s `creditType` field. */
-  creditType?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditCodeItemFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditCodeItemFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditCodeItemFilter;
-  /** Filter by the object’s `creditCode` relation. */
-  creditCode?: AppLimitCreditCodeFilter;
-  /** Filter by the object’s `defaultLimit` relation. */
-  defaultLimit?: AppLimitDefaultFilter;
-}
-export interface AppLimitCreditFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `defaultLimitId` field. */
-  defaultLimitId?: UUIDFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `amount` field. */
-  amount?: BigIntFilter;
-  /** Filter by the object’s `creditType` field. */
-  creditType?: StringFilter;
-  /** Filter by the object’s `reason` field. */
-  reason?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditFilter;
-  /** Filter by the object’s `defaultLimit` relation. */
-  defaultLimit?: AppLimitDefaultFilter;
-}
 export interface OrgMemberFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
@@ -1642,32 +1049,6 @@ export interface AppPermissionDefaultFilter {
   or?: AppPermissionDefaultFilter[];
   /** Negates the expression. */
   not?: AppPermissionDefaultFilter;
-}
-export interface AppLimitCreditCodeFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `code` field. */
-  code?: StringFilter;
-  /** Filter by the object’s `maxRedemptions` field. */
-  maxRedemptions?: IntFilter;
-  /** Filter by the object’s `currentRedemptions` field. */
-  currentRedemptions?: IntFilter;
-  /** Filter by the object’s `expiresAt` field. */
-  expiresAt?: DatetimeFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditCodeFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditCodeFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditCodeFilter;
-  /** Filter by the object’s `appLimitCreditCodeItemsByCreditCodeId` relation. */
-  appLimitCreditCodeItemsByCreditCodeId?: AppLimitCreditCodeToManyAppLimitCreditCodeItemFilter;
-  /** `appLimitCreditCodeItemsByCreditCodeId` exist. */
-  appLimitCreditCodeItemsByCreditCodeIdExist?: boolean;
-  /** Filter by the object’s `appLimitCreditRedemptionsByCreditCodeId` relation. */
-  appLimitCreditRedemptionsByCreditCodeId?: AppLimitCreditCodeToManyAppLimitCreditRedemptionFilter;
-  /** `appLimitCreditRedemptionsByCreditCodeId` exist. */
-  appLimitCreditRedemptionsByCreditCodeIdExist?: boolean;
 }
 export interface OrgPermissionDefaultFilter {
   /** Filter by the object’s `id` field. */
@@ -1723,66 +1104,6 @@ export interface AppOwnerGrantFilter {
   /** Negates the expression. */
   not?: AppOwnerGrantFilter;
 }
-export interface AppLimitCapsDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCapsDefaultFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCapsDefaultFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCapsDefaultFilter;
-}
-export interface OrgLimitCapsDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitCapsDefaultFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitCapsDefaultFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitCapsDefaultFilter;
-}
-export interface AppLimitCapFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCapFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCapFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCapFilter;
-}
-export interface OrgLimitCapFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitCapFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitCapFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitCapFilter;
-}
 export interface OrgAdminGrantFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
@@ -1827,132 +1148,6 @@ export interface OrgOwnerGrantFilter {
   /** Negates the expression. */
   not?: OrgOwnerGrantFilter;
 }
-export interface MembershipTypeFilter {
-  /** Filter by the object’s `id` field. */
-  id?: IntFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `description` field. */
-  description?: StringFilter;
-  /** Filter by the object’s `prefix` field. */
-  prefix?: StringFilter;
-  /** Filter by the object’s `parentMembershipType` field. */
-  parentMembershipType?: IntFilter;
-  /** Filter by the object’s `hasUsersTableEntry` field. */
-  hasUsersTableEntry?: BooleanFilter;
-  /** Checks for all expressions in this list. */
-  and?: MembershipTypeFilter[];
-  /** Checks for any expressions in this list. */
-  or?: MembershipTypeFilter[];
-  /** Negates the expression. */
-  not?: MembershipTypeFilter;
-}
-export interface AppLimitDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Filter by the object’s `softMax` field. */
-  softMax?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitDefaultFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitDefaultFilter[];
-  /** Negates the expression. */
-  not?: AppLimitDefaultFilter;
-  /** Filter by the object’s `appLimitCreditsByDefaultLimitId` relation. */
-  appLimitCreditsByDefaultLimitId?: AppLimitDefaultToManyAppLimitCreditFilter;
-  /** `appLimitCreditsByDefaultLimitId` exist. */
-  appLimitCreditsByDefaultLimitIdExist?: boolean;
-  /** Filter by the object’s `appLimitCreditCodeItemsByDefaultLimitId` relation. */
-  appLimitCreditCodeItemsByDefaultLimitId?: AppLimitDefaultToManyAppLimitCreditCodeItemFilter;
-  /** `appLimitCreditCodeItemsByDefaultLimitId` exist. */
-  appLimitCreditCodeItemsByDefaultLimitIdExist?: boolean;
-}
-export interface OrgLimitDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Filter by the object’s `softMax` field. */
-  softMax?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitDefaultFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitDefaultFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitDefaultFilter;
-  /** Filter by the object’s `orgLimitCreditsByDefaultLimitId` relation. */
-  orgLimitCreditsByDefaultLimitId?: OrgLimitDefaultToManyOrgLimitCreditFilter;
-  /** `orgLimitCreditsByDefaultLimitId` exist. */
-  orgLimitCreditsByDefaultLimitIdExist?: boolean;
-}
-export interface OrgLimitCreditFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `defaultLimitId` field. */
-  defaultLimitId?: UUIDFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `amount` field. */
-  amount?: BigIntFilter;
-  /** Filter by the object’s `creditType` field. */
-  creditType?: StringFilter;
-  /** Filter by the object’s `reason` field. */
-  reason?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitCreditFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitCreditFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitCreditFilter;
-  /** Filter by the object’s `defaultLimit` relation. */
-  defaultLimit?: OrgLimitDefaultFilter;
-}
-export interface AppLimitWarningFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `warningType` field. */
-  warningType?: StringFilter;
-  /** Filter by the object’s `thresholdValue` field. */
-  thresholdValue?: BigIntFilter;
-  /** Filter by the object’s `taskIdentifier` field. */
-  taskIdentifier?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitWarningFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitWarningFilter[];
-  /** Negates the expression. */
-  not?: AppLimitWarningFilter;
-}
-export interface OrgLimitWarningFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `warningType` field. */
-  warningType?: StringFilter;
-  /** Filter by the object’s `thresholdValue` field. */
-  thresholdValue?: BigIntFilter;
-  /** Filter by the object’s `taskIdentifier` field. */
-  taskIdentifier?: StringFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitWarningFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitWarningFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitWarningFilter;
-}
 export interface OrgChartEdgeGrantFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
@@ -1996,6 +1191,26 @@ export interface AppClaimedInviteFilter {
   or?: AppClaimedInviteFilter[];
   /** Negates the expression. */
   not?: AppClaimedInviteFilter;
+}
+export interface MembershipTypeFilter {
+  /** Filter by the object’s `id` field. */
+  id?: IntFilter;
+  /** Filter by the object’s `name` field. */
+  name?: StringFilter;
+  /** Filter by the object’s `description` field. */
+  description?: StringFilter;
+  /** Filter by the object’s `scope` field. */
+  scope?: StringFilter;
+  /** Filter by the object’s `parentMembershipType` field. */
+  parentMembershipType?: IntFilter;
+  /** Filter by the object’s `hasUsersTableEntry` field. */
+  hasUsersTableEntry?: BooleanFilter;
+  /** Checks for all expressions in this list. */
+  and?: MembershipTypeFilter[];
+  /** Checks for any expressions in this list. */
+  or?: MembershipTypeFilter[];
+  /** Negates the expression. */
+  not?: MembershipTypeFilter;
 }
 export interface AppGrantFilter {
   /** Filter by the object’s `id` field. */
@@ -2083,58 +1298,6 @@ export interface OrgClaimedInviteFilter {
   /** Negates the expression. */
   not?: OrgClaimedInviteFilter;
 }
-export interface AppLimitEventFilter {
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `eventType` field. */
-  eventType?: StringFilter;
-  /** Filter by the object’s `delta` field. */
-  delta?: BigIntFilter;
-  /** Filter by the object’s `numBefore` field. */
-  numBefore?: BigIntFilter;
-  /** Filter by the object’s `numAfter` field. */
-  numAfter?: BigIntFilter;
-  /** Filter by the object’s `maxAtEvent` field. */
-  maxAtEvent?: BigIntFilter;
-  /** Filter by the object’s `reason` field. */
-  reason?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitEventFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitEventFilter[];
-  /** Negates the expression. */
-  not?: AppLimitEventFilter;
-}
-export interface OrgLimitEventFilter {
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `eventType` field. */
-  eventType?: StringFilter;
-  /** Filter by the object’s `delta` field. */
-  delta?: BigIntFilter;
-  /** Filter by the object’s `numBefore` field. */
-  numBefore?: BigIntFilter;
-  /** Filter by the object’s `numAfter` field. */
-  numAfter?: BigIntFilter;
-  /** Filter by the object’s `maxAtEvent` field. */
-  maxAtEvent?: BigIntFilter;
-  /** Filter by the object’s `reason` field. */
-  reason?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitEventFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitEventFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitEventFilter;
-}
 export interface OrgGrantFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
@@ -2183,88 +1346,6 @@ export interface OrgChartEdgeFilter {
   /** Negates the expression. */
   not?: OrgChartEdgeFilter;
 }
-export interface UsageSnapshotFilter {
-  /** Filter by the object’s `databaseId` field. */
-  databaseId?: UUIDFilter;
-  /** Filter by the object’s `metricName` field. */
-  metricName?: StringFilter;
-  /** Filter by the object’s `metricValue` field. */
-  metricValue?: BigIntFilter;
-  /** Filter by the object’s `dimensions` field. */
-  dimensions?: JSONFilter;
-  /** Filter by the object’s `capturedAt` field. */
-  capturedAt?: DatetimeFilter;
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Checks for all expressions in this list. */
-  and?: UsageSnapshotFilter[];
-  /** Checks for any expressions in this list. */
-  or?: UsageSnapshotFilter[];
-  /** Negates the expression. */
-  not?: UsageSnapshotFilter;
-}
-export interface AppLimitFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `num` field. */
-  num?: BigIntFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Filter by the object’s `softMax` field. */
-  softMax?: BigIntFilter;
-  /** Filter by the object’s `windowStart` field. */
-  windowStart?: DatetimeFilter;
-  /** Filter by the object’s `windowDuration` field. */
-  windowDuration?: IntervalFilter;
-  /** Filter by the object’s `planMax` field. */
-  planMax?: BigIntFilter;
-  /** Filter by the object’s `purchasedCredits` field. */
-  purchasedCredits?: BigIntFilter;
-  /** Filter by the object’s `periodCredits` field. */
-  periodCredits?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitFilter[];
-  /** Negates the expression. */
-  not?: AppLimitFilter;
-}
-export interface AppInviteFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `email` field. */
-  email?: ConstructiveInternalTypeEmailFilter;
-  /** Filter by the object’s `senderId` field. */
-  senderId?: UUIDFilter;
-  /** Filter by the object’s `inviteToken` field. */
-  inviteToken?: StringFilter;
-  /** Filter by the object’s `inviteValid` field. */
-  inviteValid?: BooleanFilter;
-  /** Filter by the object’s `inviteLimit` field. */
-  inviteLimit?: IntFilter;
-  /** Filter by the object’s `inviteCount` field. */
-  inviteCount?: IntFilter;
-  /** Filter by the object’s `multiple` field. */
-  multiple?: BooleanFilter;
-  /** Filter by the object’s `profileId` field. */
-  profileId?: UUIDFilter;
-  /** Filter by the object’s `expiresAt` field. */
-  expiresAt?: DatetimeFilter;
-  /** Filter by the object’s `createdAt` field. */
-  createdAt?: DatetimeFilter;
-  /** Filter by the object’s `updatedAt` field. */
-  updatedAt?: DatetimeFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppInviteFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppInviteFilter[];
-  /** Negates the expression. */
-  not?: AppInviteFilter;
-}
 export interface OrgMembershipSettingFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
@@ -2300,102 +1381,6 @@ export interface OrgMembershipSettingFilter {
   or?: OrgMembershipSettingFilter[];
   /** Negates the expression. */
   not?: OrgMembershipSettingFilter;
-}
-export interface OrgLimitAggregateFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `num` field. */
-  num?: BigIntFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Filter by the object’s `softMax` field. */
-  softMax?: BigIntFilter;
-  /** Filter by the object’s `windowStart` field. */
-  windowStart?: DatetimeFilter;
-  /** Filter by the object’s `windowDuration` field. */
-  windowDuration?: IntervalFilter;
-  /** Filter by the object’s `planMax` field. */
-  planMax?: BigIntFilter;
-  /** Filter by the object’s `purchasedCredits` field. */
-  purchasedCredits?: BigIntFilter;
-  /** Filter by the object’s `periodCredits` field. */
-  periodCredits?: BigIntFilter;
-  /** Filter by the object’s `reserved` field. */
-  reserved?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitAggregateFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitAggregateFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitAggregateFilter;
-}
-export interface OrgLimitFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `num` field. */
-  num?: BigIntFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Filter by the object’s `softMax` field. */
-  softMax?: BigIntFilter;
-  /** Filter by the object’s `windowStart` field. */
-  windowStart?: DatetimeFilter;
-  /** Filter by the object’s `windowDuration` field. */
-  windowDuration?: IntervalFilter;
-  /** Filter by the object’s `planMax` field. */
-  planMax?: BigIntFilter;
-  /** Filter by the object’s `purchasedCredits` field. */
-  purchasedCredits?: BigIntFilter;
-  /** Filter by the object’s `periodCredits` field. */
-  periodCredits?: BigIntFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitFilter;
-}
-export interface OrgMemberProfileFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `createdAt` field. */
-  createdAt?: DatetimeFilter;
-  /** Filter by the object’s `updatedAt` field. */
-  updatedAt?: DatetimeFilter;
-  /** Filter by the object’s `membershipId` field. */
-  membershipId?: UUIDFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `displayName` field. */
-  displayName?: StringFilter;
-  /** Filter by the object’s `email` field. */
-  email?: StringFilter;
-  /** Filter by the object’s `title` field. */
-  title?: StringFilter;
-  /** Filter by the object’s `bio` field. */
-  bio?: StringFilter;
-  /** Filter by the object’s `profilePicture` field. */
-  profilePicture?: ConstructiveInternalTypeImageFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgMemberProfileFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgMemberProfileFilter[];
-  /** Negates the expression. */
-  not?: OrgMemberProfileFilter;
-  /** Filter by the object’s `membership` relation. */
-  membership?: OrgMembershipFilter;
 }
 export interface AppMembershipFilter {
   /** Filter by the object’s `id` field. */
@@ -2437,15 +1422,13 @@ export interface AppMembershipFilter {
   /** Negates the expression. */
   not?: AppMembershipFilter;
 }
-export interface OrgInviteFilter {
+export interface AppInviteFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
   /** Filter by the object’s `email` field. */
   email?: ConstructiveInternalTypeEmailFilter;
   /** Filter by the object’s `senderId` field. */
   senderId?: UUIDFilter;
-  /** Filter by the object’s `receiverId` field. */
-  receiverId?: UUIDFilter;
   /** Filter by the object’s `inviteToken` field. */
   inviteToken?: StringFilter;
   /** Filter by the object’s `inviteValid` field. */
@@ -2458,22 +1441,18 @@ export interface OrgInviteFilter {
   multiple?: BooleanFilter;
   /** Filter by the object’s `profileId` field. */
   profileId?: UUIDFilter;
-  /** Filter by the object’s `isReadOnly` field. */
-  isReadOnly?: BooleanFilter;
   /** Filter by the object’s `expiresAt` field. */
   expiresAt?: DatetimeFilter;
   /** Filter by the object’s `createdAt` field. */
   createdAt?: DatetimeFilter;
   /** Filter by the object’s `updatedAt` field. */
   updatedAt?: DatetimeFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
   /** Checks for all expressions in this list. */
-  and?: OrgInviteFilter[];
+  and?: AppInviteFilter[];
   /** Checks for any expressions in this list. */
-  or?: OrgInviteFilter[];
+  or?: AppInviteFilter[];
   /** Negates the expression. */
-  not?: OrgInviteFilter;
+  not?: AppInviteFilter;
 }
 export interface OrgMembershipFilter {
   /** Filter by the object’s `id` field. */
@@ -2523,6 +1502,76 @@ export interface OrgMembershipFilter {
   /** A related `orgMemberProfileByMembershipId` exists. */
   orgMemberProfileByMembershipIdExists?: boolean;
 }
+export interface OrgMemberProfileFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Filter by the object’s `updatedAt` field. */
+  updatedAt?: DatetimeFilter;
+  /** Filter by the object’s `membershipId` field. */
+  membershipId?: UUIDFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Filter by the object’s `actorId` field. */
+  actorId?: UUIDFilter;
+  /** Filter by the object’s `displayName` field. */
+  displayName?: StringFilter;
+  /** Filter by the object’s `email` field. */
+  email?: StringFilter;
+  /** Filter by the object’s `title` field. */
+  title?: StringFilter;
+  /** Filter by the object’s `bio` field. */
+  bio?: StringFilter;
+  /** Filter by the object’s `profilePicture` field. */
+  profilePicture?: ConstructiveInternalTypeImageFilter;
+  /** Checks for all expressions in this list. */
+  and?: OrgMemberProfileFilter[];
+  /** Checks for any expressions in this list. */
+  or?: OrgMemberProfileFilter[];
+  /** Negates the expression. */
+  not?: OrgMemberProfileFilter;
+  /** Filter by the object’s `membership` relation. */
+  membership?: OrgMembershipFilter;
+}
+export interface OrgInviteFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `email` field. */
+  email?: ConstructiveInternalTypeEmailFilter;
+  /** Filter by the object’s `senderId` field. */
+  senderId?: UUIDFilter;
+  /** Filter by the object’s `receiverId` field. */
+  receiverId?: UUIDFilter;
+  /** Filter by the object’s `inviteToken` field. */
+  inviteToken?: StringFilter;
+  /** Filter by the object’s `inviteValid` field. */
+  inviteValid?: BooleanFilter;
+  /** Filter by the object’s `inviteLimit` field. */
+  inviteLimit?: IntFilter;
+  /** Filter by the object’s `inviteCount` field. */
+  inviteCount?: IntFilter;
+  /** Filter by the object’s `multiple` field. */
+  multiple?: BooleanFilter;
+  /** Filter by the object’s `profileId` field. */
+  profileId?: UUIDFilter;
+  /** Filter by the object’s `isReadOnly` field. */
+  isReadOnly?: BooleanFilter;
+  /** Filter by the object’s `expiresAt` field. */
+  expiresAt?: DatetimeFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Filter by the object’s `updatedAt` field. */
+  updatedAt?: DatetimeFilter;
+  /** Filter by the object’s `entityId` field. */
+  entityId?: UUIDFilter;
+  /** Checks for all expressions in this list. */
+  and?: OrgInviteFilter[];
+  /** Checks for any expressions in this list. */
+  or?: OrgInviteFilter[];
+  /** Negates the expression. */
+  not?: OrgInviteFilter;
+}
 // ============ OrderBy Types ============
 export type OrgGetManagersRecordsOrderBy =
   | 'PRIMARY_KEY_ASC'
@@ -2568,46 +1617,6 @@ export type OrgPermissionOrderBy =
   | 'BITSTR_DESC'
   | 'DESCRIPTION_ASC'
   | 'DESCRIPTION_DESC';
-export type AppLimitCreditRedemptionOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'CREDIT_CODE_ID_ASC'
-  | 'CREDIT_CODE_ID_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC';
-export type AppLimitCreditCodeItemOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'CREDIT_CODE_ID_ASC'
-  | 'CREDIT_CODE_ID_DESC'
-  | 'DEFAULT_LIMIT_ID_ASC'
-  | 'DEFAULT_LIMIT_ID_DESC'
-  | 'AMOUNT_ASC'
-  | 'AMOUNT_DESC'
-  | 'CREDIT_TYPE_ASC'
-  | 'CREDIT_TYPE_DESC';
-export type AppLimitCreditOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'DEFAULT_LIMIT_ID_ASC'
-  | 'DEFAULT_LIMIT_ID_DESC'
-  | 'ACTOR_ID_ASC'
-  | 'ACTOR_ID_DESC'
-  | 'AMOUNT_ASC'
-  | 'AMOUNT_DESC'
-  | 'CREDIT_TYPE_ASC'
-  | 'CREDIT_TYPE_DESC'
-  | 'REASON_ASC'
-  | 'REASON_DESC';
 export type OrgMemberOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -2628,20 +1637,6 @@ export type AppPermissionDefaultOrderBy =
   | 'ID_DESC'
   | 'PERMISSIONS_ASC'
   | 'PERMISSIONS_DESC';
-export type AppLimitCreditCodeOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'CODE_ASC'
-  | 'CODE_DESC'
-  | 'MAX_REDEMPTIONS_ASC'
-  | 'MAX_REDEMPTIONS_DESC'
-  | 'CURRENT_REDEMPTIONS_ASC'
-  | 'CURRENT_REDEMPTIONS_DESC'
-  | 'EXPIRES_AT_ASC'
-  | 'EXPIRES_AT_DESC';
 export type OrgPermissionDefaultOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -2684,50 +1679,6 @@ export type AppOwnerGrantOrderBy =
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
   | 'UPDATED_AT_DESC';
-export type AppLimitCapsDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC';
-export type OrgLimitCapsDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC';
-export type AppLimitCapOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC';
-export type OrgLimitCapOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC';
 export type OrgAdminGrantOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -2764,94 +1715,6 @@ export type OrgOwnerGrantOrderBy =
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
   | 'UPDATED_AT_DESC';
-export type MembershipTypeOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'DESCRIPTION_ASC'
-  | 'DESCRIPTION_DESC'
-  | 'PREFIX_ASC'
-  | 'PREFIX_DESC'
-  | 'PARENT_MEMBERSHIP_TYPE_ASC'
-  | 'PARENT_MEMBERSHIP_TYPE_DESC'
-  | 'HAS_USERS_TABLE_ENTRY_ASC'
-  | 'HAS_USERS_TABLE_ENTRY_DESC';
-export type AppLimitDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC'
-  | 'SOFT_MAX_ASC'
-  | 'SOFT_MAX_DESC';
-export type OrgLimitDefaultOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC'
-  | 'SOFT_MAX_ASC'
-  | 'SOFT_MAX_DESC';
-export type OrgLimitCreditOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'DEFAULT_LIMIT_ID_ASC'
-  | 'DEFAULT_LIMIT_ID_DESC'
-  | 'ACTOR_ID_ASC'
-  | 'ACTOR_ID_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'AMOUNT_ASC'
-  | 'AMOUNT_DESC'
-  | 'CREDIT_TYPE_ASC'
-  | 'CREDIT_TYPE_DESC'
-  | 'REASON_ASC'
-  | 'REASON_DESC';
-export type AppLimitWarningOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'WARNING_TYPE_ASC'
-  | 'WARNING_TYPE_DESC'
-  | 'THRESHOLD_VALUE_ASC'
-  | 'THRESHOLD_VALUE_DESC'
-  | 'TASK_IDENTIFIER_ASC'
-  | 'TASK_IDENTIFIER_DESC';
-export type OrgLimitWarningOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'WARNING_TYPE_ASC'
-  | 'WARNING_TYPE_DESC'
-  | 'THRESHOLD_VALUE_ASC'
-  | 'THRESHOLD_VALUE_DESC'
-  | 'TASK_IDENTIFIER_ASC'
-  | 'TASK_IDENTIFIER_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC';
 export type OrgChartEdgeGrantOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -2890,6 +1753,22 @@ export type AppClaimedInviteOrderBy =
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
   | 'UPDATED_AT_DESC';
+export type MembershipTypeOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'DESCRIPTION_ASC'
+  | 'DESCRIPTION_DESC'
+  | 'SCOPE_ASC'
+  | 'SCOPE_DESC'
+  | 'PARENT_MEMBERSHIP_TYPE_ASC'
+  | 'PARENT_MEMBERSHIP_TYPE_DESC'
+  | 'HAS_USERS_TABLE_ENTRY_ASC'
+  | 'HAS_USERS_TABLE_ENTRY_DESC';
 export type AppGrantOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -2962,46 +1841,6 @@ export type OrgClaimedInviteOrderBy =
   | 'UPDATED_AT_DESC'
   | 'ENTITY_ID_ASC'
   | 'ENTITY_ID_DESC';
-export type AppLimitEventOrderBy =
-  | 'NATURAL'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'ACTOR_ID_ASC'
-  | 'ACTOR_ID_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'EVENT_TYPE_ASC'
-  | 'EVENT_TYPE_DESC'
-  | 'DELTA_ASC'
-  | 'DELTA_DESC'
-  | 'NUM_BEFORE_ASC'
-  | 'NUM_BEFORE_DESC'
-  | 'NUM_AFTER_ASC'
-  | 'NUM_AFTER_DESC'
-  | 'MAX_AT_EVENT_ASC'
-  | 'MAX_AT_EVENT_DESC'
-  | 'REASON_ASC'
-  | 'REASON_DESC';
-export type OrgLimitEventOrderBy =
-  | 'NATURAL'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'ACTOR_ID_ASC'
-  | 'ACTOR_ID_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'EVENT_TYPE_ASC'
-  | 'EVENT_TYPE_DESC'
-  | 'DELTA_ASC'
-  | 'DELTA_DESC'
-  | 'NUM_BEFORE_ASC'
-  | 'NUM_BEFORE_DESC'
-  | 'NUM_AFTER_ASC'
-  | 'NUM_AFTER_DESC'
-  | 'MAX_AT_EVENT_ASC'
-  | 'MAX_AT_EVENT_DESC'
-  | 'REASON_ASC'
-  | 'REASON_DESC';
 export type OrgGrantOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -3042,78 +1881,6 @@ export type OrgChartEdgeOrderBy =
   | 'POSITION_TITLE_DESC'
   | 'POSITION_LEVEL_ASC'
   | 'POSITION_LEVEL_DESC';
-export type UsageSnapshotOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'DATABASE_ID_ASC'
-  | 'DATABASE_ID_DESC'
-  | 'METRIC_NAME_ASC'
-  | 'METRIC_NAME_DESC'
-  | 'METRIC_VALUE_ASC'
-  | 'METRIC_VALUE_DESC'
-  | 'DIMENSIONS_ASC'
-  | 'DIMENSIONS_DESC'
-  | 'CAPTURED_AT_ASC'
-  | 'CAPTURED_AT_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC';
-export type AppLimitOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'ACTOR_ID_ASC'
-  | 'ACTOR_ID_DESC'
-  | 'NUM_ASC'
-  | 'NUM_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC'
-  | 'SOFT_MAX_ASC'
-  | 'SOFT_MAX_DESC'
-  | 'WINDOW_START_ASC'
-  | 'WINDOW_START_DESC'
-  | 'WINDOW_DURATION_ASC'
-  | 'WINDOW_DURATION_DESC'
-  | 'PLAN_MAX_ASC'
-  | 'PLAN_MAX_DESC'
-  | 'PURCHASED_CREDITS_ASC'
-  | 'PURCHASED_CREDITS_DESC'
-  | 'PERIOD_CREDITS_ASC'
-  | 'PERIOD_CREDITS_DESC';
-export type AppInviteOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'EMAIL_ASC'
-  | 'EMAIL_DESC'
-  | 'SENDER_ID_ASC'
-  | 'SENDER_ID_DESC'
-  | 'INVITE_TOKEN_ASC'
-  | 'INVITE_TOKEN_DESC'
-  | 'INVITE_VALID_ASC'
-  | 'INVITE_VALID_DESC'
-  | 'INVITE_LIMIT_ASC'
-  | 'INVITE_LIMIT_DESC'
-  | 'INVITE_COUNT_ASC'
-  | 'INVITE_COUNT_DESC'
-  | 'MULTIPLE_ASC'
-  | 'MULTIPLE_DESC'
-  | 'DATA_ASC'
-  | 'DATA_DESC'
-  | 'PROFILE_ID_ASC'
-  | 'PROFILE_ID_DESC'
-  | 'EXPIRES_AT_ASC'
-  | 'EXPIRES_AT_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC';
 export type OrgMembershipSettingOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -3146,88 +1913,6 @@ export type OrgMembershipSettingOrderBy =
   | 'POPULATE_MEMBER_EMAIL_DESC'
   | 'LIMIT_ALLOCATION_MODE_ASC'
   | 'LIMIT_ALLOCATION_MODE_DESC';
-export type OrgLimitAggregateOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'NUM_ASC'
-  | 'NUM_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC'
-  | 'SOFT_MAX_ASC'
-  | 'SOFT_MAX_DESC'
-  | 'WINDOW_START_ASC'
-  | 'WINDOW_START_DESC'
-  | 'WINDOW_DURATION_ASC'
-  | 'WINDOW_DURATION_DESC'
-  | 'PLAN_MAX_ASC'
-  | 'PLAN_MAX_DESC'
-  | 'PURCHASED_CREDITS_ASC'
-  | 'PURCHASED_CREDITS_DESC'
-  | 'PERIOD_CREDITS_ASC'
-  | 'PERIOD_CREDITS_DESC'
-  | 'RESERVED_ASC'
-  | 'RESERVED_DESC';
-export type OrgLimitOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'NAME_ASC'
-  | 'NAME_DESC'
-  | 'ACTOR_ID_ASC'
-  | 'ACTOR_ID_DESC'
-  | 'NUM_ASC'
-  | 'NUM_DESC'
-  | 'MAX_ASC'
-  | 'MAX_DESC'
-  | 'SOFT_MAX_ASC'
-  | 'SOFT_MAX_DESC'
-  | 'WINDOW_START_ASC'
-  | 'WINDOW_START_DESC'
-  | 'WINDOW_DURATION_ASC'
-  | 'WINDOW_DURATION_DESC'
-  | 'PLAN_MAX_ASC'
-  | 'PLAN_MAX_DESC'
-  | 'PURCHASED_CREDITS_ASC'
-  | 'PURCHASED_CREDITS_DESC'
-  | 'PERIOD_CREDITS_ASC'
-  | 'PERIOD_CREDITS_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC';
-export type OrgMemberProfileOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC'
-  | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC'
-  | 'MEMBERSHIP_ID_ASC'
-  | 'MEMBERSHIP_ID_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC'
-  | 'ACTOR_ID_ASC'
-  | 'ACTOR_ID_DESC'
-  | 'DISPLAY_NAME_ASC'
-  | 'DISPLAY_NAME_DESC'
-  | 'EMAIL_ASC'
-  | 'EMAIL_DESC'
-  | 'TITLE_ASC'
-  | 'TITLE_DESC'
-  | 'BIO_ASC'
-  | 'BIO_DESC'
-  | 'PROFILE_PICTURE_ASC'
-  | 'PROFILE_PICTURE_DESC';
 export type AppMembershipOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -3264,7 +1949,7 @@ export type AppMembershipOrderBy =
   | 'ACTOR_ID_DESC'
   | 'PROFILE_ID_ASC'
   | 'PROFILE_ID_DESC';
-export type OrgInviteOrderBy =
+export type AppInviteOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
   | 'PRIMARY_KEY_DESC'
@@ -3274,8 +1959,6 @@ export type OrgInviteOrderBy =
   | 'EMAIL_DESC'
   | 'SENDER_ID_ASC'
   | 'SENDER_ID_DESC'
-  | 'RECEIVER_ID_ASC'
-  | 'RECEIVER_ID_DESC'
   | 'INVITE_TOKEN_ASC'
   | 'INVITE_TOKEN_DESC'
   | 'INVITE_VALID_ASC'
@@ -3290,16 +1973,12 @@ export type OrgInviteOrderBy =
   | 'DATA_DESC'
   | 'PROFILE_ID_ASC'
   | 'PROFILE_ID_DESC'
-  | 'IS_READ_ONLY_ASC'
-  | 'IS_READ_ONLY_DESC'
   | 'EXPIRES_AT_ASC'
   | 'EXPIRES_AT_DESC'
   | 'CREATED_AT_ASC'
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
-  | 'UPDATED_AT_DESC'
-  | 'ENTITY_ID_ASC'
-  | 'ENTITY_ID_DESC';
+  | 'UPDATED_AT_DESC';
 export type OrgMembershipOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -3340,6 +2019,68 @@ export type OrgMembershipOrderBy =
   | 'IS_READ_ONLY_DESC'
   | 'PROFILE_ID_ASC'
   | 'PROFILE_ID_DESC';
+export type OrgMemberProfileOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'MEMBERSHIP_ID_ASC'
+  | 'MEMBERSHIP_ID_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC'
+  | 'ACTOR_ID_ASC'
+  | 'ACTOR_ID_DESC'
+  | 'DISPLAY_NAME_ASC'
+  | 'DISPLAY_NAME_DESC'
+  | 'EMAIL_ASC'
+  | 'EMAIL_DESC'
+  | 'TITLE_ASC'
+  | 'TITLE_DESC'
+  | 'BIO_ASC'
+  | 'BIO_DESC'
+  | 'PROFILE_PICTURE_ASC'
+  | 'PROFILE_PICTURE_DESC';
+export type OrgInviteOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'EMAIL_ASC'
+  | 'EMAIL_DESC'
+  | 'SENDER_ID_ASC'
+  | 'SENDER_ID_DESC'
+  | 'RECEIVER_ID_ASC'
+  | 'RECEIVER_ID_DESC'
+  | 'INVITE_TOKEN_ASC'
+  | 'INVITE_TOKEN_DESC'
+  | 'INVITE_VALID_ASC'
+  | 'INVITE_VALID_DESC'
+  | 'INVITE_LIMIT_ASC'
+  | 'INVITE_LIMIT_DESC'
+  | 'INVITE_COUNT_ASC'
+  | 'INVITE_COUNT_DESC'
+  | 'MULTIPLE_ASC'
+  | 'MULTIPLE_DESC'
+  | 'DATA_ASC'
+  | 'DATA_DESC'
+  | 'PROFILE_ID_ASC'
+  | 'PROFILE_ID_DESC'
+  | 'IS_READ_ONLY_ASC'
+  | 'IS_READ_ONLY_DESC'
+  | 'EXPIRES_AT_ASC'
+  | 'EXPIRES_AT_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
+  | 'UPDATED_AT_ASC'
+  | 'UPDATED_AT_DESC'
+  | 'ENTITY_ID_ASC'
+  | 'ENTITY_ID_DESC';
 // ============ CRUD Input Types ============
 export interface CreateOrgGetManagersRecordInput {
   clientMutationId?: string;
@@ -3429,76 +2170,6 @@ export interface DeleteOrgPermissionInput {
   clientMutationId?: string;
   id: string;
 }
-export interface CreateAppLimitCreditRedemptionInput {
-  clientMutationId?: string;
-  appLimitCreditRedemption: {
-    creditCodeId: string;
-    entityId: string;
-  };
-}
-export interface AppLimitCreditRedemptionPatch {
-  creditCodeId?: string | null;
-  entityId?: string | null;
-}
-export interface UpdateAppLimitCreditRedemptionInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitCreditRedemptionPatch: AppLimitCreditRedemptionPatch;
-}
-export interface DeleteAppLimitCreditRedemptionInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateAppLimitCreditCodeItemInput {
-  clientMutationId?: string;
-  appLimitCreditCodeItem: {
-    creditCodeId: string;
-    defaultLimitId: string;
-    amount: string;
-    creditType?: string;
-  };
-}
-export interface AppLimitCreditCodeItemPatch {
-  creditCodeId?: string | null;
-  defaultLimitId?: string | null;
-  amount?: string | null;
-  creditType?: string | null;
-}
-export interface UpdateAppLimitCreditCodeItemInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitCreditCodeItemPatch: AppLimitCreditCodeItemPatch;
-}
-export interface DeleteAppLimitCreditCodeItemInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateAppLimitCreditInput {
-  clientMutationId?: string;
-  appLimitCredit: {
-    defaultLimitId: string;
-    actorId?: string;
-    amount: string;
-    creditType?: string;
-    reason?: string;
-  };
-}
-export interface AppLimitCreditPatch {
-  defaultLimitId?: string | null;
-  actorId?: string | null;
-  amount?: string | null;
-  creditType?: string | null;
-  reason?: string | null;
-}
-export interface UpdateAppLimitCreditInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitCreditPatch: AppLimitCreditPatch;
-}
-export interface DeleteAppLimitCreditInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface CreateOrgMemberInput {
   clientMutationId?: string;
   orgMember: {
@@ -3536,30 +2207,6 @@ export interface UpdateAppPermissionDefaultInput {
   appPermissionDefaultPatch: AppPermissionDefaultPatch;
 }
 export interface DeleteAppPermissionDefaultInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateAppLimitCreditCodeInput {
-  clientMutationId?: string;
-  appLimitCreditCode: {
-    code: string;
-    maxRedemptions?: number;
-    currentRedemptions?: number;
-    expiresAt?: string;
-  };
-}
-export interface AppLimitCreditCodePatch {
-  code?: string | null;
-  maxRedemptions?: number | null;
-  currentRedemptions?: number | null;
-  expiresAt?: string | null;
-}
-export interface UpdateAppLimitCreditCodeInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitCreditCodePatch: AppLimitCreditCodePatch;
-}
-export interface DeleteAppLimitCreditCodeInput {
   clientMutationId?: string;
   id: string;
 }
@@ -3627,90 +2274,6 @@ export interface DeleteAppOwnerGrantInput {
   clientMutationId?: string;
   id: string;
 }
-export interface CreateAppLimitCapsDefaultInput {
-  clientMutationId?: string;
-  appLimitCapsDefault: {
-    name: string;
-    max?: string;
-  };
-}
-export interface AppLimitCapsDefaultPatch {
-  name?: string | null;
-  max?: string | null;
-}
-export interface UpdateAppLimitCapsDefaultInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitCapsDefaultPatch: AppLimitCapsDefaultPatch;
-}
-export interface DeleteAppLimitCapsDefaultInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitCapsDefaultInput {
-  clientMutationId?: string;
-  orgLimitCapsDefault: {
-    name: string;
-    max?: string;
-  };
-}
-export interface OrgLimitCapsDefaultPatch {
-  name?: string | null;
-  max?: string | null;
-}
-export interface UpdateOrgLimitCapsDefaultInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitCapsDefaultPatch: OrgLimitCapsDefaultPatch;
-}
-export interface DeleteOrgLimitCapsDefaultInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateAppLimitCapInput {
-  clientMutationId?: string;
-  appLimitCap: {
-    name: string;
-    entityId: string;
-    max?: string;
-  };
-}
-export interface AppLimitCapPatch {
-  name?: string | null;
-  entityId?: string | null;
-  max?: string | null;
-}
-export interface UpdateAppLimitCapInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitCapPatch: AppLimitCapPatch;
-}
-export interface DeleteAppLimitCapInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitCapInput {
-  clientMutationId?: string;
-  orgLimitCap: {
-    name: string;
-    entityId: string;
-    max?: string;
-  };
-}
-export interface OrgLimitCapPatch {
-  name?: string | null;
-  entityId?: string | null;
-  max?: string | null;
-}
-export interface UpdateOrgLimitCapInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitCapPatch: OrgLimitCapPatch;
-}
-export interface DeleteOrgLimitCapInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface CreateOrgAdminGrantInput {
   clientMutationId?: string;
   orgAdminGrant: {
@@ -3756,154 +2319,6 @@ export interface UpdateOrgOwnerGrantInput {
   orgOwnerGrantPatch: OrgOwnerGrantPatch;
 }
 export interface DeleteOrgOwnerGrantInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateMembershipTypeInput {
-  clientMutationId?: string;
-  membershipType: {
-    name: string;
-    description: string;
-    prefix: string;
-    parentMembershipType?: number;
-    hasUsersTableEntry?: boolean;
-  };
-}
-export interface MembershipTypePatch {
-  name?: string | null;
-  description?: string | null;
-  prefix?: string | null;
-  parentMembershipType?: number | null;
-  hasUsersTableEntry?: boolean | null;
-}
-export interface UpdateMembershipTypeInput {
-  clientMutationId?: string;
-  id: number;
-  membershipTypePatch: MembershipTypePatch;
-}
-export interface DeleteMembershipTypeInput {
-  clientMutationId?: string;
-  id: number;
-}
-export interface CreateAppLimitDefaultInput {
-  clientMutationId?: string;
-  appLimitDefault: {
-    name: string;
-    max?: string;
-    softMax?: string;
-  };
-}
-export interface AppLimitDefaultPatch {
-  name?: string | null;
-  max?: string | null;
-  softMax?: string | null;
-}
-export interface UpdateAppLimitDefaultInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitDefaultPatch: AppLimitDefaultPatch;
-}
-export interface DeleteAppLimitDefaultInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitDefaultInput {
-  clientMutationId?: string;
-  orgLimitDefault: {
-    name: string;
-    max?: string;
-    softMax?: string;
-  };
-}
-export interface OrgLimitDefaultPatch {
-  name?: string | null;
-  max?: string | null;
-  softMax?: string | null;
-}
-export interface UpdateOrgLimitDefaultInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitDefaultPatch: OrgLimitDefaultPatch;
-}
-export interface DeleteOrgLimitDefaultInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitCreditInput {
-  clientMutationId?: string;
-  orgLimitCredit: {
-    defaultLimitId: string;
-    actorId?: string;
-    entityId?: string;
-    amount: string;
-    creditType?: string;
-    reason?: string;
-  };
-}
-export interface OrgLimitCreditPatch {
-  defaultLimitId?: string | null;
-  actorId?: string | null;
-  entityId?: string | null;
-  amount?: string | null;
-  creditType?: string | null;
-  reason?: string | null;
-}
-export interface UpdateOrgLimitCreditInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitCreditPatch: OrgLimitCreditPatch;
-}
-export interface DeleteOrgLimitCreditInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateAppLimitWarningInput {
-  clientMutationId?: string;
-  appLimitWarning: {
-    name: string;
-    warningType: string;
-    thresholdValue: string;
-    taskIdentifier: string;
-  };
-}
-export interface AppLimitWarningPatch {
-  name?: string | null;
-  warningType?: string | null;
-  thresholdValue?: string | null;
-  taskIdentifier?: string | null;
-}
-export interface UpdateAppLimitWarningInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitWarningPatch: AppLimitWarningPatch;
-}
-export interface DeleteAppLimitWarningInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitWarningInput {
-  clientMutationId?: string;
-  orgLimitWarning: {
-    name: string;
-    warningType: string;
-    thresholdValue: string;
-    taskIdentifier: string;
-    entityId?: string;
-  };
-}
-export interface OrgLimitWarningPatch {
-  name?: string | null;
-  warningType?: string | null;
-  thresholdValue?: string | null;
-  taskIdentifier?: string | null;
-  entityId?: string | null;
-}
-export interface UpdateOrgLimitWarningInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitWarningPatch: OrgLimitWarningPatch;
-}
-export interface DeleteOrgLimitWarningInput {
   clientMutationId?: string;
   id: string;
 }
@@ -3958,6 +2373,32 @@ export interface UpdateAppClaimedInviteInput {
 export interface DeleteAppClaimedInviteInput {
   clientMutationId?: string;
   id: string;
+}
+export interface CreateMembershipTypeInput {
+  clientMutationId?: string;
+  membershipType: {
+    name: string;
+    description: string;
+    scope: string;
+    parentMembershipType?: number;
+    hasUsersTableEntry?: boolean;
+  };
+}
+export interface MembershipTypePatch {
+  name?: string | null;
+  description?: string | null;
+  scope?: string | null;
+  parentMembershipType?: number | null;
+  hasUsersTableEntry?: boolean | null;
+}
+export interface UpdateMembershipTypeInput {
+  clientMutationId?: string;
+  id: number;
+  membershipTypePatch: MembershipTypePatch;
+}
+export interface DeleteMembershipTypeInput {
+  clientMutationId?: string;
+  id: number;
 }
 export interface CreateAppGrantInput {
   clientMutationId?: string;
@@ -4055,74 +2496,6 @@ export interface DeleteOrgClaimedInviteInput {
   clientMutationId?: string;
   id: string;
 }
-export interface CreateAppLimitEventInput {
-  clientMutationId?: string;
-  appLimitEvent: {
-    name?: string;
-    actorId?: string;
-    entityId?: string;
-    eventType?: string;
-    delta?: string;
-    numBefore?: string;
-    numAfter?: string;
-    maxAtEvent?: string;
-    reason?: string;
-  };
-}
-export interface AppLimitEventPatch {
-  name?: string | null;
-  actorId?: string | null;
-  entityId?: string | null;
-  eventType?: string | null;
-  delta?: string | null;
-  numBefore?: string | null;
-  numAfter?: string | null;
-  maxAtEvent?: string | null;
-  reason?: string | null;
-}
-export interface UpdateAppLimitEventInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitEventPatch: AppLimitEventPatch;
-}
-export interface DeleteAppLimitEventInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitEventInput {
-  clientMutationId?: string;
-  orgLimitEvent: {
-    name?: string;
-    actorId?: string;
-    entityId?: string;
-    eventType?: string;
-    delta?: string;
-    numBefore?: string;
-    numAfter?: string;
-    maxAtEvent?: string;
-    reason?: string;
-  };
-}
-export interface OrgLimitEventPatch {
-  name?: string | null;
-  actorId?: string | null;
-  entityId?: string | null;
-  eventType?: string | null;
-  delta?: string | null;
-  numBefore?: string | null;
-  numAfter?: string | null;
-  maxAtEvent?: string | null;
-  reason?: string | null;
-}
-export interface UpdateOrgLimitEventInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitEventPatch: OrgLimitEventPatch;
-}
-export interface DeleteOrgLimitEventInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface CreateOrgGrantInput {
   clientMutationId?: string;
   orgGrant: {
@@ -4175,104 +2548,6 @@ export interface DeleteOrgChartEdgeInput {
   clientMutationId?: string;
   id: string;
 }
-export interface CreateUsageSnapshotInput {
-  clientMutationId?: string;
-  usageSnapshot: {
-    databaseId: string;
-    metricName: string;
-    metricValue?: string;
-    dimensions?: Record<string, unknown>;
-    capturedAt?: string;
-  };
-}
-export interface UsageSnapshotPatch {
-  databaseId?: string | null;
-  metricName?: string | null;
-  metricValue?: string | null;
-  dimensions?: Record<string, unknown> | null;
-  capturedAt?: string | null;
-}
-export interface UpdateUsageSnapshotInput {
-  clientMutationId?: string;
-  id: string;
-  usageSnapshotPatch: UsageSnapshotPatch;
-}
-export interface DeleteUsageSnapshotInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateAppLimitInput {
-  clientMutationId?: string;
-  appLimit: {
-    name?: string;
-    actorId: string;
-    num?: string;
-    max?: string;
-    softMax?: string;
-    windowStart?: string;
-    windowDuration?: IntervalInput;
-    planMax?: string;
-    purchasedCredits?: string;
-    periodCredits?: string;
-  };
-}
-export interface AppLimitPatch {
-  name?: string | null;
-  actorId?: string | null;
-  num?: string | null;
-  max?: string | null;
-  softMax?: string | null;
-  windowStart?: string | null;
-  windowDuration?: IntervalInput | null;
-  planMax?: string | null;
-  purchasedCredits?: string | null;
-  periodCredits?: string | null;
-}
-export interface UpdateAppLimitInput {
-  clientMutationId?: string;
-  id: string;
-  appLimitPatch: AppLimitPatch;
-}
-export interface DeleteAppLimitInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateAppInviteInput {
-  clientMutationId?: string;
-  appInvite: {
-    email?: ConstructiveInternalTypeEmail;
-    senderId?: string;
-    inviteToken?: string;
-    inviteValid?: boolean;
-    inviteLimit?: number;
-    inviteCount?: number;
-    multiple?: boolean;
-    data?: Record<string, unknown>;
-    profileId?: string;
-    expiresAt?: string;
-  };
-}
-export interface AppInvitePatch {
-  email?: ConstructiveInternalTypeEmail | null;
-  senderId?: string | null;
-  inviteToken?: string | null;
-  inviteValid?: boolean | null;
-  inviteLimit?: number | null;
-  inviteCount?: number | null;
-  multiple?: boolean | null;
-  data?: Record<string, unknown> | null;
-  profileId?: string | null;
-  expiresAt?: string | null;
-}
-export interface UpdateAppInviteInput {
-  clientMutationId?: string;
-  id: string;
-  appInvitePatch: AppInvitePatch;
-}
-export interface DeleteAppInviteInput {
-  clientMutationId?: string;
-  id: string;
-}
 export interface CreateOrgMembershipSettingInput {
   clientMutationId?: string;
   orgMembershipSetting: {
@@ -4308,115 +2583,6 @@ export interface UpdateOrgMembershipSettingInput {
   orgMembershipSettingPatch: OrgMembershipSettingPatch;
 }
 export interface DeleteOrgMembershipSettingInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitAggregateInput {
-  clientMutationId?: string;
-  orgLimitAggregate: {
-    name?: string;
-    entityId: string;
-    num?: string;
-    max?: string;
-    softMax?: string;
-    windowStart?: string;
-    windowDuration?: IntervalInput;
-    planMax?: string;
-    purchasedCredits?: string;
-    periodCredits?: string;
-    reserved?: string;
-  };
-}
-export interface OrgLimitAggregatePatch {
-  name?: string | null;
-  entityId?: string | null;
-  num?: string | null;
-  max?: string | null;
-  softMax?: string | null;
-  windowStart?: string | null;
-  windowDuration?: IntervalInput | null;
-  planMax?: string | null;
-  purchasedCredits?: string | null;
-  periodCredits?: string | null;
-  reserved?: string | null;
-}
-export interface UpdateOrgLimitAggregateInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitAggregatePatch: OrgLimitAggregatePatch;
-}
-export interface DeleteOrgLimitAggregateInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgLimitInput {
-  clientMutationId?: string;
-  orgLimit: {
-    name?: string;
-    actorId: string;
-    num?: string;
-    max?: string;
-    softMax?: string;
-    windowStart?: string;
-    windowDuration?: IntervalInput;
-    planMax?: string;
-    purchasedCredits?: string;
-    periodCredits?: string;
-    entityId: string;
-  };
-}
-export interface OrgLimitPatch {
-  name?: string | null;
-  actorId?: string | null;
-  num?: string | null;
-  max?: string | null;
-  softMax?: string | null;
-  windowStart?: string | null;
-  windowDuration?: IntervalInput | null;
-  planMax?: string | null;
-  purchasedCredits?: string | null;
-  periodCredits?: string | null;
-  entityId?: string | null;
-}
-export interface UpdateOrgLimitInput {
-  clientMutationId?: string;
-  id: string;
-  orgLimitPatch: OrgLimitPatch;
-}
-export interface DeleteOrgLimitInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateOrgMemberProfileInput {
-  clientMutationId?: string;
-  orgMemberProfile: {
-    membershipId: string;
-    entityId: string;
-    actorId: string;
-    displayName?: string;
-    email?: string;
-    title?: string;
-    bio?: string;
-    profilePicture?: ConstructiveInternalTypeImage;
-  };
-}
-export interface OrgMemberProfilePatch {
-  membershipId?: string | null;
-  entityId?: string | null;
-  actorId?: string | null;
-  displayName?: string | null;
-  email?: string | null;
-  title?: string | null;
-  bio?: string | null;
-  profilePicture?: ConstructiveInternalTypeImage | null;
-  profilePictureUpload?: File | null;
-}
-export interface UpdateOrgMemberProfileInput {
-  clientMutationId?: string;
-  id: string;
-  orgMemberProfilePatch: OrgMemberProfilePatch;
-}
-export interface DeleteOrgMemberProfileInput {
   clientMutationId?: string;
   id: string;
 }
@@ -4462,12 +2628,11 @@ export interface DeleteAppMembershipInput {
   clientMutationId?: string;
   id: string;
 }
-export interface CreateOrgInviteInput {
+export interface CreateAppInviteInput {
   clientMutationId?: string;
-  orgInvite: {
+  appInvite: {
     email?: ConstructiveInternalTypeEmail;
     senderId?: string;
-    receiverId?: string;
     inviteToken?: string;
     inviteValid?: boolean;
     inviteLimit?: number;
@@ -4475,15 +2640,12 @@ export interface CreateOrgInviteInput {
     multiple?: boolean;
     data?: Record<string, unknown>;
     profileId?: string;
-    isReadOnly?: boolean;
     expiresAt?: string;
-    entityId: string;
   };
 }
-export interface OrgInvitePatch {
+export interface AppInvitePatch {
   email?: ConstructiveInternalTypeEmail | null;
   senderId?: string | null;
-  receiverId?: string | null;
   inviteToken?: string | null;
   inviteValid?: boolean | null;
   inviteLimit?: number | null;
@@ -4491,16 +2653,14 @@ export interface OrgInvitePatch {
   multiple?: boolean | null;
   data?: Record<string, unknown> | null;
   profileId?: string | null;
-  isReadOnly?: boolean | null;
   expiresAt?: string | null;
-  entityId?: string | null;
 }
-export interface UpdateOrgInviteInput {
+export interface UpdateAppInviteInput {
   clientMutationId?: string;
   id: string;
-  orgInvitePatch: OrgInvitePatch;
+  appInvitePatch: AppInvitePatch;
 }
-export interface DeleteOrgInviteInput {
+export interface DeleteAppInviteInput {
   clientMutationId?: string;
   id: string;
 }
@@ -4550,20 +2710,83 @@ export interface DeleteOrgMembershipInput {
   clientMutationId?: string;
   id: string;
 }
+export interface CreateOrgMemberProfileInput {
+  clientMutationId?: string;
+  orgMemberProfile: {
+    membershipId: string;
+    entityId: string;
+    actorId: string;
+    displayName?: string;
+    email?: string;
+    title?: string;
+    bio?: string;
+    profilePicture?: ConstructiveInternalTypeImage;
+  };
+}
+export interface OrgMemberProfilePatch {
+  membershipId?: string | null;
+  entityId?: string | null;
+  actorId?: string | null;
+  displayName?: string | null;
+  email?: string | null;
+  title?: string | null;
+  bio?: string | null;
+  profilePicture?: ConstructiveInternalTypeImage | null;
+  profilePictureUpload?: File | null;
+}
+export interface UpdateOrgMemberProfileInput {
+  clientMutationId?: string;
+  id: string;
+  orgMemberProfilePatch: OrgMemberProfilePatch;
+}
+export interface DeleteOrgMemberProfileInput {
+  clientMutationId?: string;
+  id: string;
+}
+export interface CreateOrgInviteInput {
+  clientMutationId?: string;
+  orgInvite: {
+    email?: ConstructiveInternalTypeEmail;
+    senderId?: string;
+    receiverId?: string;
+    inviteToken?: string;
+    inviteValid?: boolean;
+    inviteLimit?: number;
+    inviteCount?: number;
+    multiple?: boolean;
+    data?: Record<string, unknown>;
+    profileId?: string;
+    isReadOnly?: boolean;
+    expiresAt?: string;
+    entityId: string;
+  };
+}
+export interface OrgInvitePatch {
+  email?: ConstructiveInternalTypeEmail | null;
+  senderId?: string | null;
+  receiverId?: string | null;
+  inviteToken?: string | null;
+  inviteValid?: boolean | null;
+  inviteLimit?: number | null;
+  inviteCount?: number | null;
+  multiple?: boolean | null;
+  data?: Record<string, unknown> | null;
+  profileId?: string | null;
+  isReadOnly?: boolean | null;
+  expiresAt?: string | null;
+  entityId?: string | null;
+}
+export interface UpdateOrgInviteInput {
+  clientMutationId?: string;
+  id: string;
+  orgInvitePatch: OrgInvitePatch;
+}
+export interface DeleteOrgInviteInput {
+  clientMutationId?: string;
+  id: string;
+}
 // ============ Connection Fields Map ============
-export const connectionFieldsMap = {
-  AppLimitCreditCode: {
-    appLimitCreditCodeItemsByCreditCodeId: 'AppLimitCreditCodeItem',
-    appLimitCreditRedemptionsByCreditCodeId: 'AppLimitCreditRedemption',
-  },
-  AppLimitDefault: {
-    appLimitCreditsByDefaultLimitId: 'AppLimitCredit',
-    appLimitCreditCodeItemsByDefaultLimitId: 'AppLimitCreditCodeItem',
-  },
-  OrgLimitDefault: {
-    orgLimitCreditsByDefaultLimitId: 'OrgLimitCredit',
-  },
-} as Record<string, Record<string, string>>;
+export const connectionFieldsMap = {} as Record<string, Record<string, string>>;
 // ============ Custom Input Types (from schema) ============
 export interface SubmitAppInviteCodeInput {
   clientMutationId?: string;
@@ -4581,76 +2804,6 @@ export interface ProvisionBucketInput {
    * Omit for app-level (database-wide) storage.
    */
   ownerId?: string;
-}
-/** A filter to be used against many `AppLimitCreditCodeItem` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitCreditCodeToManyAppLimitCreditCodeItemFilter {
-  /** Filters to entities where at least one related entity matches. */
-  some?: AppLimitCreditCodeItemFilter;
-  /** Filters to entities where every related entity matches. */
-  every?: AppLimitCreditCodeItemFilter;
-  /** Filters to entities where no related entity matches. */
-  none?: AppLimitCreditCodeItemFilter;
-}
-/** A filter to be used against many `AppLimitCreditRedemption` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitCreditCodeToManyAppLimitCreditRedemptionFilter {
-  /** Filters to entities where at least one related entity matches. */
-  some?: AppLimitCreditRedemptionFilter;
-  /** Filters to entities where every related entity matches. */
-  every?: AppLimitCreditRedemptionFilter;
-  /** Filters to entities where no related entity matches. */
-  none?: AppLimitCreditRedemptionFilter;
-}
-/** A filter to be used against many `AppLimitCredit` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitDefaultToManyAppLimitCreditFilter {
-  /** Filters to entities where at least one related entity matches. */
-  some?: AppLimitCreditFilter;
-  /** Filters to entities where every related entity matches. */
-  every?: AppLimitCreditFilter;
-  /** Filters to entities where no related entity matches. */
-  none?: AppLimitCreditFilter;
-}
-/** A filter to be used against many `AppLimitCreditCodeItem` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitDefaultToManyAppLimitCreditCodeItemFilter {
-  /** Filters to entities where at least one related entity matches. */
-  some?: AppLimitCreditCodeItemFilter;
-  /** Filters to entities where every related entity matches. */
-  every?: AppLimitCreditCodeItemFilter;
-  /** Filters to entities where no related entity matches. */
-  none?: AppLimitCreditCodeItemFilter;
-}
-/** A filter to be used against many `OrgLimitCredit` object types. All fields are combined with a logical ‘and.’ */
-export interface OrgLimitDefaultToManyOrgLimitCreditFilter {
-  /** Filters to entities where at least one related entity matches. */
-  some?: OrgLimitCreditFilter;
-  /** Filters to entities where every related entity matches. */
-  every?: OrgLimitCreditFilter;
-  /** Filters to entities where no related entity matches. */
-  none?: OrgLimitCreditFilter;
-}
-/** A filter to be used against Interval fields. All fields are combined with a logical ‘and.’ */
-export interface IntervalFilter {
-  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
-  isNull?: boolean;
-  /** Equal to the specified value. */
-  equalTo?: IntervalInput;
-  /** Not equal to the specified value. */
-  notEqualTo?: IntervalInput;
-  /** Not equal to the specified value, treating null like an ordinary value. */
-  distinctFrom?: IntervalInput;
-  /** Equal to the specified value, treating null like an ordinary value. */
-  notDistinctFrom?: IntervalInput;
-  /** Included in the specified list. */
-  in?: IntervalInput[];
-  /** Not included in the specified list. */
-  notIn?: IntervalInput[];
-  /** Less than the specified value. */
-  lessThan?: IntervalInput;
-  /** Less than or equal to the specified value. */
-  lessThanOrEqualTo?: IntervalInput;
-  /** Greater than the specified value. */
-  greaterThan?: IntervalInput;
-  /** Greater than or equal to the specified value. */
-  greaterThanOrEqualTo?: IntervalInput;
 }
 /** A filter to be used against ConstructiveInternalTypeEmail fields. All fields are combined with a logical ‘and.’ */
 export interface ConstructiveInternalTypeEmailFilter {
@@ -4763,363 +2916,6 @@ export interface ConstructiveInternalTypeImageFilter {
   containsAnyKeys?: string[];
   /** Contained by the specified JSON. */
   containedBy?: ConstructiveInternalTypeImage;
-}
-/** A filter to be used against `AppLimitCreditCodeItem` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitCreditCodeItemFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `creditCodeId` field. */
-  creditCodeId?: UUIDFilter;
-  /** Filter by the object’s `defaultLimitId` field. */
-  defaultLimitId?: UUIDFilter;
-  /** Filter by the object’s `amount` field. */
-  amount?: BigIntFilter;
-  /** Filter by the object’s `creditType` field. */
-  creditType?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditCodeItemFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditCodeItemFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditCodeItemFilter;
-  /** Filter by the object’s `creditCode` relation. */
-  creditCode?: AppLimitCreditCodeFilter;
-  /** Filter by the object’s `defaultLimit` relation. */
-  defaultLimit?: AppLimitDefaultFilter;
-}
-/** A filter to be used against `AppLimitCreditRedemption` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitCreditRedemptionFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `creditCodeId` field. */
-  creditCodeId?: UUIDFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditRedemptionFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditRedemptionFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditRedemptionFilter;
-  /** Filter by the object’s `creditCode` relation. */
-  creditCode?: AppLimitCreditCodeFilter;
-}
-/** A filter to be used against `AppLimitCredit` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitCreditFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `defaultLimitId` field. */
-  defaultLimitId?: UUIDFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `amount` field. */
-  amount?: BigIntFilter;
-  /** Filter by the object’s `creditType` field. */
-  creditType?: StringFilter;
-  /** Filter by the object’s `reason` field. */
-  reason?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditFilter;
-  /** Filter by the object’s `defaultLimit` relation. */
-  defaultLimit?: AppLimitDefaultFilter;
-}
-/** A filter to be used against `OrgLimitCredit` object types. All fields are combined with a logical ‘and.’ */
-export interface OrgLimitCreditFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `defaultLimitId` field. */
-  defaultLimitId?: UUIDFilter;
-  /** Filter by the object’s `actorId` field. */
-  actorId?: UUIDFilter;
-  /** Filter by the object’s `entityId` field. */
-  entityId?: UUIDFilter;
-  /** Filter by the object’s `amount` field. */
-  amount?: BigIntFilter;
-  /** Filter by the object’s `creditType` field. */
-  creditType?: StringFilter;
-  /** Filter by the object’s `reason` field. */
-  reason?: StringFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitCreditFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitCreditFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitCreditFilter;
-  /** Filter by the object’s `defaultLimit` relation. */
-  defaultLimit?: OrgLimitDefaultFilter;
-}
-/** An interval of time that has passed where the smallest distinct unit is a second. */
-export interface IntervalInput {
-  /**
-   * A quantity of seconds. This is the only non-integer field, as all the other
-   * fields will dump their overflow into a smaller unit of time. Intervals don’t
-   * have a smaller unit than seconds.
-   */
-  seconds?: number;
-  /** A quantity of minutes. */
-  minutes?: number;
-  /** A quantity of hours. */
-  hours?: number;
-  /** A quantity of days. */
-  days?: number;
-  /** A quantity of months. */
-  months?: number;
-  /** A quantity of years. */
-  years?: number;
-}
-/** A filter to be used against UUID fields. All fields are combined with a logical ‘and.’ */
-export interface UUIDFilter {
-  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
-  isNull?: boolean;
-  /** Equal to the specified value. */
-  equalTo?: string;
-  /** Not equal to the specified value. */
-  notEqualTo?: string;
-  /** Not equal to the specified value, treating null like an ordinary value. */
-  distinctFrom?: string;
-  /** Equal to the specified value, treating null like an ordinary value. */
-  notDistinctFrom?: string;
-  /** Included in the specified list. */
-  in?: string[];
-  /** Not included in the specified list. */
-  notIn?: string[];
-  /** Less than the specified value. */
-  lessThan?: string;
-  /** Less than or equal to the specified value. */
-  lessThanOrEqualTo?: string;
-  /** Greater than the specified value. */
-  greaterThan?: string;
-  /** Greater than or equal to the specified value. */
-  greaterThanOrEqualTo?: string;
-}
-/** A filter to be used against BigInt fields. All fields are combined with a logical ‘and.’ */
-export interface BigIntFilter {
-  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
-  isNull?: boolean;
-  /** Equal to the specified value. */
-  equalTo?: string;
-  /** Not equal to the specified value. */
-  notEqualTo?: string;
-  /** Not equal to the specified value, treating null like an ordinary value. */
-  distinctFrom?: string;
-  /** Equal to the specified value, treating null like an ordinary value. */
-  notDistinctFrom?: string;
-  /** Included in the specified list. */
-  in?: string[];
-  /** Not included in the specified list. */
-  notIn?: string[];
-  /** Less than the specified value. */
-  lessThan?: string;
-  /** Less than or equal to the specified value. */
-  lessThanOrEqualTo?: string;
-  /** Greater than the specified value. */
-  greaterThan?: string;
-  /** Greater than or equal to the specified value. */
-  greaterThanOrEqualTo?: string;
-}
-/** A filter to be used against String fields. All fields are combined with a logical ‘and.’ */
-export interface StringFilter {
-  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
-  isNull?: boolean;
-  /** Equal to the specified value. */
-  equalTo?: string;
-  /** Not equal to the specified value. */
-  notEqualTo?: string;
-  /** Not equal to the specified value, treating null like an ordinary value. */
-  distinctFrom?: string;
-  /** Equal to the specified value, treating null like an ordinary value. */
-  notDistinctFrom?: string;
-  /** Included in the specified list. */
-  in?: string[];
-  /** Not included in the specified list. */
-  notIn?: string[];
-  /** Less than the specified value. */
-  lessThan?: string;
-  /** Less than or equal to the specified value. */
-  lessThanOrEqualTo?: string;
-  /** Greater than the specified value. */
-  greaterThan?: string;
-  /** Greater than or equal to the specified value. */
-  greaterThanOrEqualTo?: string;
-  /** Contains the specified string (case-sensitive). */
-  includes?: string;
-  /** Does not contain the specified string (case-sensitive). */
-  notIncludes?: string;
-  /** Contains the specified string (case-insensitive). */
-  includesInsensitive?: string;
-  /** Does not contain the specified string (case-insensitive). */
-  notIncludesInsensitive?: string;
-  /** Starts with the specified string (case-sensitive). */
-  startsWith?: string;
-  /** Does not start with the specified string (case-sensitive). */
-  notStartsWith?: string;
-  /** Starts with the specified string (case-insensitive). */
-  startsWithInsensitive?: string;
-  /** Does not start with the specified string (case-insensitive). */
-  notStartsWithInsensitive?: string;
-  /** Ends with the specified string (case-sensitive). */
-  endsWith?: string;
-  /** Does not end with the specified string (case-sensitive). */
-  notEndsWith?: string;
-  /** Ends with the specified string (case-insensitive). */
-  endsWithInsensitive?: string;
-  /** Does not end with the specified string (case-insensitive). */
-  notEndsWithInsensitive?: string;
-  /** Matches the specified pattern (case-sensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters. */
-  like?: string;
-  /** Does not match the specified pattern (case-sensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters. */
-  notLike?: string;
-  /** Matches the specified pattern (case-insensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters. */
-  likeInsensitive?: string;
-  /** Does not match the specified pattern (case-insensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters. */
-  notLikeInsensitive?: string;
-  /** Equal to the specified value (case-insensitive). */
-  equalToInsensitive?: string;
-  /** Not equal to the specified value (case-insensitive). */
-  notEqualToInsensitive?: string;
-  /** Not equal to the specified value, treating null like an ordinary value (case-insensitive). */
-  distinctFromInsensitive?: string;
-  /** Equal to the specified value, treating null like an ordinary value (case-insensitive). */
-  notDistinctFromInsensitive?: string;
-  /** Included in the specified list (case-insensitive). */
-  inInsensitive?: string[];
-  /** Not included in the specified list (case-insensitive). */
-  notInInsensitive?: string[];
-  /** Less than the specified value (case-insensitive). */
-  lessThanInsensitive?: string;
-  /** Less than or equal to the specified value (case-insensitive). */
-  lessThanOrEqualToInsensitive?: string;
-  /** Greater than the specified value (case-insensitive). */
-  greaterThanInsensitive?: string;
-  /** Greater than or equal to the specified value (case-insensitive). */
-  greaterThanOrEqualToInsensitive?: string;
-}
-/** A filter to be used against `AppLimitCreditCode` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitCreditCodeFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `code` field. */
-  code?: StringFilter;
-  /** Filter by the object’s `maxRedemptions` field. */
-  maxRedemptions?: IntFilter;
-  /** Filter by the object’s `currentRedemptions` field. */
-  currentRedemptions?: IntFilter;
-  /** Filter by the object’s `expiresAt` field. */
-  expiresAt?: DatetimeFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitCreditCodeFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitCreditCodeFilter[];
-  /** Negates the expression. */
-  not?: AppLimitCreditCodeFilter;
-  /** Filter by the object’s `appLimitCreditCodeItemsByCreditCodeId` relation. */
-  appLimitCreditCodeItemsByCreditCodeId?: AppLimitCreditCodeToManyAppLimitCreditCodeItemFilter;
-  /** `appLimitCreditCodeItemsByCreditCodeId` exist. */
-  appLimitCreditCodeItemsByCreditCodeIdExist?: boolean;
-  /** Filter by the object’s `appLimitCreditRedemptionsByCreditCodeId` relation. */
-  appLimitCreditRedemptionsByCreditCodeId?: AppLimitCreditCodeToManyAppLimitCreditRedemptionFilter;
-  /** `appLimitCreditRedemptionsByCreditCodeId` exist. */
-  appLimitCreditRedemptionsByCreditCodeIdExist?: boolean;
-}
-/** A filter to be used against `AppLimitDefault` object types. All fields are combined with a logical ‘and.’ */
-export interface AppLimitDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Filter by the object’s `softMax` field. */
-  softMax?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: AppLimitDefaultFilter[];
-  /** Checks for any expressions in this list. */
-  or?: AppLimitDefaultFilter[];
-  /** Negates the expression. */
-  not?: AppLimitDefaultFilter;
-  /** Filter by the object’s `appLimitCreditsByDefaultLimitId` relation. */
-  appLimitCreditsByDefaultLimitId?: AppLimitDefaultToManyAppLimitCreditFilter;
-  /** `appLimitCreditsByDefaultLimitId` exist. */
-  appLimitCreditsByDefaultLimitIdExist?: boolean;
-  /** Filter by the object’s `appLimitCreditCodeItemsByDefaultLimitId` relation. */
-  appLimitCreditCodeItemsByDefaultLimitId?: AppLimitDefaultToManyAppLimitCreditCodeItemFilter;
-  /** `appLimitCreditCodeItemsByDefaultLimitId` exist. */
-  appLimitCreditCodeItemsByDefaultLimitIdExist?: boolean;
-}
-/** A filter to be used against `OrgLimitDefault` object types. All fields are combined with a logical ‘and.’ */
-export interface OrgLimitDefaultFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `name` field. */
-  name?: StringFilter;
-  /** Filter by the object’s `max` field. */
-  max?: BigIntFilter;
-  /** Filter by the object’s `softMax` field. */
-  softMax?: BigIntFilter;
-  /** Checks for all expressions in this list. */
-  and?: OrgLimitDefaultFilter[];
-  /** Checks for any expressions in this list. */
-  or?: OrgLimitDefaultFilter[];
-  /** Negates the expression. */
-  not?: OrgLimitDefaultFilter;
-  /** Filter by the object’s `orgLimitCreditsByDefaultLimitId` relation. */
-  orgLimitCreditsByDefaultLimitId?: OrgLimitDefaultToManyOrgLimitCreditFilter;
-  /** `orgLimitCreditsByDefaultLimitId` exist. */
-  orgLimitCreditsByDefaultLimitIdExist?: boolean;
-}
-/** A filter to be used against Int fields. All fields are combined with a logical ‘and.’ */
-export interface IntFilter {
-  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
-  isNull?: boolean;
-  /** Equal to the specified value. */
-  equalTo?: number;
-  /** Not equal to the specified value. */
-  notEqualTo?: number;
-  /** Not equal to the specified value, treating null like an ordinary value. */
-  distinctFrom?: number;
-  /** Equal to the specified value, treating null like an ordinary value. */
-  notDistinctFrom?: number;
-  /** Included in the specified list. */
-  in?: number[];
-  /** Not included in the specified list. */
-  notIn?: number[];
-  /** Less than the specified value. */
-  lessThan?: number;
-  /** Less than or equal to the specified value. */
-  lessThanOrEqualTo?: number;
-  /** Greater than the specified value. */
-  greaterThan?: number;
-  /** Greater than or equal to the specified value. */
-  greaterThanOrEqualTo?: number;
-}
-/** A filter to be used against Datetime fields. All fields are combined with a logical ‘and.’ */
-export interface DatetimeFilter {
-  /** Is null (if `true` is specified) or is not null (if `false` is specified). */
-  isNull?: boolean;
-  /** Equal to the specified value. */
-  equalTo?: string;
-  /** Not equal to the specified value. */
-  notEqualTo?: string;
-  /** Not equal to the specified value, treating null like an ordinary value. */
-  distinctFrom?: string;
-  /** Equal to the specified value, treating null like an ordinary value. */
-  notDistinctFrom?: string;
-  /** Included in the specified list. */
-  in?: string[];
-  /** Not included in the specified list. */
-  notIn?: string[];
-  /** Less than the specified value. */
-  lessThan?: string;
-  /** Less than or equal to the specified value. */
-  lessThanOrEqualTo?: string;
-  /** Greater than the specified value. */
-  greaterThan?: string;
-  /** Greater than or equal to the specified value. */
-  greaterThanOrEqualTo?: string;
 }
 /** A connection to a list of `AppPermission` values. */
 // ============ Payload/Return Types (for custom operations) ============
@@ -5288,141 +3084,6 @@ export type DeleteOrgPermissionPayloadSelect = {
     select: OrgPermissionEdgeSelect;
   };
 };
-export interface CreateAppLimitCreditRedemptionPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditRedemption` that was created by this mutation. */
-  appLimitCreditRedemption?: AppLimitCreditRedemption | null;
-  appLimitCreditRedemptionEdge?: AppLimitCreditRedemptionEdge | null;
-}
-export type CreateAppLimitCreditRedemptionPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditRedemption?: {
-    select: AppLimitCreditRedemptionSelect;
-  };
-  appLimitCreditRedemptionEdge?: {
-    select: AppLimitCreditRedemptionEdgeSelect;
-  };
-};
-export interface UpdateAppLimitCreditRedemptionPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditRedemption` that was updated by this mutation. */
-  appLimitCreditRedemption?: AppLimitCreditRedemption | null;
-  appLimitCreditRedemptionEdge?: AppLimitCreditRedemptionEdge | null;
-}
-export type UpdateAppLimitCreditRedemptionPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditRedemption?: {
-    select: AppLimitCreditRedemptionSelect;
-  };
-  appLimitCreditRedemptionEdge?: {
-    select: AppLimitCreditRedemptionEdgeSelect;
-  };
-};
-export interface DeleteAppLimitCreditRedemptionPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditRedemption` that was deleted by this mutation. */
-  appLimitCreditRedemption?: AppLimitCreditRedemption | null;
-  appLimitCreditRedemptionEdge?: AppLimitCreditRedemptionEdge | null;
-}
-export type DeleteAppLimitCreditRedemptionPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditRedemption?: {
-    select: AppLimitCreditRedemptionSelect;
-  };
-  appLimitCreditRedemptionEdge?: {
-    select: AppLimitCreditRedemptionEdgeSelect;
-  };
-};
-export interface CreateAppLimitCreditCodeItemPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditCodeItem` that was created by this mutation. */
-  appLimitCreditCodeItem?: AppLimitCreditCodeItem | null;
-  appLimitCreditCodeItemEdge?: AppLimitCreditCodeItemEdge | null;
-}
-export type CreateAppLimitCreditCodeItemPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditCodeItem?: {
-    select: AppLimitCreditCodeItemSelect;
-  };
-  appLimitCreditCodeItemEdge?: {
-    select: AppLimitCreditCodeItemEdgeSelect;
-  };
-};
-export interface UpdateAppLimitCreditCodeItemPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditCodeItem` that was updated by this mutation. */
-  appLimitCreditCodeItem?: AppLimitCreditCodeItem | null;
-  appLimitCreditCodeItemEdge?: AppLimitCreditCodeItemEdge | null;
-}
-export type UpdateAppLimitCreditCodeItemPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditCodeItem?: {
-    select: AppLimitCreditCodeItemSelect;
-  };
-  appLimitCreditCodeItemEdge?: {
-    select: AppLimitCreditCodeItemEdgeSelect;
-  };
-};
-export interface DeleteAppLimitCreditCodeItemPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditCodeItem` that was deleted by this mutation. */
-  appLimitCreditCodeItem?: AppLimitCreditCodeItem | null;
-  appLimitCreditCodeItemEdge?: AppLimitCreditCodeItemEdge | null;
-}
-export type DeleteAppLimitCreditCodeItemPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditCodeItem?: {
-    select: AppLimitCreditCodeItemSelect;
-  };
-  appLimitCreditCodeItemEdge?: {
-    select: AppLimitCreditCodeItemEdgeSelect;
-  };
-};
-export interface CreateAppLimitCreditPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCredit` that was created by this mutation. */
-  appLimitCredit?: AppLimitCredit | null;
-  appLimitCreditEdge?: AppLimitCreditEdge | null;
-}
-export type CreateAppLimitCreditPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCredit?: {
-    select: AppLimitCreditSelect;
-  };
-  appLimitCreditEdge?: {
-    select: AppLimitCreditEdgeSelect;
-  };
-};
-export interface UpdateAppLimitCreditPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCredit` that was updated by this mutation. */
-  appLimitCredit?: AppLimitCredit | null;
-  appLimitCreditEdge?: AppLimitCreditEdge | null;
-}
-export type UpdateAppLimitCreditPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCredit?: {
-    select: AppLimitCreditSelect;
-  };
-  appLimitCreditEdge?: {
-    select: AppLimitCreditEdgeSelect;
-  };
-};
-export interface DeleteAppLimitCreditPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCredit` that was deleted by this mutation. */
-  appLimitCredit?: AppLimitCredit | null;
-  appLimitCreditEdge?: AppLimitCreditEdge | null;
-}
-export type DeleteAppLimitCreditPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCredit?: {
-    select: AppLimitCreditSelect;
-  };
-  appLimitCreditEdge?: {
-    select: AppLimitCreditEdgeSelect;
-  };
-};
 export interface CreateOrgMemberPayload {
   clientMutationId?: string | null;
   /** The `OrgMember` that was created by this mutation. */
@@ -5511,51 +3172,6 @@ export type DeleteAppPermissionDefaultPayloadSelect = {
   };
   appPermissionDefaultEdge?: {
     select: AppPermissionDefaultEdgeSelect;
-  };
-};
-export interface CreateAppLimitCreditCodePayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditCode` that was created by this mutation. */
-  appLimitCreditCode?: AppLimitCreditCode | null;
-  appLimitCreditCodeEdge?: AppLimitCreditCodeEdge | null;
-}
-export type CreateAppLimitCreditCodePayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditCode?: {
-    select: AppLimitCreditCodeSelect;
-  };
-  appLimitCreditCodeEdge?: {
-    select: AppLimitCreditCodeEdgeSelect;
-  };
-};
-export interface UpdateAppLimitCreditCodePayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditCode` that was updated by this mutation. */
-  appLimitCreditCode?: AppLimitCreditCode | null;
-  appLimitCreditCodeEdge?: AppLimitCreditCodeEdge | null;
-}
-export type UpdateAppLimitCreditCodePayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditCode?: {
-    select: AppLimitCreditCodeSelect;
-  };
-  appLimitCreditCodeEdge?: {
-    select: AppLimitCreditCodeEdgeSelect;
-  };
-};
-export interface DeleteAppLimitCreditCodePayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCreditCode` that was deleted by this mutation. */
-  appLimitCreditCode?: AppLimitCreditCode | null;
-  appLimitCreditCodeEdge?: AppLimitCreditCodeEdge | null;
-}
-export type DeleteAppLimitCreditCodePayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCreditCode?: {
-    select: AppLimitCreditCodeSelect;
-  };
-  appLimitCreditCodeEdge?: {
-    select: AppLimitCreditCodeEdgeSelect;
   };
 };
 export interface CreateOrgPermissionDefaultPayload {
@@ -5693,186 +3309,6 @@ export type DeleteAppOwnerGrantPayloadSelect = {
     select: AppOwnerGrantEdgeSelect;
   };
 };
-export interface CreateAppLimitCapsDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCapsDefault` that was created by this mutation. */
-  appLimitCapsDefault?: AppLimitCapsDefault | null;
-  appLimitCapsDefaultEdge?: AppLimitCapsDefaultEdge | null;
-}
-export type CreateAppLimitCapsDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCapsDefault?: {
-    select: AppLimitCapsDefaultSelect;
-  };
-  appLimitCapsDefaultEdge?: {
-    select: AppLimitCapsDefaultEdgeSelect;
-  };
-};
-export interface UpdateAppLimitCapsDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCapsDefault` that was updated by this mutation. */
-  appLimitCapsDefault?: AppLimitCapsDefault | null;
-  appLimitCapsDefaultEdge?: AppLimitCapsDefaultEdge | null;
-}
-export type UpdateAppLimitCapsDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCapsDefault?: {
-    select: AppLimitCapsDefaultSelect;
-  };
-  appLimitCapsDefaultEdge?: {
-    select: AppLimitCapsDefaultEdgeSelect;
-  };
-};
-export interface DeleteAppLimitCapsDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCapsDefault` that was deleted by this mutation. */
-  appLimitCapsDefault?: AppLimitCapsDefault | null;
-  appLimitCapsDefaultEdge?: AppLimitCapsDefaultEdge | null;
-}
-export type DeleteAppLimitCapsDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCapsDefault?: {
-    select: AppLimitCapsDefaultSelect;
-  };
-  appLimitCapsDefaultEdge?: {
-    select: AppLimitCapsDefaultEdgeSelect;
-  };
-};
-export interface CreateOrgLimitCapsDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCapsDefault` that was created by this mutation. */
-  orgLimitCapsDefault?: OrgLimitCapsDefault | null;
-  orgLimitCapsDefaultEdge?: OrgLimitCapsDefaultEdge | null;
-}
-export type CreateOrgLimitCapsDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCapsDefault?: {
-    select: OrgLimitCapsDefaultSelect;
-  };
-  orgLimitCapsDefaultEdge?: {
-    select: OrgLimitCapsDefaultEdgeSelect;
-  };
-};
-export interface UpdateOrgLimitCapsDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCapsDefault` that was updated by this mutation. */
-  orgLimitCapsDefault?: OrgLimitCapsDefault | null;
-  orgLimitCapsDefaultEdge?: OrgLimitCapsDefaultEdge | null;
-}
-export type UpdateOrgLimitCapsDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCapsDefault?: {
-    select: OrgLimitCapsDefaultSelect;
-  };
-  orgLimitCapsDefaultEdge?: {
-    select: OrgLimitCapsDefaultEdgeSelect;
-  };
-};
-export interface DeleteOrgLimitCapsDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCapsDefault` that was deleted by this mutation. */
-  orgLimitCapsDefault?: OrgLimitCapsDefault | null;
-  orgLimitCapsDefaultEdge?: OrgLimitCapsDefaultEdge | null;
-}
-export type DeleteOrgLimitCapsDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCapsDefault?: {
-    select: OrgLimitCapsDefaultSelect;
-  };
-  orgLimitCapsDefaultEdge?: {
-    select: OrgLimitCapsDefaultEdgeSelect;
-  };
-};
-export interface CreateAppLimitCapPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCap` that was created by this mutation. */
-  appLimitCap?: AppLimitCap | null;
-  appLimitCapEdge?: AppLimitCapEdge | null;
-}
-export type CreateAppLimitCapPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCap?: {
-    select: AppLimitCapSelect;
-  };
-  appLimitCapEdge?: {
-    select: AppLimitCapEdgeSelect;
-  };
-};
-export interface UpdateAppLimitCapPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCap` that was updated by this mutation. */
-  appLimitCap?: AppLimitCap | null;
-  appLimitCapEdge?: AppLimitCapEdge | null;
-}
-export type UpdateAppLimitCapPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCap?: {
-    select: AppLimitCapSelect;
-  };
-  appLimitCapEdge?: {
-    select: AppLimitCapEdgeSelect;
-  };
-};
-export interface DeleteAppLimitCapPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitCap` that was deleted by this mutation. */
-  appLimitCap?: AppLimitCap | null;
-  appLimitCapEdge?: AppLimitCapEdge | null;
-}
-export type DeleteAppLimitCapPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitCap?: {
-    select: AppLimitCapSelect;
-  };
-  appLimitCapEdge?: {
-    select: AppLimitCapEdgeSelect;
-  };
-};
-export interface CreateOrgLimitCapPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCap` that was created by this mutation. */
-  orgLimitCap?: OrgLimitCap | null;
-  orgLimitCapEdge?: OrgLimitCapEdge | null;
-}
-export type CreateOrgLimitCapPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCap?: {
-    select: OrgLimitCapSelect;
-  };
-  orgLimitCapEdge?: {
-    select: OrgLimitCapEdgeSelect;
-  };
-};
-export interface UpdateOrgLimitCapPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCap` that was updated by this mutation. */
-  orgLimitCap?: OrgLimitCap | null;
-  orgLimitCapEdge?: OrgLimitCapEdge | null;
-}
-export type UpdateOrgLimitCapPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCap?: {
-    select: OrgLimitCapSelect;
-  };
-  orgLimitCapEdge?: {
-    select: OrgLimitCapEdgeSelect;
-  };
-};
-export interface DeleteOrgLimitCapPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCap` that was deleted by this mutation. */
-  orgLimitCap?: OrgLimitCap | null;
-  orgLimitCapEdge?: OrgLimitCapEdge | null;
-}
-export type DeleteOrgLimitCapPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCap?: {
-    select: OrgLimitCapSelect;
-  };
-  orgLimitCapEdge?: {
-    select: OrgLimitCapEdgeSelect;
-  };
-};
 export interface CreateOrgAdminGrantPayload {
   clientMutationId?: string | null;
   /** The `OrgAdminGrant` that was created by this mutation. */
@@ -5963,276 +3399,6 @@ export type DeleteOrgOwnerGrantPayloadSelect = {
     select: OrgOwnerGrantEdgeSelect;
   };
 };
-export interface CreateMembershipTypePayload {
-  clientMutationId?: string | null;
-  /** The `MembershipType` that was created by this mutation. */
-  membershipType?: MembershipType | null;
-  membershipTypeEdge?: MembershipTypeEdge | null;
-}
-export type CreateMembershipTypePayloadSelect = {
-  clientMutationId?: boolean;
-  membershipType?: {
-    select: MembershipTypeSelect;
-  };
-  membershipTypeEdge?: {
-    select: MembershipTypeEdgeSelect;
-  };
-};
-export interface UpdateMembershipTypePayload {
-  clientMutationId?: string | null;
-  /** The `MembershipType` that was updated by this mutation. */
-  membershipType?: MembershipType | null;
-  membershipTypeEdge?: MembershipTypeEdge | null;
-}
-export type UpdateMembershipTypePayloadSelect = {
-  clientMutationId?: boolean;
-  membershipType?: {
-    select: MembershipTypeSelect;
-  };
-  membershipTypeEdge?: {
-    select: MembershipTypeEdgeSelect;
-  };
-};
-export interface DeleteMembershipTypePayload {
-  clientMutationId?: string | null;
-  /** The `MembershipType` that was deleted by this mutation. */
-  membershipType?: MembershipType | null;
-  membershipTypeEdge?: MembershipTypeEdge | null;
-}
-export type DeleteMembershipTypePayloadSelect = {
-  clientMutationId?: boolean;
-  membershipType?: {
-    select: MembershipTypeSelect;
-  };
-  membershipTypeEdge?: {
-    select: MembershipTypeEdgeSelect;
-  };
-};
-export interface CreateAppLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitDefault` that was created by this mutation. */
-  appLimitDefault?: AppLimitDefault | null;
-  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
-}
-export type CreateAppLimitDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitDefault?: {
-    select: AppLimitDefaultSelect;
-  };
-  appLimitDefaultEdge?: {
-    select: AppLimitDefaultEdgeSelect;
-  };
-};
-export interface UpdateAppLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitDefault` that was updated by this mutation. */
-  appLimitDefault?: AppLimitDefault | null;
-  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
-}
-export type UpdateAppLimitDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitDefault?: {
-    select: AppLimitDefaultSelect;
-  };
-  appLimitDefaultEdge?: {
-    select: AppLimitDefaultEdgeSelect;
-  };
-};
-export interface DeleteAppLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitDefault` that was deleted by this mutation. */
-  appLimitDefault?: AppLimitDefault | null;
-  appLimitDefaultEdge?: AppLimitDefaultEdge | null;
-}
-export type DeleteAppLimitDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitDefault?: {
-    select: AppLimitDefaultSelect;
-  };
-  appLimitDefaultEdge?: {
-    select: AppLimitDefaultEdgeSelect;
-  };
-};
-export interface CreateOrgLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitDefault` that was created by this mutation. */
-  orgLimitDefault?: OrgLimitDefault | null;
-  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
-}
-export type CreateOrgLimitDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitDefault?: {
-    select: OrgLimitDefaultSelect;
-  };
-  orgLimitDefaultEdge?: {
-    select: OrgLimitDefaultEdgeSelect;
-  };
-};
-export interface UpdateOrgLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitDefault` that was updated by this mutation. */
-  orgLimitDefault?: OrgLimitDefault | null;
-  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
-}
-export type UpdateOrgLimitDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitDefault?: {
-    select: OrgLimitDefaultSelect;
-  };
-  orgLimitDefaultEdge?: {
-    select: OrgLimitDefaultEdgeSelect;
-  };
-};
-export interface DeleteOrgLimitDefaultPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitDefault` that was deleted by this mutation. */
-  orgLimitDefault?: OrgLimitDefault | null;
-  orgLimitDefaultEdge?: OrgLimitDefaultEdge | null;
-}
-export type DeleteOrgLimitDefaultPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitDefault?: {
-    select: OrgLimitDefaultSelect;
-  };
-  orgLimitDefaultEdge?: {
-    select: OrgLimitDefaultEdgeSelect;
-  };
-};
-export interface CreateOrgLimitCreditPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCredit` that was created by this mutation. */
-  orgLimitCredit?: OrgLimitCredit | null;
-  orgLimitCreditEdge?: OrgLimitCreditEdge | null;
-}
-export type CreateOrgLimitCreditPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCredit?: {
-    select: OrgLimitCreditSelect;
-  };
-  orgLimitCreditEdge?: {
-    select: OrgLimitCreditEdgeSelect;
-  };
-};
-export interface UpdateOrgLimitCreditPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCredit` that was updated by this mutation. */
-  orgLimitCredit?: OrgLimitCredit | null;
-  orgLimitCreditEdge?: OrgLimitCreditEdge | null;
-}
-export type UpdateOrgLimitCreditPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCredit?: {
-    select: OrgLimitCreditSelect;
-  };
-  orgLimitCreditEdge?: {
-    select: OrgLimitCreditEdgeSelect;
-  };
-};
-export interface DeleteOrgLimitCreditPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitCredit` that was deleted by this mutation. */
-  orgLimitCredit?: OrgLimitCredit | null;
-  orgLimitCreditEdge?: OrgLimitCreditEdge | null;
-}
-export type DeleteOrgLimitCreditPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitCredit?: {
-    select: OrgLimitCreditSelect;
-  };
-  orgLimitCreditEdge?: {
-    select: OrgLimitCreditEdgeSelect;
-  };
-};
-export interface CreateAppLimitWarningPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitWarning` that was created by this mutation. */
-  appLimitWarning?: AppLimitWarning | null;
-  appLimitWarningEdge?: AppLimitWarningEdge | null;
-}
-export type CreateAppLimitWarningPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitWarning?: {
-    select: AppLimitWarningSelect;
-  };
-  appLimitWarningEdge?: {
-    select: AppLimitWarningEdgeSelect;
-  };
-};
-export interface UpdateAppLimitWarningPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitWarning` that was updated by this mutation. */
-  appLimitWarning?: AppLimitWarning | null;
-  appLimitWarningEdge?: AppLimitWarningEdge | null;
-}
-export type UpdateAppLimitWarningPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitWarning?: {
-    select: AppLimitWarningSelect;
-  };
-  appLimitWarningEdge?: {
-    select: AppLimitWarningEdgeSelect;
-  };
-};
-export interface DeleteAppLimitWarningPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitWarning` that was deleted by this mutation. */
-  appLimitWarning?: AppLimitWarning | null;
-  appLimitWarningEdge?: AppLimitWarningEdge | null;
-}
-export type DeleteAppLimitWarningPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitWarning?: {
-    select: AppLimitWarningSelect;
-  };
-  appLimitWarningEdge?: {
-    select: AppLimitWarningEdgeSelect;
-  };
-};
-export interface CreateOrgLimitWarningPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitWarning` that was created by this mutation. */
-  orgLimitWarning?: OrgLimitWarning | null;
-  orgLimitWarningEdge?: OrgLimitWarningEdge | null;
-}
-export type CreateOrgLimitWarningPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitWarning?: {
-    select: OrgLimitWarningSelect;
-  };
-  orgLimitWarningEdge?: {
-    select: OrgLimitWarningEdgeSelect;
-  };
-};
-export interface UpdateOrgLimitWarningPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitWarning` that was updated by this mutation. */
-  orgLimitWarning?: OrgLimitWarning | null;
-  orgLimitWarningEdge?: OrgLimitWarningEdge | null;
-}
-export type UpdateOrgLimitWarningPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitWarning?: {
-    select: OrgLimitWarningSelect;
-  };
-  orgLimitWarningEdge?: {
-    select: OrgLimitWarningEdgeSelect;
-  };
-};
-export interface DeleteOrgLimitWarningPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitWarning` that was deleted by this mutation. */
-  orgLimitWarning?: OrgLimitWarning | null;
-  orgLimitWarningEdge?: OrgLimitWarningEdge | null;
-}
-export type DeleteOrgLimitWarningPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitWarning?: {
-    select: OrgLimitWarningSelect;
-  };
-  orgLimitWarningEdge?: {
-    select: OrgLimitWarningEdgeSelect;
-  };
-};
 export interface CreateOrgChartEdgeGrantPayload {
   clientMutationId?: string | null;
   /** The `OrgChartEdgeGrant` that was created by this mutation. */
@@ -6321,6 +3487,51 @@ export type DeleteAppClaimedInvitePayloadSelect = {
   };
   appClaimedInviteEdge?: {
     select: AppClaimedInviteEdgeSelect;
+  };
+};
+export interface CreateMembershipTypePayload {
+  clientMutationId?: string | null;
+  /** The `MembershipType` that was created by this mutation. */
+  membershipType?: MembershipType | null;
+  membershipTypeEdge?: MembershipTypeEdge | null;
+}
+export type CreateMembershipTypePayloadSelect = {
+  clientMutationId?: boolean;
+  membershipType?: {
+    select: MembershipTypeSelect;
+  };
+  membershipTypeEdge?: {
+    select: MembershipTypeEdgeSelect;
+  };
+};
+export interface UpdateMembershipTypePayload {
+  clientMutationId?: string | null;
+  /** The `MembershipType` that was updated by this mutation. */
+  membershipType?: MembershipType | null;
+  membershipTypeEdge?: MembershipTypeEdge | null;
+}
+export type UpdateMembershipTypePayloadSelect = {
+  clientMutationId?: boolean;
+  membershipType?: {
+    select: MembershipTypeSelect;
+  };
+  membershipTypeEdge?: {
+    select: MembershipTypeEdgeSelect;
+  };
+};
+export interface DeleteMembershipTypePayload {
+  clientMutationId?: string | null;
+  /** The `MembershipType` that was deleted by this mutation. */
+  membershipType?: MembershipType | null;
+  membershipTypeEdge?: MembershipTypeEdge | null;
+}
+export type DeleteMembershipTypePayloadSelect = {
+  clientMutationId?: boolean;
+  membershipType?: {
+    select: MembershipTypeSelect;
+  };
+  membershipTypeEdge?: {
+    select: MembershipTypeEdgeSelect;
   };
 };
 export interface CreateAppGrantPayload {
@@ -6503,28 +3714,6 @@ export type DeleteOrgClaimedInvitePayloadSelect = {
     select: OrgClaimedInviteEdgeSelect;
   };
 };
-export interface CreateAppLimitEventPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimitEvent` that was created by this mutation. */
-  appLimitEvent?: AppLimitEvent | null;
-}
-export type CreateAppLimitEventPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimitEvent?: {
-    select: AppLimitEventSelect;
-  };
-};
-export interface CreateOrgLimitEventPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitEvent` that was created by this mutation. */
-  orgLimitEvent?: OrgLimitEvent | null;
-}
-export type CreateOrgLimitEventPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitEvent?: {
-    select: OrgLimitEventSelect;
-  };
-};
 export interface CreateOrgGrantPayload {
   clientMutationId?: string | null;
   /** The `OrgGrant` that was created by this mutation. */
@@ -6615,141 +3804,6 @@ export type DeleteOrgChartEdgePayloadSelect = {
     select: OrgChartEdgeEdgeSelect;
   };
 };
-export interface CreateUsageSnapshotPayload {
-  clientMutationId?: string | null;
-  /** The `UsageSnapshot` that was created by this mutation. */
-  usageSnapshot?: UsageSnapshot | null;
-  usageSnapshotEdge?: UsageSnapshotEdge | null;
-}
-export type CreateUsageSnapshotPayloadSelect = {
-  clientMutationId?: boolean;
-  usageSnapshot?: {
-    select: UsageSnapshotSelect;
-  };
-  usageSnapshotEdge?: {
-    select: UsageSnapshotEdgeSelect;
-  };
-};
-export interface UpdateUsageSnapshotPayload {
-  clientMutationId?: string | null;
-  /** The `UsageSnapshot` that was updated by this mutation. */
-  usageSnapshot?: UsageSnapshot | null;
-  usageSnapshotEdge?: UsageSnapshotEdge | null;
-}
-export type UpdateUsageSnapshotPayloadSelect = {
-  clientMutationId?: boolean;
-  usageSnapshot?: {
-    select: UsageSnapshotSelect;
-  };
-  usageSnapshotEdge?: {
-    select: UsageSnapshotEdgeSelect;
-  };
-};
-export interface DeleteUsageSnapshotPayload {
-  clientMutationId?: string | null;
-  /** The `UsageSnapshot` that was deleted by this mutation. */
-  usageSnapshot?: UsageSnapshot | null;
-  usageSnapshotEdge?: UsageSnapshotEdge | null;
-}
-export type DeleteUsageSnapshotPayloadSelect = {
-  clientMutationId?: boolean;
-  usageSnapshot?: {
-    select: UsageSnapshotSelect;
-  };
-  usageSnapshotEdge?: {
-    select: UsageSnapshotEdgeSelect;
-  };
-};
-export interface CreateAppLimitPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimit` that was created by this mutation. */
-  appLimit?: AppLimit | null;
-  appLimitEdge?: AppLimitEdge | null;
-}
-export type CreateAppLimitPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimit?: {
-    select: AppLimitSelect;
-  };
-  appLimitEdge?: {
-    select: AppLimitEdgeSelect;
-  };
-};
-export interface UpdateAppLimitPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimit` that was updated by this mutation. */
-  appLimit?: AppLimit | null;
-  appLimitEdge?: AppLimitEdge | null;
-}
-export type UpdateAppLimitPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimit?: {
-    select: AppLimitSelect;
-  };
-  appLimitEdge?: {
-    select: AppLimitEdgeSelect;
-  };
-};
-export interface DeleteAppLimitPayload {
-  clientMutationId?: string | null;
-  /** The `AppLimit` that was deleted by this mutation. */
-  appLimit?: AppLimit | null;
-  appLimitEdge?: AppLimitEdge | null;
-}
-export type DeleteAppLimitPayloadSelect = {
-  clientMutationId?: boolean;
-  appLimit?: {
-    select: AppLimitSelect;
-  };
-  appLimitEdge?: {
-    select: AppLimitEdgeSelect;
-  };
-};
-export interface CreateAppInvitePayload {
-  clientMutationId?: string | null;
-  /** The `AppInvite` that was created by this mutation. */
-  appInvite?: AppInvite | null;
-  appInviteEdge?: AppInviteEdge | null;
-}
-export type CreateAppInvitePayloadSelect = {
-  clientMutationId?: boolean;
-  appInvite?: {
-    select: AppInviteSelect;
-  };
-  appInviteEdge?: {
-    select: AppInviteEdgeSelect;
-  };
-};
-export interface UpdateAppInvitePayload {
-  clientMutationId?: string | null;
-  /** The `AppInvite` that was updated by this mutation. */
-  appInvite?: AppInvite | null;
-  appInviteEdge?: AppInviteEdge | null;
-}
-export type UpdateAppInvitePayloadSelect = {
-  clientMutationId?: boolean;
-  appInvite?: {
-    select: AppInviteSelect;
-  };
-  appInviteEdge?: {
-    select: AppInviteEdgeSelect;
-  };
-};
-export interface DeleteAppInvitePayload {
-  clientMutationId?: string | null;
-  /** The `AppInvite` that was deleted by this mutation. */
-  appInvite?: AppInvite | null;
-  appInviteEdge?: AppInviteEdge | null;
-}
-export type DeleteAppInvitePayloadSelect = {
-  clientMutationId?: boolean;
-  appInvite?: {
-    select: AppInviteSelect;
-  };
-  appInviteEdge?: {
-    select: AppInviteEdgeSelect;
-  };
-};
 export interface CreateOrgMembershipSettingPayload {
   clientMutationId?: string | null;
   /** The `OrgMembershipSetting` that was created by this mutation. */
@@ -6793,141 +3847,6 @@ export type DeleteOrgMembershipSettingPayloadSelect = {
   };
   orgMembershipSettingEdge?: {
     select: OrgMembershipSettingEdgeSelect;
-  };
-};
-export interface CreateOrgLimitAggregatePayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitAggregate` that was created by this mutation. */
-  orgLimitAggregate?: OrgLimitAggregate | null;
-  orgLimitAggregateEdge?: OrgLimitAggregateEdge | null;
-}
-export type CreateOrgLimitAggregatePayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitAggregate?: {
-    select: OrgLimitAggregateSelect;
-  };
-  orgLimitAggregateEdge?: {
-    select: OrgLimitAggregateEdgeSelect;
-  };
-};
-export interface UpdateOrgLimitAggregatePayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitAggregate` that was updated by this mutation. */
-  orgLimitAggregate?: OrgLimitAggregate | null;
-  orgLimitAggregateEdge?: OrgLimitAggregateEdge | null;
-}
-export type UpdateOrgLimitAggregatePayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitAggregate?: {
-    select: OrgLimitAggregateSelect;
-  };
-  orgLimitAggregateEdge?: {
-    select: OrgLimitAggregateEdgeSelect;
-  };
-};
-export interface DeleteOrgLimitAggregatePayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimitAggregate` that was deleted by this mutation. */
-  orgLimitAggregate?: OrgLimitAggregate | null;
-  orgLimitAggregateEdge?: OrgLimitAggregateEdge | null;
-}
-export type DeleteOrgLimitAggregatePayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimitAggregate?: {
-    select: OrgLimitAggregateSelect;
-  };
-  orgLimitAggregateEdge?: {
-    select: OrgLimitAggregateEdgeSelect;
-  };
-};
-export interface CreateOrgLimitPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimit` that was created by this mutation. */
-  orgLimit?: OrgLimit | null;
-  orgLimitEdge?: OrgLimitEdge | null;
-}
-export type CreateOrgLimitPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimit?: {
-    select: OrgLimitSelect;
-  };
-  orgLimitEdge?: {
-    select: OrgLimitEdgeSelect;
-  };
-};
-export interface UpdateOrgLimitPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimit` that was updated by this mutation. */
-  orgLimit?: OrgLimit | null;
-  orgLimitEdge?: OrgLimitEdge | null;
-}
-export type UpdateOrgLimitPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimit?: {
-    select: OrgLimitSelect;
-  };
-  orgLimitEdge?: {
-    select: OrgLimitEdgeSelect;
-  };
-};
-export interface DeleteOrgLimitPayload {
-  clientMutationId?: string | null;
-  /** The `OrgLimit` that was deleted by this mutation. */
-  orgLimit?: OrgLimit | null;
-  orgLimitEdge?: OrgLimitEdge | null;
-}
-export type DeleteOrgLimitPayloadSelect = {
-  clientMutationId?: boolean;
-  orgLimit?: {
-    select: OrgLimitSelect;
-  };
-  orgLimitEdge?: {
-    select: OrgLimitEdgeSelect;
-  };
-};
-export interface CreateOrgMemberProfilePayload {
-  clientMutationId?: string | null;
-  /** The `OrgMemberProfile` that was created by this mutation. */
-  orgMemberProfile?: OrgMemberProfile | null;
-  orgMemberProfileEdge?: OrgMemberProfileEdge | null;
-}
-export type CreateOrgMemberProfilePayloadSelect = {
-  clientMutationId?: boolean;
-  orgMemberProfile?: {
-    select: OrgMemberProfileSelect;
-  };
-  orgMemberProfileEdge?: {
-    select: OrgMemberProfileEdgeSelect;
-  };
-};
-export interface UpdateOrgMemberProfilePayload {
-  clientMutationId?: string | null;
-  /** The `OrgMemberProfile` that was updated by this mutation. */
-  orgMemberProfile?: OrgMemberProfile | null;
-  orgMemberProfileEdge?: OrgMemberProfileEdge | null;
-}
-export type UpdateOrgMemberProfilePayloadSelect = {
-  clientMutationId?: boolean;
-  orgMemberProfile?: {
-    select: OrgMemberProfileSelect;
-  };
-  orgMemberProfileEdge?: {
-    select: OrgMemberProfileEdgeSelect;
-  };
-};
-export interface DeleteOrgMemberProfilePayload {
-  clientMutationId?: string | null;
-  /** The `OrgMemberProfile` that was deleted by this mutation. */
-  orgMemberProfile?: OrgMemberProfile | null;
-  orgMemberProfileEdge?: OrgMemberProfileEdge | null;
-}
-export type DeleteOrgMemberProfilePayloadSelect = {
-  clientMutationId?: boolean;
-  orgMemberProfile?: {
-    select: OrgMemberProfileSelect;
-  };
-  orgMemberProfileEdge?: {
-    select: OrgMemberProfileEdgeSelect;
   };
 };
 export interface CreateAppMembershipPayload {
@@ -6975,49 +3894,49 @@ export type DeleteAppMembershipPayloadSelect = {
     select: AppMembershipEdgeSelect;
   };
 };
-export interface CreateOrgInvitePayload {
+export interface CreateAppInvitePayload {
   clientMutationId?: string | null;
-  /** The `OrgInvite` that was created by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
+  /** The `AppInvite` that was created by this mutation. */
+  appInvite?: AppInvite | null;
+  appInviteEdge?: AppInviteEdge | null;
 }
-export type CreateOrgInvitePayloadSelect = {
+export type CreateAppInvitePayloadSelect = {
   clientMutationId?: boolean;
-  orgInvite?: {
-    select: OrgInviteSelect;
+  appInvite?: {
+    select: AppInviteSelect;
   };
-  orgInviteEdge?: {
-    select: OrgInviteEdgeSelect;
+  appInviteEdge?: {
+    select: AppInviteEdgeSelect;
   };
 };
-export interface UpdateOrgInvitePayload {
+export interface UpdateAppInvitePayload {
   clientMutationId?: string | null;
-  /** The `OrgInvite` that was updated by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
+  /** The `AppInvite` that was updated by this mutation. */
+  appInvite?: AppInvite | null;
+  appInviteEdge?: AppInviteEdge | null;
 }
-export type UpdateOrgInvitePayloadSelect = {
+export type UpdateAppInvitePayloadSelect = {
   clientMutationId?: boolean;
-  orgInvite?: {
-    select: OrgInviteSelect;
+  appInvite?: {
+    select: AppInviteSelect;
   };
-  orgInviteEdge?: {
-    select: OrgInviteEdgeSelect;
+  appInviteEdge?: {
+    select: AppInviteEdgeSelect;
   };
 };
-export interface DeleteOrgInvitePayload {
+export interface DeleteAppInvitePayload {
   clientMutationId?: string | null;
-  /** The `OrgInvite` that was deleted by this mutation. */
-  orgInvite?: OrgInvite | null;
-  orgInviteEdge?: OrgInviteEdge | null;
+  /** The `AppInvite` that was deleted by this mutation. */
+  appInvite?: AppInvite | null;
+  appInviteEdge?: AppInviteEdge | null;
 }
-export type DeleteOrgInvitePayloadSelect = {
+export type DeleteAppInvitePayloadSelect = {
   clientMutationId?: boolean;
-  orgInvite?: {
-    select: OrgInviteSelect;
+  appInvite?: {
+    select: AppInviteSelect;
   };
-  orgInviteEdge?: {
-    select: OrgInviteEdgeSelect;
+  appInviteEdge?: {
+    select: AppInviteEdgeSelect;
   };
 };
 export interface CreateOrgMembershipPayload {
@@ -7065,6 +3984,96 @@ export type DeleteOrgMembershipPayloadSelect = {
     select: OrgMembershipEdgeSelect;
   };
 };
+export interface CreateOrgMemberProfilePayload {
+  clientMutationId?: string | null;
+  /** The `OrgMemberProfile` that was created by this mutation. */
+  orgMemberProfile?: OrgMemberProfile | null;
+  orgMemberProfileEdge?: OrgMemberProfileEdge | null;
+}
+export type CreateOrgMemberProfilePayloadSelect = {
+  clientMutationId?: boolean;
+  orgMemberProfile?: {
+    select: OrgMemberProfileSelect;
+  };
+  orgMemberProfileEdge?: {
+    select: OrgMemberProfileEdgeSelect;
+  };
+};
+export interface UpdateOrgMemberProfilePayload {
+  clientMutationId?: string | null;
+  /** The `OrgMemberProfile` that was updated by this mutation. */
+  orgMemberProfile?: OrgMemberProfile | null;
+  orgMemberProfileEdge?: OrgMemberProfileEdge | null;
+}
+export type UpdateOrgMemberProfilePayloadSelect = {
+  clientMutationId?: boolean;
+  orgMemberProfile?: {
+    select: OrgMemberProfileSelect;
+  };
+  orgMemberProfileEdge?: {
+    select: OrgMemberProfileEdgeSelect;
+  };
+};
+export interface DeleteOrgMemberProfilePayload {
+  clientMutationId?: string | null;
+  /** The `OrgMemberProfile` that was deleted by this mutation. */
+  orgMemberProfile?: OrgMemberProfile | null;
+  orgMemberProfileEdge?: OrgMemberProfileEdge | null;
+}
+export type DeleteOrgMemberProfilePayloadSelect = {
+  clientMutationId?: boolean;
+  orgMemberProfile?: {
+    select: OrgMemberProfileSelect;
+  };
+  orgMemberProfileEdge?: {
+    select: OrgMemberProfileEdgeSelect;
+  };
+};
+export interface CreateOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was created by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
+}
+export type CreateOrgInvitePayloadSelect = {
+  clientMutationId?: boolean;
+  orgInvite?: {
+    select: OrgInviteSelect;
+  };
+  orgInviteEdge?: {
+    select: OrgInviteEdgeSelect;
+  };
+};
+export interface UpdateOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was updated by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
+}
+export type UpdateOrgInvitePayloadSelect = {
+  clientMutationId?: boolean;
+  orgInvite?: {
+    select: OrgInviteSelect;
+  };
+  orgInviteEdge?: {
+    select: OrgInviteEdgeSelect;
+  };
+};
+export interface DeleteOrgInvitePayload {
+  clientMutationId?: string | null;
+  /** The `OrgInvite` that was deleted by this mutation. */
+  orgInvite?: OrgInvite | null;
+  orgInviteEdge?: OrgInviteEdge | null;
+}
+export type DeleteOrgInvitePayloadSelect = {
+  clientMutationId?: boolean;
+  orgInvite?: {
+    select: OrgInviteSelect;
+  };
+  orgInviteEdge?: {
+    select: OrgInviteEdgeSelect;
+  };
+};
 /** A `AppPermission` edge in the connection. */
 export interface AppPermissionEdge {
   cursor?: string | null;
@@ -7106,42 +4115,6 @@ export type OrgPermissionEdgeSelect = {
     select: OrgPermissionSelect;
   };
 };
-/** A `AppLimitCreditRedemption` edge in the connection. */
-export interface AppLimitCreditRedemptionEdge {
-  cursor?: string | null;
-  /** The `AppLimitCreditRedemption` at the end of the edge. */
-  node?: AppLimitCreditRedemption | null;
-}
-export type AppLimitCreditRedemptionEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitCreditRedemptionSelect;
-  };
-};
-/** A `AppLimitCreditCodeItem` edge in the connection. */
-export interface AppLimitCreditCodeItemEdge {
-  cursor?: string | null;
-  /** The `AppLimitCreditCodeItem` at the end of the edge. */
-  node?: AppLimitCreditCodeItem | null;
-}
-export type AppLimitCreditCodeItemEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitCreditCodeItemSelect;
-  };
-};
-/** A `AppLimitCredit` edge in the connection. */
-export interface AppLimitCreditEdge {
-  cursor?: string | null;
-  /** The `AppLimitCredit` at the end of the edge. */
-  node?: AppLimitCredit | null;
-}
-export type AppLimitCreditEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitCreditSelect;
-  };
-};
 /** A `OrgMember` edge in the connection. */
 export interface OrgMemberEdge {
   cursor?: string | null;
@@ -7164,18 +4137,6 @@ export type AppPermissionDefaultEdgeSelect = {
   cursor?: boolean;
   node?: {
     select: AppPermissionDefaultSelect;
-  };
-};
-/** A `AppLimitCreditCode` edge in the connection. */
-export interface AppLimitCreditCodeEdge {
-  cursor?: string | null;
-  /** The `AppLimitCreditCode` at the end of the edge. */
-  node?: AppLimitCreditCode | null;
-}
-export type AppLimitCreditCodeEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitCreditCodeSelect;
   };
 };
 /** A `OrgPermissionDefault` edge in the connection. */
@@ -7214,54 +4175,6 @@ export type AppOwnerGrantEdgeSelect = {
     select: AppOwnerGrantSelect;
   };
 };
-/** A `AppLimitCapsDefault` edge in the connection. */
-export interface AppLimitCapsDefaultEdge {
-  cursor?: string | null;
-  /** The `AppLimitCapsDefault` at the end of the edge. */
-  node?: AppLimitCapsDefault | null;
-}
-export type AppLimitCapsDefaultEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitCapsDefaultSelect;
-  };
-};
-/** A `OrgLimitCapsDefault` edge in the connection. */
-export interface OrgLimitCapsDefaultEdge {
-  cursor?: string | null;
-  /** The `OrgLimitCapsDefault` at the end of the edge. */
-  node?: OrgLimitCapsDefault | null;
-}
-export type OrgLimitCapsDefaultEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgLimitCapsDefaultSelect;
-  };
-};
-/** A `AppLimitCap` edge in the connection. */
-export interface AppLimitCapEdge {
-  cursor?: string | null;
-  /** The `AppLimitCap` at the end of the edge. */
-  node?: AppLimitCap | null;
-}
-export type AppLimitCapEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitCapSelect;
-  };
-};
-/** A `OrgLimitCap` edge in the connection. */
-export interface OrgLimitCapEdge {
-  cursor?: string | null;
-  /** The `OrgLimitCap` at the end of the edge. */
-  node?: OrgLimitCap | null;
-}
-export type OrgLimitCapEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgLimitCapSelect;
-  };
-};
 /** A `OrgAdminGrant` edge in the connection. */
 export interface OrgAdminGrantEdge {
   cursor?: string | null;
@@ -7286,78 +4199,6 @@ export type OrgOwnerGrantEdgeSelect = {
     select: OrgOwnerGrantSelect;
   };
 };
-/** A `MembershipType` edge in the connection. */
-export interface MembershipTypeEdge {
-  cursor?: string | null;
-  /** The `MembershipType` at the end of the edge. */
-  node?: MembershipType | null;
-}
-export type MembershipTypeEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: MembershipTypeSelect;
-  };
-};
-/** A `AppLimitDefault` edge in the connection. */
-export interface AppLimitDefaultEdge {
-  cursor?: string | null;
-  /** The `AppLimitDefault` at the end of the edge. */
-  node?: AppLimitDefault | null;
-}
-export type AppLimitDefaultEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitDefaultSelect;
-  };
-};
-/** A `OrgLimitDefault` edge in the connection. */
-export interface OrgLimitDefaultEdge {
-  cursor?: string | null;
-  /** The `OrgLimitDefault` at the end of the edge. */
-  node?: OrgLimitDefault | null;
-}
-export type OrgLimitDefaultEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgLimitDefaultSelect;
-  };
-};
-/** A `OrgLimitCredit` edge in the connection. */
-export interface OrgLimitCreditEdge {
-  cursor?: string | null;
-  /** The `OrgLimitCredit` at the end of the edge. */
-  node?: OrgLimitCredit | null;
-}
-export type OrgLimitCreditEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgLimitCreditSelect;
-  };
-};
-/** A `AppLimitWarning` edge in the connection. */
-export interface AppLimitWarningEdge {
-  cursor?: string | null;
-  /** The `AppLimitWarning` at the end of the edge. */
-  node?: AppLimitWarning | null;
-}
-export type AppLimitWarningEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitWarningSelect;
-  };
-};
-/** A `OrgLimitWarning` edge in the connection. */
-export interface OrgLimitWarningEdge {
-  cursor?: string | null;
-  /** The `OrgLimitWarning` at the end of the edge. */
-  node?: OrgLimitWarning | null;
-}
-export type OrgLimitWarningEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgLimitWarningSelect;
-  };
-};
 /** A `OrgChartEdgeGrant` edge in the connection. */
 export interface OrgChartEdgeGrantEdge {
   cursor?: string | null;
@@ -7380,6 +4221,18 @@ export type AppClaimedInviteEdgeSelect = {
   cursor?: boolean;
   node?: {
     select: AppClaimedInviteSelect;
+  };
+};
+/** A `MembershipType` edge in the connection. */
+export interface MembershipTypeEdge {
+  cursor?: string | null;
+  /** The `MembershipType` at the end of the edge. */
+  node?: MembershipType | null;
+}
+export type MembershipTypeEdgeSelect = {
+  cursor?: boolean;
+  node?: {
+    select: MembershipTypeSelect;
   };
 };
 /** A `AppGrant` edge in the connection. */
@@ -7454,42 +4307,6 @@ export type OrgChartEdgeEdgeSelect = {
     select: OrgChartEdgeSelect;
   };
 };
-/** A `UsageSnapshot` edge in the connection. */
-export interface UsageSnapshotEdge {
-  cursor?: string | null;
-  /** The `UsageSnapshot` at the end of the edge. */
-  node?: UsageSnapshot | null;
-}
-export type UsageSnapshotEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: UsageSnapshotSelect;
-  };
-};
-/** A `AppLimit` edge in the connection. */
-export interface AppLimitEdge {
-  cursor?: string | null;
-  /** The `AppLimit` at the end of the edge. */
-  node?: AppLimit | null;
-}
-export type AppLimitEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppLimitSelect;
-  };
-};
-/** A `AppInvite` edge in the connection. */
-export interface AppInviteEdge {
-  cursor?: string | null;
-  /** The `AppInvite` at the end of the edge. */
-  node?: AppInvite | null;
-}
-export type AppInviteEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: AppInviteSelect;
-  };
-};
 /** A `OrgMembershipSetting` edge in the connection. */
 export interface OrgMembershipSettingEdge {
   cursor?: string | null;
@@ -7500,42 +4317,6 @@ export type OrgMembershipSettingEdgeSelect = {
   cursor?: boolean;
   node?: {
     select: OrgMembershipSettingSelect;
-  };
-};
-/** A `OrgLimitAggregate` edge in the connection. */
-export interface OrgLimitAggregateEdge {
-  cursor?: string | null;
-  /** The `OrgLimitAggregate` at the end of the edge. */
-  node?: OrgLimitAggregate | null;
-}
-export type OrgLimitAggregateEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgLimitAggregateSelect;
-  };
-};
-/** A `OrgLimit` edge in the connection. */
-export interface OrgLimitEdge {
-  cursor?: string | null;
-  /** The `OrgLimit` at the end of the edge. */
-  node?: OrgLimit | null;
-}
-export type OrgLimitEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgLimitSelect;
-  };
-};
-/** A `OrgMemberProfile` edge in the connection. */
-export interface OrgMemberProfileEdge {
-  cursor?: string | null;
-  /** The `OrgMemberProfile` at the end of the edge. */
-  node?: OrgMemberProfile | null;
-}
-export type OrgMemberProfileEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: OrgMemberProfileSelect;
   };
 };
 /** A `AppMembership` edge in the connection. */
@@ -7550,16 +4331,16 @@ export type AppMembershipEdgeSelect = {
     select: AppMembershipSelect;
   };
 };
-/** A `OrgInvite` edge in the connection. */
-export interface OrgInviteEdge {
+/** A `AppInvite` edge in the connection. */
+export interface AppInviteEdge {
   cursor?: string | null;
-  /** The `OrgInvite` at the end of the edge. */
-  node?: OrgInvite | null;
+  /** The `AppInvite` at the end of the edge. */
+  node?: AppInvite | null;
 }
-export type OrgInviteEdgeSelect = {
+export type AppInviteEdgeSelect = {
   cursor?: boolean;
   node?: {
-    select: OrgInviteSelect;
+    select: AppInviteSelect;
   };
 };
 /** A `OrgMembership` edge in the connection. */
@@ -7572,5 +4353,29 @@ export type OrgMembershipEdgeSelect = {
   cursor?: boolean;
   node?: {
     select: OrgMembershipSelect;
+  };
+};
+/** A `OrgMemberProfile` edge in the connection. */
+export interface OrgMemberProfileEdge {
+  cursor?: string | null;
+  /** The `OrgMemberProfile` at the end of the edge. */
+  node?: OrgMemberProfile | null;
+}
+export type OrgMemberProfileEdgeSelect = {
+  cursor?: boolean;
+  node?: {
+    select: OrgMemberProfileSelect;
+  };
+};
+/** A `OrgInvite` edge in the connection. */
+export interface OrgInviteEdge {
+  cursor?: string | null;
+  /** The `OrgInvite` at the end of the edge. */
+  node?: OrgInvite | null;
+}
+export type OrgInviteEdgeSelect = {
+  cursor?: boolean;
+  node?: {
+    select: OrgInviteSelect;
   };
 };
