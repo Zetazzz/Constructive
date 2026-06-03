@@ -3,7 +3,7 @@ import { Parser } from 'csv-to-pg';
 import { getPgPool } from 'pg-cache';
 import type { Pool } from 'pg';
 
-import { FieldType, TableConfig, META_TABLE_CONFIG } from './export-utils';
+import { FieldType, TableConfig, META_TABLE_CONFIG, mapPgTypeToFieldType } from './export-utils';
 
 /**
  * Query actual columns from information_schema for a given table.
@@ -25,10 +25,10 @@ const getTableColumns = async (pool: Pool, schemaName: string, tableName: string
 };
 
 /**
- * Build dynamic fields config by intersecting the hardcoded config with actual database columns.
- * - Only includes columns that exist in the database
- * - Preserves special type hints from config (image, upload, url) for columns that exist
- * - Infers types from PostgreSQL for columns not in config
+ * Build dynamic fields config from the database via information_schema.
+ * - All fields are derived from `information_schema.columns` + `mapPgTypeToFieldType`.
+ * - `typeOverrides` from the config are applied on top for special types
+ *   (image, upload, url) that cannot be inferred from PG types alone.
  */
 const buildDynamicFields = async (
   pool: Pool,
@@ -43,13 +43,18 @@ const buildDynamicFields = async (
 
   const dynamicFields: Record<string, FieldType> = {};
 
-  // For each column in the hardcoded config, check if it exists in the database
-  for (const [fieldName, fieldType] of Object.entries(tableConfig.fields)) {
-    if (actualColumns.has(fieldName)) {
-      // Column exists - use the config's type hint (preserves special types like 'image', 'upload', 'url')
-      dynamicFields[fieldName] = fieldType;
+  // Derive all fields from information_schema
+  for (const [columnName, udtName] of actualColumns) {
+    dynamicFields[columnName] = mapPgTypeToFieldType(udtName);
+  }
+
+  // Apply type overrides (image, upload, url)
+  if (tableConfig.typeOverrides) {
+    for (const [fieldName, fieldType] of Object.entries(tableConfig.typeOverrides)) {
+      if (dynamicFields[fieldName]) {
+        dynamicFields[fieldName] = fieldType;
+      }
     }
-    // If column doesn't exist in database, skip it (this fixes the bug)
   }
 
   return dynamicFields;
@@ -70,8 +75,9 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   });
   const sql: Record<string, string> = {};
 
-  // Cache for dynamically built parsers
+  // Cache for dynamically built parsers and their field configs
   const parsers: Record<string, Parser> = {};
+  const parserFields: Record<string, Record<string, FieldType>> = {};
 
   // Build parser dynamically by querying actual columns from the database
   const getParser = async (key: string): Promise<Parser | null> => {
@@ -91,6 +97,8 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
       // No columns found (table doesn't exist or no matching columns)
       return null;
     }
+
+    parserFields[key] = dynamicFields;
 
     const parser = new Parser({
       schema: tableConfig.schema,
@@ -112,6 +120,24 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
 
       const result = await pool.query(query, [database_id]);
       if (result.rows.length) {
+        // Truncate timestamptz to second precision to match PostGraphile's Datetime scalar
+        // which truncates milliseconds in the GraphQL flow
+        const fields = parserFields[key];
+        if (fields) {
+          for (const row of result.rows) {
+            for (const [fieldName, fieldType] of Object.entries(fields)) {
+              if (fieldType === 'timestamptz') {
+                const val = row[fieldName];
+                if (val instanceof Date) {
+                  // Truncate to second precision and convert to ISO string
+                  // so both SQL and GraphQL flows pass the same value type to the Parser
+                  row[fieldName] = new Date(Math.floor(val.getTime() / 1000) * 1000).toISOString();
+                }
+              }
+            }
+          }
+        }
+
         const parsed = await parser.parse(result.rows);
         if (parsed) {
           sql[key] = parsed;
@@ -178,6 +204,7 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('permissions_module', `SELECT * FROM metaschema_modules_public.permissions_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('limits_module', `SELECT * FROM metaschema_modules_public.limits_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('levels_module', `SELECT * FROM metaschema_modules_public.levels_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('events_module', `SELECT * FROM metaschema_modules_public.events_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('users_module', `SELECT * FROM metaschema_modules_public.users_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('hierarchy_module', `SELECT * FROM metaschema_modules_public.hierarchy_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('membership_types_module', `SELECT * FROM metaschema_modules_public.membership_types_module WHERE database_id = $1 ORDER BY id`);
@@ -187,13 +214,14 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('user_state_module', `SELECT * FROM metaschema_modules_public.user_state_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('profiles_module', `SELECT * FROM metaschema_modules_public.profiles_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('config_secrets_user_module', `SELECT * FROM metaschema_modules_public.config_secrets_user_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('user_credentials_module', `SELECT * FROM metaschema_modules_public.user_credentials_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('user_settings_module', `SELECT * FROM metaschema_modules_public.user_settings_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('connected_accounts_module', `SELECT * FROM metaschema_modules_public.connected_accounts_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('phone_numbers_module', `SELECT * FROM metaschema_modules_public.phone_numbers_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('crypto_addresses_module', `SELECT * FROM metaschema_modules_public.crypto_addresses_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('crypto_auth_module', `SELECT * FROM metaschema_modules_public.crypto_auth_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('field_module', `SELECT * FROM metaschema_modules_public.field_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('table_module', `SELECT * FROM metaschema_modules_public.table_module WHERE database_id = $1 ORDER BY id`);
-  await queryAndParse('table_template_module', `SELECT * FROM metaschema_modules_public.table_template_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('secure_table_provision', `SELECT * FROM metaschema_modules_public.secure_table_provision WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('uuid_module', `SELECT * FROM metaschema_modules_public.uuid_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('default_ids_module', `SELECT * FROM metaschema_modules_public.default_ids_module WHERE database_id = $1 ORDER BY id`);
@@ -211,8 +239,21 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
   await queryAndParse('realtime_module', `SELECT * FROM metaschema_modules_public.realtime_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('session_secrets_module', `SELECT * FROM metaschema_modules_public.session_secrets_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('config_secrets_org_module', `SELECT * FROM metaschema_modules_public.config_secrets_org_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('config_secrets_module', `SELECT * FROM metaschema_modules_public.config_secrets_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('i18n_module', `SELECT * FROM metaschema_modules_public.i18n_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('agent_module', `SELECT * FROM metaschema_modules_public.agent_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('function_module', `SELECT * FROM metaschema_modules_public.function_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('namespace_module', `SELECT * FROM metaschema_modules_public.namespace_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('merkle_store_module', `SELECT * FROM metaschema_modules_public.merkle_store_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('graph_module', `SELECT * FROM metaschema_modules_public.graph_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('compute_log_module', `SELECT * FROM metaschema_modules_public.compute_log_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('db_usage_module', `SELECT * FROM metaschema_modules_public.db_usage_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('storage_log_module', `SELECT * FROM metaschema_modules_public.storage_log_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('transfer_log_module', `SELECT * FROM metaschema_modules_public.transfer_log_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('webauthn_auth_module', `SELECT * FROM metaschema_modules_public.webauthn_auth_module WHERE database_id = $1 ORDER BY id`);
   await queryAndParse('webauthn_credentials_module', `SELECT * FROM metaschema_modules_public.webauthn_credentials_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('inference_log_module', `SELECT * FROM metaschema_modules_public.inference_log_module WHERE database_id = $1 ORDER BY id`);
+  await queryAndParse('rate_limit_meters_module', `SELECT * FROM metaschema_modules_public.rate_limit_meters_module WHERE database_id = $1 ORDER BY id`);
 
   return sql;
 };

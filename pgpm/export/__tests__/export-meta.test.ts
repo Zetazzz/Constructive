@@ -47,14 +47,30 @@ describe('Export Meta Config Validation', () => {
     const required = [
       'rls_module', 'user_auth_module', 'memberships_module',
       'permissions_module', 'limits_module', 'levels_module',
+      'events_module',
       'users_module', 'hierarchy_module', 'membership_types_module',
       'invites_module', 'emails_module', 'sessions_module',
       'user_state_module', 'profiles_module', 'config_secrets_user_module',
+      'user_credentials_module', 'user_settings_module',
       'connected_accounts_module', 'phone_numbers_module',
       'crypto_addresses_module', 'crypto_auth_module',
-      'field_module', 'table_module', 'table_template_module',
+      'field_module', 'table_module',
       'secure_table_provision', 'uuid_module', 'default_ids_module',
-      'denormalized_table_field'
+      'denormalized_table_field',
+      'relation_provision', 'entity_type_provision',
+      'rate_limits_module', 'storage_module',
+      'billing_module', 'billing_provider_module',
+      'devices_module', 'identity_providers_module',
+      'notifications_module', 'plans_module',
+      'realtime_module', 'session_secrets_module',
+      'config_secrets_org_module', 'config_secrets_module',
+      'i18n_module', 'agent_module',
+      'function_module', 'namespace_module',
+      'merkle_store_module', 'graph_module',
+      'compute_log_module', 'db_usage_module',
+      'storage_log_module', 'transfer_log_module',
+      'webauthn_auth_module', 'webauthn_credentials_module',
+      'inference_log_module', 'rate_limit_meters_module'
     ];
 
     it('should include all required metaschema_modules_public tables in config', () => {
