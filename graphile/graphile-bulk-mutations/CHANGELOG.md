@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/constructive-io/constructive/compare/graphile-bulk-mutations@0.5.0...graphile-bulk-mutations@0.5.1) (2026-06-05)
+
+**Note:** Version bump only for package graphile-bulk-mutations
+
 # [0.5.0](https://github.com/constructive-io/constructive/compare/graphile-bulk-mutations@0.4.2...graphile-bulk-mutations@0.5.0) (2026-05-30)
 
 **Note:** Version bump only for package graphile-bulk-mutations

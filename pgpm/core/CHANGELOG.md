@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [6.22.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.21.0...@pgpmjs/core@6.22.0) (2026-06-05)
+
+### Features
+
+- add inflection-db to PGPM module map and export required extensions ([9b2931e](https://github.com/constructive-io/constructive/commit/9b2931e2d44ec8aab7a5dcdc7096d5a3bb96c4cc))
+
 # [6.21.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.20.2...@pgpmjs/core@6.21.0) (2026-05-30)
 
 **Note:** Version bump only for package @pgpmjs/core
