@@ -15,6 +15,7 @@ export const PGPM_MODULE_MAP: Record<string, string> = {
   'metaschema-schema': '@pgpm/metaschema-schema',
   'services': '@pgpm/services',
   'pgpm-inflection': '@pgpm/inflection',
+  'inflection-db': '@pgpm/inflection-db',
   'pgpm-jwt-claims': '@pgpm/jwt-claims',
   'pgpm-stamps': '@pgpm/stamps',
   'pgpm-totp': '@pgpm/totp',
