@@ -14,9 +14,15 @@ import type { Inquirerer, Question } from 'inquirerer';
 export type WorkspaceType = 'pgpm' | 'pnpm' | 'lerna' | 'npm' | false;
 
 /**
- * Extended BoilerplateConfig that adds workspace requirement field.
- * This field controls both workspace detection and whether pgpm-specific files are created.
+ * Declares a skill to install after scaffolding completes.
  */
+export interface BoilerplateSkill {
+  /** GitHub repository (org/repo format) */
+  source: string;
+  /** Skill name(s) to install from the source */
+  skills: string[];
+}
+
 export interface BoilerplateConfig extends GenomicBoilerplateConfig {
   /**
    * Specifies what type of workspace this template requires.
@@ -29,6 +35,13 @@ export interface BoilerplateConfig extends GenomicBoilerplateConfig {
    * Defaults to 'pgpm' for 'module' type (backward compatibility), false for others.
    */
   requiresWorkspace?: WorkspaceType;
+  /**
+   * Skills to install after scaffolding completes.
+   * Each entry specifies a source repository and skill names to install.
+   * Runs `npx skills add <source> --skill <name>` for each entry.
+   * Non-fatal: prints manual install commands on failure.
+   */
+  skills?: BoilerplateSkill[];
 }
 
 export interface InspectTemplateOptions {

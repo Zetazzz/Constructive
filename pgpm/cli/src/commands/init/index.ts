@@ -1,7 +1,9 @@
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
 import {
+  BoilerplateSkill,
   DEFAULT_TEMPLATE_REPO,
   DEFAULT_TEMPLATE_TOOL_NAME,
   inspectTemplate,
@@ -275,6 +277,38 @@ interface InitContext {
   createWorkspace?: boolean;
 }
 
+function installSkills(skills: BoilerplateSkill[], cwd: string): void {
+  const failed: string[] = [];
+
+  for (const entry of skills) {
+    const source = entry.source.includes('://')
+      ? entry.source
+      : `https://github.com/${entry.source}`;
+
+    for (const skill of entry.skills) {
+      const cmd = `npx --yes skills add ${source} --skill ${skill} --yes`;
+      try {
+        execSync(cmd, {
+          cwd,
+          stdio: ['pipe', 'inherit', 'inherit'],
+          timeout: 120_000,
+        });
+      } catch {
+        failed.push(`  npx skills add ${source} --skill ${skill}`);
+      }
+    }
+  }
+
+  if (failed.length > 0) {
+    process.stdout.write('\n⚠️  Some skills could not be installed automatically.\n');
+    process.stdout.write('Run the following commands manually:\n\n');
+    for (const cmd of failed) {
+      process.stdout.write(`${cmd}\n`);
+    }
+    process.stdout.write('\n');
+  }
+}
+
 async function handleWorkspaceInit(
   argv: Partial<Record<string, any>>,
   prompter: Inquirerer,
@@ -327,6 +361,19 @@ async function handleWorkspaceInit(
   process.stdout.write(motd);
   if (!motd.endsWith('\n')) {
     process.stdout.write('\n');
+  }
+
+  // Install skills declared in .boilerplate.json
+  const templateInfo = inspectTemplate({
+    fromPath: ctx.fromPath,
+    templateRepo: ctx.templateRepo,
+    branch: ctx.branch,
+    dir: ctx.dir,
+    cwd: ctx.cwd,
+  });
+  if (templateInfo.config?.skills?.length) {
+    process.stdout.write('\n📦 Installing skills...\n\n');
+    installSkills(templateInfo.config.skills, targetPath);
   }
 
   const relPath = path.relative(process.cwd(), targetPath);
@@ -618,6 +665,20 @@ async function handleModuleInit(
   process.stdout.write(motd);
   if (!motd.endsWith('\n')) {
     process.stdout.write('\n');
+  }
+
+  // Install skills declared in .boilerplate.json
+  const moduleTemplateInfo = inspectTemplate({
+    fromPath: ctx.fromPath,
+    templateRepo: ctx.templateRepo,
+    branch: ctx.branch,
+    dir: ctx.dir,
+    cwd: ctx.cwd,
+  });
+  if (moduleTemplateInfo.config?.skills?.length) {
+    const skillsCwd = project.workspacePath || modulePath;
+    process.stdout.write('\n📦 Installing skills...\n\n');
+    installSkills(moduleTemplateInfo.config.skills, skillsCwd);
   }
 
   const relPath = path.relative(process.cwd(), modulePath);
