@@ -11,6 +11,7 @@ import {
   resolveBoilerplateBaseDir,
   scaffoldTemplate,
   scanBoilerplates,
+  SkillInstaller,
   sluggify,
 } from '@pgpmjs/core';
 import { resolveWorkspaceByType } from '@pgpmjs/env';
@@ -44,6 +45,7 @@ Options:
   --template, -t <path>   Full template path (e.g., pnpm/module) - combines dir and fromPath
   --boilerplate           Prompt to select from available boilerplates
   --create-workspace, -w  Create a workspace first, then create the module inside it
+  --use-skills            Use npx skills CLI for skill installation (slower, writes skills-lock.json)
 
 Examples:
   ${binaryName} init                                   Initialize new module (default)
@@ -79,6 +81,7 @@ async function handleInit(argv: Partial<Record<string, any>>, prompter: Inquirer
   const noTty = Boolean((argv as any).noTty || argv['no-tty'] || argv.tty === false || process.env.CI === 'true');
   const useBoilerplatePrompt = Boolean(argv.boilerplate);
   const createWorkspace = Boolean(argv.createWorkspace || argv['create-workspace'] || argv.w);
+  const useNpxSkills = Boolean(argv.useSkills || argv['use-skills']);
 
   // Get fromPath from first positional arg
   const positionalFromPath = argv._?.[0] as string | undefined;
@@ -110,6 +113,7 @@ async function handleInit(argv: Partial<Record<string, any>>, prompter: Inquirer
       dir,
       noTty,
       cwd,
+      useNpxSkills,
     });
   }
 
@@ -139,6 +143,7 @@ async function handleInit(argv: Partial<Record<string, any>>, prompter: Inquirer
       dir,
       noTty,
       cwd,
+      useNpxSkills,
     });
   }
 
@@ -152,6 +157,7 @@ async function handleInit(argv: Partial<Record<string, any>>, prompter: Inquirer
     cwd,
     requiresWorkspace: inspection.config?.requiresWorkspace,
     createWorkspace,
+    useNpxSkills,
   }, wasExplicitModuleRequest);
 }
 
@@ -162,6 +168,7 @@ interface BoilerplateInitContext {
   dir?: string;
   noTty: boolean;
   cwd: string;
+  useNpxSkills?: boolean;
 }
 
 async function handleBoilerplateInit(
@@ -243,6 +250,7 @@ async function handleBoilerplateInit(
       dir: ctx.dir,
       noTty: ctx.noTty,
       cwd: ctx.cwd,
+      useNpxSkills: ctx.useNpxSkills,
     });
   }
 
@@ -256,6 +264,7 @@ async function handleBoilerplateInit(
     noTty: ctx.noTty,
     cwd: ctx.cwd,
     requiresWorkspace: inspection.config?.requiresWorkspace,
+    useNpxSkills: ctx.useNpxSkills,
   }, true);
 }
 
@@ -275,9 +284,44 @@ interface InitContext {
    * If true, create a workspace first, then create the module inside it.
    */
   createWorkspace?: boolean;
+  /**
+   * If true, use npx skills CLI instead of built-in shallow clone.
+   */
+  useNpxSkills?: boolean;
 }
 
-function installSkills(skills: BoilerplateSkill[], cwd: string): void {
+function installSkills(skills: BoilerplateSkill[], cwd: string, useNpxSkills: boolean): void {
+  if (useNpxSkills) {
+    installSkillsViaNpx(skills, cwd);
+  } else {
+    installSkillsBuiltin(skills, cwd);
+  }
+}
+
+function installSkillsBuiltin(skills: BoilerplateSkill[], cwd: string): void {
+  const installer = new SkillInstaller({ toolName: DEFAULT_TEMPLATE_TOOL_NAME });
+  const result = installer.install(skills, cwd);
+
+  if (result.installed.length > 0) {
+    for (const name of result.installed) {
+      process.stdout.write(`  installed ${name}\n`);
+    }
+  }
+
+  if (result.failed.length > 0) {
+    process.stdout.write('\n⚠️  Some skills could not be installed automatically.\n');
+    process.stdout.write('Run the following commands manually:\n\n');
+    for (const f of result.failed) {
+      const source = f.source.includes('://')
+        ? f.source
+        : `https://github.com/${f.source}`;
+      process.stdout.write(`  npx skills add ${source} --skill ${f.skill}\n`);
+    }
+    process.stdout.write('\n');
+  }
+}
+
+function installSkillsViaNpx(skills: BoilerplateSkill[], cwd: string): void {
   const failed: string[] = [];
 
   for (const entry of skills) {
@@ -373,7 +417,7 @@ async function handleWorkspaceInit(
   });
   if (templateInfo.config?.skills?.length) {
     process.stdout.write('\n📦 Installing skills...\n\n');
-    installSkills(templateInfo.config.skills, targetPath);
+    installSkills(templateInfo.config.skills, targetPath, Boolean(ctx.useNpxSkills));
   }
 
   const relPath = path.relative(process.cwd(), targetPath);
@@ -678,7 +722,7 @@ async function handleModuleInit(
   if (moduleTemplateInfo.config?.skills?.length) {
     const skillsCwd = project.workspacePath || modulePath;
     process.stdout.write('\n📦 Installing skills...\n\n');
-    installSkills(moduleTemplateInfo.config.skills, skillsCwd);
+    installSkills(moduleTemplateInfo.config.skills, skillsCwd, Boolean(ctx.useNpxSkills));
   }
 
   const relPath = path.relative(process.cwd(), modulePath);
