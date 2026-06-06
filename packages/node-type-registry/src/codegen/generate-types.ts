@@ -1673,7 +1673,7 @@ function buildProgram(meta?: MetaTableInfo[]): string {
   statements.push(buildFieldDefaultInterface());
 
   // -- Parameter interfaces grouped by category --
-  const categoryOrder = ['billing', 'check', 'data', 'event', 'limit', 'limit_enforce', 'limit_track', 'limit_warning', 'search', 'job', 'process', 'authz', 'relation', 'view'];
+  const categoryOrder = ['billing', 'check', 'data', 'event', 'guard', 'limit', 'limit_enforce', 'limit_track', 'limit_warning', 'search', 'job', 'process', 'authz', 'relation', 'view'];
   for (const cat of categoryOrder) {
     const nts = categories.get(cat);
     if (!nts || nts.length === 0) continue;
