@@ -454,3 +454,17 @@ Most commands support these global options:
 - `--help, -h` - Show help information
 - `--version, -v` - Show version information
 - `--cwd <dir>` - Set working directory
+
+## AI Agent Skills
+
+Install the pgpm skill for AI coding agents (Devin, Claude Code, Cursor, Copilot):
+
+```bash
+npx skills add https://github.com/constructive-io/constructive --skill pgpm
+```
+
+For the full Constructive platform skills (security, blueprints, codegen, billing, etc.):
+
+```bash
+npx skills add constructive-io/constructive-skills
+```
