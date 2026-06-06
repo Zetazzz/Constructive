@@ -37,7 +37,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     options: >-
-      --health-cmd pg_isready
+      --health-cmd "pg_isready -U postgres"
       --health-interval 10s
       --health-timeout 5s
       --health-retries 5
@@ -55,7 +55,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     options: >-
-      --health-cmd pg_isready
+      --health-cmd "pg_isready -U postgres"
       --health-interval 10s
       --health-timeout 5s
       --health-retries 5
@@ -164,7 +164,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
