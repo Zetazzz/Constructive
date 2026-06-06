@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.9.2](https://github.com/constructive-io/constructive/compare/graphile-ltree@1.9.1...graphile-ltree@1.9.2) (2026-06-06)
+
+**Note:** Version bump only for package graphile-ltree
+
 ## [1.9.1](https://github.com/constructive-io/constructive/compare/graphile-ltree@1.9.0...graphile-ltree@1.9.1) (2026-06-05)
 
 **Note:** Version bump only for package graphile-ltree

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.48.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.47.0...node-type-registry@0.48.0) (2026-06-06)
+
+### Features
+
+- add GuardStepUp node type to node-type-registry ([d747e79](https://github.com/constructive-io/constructive/commit/d747e79e755bcdc75bc855039e1bd55d15218607)), closes [#1541](https://github.com/constructive-io/constructive/issues/1541)
+
 # [0.47.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.46.0...node-type-registry@0.47.0) (2026-06-01)
 
 ### Bug Fixes
