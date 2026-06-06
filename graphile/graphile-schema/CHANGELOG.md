@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.22.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.3...graphile-schema@1.22.4) (2026-06-06)
+
+**Note:** Version bump only for package graphile-schema
+
 ## [1.22.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.2...graphile-schema@1.22.3) (2026-06-06)
 
 **Note:** Version bump only for package graphile-schema

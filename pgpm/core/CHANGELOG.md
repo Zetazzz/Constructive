@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [6.23.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.22.1...@pgpmjs/core@6.23.0) (2026-06-06)
+
+### Features
+
+- **pgpm:** install skills from .boilerplate.json after scaffold ([835c827](https://github.com/constructive-io/constructive/commit/835c8277393d8e00fe87a5f019fcac46d746b68d))
+
 ## [6.22.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.22.0...@pgpmjs/core@6.22.1) (2026-06-06)
 
 **Note:** Version bump only for package @pgpmjs/core

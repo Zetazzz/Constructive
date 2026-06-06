@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.27.0](https://github.com/constructive-io/constructive/compare/pgpm@4.26.4...pgpm@4.27.0) (2026-06-06)
+
+### Features
+
+- **pgpm:** install skills from .boilerplate.json after scaffold ([835c827](https://github.com/constructive-io/constructive/commit/835c8277393d8e00fe87a5f019fcac46d746b68d))
+
 ## [4.26.4](https://github.com/constructive-io/constructive/compare/pgpm@4.26.3...pgpm@4.26.4) (2026-06-06)
 
 **Note:** Version bump only for package pgpm
