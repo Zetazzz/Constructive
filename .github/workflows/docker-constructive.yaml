@@ -6,11 +6,6 @@ on:
       - main
       - v1
       - release/*
-  pull_request:
-    branches:
-      - main
-      - v1
-    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch: {}
 
 concurrency:
