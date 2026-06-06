@@ -48,6 +48,17 @@ Common issues and solutions for pgpm, PostgreSQL, and testing.
 
 * [constructive-skills](https://github.com/constructive-io/constructive-skills): **📖 Platform documentation and AI agent skills** — feature catalog, blueprint reference, SDK guides (i18n, billing, limits, events, uploads, security, entities, search, AI), and deployment guides.
 
+Install skills for AI coding agents:
+
+```bash
+# All platform skills (security, blueprints, codegen, billing, etc.)
+npx skills add constructive-io/constructive-skills
+
+# Individual repo skills (pgpm, testing, CLI, search, etc.)
+npx skills add https://github.com/constructive-io/constructive --skill pgpm
+npx skills add https://github.com/constructive-io/constructive --skill constructive-testing
+```
+
 ## Credits
 
 **🛠 Built by the [Constructive](https://constructive.io) team — creators of modular Postgres tooling for secure, composable backends. If you like our work, contribute on [GitHub](https://github.com/constructive-io).**
