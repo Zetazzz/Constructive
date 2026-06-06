@@ -36,7 +36,7 @@ jobs:
   # =========================================================================
   build:
     if: github.event.pull_request.draft != true
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Configure Git (for tests)
@@ -79,7 +79,7 @@ jobs:
   # =========================================================================
   unit-tests:
     needs: build
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
