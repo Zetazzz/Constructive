@@ -2,6 +2,8 @@ import os from 'os';
 import path from 'path';
 import { TemplateScaffolder, BoilerplateConfig as GenomicBoilerplateConfig } from 'genomic';
 export type { BoilerplateSkill } from 'genomic';
+export { SkillInstaller } from 'genomic';
+export type { SkillInstallOptions, SkillInstallResult, SkillInstallFailure } from 'genomic';
 import type { Inquirerer, Question } from 'inquirerer';
 
 /**
