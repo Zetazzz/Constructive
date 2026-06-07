@@ -3,6 +3,7 @@ export { CheckLessThan } from './check-less-than';
 export { CheckNotEqual } from './check-not-equal';
 export { CheckOneOf } from './check-one-of';
 export { DataBulk } from './data-bulk';
+export { DataDenormalized } from './data-denormalized';
 export { DataCompositeField } from './data-composite-field';
 export { DataDirectOwner } from './data-direct-owner';
 export { DataEntityMembership } from './data-entity-membership';
