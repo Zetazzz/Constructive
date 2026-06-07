@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [6.24.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.23.0...@pgpmjs/core@6.24.0) (2026-06-07)
+
+### Features
+
+- **pgpm:** use built-in SkillInstaller for fast skill installation ([e3b5819](https://github.com/constructive-io/constructive/commit/e3b5819ef620825f3c33745e4c5a9ed4afe71bb4))
+
 # [6.23.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.22.1...@pgpmjs/core@6.23.0) (2026-06-06)
 
 ### Features

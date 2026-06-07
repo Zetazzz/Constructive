@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [4.28.0](https://github.com/constructive-io/constructive/compare/pgpm@4.27.0...pgpm@4.28.0) (2026-06-07)
+
+### Bug Fixes
+
+- **pgpm/cli:** skip skill install in tests via PGPM_SKIP_SKILL_INSTALL env var ([efc61a6](https://github.com/constructive-io/constructive/commit/efc61a6c9b4ec2dc15a344432260c22d38478ad7))
+
+### Features
+
+- **pgpm:** use built-in SkillInstaller for fast skill installation ([e3b5819](https://github.com/constructive-io/constructive/commit/e3b5819ef620825f3c33745e4c5a9ed4afe71bb4))
+
 # [4.27.0](https://github.com/constructive-io/constructive/compare/pgpm@4.26.4...pgpm@4.27.0) (2026-06-06)
 
 ### Features
