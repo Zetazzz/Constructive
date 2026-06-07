@@ -4,6 +4,7 @@ export { CheckNotEqual } from './check-not-equal';
 export { CheckOneOf } from './check-one-of';
 export { DataBulk } from './data-bulk';
 export { DataCompositeField } from './data-composite-field';
+export { DataDenormalized } from './data-denormalized';
 export { DataDirectOwner } from './data-direct-owner';
 export { DataEntityMembership } from './data-entity-membership';
 export { DataForceCurrentUser } from './data-force-current-user';
