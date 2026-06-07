@@ -291,6 +291,8 @@ interface InitContext {
 }
 
 function installSkills(skills: BoilerplateSkill[], cwd: string, useNpxSkills: boolean): void {
+  if (process.env.PGPM_SKIP_SKILL_INSTALL) return;
+
   if (useNpxSkills) {
     installSkillsViaNpx(skills, cwd);
   } else {
