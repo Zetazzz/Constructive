@@ -2,6 +2,7 @@ export { CheckGreaterThan } from './check-greater-than';
 export { CheckLessThan } from './check-less-than';
 export { CheckNotEqual } from './check-not-equal';
 export { CheckOneOf } from './check-one-of';
+export { CheckScopedForeignKey } from './check-scoped-foreign-key';
 export { DataBulk } from './data-bulk';
 export { DataCompositeField } from './data-composite-field';
 export { DataDenormalized } from './data-denormalized';
