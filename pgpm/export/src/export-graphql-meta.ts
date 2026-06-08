@@ -94,6 +94,16 @@ const buildDynamicFieldsFromGraphQL = async (
       }
     }
 
+    // Omit columns that are marked as columnDefaults — their DDL DEFAULT (e.g.
+    // current_database()) will supply the correct value at deploy time, so the
+    // exported INSERT must not hardcode an environment-specific literal.
+    if (tableConfig.columnDefaults) {
+      for (const colName of Object.keys(tableConfig.columnDefaults)) {
+        delete dynamicFields[colName];
+        enumFields.delete(colName);
+      }
+    }
+
     return { fields: dynamicFields, enumFields };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -191,6 +201,17 @@ export const exportGraphQLMeta = async ({
         }
 
         if (Object.keys(dynamicFields).length === 0) return;
+
+        // Omit columnDefaults columns from row data so the Parser never sees them.
+        // configFields already excludes them (via buildDynamicFieldsFromGraphQL),
+        // so dynamicFields won't contain them either — but the pgRow data still does.
+        if (tableConfig.columnDefaults) {
+          for (const colName of Object.keys(tableConfig.columnDefaults)) {
+            for (const row of pgRows) {
+              delete row[colName];
+            }
+          }
+        }
 
         const parser = new Parser({
           schema: tableConfig.schema,

@@ -730,5 +730,33 @@ relocatable = false
       const structure = getDirectoryStructure(svcDeployDir);
       expect(structure).toMatchSnapshot('pets-export-svc deploy folder');
     });
+
+    // Behavioral test: columnDefaults columns must be absent from the generated SQL.
+    // The apis and sites tables have dbname DEFAULT current_database(), which
+    // captures an environment-specific literal during export. columnDefaults
+    // strips the column from the INSERT so the DDL default supplies the correct
+    // value at deploy time (constructive-db commit 348a5b402e).
+    it('should exclude dbname from apis and sites INSERTs (columnDefaults)', () => {
+      const apisSqlPath = join(exportWorkspaceDir, 'packages', META_EXTENSION_NAME, 'deploy', 'migrate', 'apis.sql');
+      const sitesSqlPath = join(exportWorkspaceDir, 'packages', META_EXTENSION_NAME, 'deploy', 'migrate', 'sites.sql');
+
+      if (existsSync(apisSqlPath)) {
+        const apisContent = readFileSync(apisSqlPath, 'utf-8');
+        // dbname must NOT appear — it's stripped by columnDefaults
+        expect(apisContent).not.toContain('dbname');
+        // But other columns should still be present
+        expect(apisContent).toContain('name');
+        expect(apisContent).toContain('is_public');
+      }
+
+      if (existsSync(sitesSqlPath)) {
+        const sitesContent = readFileSync(sitesSqlPath, 'utf-8');
+        // dbname must NOT appear — it's stripped by columnDefaults
+        expect(sitesContent).not.toContain('dbname');
+        // But other columns should still be present
+        expect(sitesContent).toContain('title');
+        expect(sitesContent).toContain('description');
+      }
+    });
   });
 });

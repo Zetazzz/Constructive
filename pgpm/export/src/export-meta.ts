@@ -57,6 +57,15 @@ const buildDynamicFields = async (
     }
   }
 
+  // Omit columns that are marked as columnDefaults — their DDL DEFAULT (e.g.
+  // current_database()) will supply the correct value at deploy time, so the
+  // exported INSERT must not hardcode an environment-specific literal.
+  if (tableConfig.columnDefaults) {
+    for (const colName of Object.keys(tableConfig.columnDefaults)) {
+      delete dynamicFields[colName];
+    }
+  }
+
   return dynamicFields;
 };
 
@@ -134,6 +143,18 @@ export const exportMeta = async ({ opts, dbname, database_id }: ExportMetaParams
                   row[fieldName] = new Date(Math.floor(val.getTime() / 1000) * 1000).toISOString();
                 }
               }
+            }
+          }
+        }
+
+        // Omit columnDefaults columns from row data so the Parser never sees them.
+        // The Parser's field config already excludes them (via buildDynamicFields),
+        // so they would be ignored anyway, but removing them from the data is cleaner.
+        const tblCfg = META_TABLE_CONFIG[key];
+        if (tblCfg?.columnDefaults) {
+          for (const colName of Object.keys(tblCfg.columnDefaults)) {
+            for (const row of result.rows) {
+              delete row[colName];
             }
           }
         }
