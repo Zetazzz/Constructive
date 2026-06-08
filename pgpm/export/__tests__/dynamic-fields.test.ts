@@ -322,6 +322,27 @@ describe('typeOverrides should take precedence over introspected types', () => {
     const field = META_TABLE_CONFIG.field;
     expect(field.typeOverrides).toBeUndefined();
   });
+
+  it('columnDefaults should be set for tables with environment-specific columns', () => {
+    // apis.dbname defaults to current_database() and must not be exported
+    // as a hardcoded literal — see constructive-db commit 348a5b402e.
+    const apis = META_TABLE_CONFIG.apis;
+    expect(apis.columnDefaults).toBeDefined();
+    expect(apis.columnDefaults!.dbname).toBe('current_database()');
+
+    // sites.dbname has the same portability issue
+    const sites = META_TABLE_CONFIG.sites;
+    expect(sites.columnDefaults).toBeDefined();
+    expect(sites.columnDefaults!.dbname).toBe('current_database()');
+  });
+
+  it('tables without columnDefaults should have no columnDefaults key', () => {
+    const database = META_TABLE_CONFIG.database;
+    expect(database.columnDefaults).toBeUndefined();
+
+    const domains = META_TABLE_CONFIG.domains;
+    expect(domains.columnDefaults).toBeUndefined();
+  });
 });
 
 // =============================================================================

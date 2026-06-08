@@ -202,6 +202,12 @@ export interface TableConfig {
   conflictDoNothing?: boolean;
   typeOverrides?: Record<string, FieldType>; // only for special types (image, upload, url) that can't be inferred
   gqlTypeName?: string; // override for GraphQL type name when automatic derivation doesn't match PostGraphile's inflector
+  /** Columns whose values are environment-specific and should be excluded from the
+   *  exported INSERT so that the column's DDL DEFAULT applies at deploy time.
+   *  Key = column name, Value = the SQL expression the column defaults to (for documentation).
+   *  E.g. { dbname: 'current_database()' } — the exporter omits `dbname` from the
+   *  INSERT, and `DEFAULT current_database()` in the table definition supplies it. */
+  columnDefaults?: Record<string, string>;
 }
 
 /**
@@ -307,11 +313,17 @@ export const META_TABLE_CONFIG: Record<string, TableConfig> = {
       favicon: 'upload',
       apple_touch_icon: 'image',
       logo: 'image'
+    },
+    columnDefaults: {
+      dbname: 'current_database()'
     }
   },
   apis: {
     schema: 'services_public',
-    table: 'apis'
+    table: 'apis',
+    columnDefaults: {
+      dbname: 'current_database()'
+    }
   },
   apps: {
     schema: 'services_public',
