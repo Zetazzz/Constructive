@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.49.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.48.0...node-type-registry@0.49.0) (2026-06-09)
+
+### Features
+
+- add CheckScopedForeignKey node type to registry ([4aab4db](https://github.com/constructive-io/constructive/commit/4aab4db6c52f4080829a9a85b9e153b12f5cf9ff))
+- add DataDenormalized node type to registry ([24a7572](https://github.com/constructive-io/constructive/commit/24a757260f2d847bd01dbf9784a12d8e5b662811))
+
 # [0.48.0](https://github.com/constructive-io/constructive/compare/node-type-registry@0.47.0...node-type-registry@0.48.0) (2026-06-06)
 
 ### Features
