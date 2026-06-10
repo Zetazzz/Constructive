@@ -264,6 +264,64 @@ pgpm revert --to <last-good-change>
 pgpm deploy
 ```
 
+## Non-Interactive / CI Usage
+
+pgpm uses `inquirerer` for interactive prompts. When stdin is a TTY but no human is present (agents, PTY-allocated CI, Docker with `-t`), prompts **hang indefinitely**.
+
+### How noTty detection works
+
+The `inquirerer` library enters non-interactive mode (`noTty`) when any of these are true:
+- `--no-tty` flag is passed
+- `process.env.CI === 'true'`
+- The caller explicitly sets `noTty: true`
+
+In `noTty` mode, `inquirerer` uses defaults where available and throws with the full list of required arguments if any are missing. This is the correct mode for all automated usage.
+
+### Rules for automated environments
+
+1. **Pass `--yes` for confirmation prompts** — this provides the `yes` argument so the confirm prompt is skipped:
+   ```bash
+   pgpm deploy --yes --database mydb
+   pgpm admin-users bootstrap --yes
+   pgpm admin-users add --test --yes
+   pgpm revert --yes --database mydb
+   ```
+
+2. **Pass `--no-tty` for fully non-interactive mode** — this tells inquirerer to never wait for input and use defaults or throw:
+   ```bash
+   pgpm deploy --no-tty --yes --database mydb --createdb
+   ```
+
+3. **In CI (`CI=true`)** — noTty is auto-detected. You still need `--yes` for confirm questions since they have no implicit default:
+   ```bash
+   # GitHub Actions — CI=true is set automatically
+   pgpm deploy --yes --database $DB_NAME
+   ```
+
+4. **Provide ALL required args on the command line** — in noTty mode, any missing required argument throws. Pre-supply everything:
+   ```bash
+   pgpm deploy --database mydb --package my-module --yes --recursive
+   ```
+
+5. **`pgpm init` and `pgpm extension` are fully interactive** — they require multi-step input (names, selections). Do not use them in scripts. Instead, create `.control`, `pgpm.plan`, and `package.json` files directly.
+
+6. **`pgpm test-packages` does NOT prompt** — safe to run without any flags.
+
+7. **If a command hangs** with no output, it's waiting for a prompt. Kill it and re-run with `--yes` and `--no-tty`.
+
+### Quick reference
+
+| Command | Interactive flags needed | Notes |
+|---------|------------------------|-------|
+| `pgpm deploy` | `--yes --database <name>` | Confirms before applying; database is required |
+| `pgpm admin-users bootstrap` | `--yes` | Confirms role creation |
+| `pgpm admin-users add` | `--yes --test` | Confirms user creation |
+| `pgpm revert` | `--yes --database <name>` | Confirms before reverting |
+| `pgpm test-packages` | None | Non-interactive by default |
+| `pgpm verify` | None | Non-interactive |
+| `pgpm init` | N/A | Fully interactive — don't use in CI |
+| `pgpm extension` | N/A | Fully interactive — don't use in CI |
+
 ## Troubleshooting Quick Reference
 
 | Issue | Quick Fix |
@@ -278,6 +336,7 @@ pgpm deploy
 | `Invalid line format` in pgpm.plan | Dependencies `[...]` must come right after change name, before timestamp |
 | `CREATE OR REPLACE` error | Remove `OR REPLACE` — pgpm is deterministic |
 | Container won't start | `pgpm docker start --recreate` for a fresh container |
+| Command hangs with no output | It's waiting for a TTY prompt — kill and re-run with `--yes` |
 
 See [references/troubleshooting.md](references/troubleshooting.md) for detailed solutions.
 
