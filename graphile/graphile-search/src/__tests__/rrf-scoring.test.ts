@@ -825,34 +825,7 @@ describe('RRF scoring — custom @searchConfig weights', () => {
     expect(sorted[0].searchScore).toBe(1);
   });
 
-  it('deprecated normalization field does not break (becomes no-op)', async () => {
-    // This test uses a setup that includes normalization in the config
-    // (from the previous test setup which uses articles table)
-    // The key assertion is that searchScore still works correctly
-    const result = await query<AllArticlesResult>(`
-      query {
-        allArticles(where: {
-          unifiedSearch: "sql"
-        }) {
-          nodes {
-            rowId
-            title
-            searchScore
-          }
-        }
-      }
-    `);
 
-    expect(result.errors).toBeUndefined();
-    const nodes = result.data?.allArticles?.nodes ?? [];
-    expect(nodes.length).toBeGreaterThan(0);
-
-    for (const node of nodes) {
-      expect(typeof node.searchScore).toBe('number');
-      expect(node.searchScore).toBeGreaterThanOrEqual(0);
-      expect(node.searchScore).toBeLessThanOrEqual(1);
-    }
-  });
 });
 
 // ─── Test Suite: Recency Boost + RRF ─────────────────────────────────────────

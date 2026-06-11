@@ -72,7 +72,6 @@ interface SearchScoreDetails {
  */
 interface SearchConfig {
   weights?: Record<string, number>;
-  normalization?: 'linear' | 'sigmoid';
   boost_recent?: boolean;
   boost_recency_field?: string;
   boost_recency_decay?: number;
@@ -100,34 +99,25 @@ function getSearchConfig(codec: PgCodecWithAttributes): SearchConfig | undefined
 }
 
 /**
- * Normalize a raw score to 0..1 using the specified strategy.
- *
- * When strategy is 'sigmoid', sigmoid normalization is used for ALL adapters
- * (both bounded and unbounded). When strategy is 'linear' (default),
- * known-range adapters use linear normalization and unbounded adapters
- * use sigmoid normalization as fallback.
+ * Map a raw score to 0..1 for effective rank estimation in the RRF fallback path.
+ * Used only when a rank window function is not available for an adapter.
  */
 function normalizeScore(
   score: number,
   lowerIsBetter: boolean,
   range: [number, number] | null,
-  strategy: 'linear' | 'sigmoid' = 'linear',
 ): number {
   let normalized: number;
 
-  if (range && strategy === 'linear') {
-    // Known range + linear strategy: linear normalization
+  if (range) {
     const [min, max] = range;
     normalized = lowerIsBetter
       ? 1 - (score - min) / (max - min)
       : (score - min) / (max - min);
   } else {
-    // Unbounded range, or explicit sigmoid strategy: sigmoid normalization
     if (lowerIsBetter) {
-      // BM25: negative scores, more negative = better
       normalized = 1 / (1 + Math.abs(score));
     } else {
-      // Higher-is-better: map via sigmoid
       normalized = score / (1 + score);
     }
   }
@@ -499,13 +489,6 @@ export function createUnifiedSearchPlugin(
             const boostRecencyField = tableSearchConfig?.boost_recency_field ?? 'updated_at';
             const boostRecencyDecay = tableSearchConfig?.boost_recency_decay ?? 0.95;
 
-            // Warn if deprecated normalization strategy is set
-            if (tableSearchConfig?.normalization) {
-              console.warn(
-                `[graphile-search] @searchConfig.normalization is deprecated (table "${codec.name}"). ` +
-                `searchScore now uses Reciprocal Rank Fusion (RRF) which does not require score normalization.`
-              );
-            }
 
             // Phase I: Validate that the recency field actually exists on the table.
             // If it doesn't, disable recency boost gracefully instead of crashing at query time.
@@ -636,7 +619,6 @@ export function createUnifiedSearchPlugin(
                                     score,
                                     mk.lowerIsBetter,
                                     mk.range,
-                                    'linear',
                                   );
                                   // Map normalized score to an effective rank:
                                   // score=1.0 → rank=1, score=0.5 → rank=rrfK, score→0 → rank=very high

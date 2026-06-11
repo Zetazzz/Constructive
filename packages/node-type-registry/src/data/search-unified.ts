@@ -201,15 +201,7 @@ export const SearchUnified: NodeTypeDefinition = {
             type: 'object',
             description: 'Per-algorithm weights: {tsv: 1.5, bm25: 1.0, pgvector: 0.8, trgm: 0.3}'
           },
-          normalization: {
-            type: 'string',
-            enum: [
-              'linear',
-              'sigmoid'
-            ],
-            description: 'DEPRECATED: No longer used. searchScore now uses Reciprocal Rank Fusion (RRF) which does not require score normalization. This field is preserved for backward compatibility but has no effect.',
-            default: 'linear'
-          },
+
           boost_recent: {
             type: 'boolean',
             description: 'Enable recency boost for search results',
