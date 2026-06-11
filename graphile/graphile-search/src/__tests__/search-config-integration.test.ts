@@ -332,7 +332,7 @@ describe('@searchConfig with sigmoid normalization', () => {
     }
   });
 
-  it('produces valid scores with sigmoid normalization forced', async () => {
+  it('normalization config is deprecated no-op — RRF produces valid [0,1] scores', async () => {
     const result = await query<AllArticlesResult>(`
       query {
         allArticles(where: {
@@ -355,9 +355,10 @@ describe('@searchConfig with sigmoid normalization', () => {
 
     for (const node of nodes!) {
       expect(typeof node.searchScore).toBe('number');
-      // Sigmoid normalization always produces values in (0, 1)
-      expect(node.searchScore).toBeGreaterThan(0);
-      expect(node.searchScore).toBeLessThan(1);
+      // RRF scoring produces values in [0, 1] regardless of normalization config
+      // (normalization is now a deprecated no-op)
+      expect(node.searchScore).toBeGreaterThanOrEqual(0);
+      expect(node.searchScore).toBeLessThanOrEqual(1);
     }
   });
 });

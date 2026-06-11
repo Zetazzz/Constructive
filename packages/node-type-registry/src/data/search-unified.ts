@@ -207,7 +207,7 @@ export const SearchUnified: NodeTypeDefinition = {
               'linear',
               'sigmoid'
             ],
-            description: 'Score normalization strategy',
+            description: 'DEPRECATED: No longer used. searchScore now uses Reciprocal Rank Fusion (RRF) which does not require score normalization. This field is preserved for backward compatibility but has no effect.',
             default: 'linear'
           },
           boost_recent: {

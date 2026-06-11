@@ -177,7 +177,7 @@ interface AdapterColumnCache {
 export function createUnifiedSearchPlugin(
   options: UnifiedSearchOptions
 ): GraphileConfig.Plugin {
-  const { adapters, enableSearchScore = true, enableUnifiedSearch = true } = options;
+  const { adapters, enableSearchScore = true, enableUnifiedSearch = true, rrfK = 60 } = options;
 
   // Per-codec cache of discovered columns, keyed by codec name
   const codecCache = new Map<string, AdapterColumnCache[]>();
@@ -462,7 +462,7 @@ export function createUnifiedSearchPlugin(
             }
           }
 
-          // ── Composite searchScore field ──
+          // ── Composite searchScore field (RRF — Reciprocal Rank Fusion) ──
           if (enableSearchScore && adapterColumns.length > 0) {
             // Collect all meta keys for all adapters/columns so the
             // composite field can read them at execution time
@@ -494,12 +494,18 @@ export function createUnifiedSearchPlugin(
 
             // Resolve effective weights: per-table > global > equal (undefined)
             const effectiveWeights = tableSearchConfig?.weights ?? options.searchScoreWeights;
-            // Resolve normalization strategy: per-table > default 'linear'
-            const normalizationStrategy = tableSearchConfig?.normalization ?? 'linear';
             // Recency boost config from per-table smart tag
             let boostRecent = tableSearchConfig?.boost_recent ?? false;
             const boostRecencyField = tableSearchConfig?.boost_recency_field ?? 'updated_at';
             const boostRecencyDecay = tableSearchConfig?.boost_recency_decay ?? 0.95;
+
+            // Warn if deprecated normalization strategy is set
+            if (tableSearchConfig?.normalization) {
+              console.warn(
+                `[graphile-search] @searchConfig.normalization is deprecated (table "${codec.name}"). ` +
+                `searchScore now uses Reciprocal Rank Fusion (RRF) which does not require score normalization.`
+              );
+            }
 
             // Phase I: Validate that the recency field actually exists on the table.
             // If it doesn't, disable recency boost gracefully instead of crashing at query time.
@@ -522,7 +528,7 @@ export function createUnifiedSearchPlugin(
                   () => ({
                     description:
                       'Composite search relevance score (0..1, higher = more relevant). ' +
-                      'Computed by normalizing and averaging all active search signals. ' +
+                      'Computed using Reciprocal Rank Fusion (RRF) across all active search signals. ' +
                       'Supports per-table weight customization via @searchConfig smart tag. ' +
                       'Returns null when no search filters are active.',
                     type: GraphQLFloat,
@@ -551,56 +557,112 @@ export function createUnifiedSearchPlugin(
                       // Capture the index in a local const for the lambda closure
                       const capturedRecencyIndex = recencySelectIndex;
 
+                      // For RRF we also need rank expressions. Inject ROW_NUMBER()
+                      // window functions for each adapter score into the SELECT.
+                      // These will be populated at filter-apply time via meta.
+                      // We store a meta key suffix "__rank" alongside the score.
+                      const rankMetaKeys = allMetaKeys.map(
+                        (mk) => `${mk.metaKey}__rank`
+                      );
+                      const $rankMetaSteps = rankMetaKeys.map(
+                        (key) => $select.getMeta(key)
+                      );
+
                       return lambda(
-                        [...$metaSteps, $row],
+                        [...$metaSteps, ...$rankMetaSteps, $row],
                         (args: readonly any[]) => {
                           const row = args[args.length - 1];
                           if (row == null) return null;
 
-                          let weightedSum = 0;
-                          let totalWeight = 0;
+                          const numAdapters = allMetaKeys.length;
+                          let rrfSum = 0;
+                          let maxPossibleRrf = 0;
+                          let hasAnyScore = false;
 
                           // Read recency value from the injected SELECT column
                           const recencyValue = (boostRecent && capturedRecencyIndex != null)
                             ? row[capturedRecencyIndex]
                             : null;
 
-                          for (let i = 0; i < allMetaKeys.length; i++) {
-                            const details = args[i] as SearchScoreDetails | null;
-                            if (details == null || details.selectIndex == null) continue;
-
-                            const rawValue = row[details.selectIndex];
-                            if (rawValue == null) continue;
-
-                            const score = TYPES.float.fromPg(rawValue as string);
-                            if (typeof score !== 'number' || isNaN(score)) continue;
+                          for (let i = 0; i < numAdapters; i++) {
+                            const scoreDetails = args[i] as SearchScoreDetails | null;
+                            const rankDetails = args[numAdapters + i] as SearchScoreDetails | null;
 
                             const mk = allMetaKeys[i];
                             const weight = effectiveWeights?.[mk.adapterName] ?? 1;
 
-                            // Normalize using the resolved strategy
-                            let normalized = normalizeScore(
-                              score,
-                              mk.lowerIsBetter,
-                              mk.range,
-                              normalizationStrategy,
-                            );
+                            // Determine if this adapter is active (has meta set by a filter)
+                            const adapterHasMeta = (rankDetails != null && rankDetails.selectIndex != null)
+                              || (scoreDetails != null && scoreDetails.selectIndex != null);
 
-                            // Apply recency boost if configured
-                            if (boostRecent && recencyValue != null) {
-                              normalized = applyRecencyBoost(
-                                normalized,
-                                recencyValue,
-                                boostRecencyDecay,
-                              );
+                            if (!adapterHasMeta) continue;
+
+                            // Only include active adapters in normalization denominator
+                            maxPossibleRrf += weight / (rrfK + 1);
+
+                            // Try to use rank-based RRF (preferred)
+                            if (rankDetails != null && rankDetails.selectIndex != null) {
+                              const rawRank = row[rankDetails.selectIndex];
+                              if (rawRank != null) {
+                                const rank = TYPES.float.fromPg(rawRank as string);
+                                if (typeof rank === 'number' && !isNaN(rank) && rank > 0) {
+                                  hasAnyScore = true;
+                                  let contribution = weight / (rrfK + rank);
+
+                                  // Apply recency boost if configured
+                                  if (boostRecent && recencyValue != null) {
+                                    contribution = applyRecencyBoost(
+                                      contribution,
+                                      recencyValue,
+                                      boostRecencyDecay,
+                                    );
+                                  }
+
+                                  rrfSum += contribution;
+                                  continue;
+                                }
+                              }
                             }
 
-                            weightedSum += normalized * weight;
-                            totalWeight += weight;
+                            // Fallback: if rank is not available but score exists,
+                            // use score-based rank estimation.
+                            if (scoreDetails != null && scoreDetails.selectIndex != null) {
+                              const rawValue = row[scoreDetails.selectIndex];
+                              if (rawValue != null) {
+                                const score = TYPES.float.fromPg(rawValue as string);
+                                if (typeof score === 'number' && !isNaN(score)) {
+                                  hasAnyScore = true;
+                                  const normalizedScore = normalizeScore(
+                                    score,
+                                    mk.lowerIsBetter,
+                                    mk.range,
+                                    'linear',
+                                  );
+                                  // Map normalized score to an effective rank:
+                                  // score=1.0 → rank=1, score=0.5 → rank=rrfK, score→0 → rank=very high
+                                  const effectiveRank = Math.max(1, Math.round(
+                                    1 + (1 - normalizedScore) * (rrfK * 2)
+                                  ));
+                                  let contribution = weight / (rrfK + effectiveRank);
+
+                                  if (boostRecent && recencyValue != null) {
+                                    contribution = applyRecencyBoost(
+                                      contribution,
+                                      recencyValue,
+                                      boostRecencyDecay,
+                                    );
+                                  }
+
+                                  rrfSum += contribution;
+                                }
+                              }
+                            }
                           }
 
-                          if (totalWeight === 0) return null;
-                          return weightedSum / totalWeight;
+                          if (!hasAnyScore || maxPossibleRrf === 0) return null;
+
+                          // Normalize to 0..1 by dividing by max possible RRF score
+                          return Math.min(1, rrfSum / maxPossibleRrf);
                         }
                       );
                     },
@@ -835,6 +897,15 @@ export function createUnifiedSearchPlugin(
                             selectIndex: scoreIndex,
                           } as SearchScoreDetails);
 
+                          // Add rank (ROW_NUMBER window function) for RRF scoring
+                          const rankMetaKey = `${scoreMetaKey}__rank`;
+                          const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
+                          const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
+                          const rankIndex = qb.selectAndReturnIndex(rankSql);
+                          qb.setMeta(rankMetaKey, {
+                            selectIndex: rankIndex,
+                          } as SearchScoreDetails);
+
                           // ORDER BY: read the direction stored by the orderBy
                           // enum (which ran first) via the shared alias key.
                           const orderKey = `unified_order_${adapter.name}_${baseFieldName}`;
@@ -925,6 +996,15 @@ export function createUnifiedSearchPlugin(
                               const scoreIndex = qb.selectAndReturnIndex(wrappedScoreSql);
                               qb.setMeta(scoreMetaKey, {
                                 selectIndex: scoreIndex,
+                              } as SearchScoreDetails);
+
+                              // Add rank (ROW_NUMBER window function) for RRF scoring
+                              const rankMetaKey = `${scoreMetaKey}__rank`;
+                              const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
+                              const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
+                              const rankIndex = qb.selectAndReturnIndex(rankSql);
+                              qb.setMeta(rankMetaKey, {
+                                selectIndex: rankIndex,
                               } as SearchScoreDetails);
 
                               // ORDER BY: read the direction stored by the orderBy
