@@ -7,6 +7,7 @@
  */
 // Jest globals - no import needed
 import {
+  collectCrudNestedInputTypes,
   collectInputTypeNames,
   collectPayloadTypeNames,
   generateInputTypesFile,
@@ -1093,5 +1094,145 @@ describe('table field argument input types', () => {
     // With tables: also collects from field args
     const withTables = collectInputTypeNames([], [bucketTable]);
     expect(withTables.has('FooBulkUploadFileInput')).toBe(true);
+  });
+});
+
+describe('CRUD nested input types', () => {
+  it('collects INPUT_OBJECT types referenced by Create entity input fields', () => {
+    const table = createTable({
+      name: 'PlatformFunctionDefinition',
+      fields: [
+        { name: 'id', type: fieldTypes.uuid },
+        { name: 'name', type: fieldTypes.string },
+      ],
+      query: {
+        all: 'platformFunctionDefinitions',
+        one: 'platformFunctionDefinition',
+        create: 'createPlatformFunctionDefinition',
+        update: 'updatePlatformFunctionDefinition',
+        delete: 'deletePlatformFunctionDefinition',
+      },
+    });
+
+    const registry = createTypeRegistry({
+      CreatePlatformFunctionDefinitionInput: {
+        kind: 'INPUT_OBJECT',
+        name: 'CreatePlatformFunctionDefinitionInput',
+        inputFields: [
+          {
+            name: 'platformFunctionDefinition',
+            type: createNonNull(createTypeRef('INPUT_OBJECT', 'PlatformFunctionDefinitionInput')),
+          },
+        ],
+      },
+      PlatformFunctionDefinitionInput: {
+        kind: 'INPUT_OBJECT',
+        name: 'PlatformFunctionDefinitionInput',
+        inputFields: [
+          {
+            name: 'name',
+            type: createTypeRef('SCALAR', 'String'),
+          },
+          {
+            name: 'requiredConfigs',
+            type: createList(createTypeRef('INPUT_OBJECT', 'FunctionRequirementInput')),
+          },
+        ],
+      },
+      FunctionRequirementInput: {
+        kind: 'INPUT_OBJECT',
+        name: 'FunctionRequirementInput',
+        inputFields: [
+          {
+            name: 'name',
+            type: createTypeRef('SCALAR', 'String'),
+          },
+          {
+            name: 'required',
+            type: createTypeRef('SCALAR', 'Boolean'),
+          },
+        ],
+      },
+    });
+
+    const nested = collectCrudNestedInputTypes([table], registry);
+    expect(nested.has('FunctionRequirementInput')).toBe(true);
+  });
+
+  it('generates FunctionRequirementInput interface in input-types output', () => {
+    const table = createTable({
+      name: 'PlatformFunctionDefinition',
+      fields: [
+        { name: 'id', type: fieldTypes.uuid },
+        { name: 'name', type: fieldTypes.string },
+      ],
+      query: {
+        all: 'platformFunctionDefinitions',
+        one: 'platformFunctionDefinition',
+        create: 'createPlatformFunctionDefinition',
+        update: 'updatePlatformFunctionDefinition',
+        delete: 'deletePlatformFunctionDefinition',
+      },
+    });
+
+    const registry = createTypeRegistry({
+      CreatePlatformFunctionDefinitionInput: {
+        kind: 'INPUT_OBJECT',
+        name: 'CreatePlatformFunctionDefinitionInput',
+        inputFields: [
+          {
+            name: 'platformFunctionDefinition',
+            type: createNonNull(createTypeRef('INPUT_OBJECT', 'PlatformFunctionDefinitionInput')),
+          },
+        ],
+      },
+      PlatformFunctionDefinitionInput: {
+        kind: 'INPUT_OBJECT',
+        name: 'PlatformFunctionDefinitionInput',
+        inputFields: [
+          {
+            name: 'name',
+            type: createTypeRef('SCALAR', 'String'),
+          },
+          {
+            name: 'requiredConfigs',
+            type: createList(createTypeRef('INPUT_OBJECT', 'FunctionRequirementInput')),
+          },
+        ],
+      },
+      PlatformFunctionDefinitionPatch: {
+        kind: 'INPUT_OBJECT',
+        name: 'PlatformFunctionDefinitionPatch',
+        inputFields: [
+          {
+            name: 'name',
+            type: createTypeRef('SCALAR', 'String'),
+          },
+          {
+            name: 'requiredConfigs',
+            type: createList(createTypeRef('INPUT_OBJECT', 'FunctionRequirementInput')),
+          },
+        ],
+      },
+      FunctionRequirementInput: {
+        kind: 'INPUT_OBJECT',
+        name: 'FunctionRequirementInput',
+        inputFields: [
+          {
+            name: 'name',
+            type: createTypeRef('SCALAR', 'String'),
+          },
+          {
+            name: 'required',
+            type: createTypeRef('SCALAR', 'Boolean'),
+          },
+        ],
+      },
+    });
+
+    const result = generateInputTypesFile(registry, new Set(), [table]);
+    expect(result.content).toContain('export interface FunctionRequirementInput {');
+    expect(result.content).toContain('name?: string;');
+    expect(result.content).toContain('required?: boolean;');
   });
 });
