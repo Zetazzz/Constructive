@@ -879,12 +879,14 @@ export function createUnifiedSearchPlugin(
                             selectIndex: scoreIndex,
                           } as SearchScoreDetails);
 
-                          // NOTE: ROW_NUMBER() rank injection is intentionally
-                          // omitted here for per-adapter individual filters.
-                          // Ranks are only injected in the unifiedSearch path
-                          // where RRF fusion actually needs them. For individual
-                          // filters, the searchScore lambda uses a score-based
-                          // rank estimate fallback.
+                          // Add rank (ROW_NUMBER window function) for RRF scoring
+                          const rankMetaKey = `${scoreMetaKey}__rank`;
+                          const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
+                          const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
+                          const rankIndex = qb.selectAndReturnIndex(rankSql);
+                          qb.setMeta(rankMetaKey, {
+                            selectIndex: rankIndex,
+                          } as SearchScoreDetails);
 
                           // ORDER BY: read the direction stored by the orderBy
                           // enum (which ran first) via the shared alias key.
