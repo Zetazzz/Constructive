@@ -187,7 +187,7 @@ INSERT INTO mega_test.location_amenities (location_id, amenity_id) VALUES
   (6, 1), (6, 3), (6, 4);   -- Met Museum: WiFi, Restrooms, Gift Shop
 
 -- Ensure BM25 index is fully built before tests run.
--- ParadeDB's bm25 index can have a brief lag after INSERT; VACUUM forces
+-- pg_textsearch's bm25 index can have a brief lag after INSERT; VACUUM forces
 -- a full index pass so queries immediately return correct results.
 VACUUM ANALYZE mega_test.locations;
 
