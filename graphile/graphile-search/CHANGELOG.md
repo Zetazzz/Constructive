@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.16.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.4...graphile-search@1.16.0) (2026-06-12)
+
+### Bug Fixes
+
+- remove unnecessary ROW_NUMBER() from per-adapter individual filter path ([a3909a8](https://github.com/constructive-io/constructive/commit/a3909a834891e8709ab2b3c4c7d69c7ca40c0d80))
+- restore ROW_NUMBER() for per-adapter RRF + VACUUM BM25 index in seed ([589ec10](https://github.com/constructive-io/constructive/commit/589ec10cb2d7ae281ab011eb99eb38548dd069c6))
+
+### Features
+
+- **graphile-search:** replace sigmoid weighted-average with Reciprocal Rank Fusion (RRF) ([2c61257](https://github.com/constructive-io/constructive/commit/2c6125749d6b5f37a17ddbdefc3c0475bdfecdcf)), closes [constructive-io/constructive-planning#1047](https://github.com/constructive-io/constructive-planning/issues/1047)
+
 ## [1.15.4](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.3...graphile-search@1.15.4) (2026-06-07)
 
 **Note:** Version bump only for package graphile-search

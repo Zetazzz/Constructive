@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.6.5](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.4...graphile-settings@5.6.5) (2026-06-12)
+
+### Bug Fixes
+
+- correct BM25 SQL comments — use pg_textsearch <@> operator, not paradedb.score/parse ([6180c18](https://github.com/constructive-io/constructive/commit/6180c18bf600d449d7067ebc6f8bf4e4d26cc87b))
+
 ## [5.6.4](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.3...graphile-settings@5.6.4) (2026-06-07)
 
 **Note:** Version bump only for package graphile-settings
