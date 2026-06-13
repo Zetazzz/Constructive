@@ -58,6 +58,10 @@ export type {
   WithPgClient,
 } from './types';
 
+// Billing client
+export type { BillingClient, InferenceLogEntry } from './billing-client';
+export { createBillingClient } from './billing-client';
+
 // pgSettings builder
 export type { PgSettingsInput } from './pg-settings';
 export { buildPgSettings } from './pg-settings';

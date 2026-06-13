@@ -18,17 +18,18 @@
  * ```
  */
 
-export { createAgenticRouter } from './router';
-export { getEnvOptions } from './env';
-export type { EnvOptions, ProviderConfig } from './env';
-export { getAgentDiscovery, getDatabaseConfig, clearAgentCache, clearConfigCache } from './discovery';
+export { TtlCache } from './cache';
 export type {
   AgentDiscovery,
   AgentTableInfo,
   BillingConfig,
   DatabaseConfig,
-  InferenceLogConfig,
+  InferenceLogConfig
 } from './discovery';
-export { checkQuota, recordUsage, logInference } from './billing';
-export type { InferenceLogEntry } from './billing';
-export { TtlCache } from './cache';
+export { clearAgentCache, clearConfigCache,getAgentDiscovery, getDatabaseConfig } from './discovery';
+export type { EnvOptions, ProviderConfig } from './env';
+export { getEnvOptions } from './env';
+export { createAgenticRouter } from './router';
+
+// Re-export billing client from express-context for convenience
+export type { BillingClient, InferenceLogEntry } from '@constructive-io/express-context';

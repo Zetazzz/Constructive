@@ -9,6 +9,8 @@
 
 import type { Pool, PoolClient } from 'pg';
 
+import type { BillingClient } from './billing-client';
+
 // ─── API Structure ──────────────────────────────────────────────────────────
 
 export interface CorsModuleData {
@@ -227,6 +229,18 @@ export interface ConstructiveContext {
     <K extends keyof BuiltinModuleMap>(name: K): Promise<BuiltinModuleMap[K] | undefined>;
     (name: string): Promise<unknown>;
   };
+
+  /**
+   * Resolve a shared BillingClient bound to this request's entity.
+   *
+   * Returns a BillingClient with `checkQuota`, `recordUsage`, and
+   * `logInference` methods. Returns null if billing_module is not
+   * provisioned for this database or if no entity ID is available.
+   *
+   * Lazy: only resolves billing/inferenceLog loaders on first call.
+   * Cached: subsequent calls return the same client instance.
+   */
+  useBilling(): Promise<BillingClient | null>;
 }
 
 // ─── Express Augmentation ───────────────────────────────────────────────────
