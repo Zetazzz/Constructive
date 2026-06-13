@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@agentic-kit/ollama": "^2.0.0",
+    "@constructive-io/express-context": "workspace:^",
     "graphile-cache": "workspace:^"
   },
   "peerDependencies": {

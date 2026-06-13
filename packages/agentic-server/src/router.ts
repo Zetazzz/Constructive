@@ -14,14 +14,11 @@
  * when the billing/inference_log modules are provisioned.
  */
 
-import express, { Router, Request, Response } from 'express';
-import { Logger } from '@pgpmjs/logger';
 import { OllamaAdapter } from '@agentic-kit/ollama';
+import type { BillingClient } from '@constructive-io/express-context';
+import { Logger } from '@pgpmjs/logger';
+import express, { Request, Response,Router } from 'express';
 
-import type { BillingConfig, InferenceLogConfig } from '@constructive-io/express-context';
-
-import { checkQuota, logInference, recordUsage } from './billing';
-import type { InferenceLogEntry } from './billing';
 import { getEnvOptions } from './env';
 
 const log = new Logger('agentic-server');
@@ -79,7 +76,7 @@ function resolveOllamaAdapter(): { adapter: OllamaAdapter; model: string; baseUr
     return {
       adapter: new OllamaAdapter(chat.baseUrl),
       model: chat.model,
-      baseUrl: chat.baseUrl,
+      baseUrl: chat.baseUrl
     };
   }
   return null;
@@ -90,7 +87,7 @@ function resolveEmbeddingAdapter(): { adapter: OllamaAdapter; model: string } | 
   if (embedding.provider === 'ollama') {
     return {
       adapter: new OllamaAdapter(embedding.baseUrl),
-      model: embedding.model,
+      model: embedding.model
     };
   }
   return null;
@@ -101,7 +98,7 @@ function resolveEmbeddingAdapter(): { adapter: OllamaAdapter; model: string } | 
 async function handleCreateThread(
   req: Request,
   res: Response,
-  entityId: string,
+  entityId: string
 ): Promise<void> {
   const ctx = req.constructive;
   if (!ctx?.userId) {
@@ -130,8 +127,8 @@ async function handleCreateThread(
         body.mode ?? 'ask',
         body.model ?? null,
         body.system_prompt ?? null,
-        body.title ?? null,
-      ],
+        body.title ?? null
+      ]
     );
     return rows[0];
   });
@@ -142,14 +139,14 @@ async function handleCreateThread(
     model: result.model,
     system_prompt: result.system_prompt,
     status: result.status,
-    created_at: result.created_at,
+    created_at: result.created_at
   });
 }
 
 async function handleSendMessage(
   req: Request,
   res: Response,
-  entityId: string,
+  entityId: string
 ): Promise<void> {
   const ctx = req.constructive;
   if (!ctx?.userId) {
@@ -179,7 +176,7 @@ async function handleSendMessage(
       `SELECT id, mode, model, system_prompt, status
        FROM "${schemaName}"."${threadTableName}"
        WHERE id = $1`,
-      [threadId],
+      [threadId]
     );
     return rows[0] as ThreadRow | undefined;
   });
@@ -189,12 +186,8 @@ async function handleSendMessage(
     return;
   }
 
-  // Resolve billing + inference log config via loaders
-  const [billing, inferenceLog] = await Promise.all([
-    ctx.useModule('billing'),
-    ctx.useModule('inferenceLog'),
-  ]);
-  const dbConfig = { billing: billing ?? null, inferenceLog: inferenceLog ?? null };
+  // Resolve shared billing client (lazy, cached per request)
+  const billing = await ctx.useBilling();
 
   const ollama = resolveOllamaAdapter();
   if (!ollama) {
@@ -206,13 +199,13 @@ async function handleSendMessage(
   const meterSlug = model;
 
   // Quota check
-  if (dbConfig.billing) {
-    const allowed = await checkQuota(ctx, dbConfig.billing, entityId, meterSlug);
+  if (billing) {
+    const allowed = await billing.checkQuota(meterSlug);
     if (!allowed) {
       res.status(429).json({
         error: 'Token quota exceeded',
         meter: meterSlug,
-        entity_id: entityId,
+        entity_id: entityId
       });
       return;
     }
@@ -226,7 +219,7 @@ async function handleSendMessage(
           `INSERT INTO "${schemaName}"."${messageTableName}"
            (thread_id, owner_id, entity_id, author_role, parts)
            VALUES ($1, $2, (SELECT entity_id FROM "${schemaName}"."${threadTableName}" WHERE id = $1), $3, $4)`,
-          [threadId, userId, 'user', JSON.stringify([{ type: 'text', text: msg.content }])],
+          [threadId, userId, 'user', JSON.stringify([{ type: 'text', text: msg.content }])]
         );
       }
     }
@@ -239,7 +232,7 @@ async function handleSendMessage(
        FROM "${schemaName}"."${messageTableName}"
        WHERE thread_id = $1
        ORDER BY created_at ASC`,
-      [threadId],
+      [threadId]
     );
     return rows as MessageRow[];
   });
@@ -257,7 +250,7 @@ async function handleSendMessage(
     if (textContent) {
       llmMessages.push({
         role: row.author_role === 'user' ? 'user' : 'assistant',
-        content: textContent,
+        content: textContent
       });
     }
   }
@@ -270,14 +263,14 @@ async function handleSendMessage(
       ctx, ollama, model, llmMessages, body,
       entityId, userId, threadId,
       schemaName, threadTableName, messageTableName,
-      dbConfig, startTime, meterSlug,
+      billing, startTime, meterSlug
     });
   } else {
     await handleBatchResponse(req, res, {
       ctx, ollama, model, llmMessages, body,
       entityId, userId, threadId,
       schemaName, threadTableName, messageTableName,
-      dbConfig, startTime, meterSlug,
+      billing, startTime, meterSlug
     });
   }
 }
@@ -294,7 +287,7 @@ interface MessageContext {
   schemaName: string;
   threadTableName: string;
   messageTableName: string;
-  dbConfig: { billing: BillingConfig | null; inferenceLog: InferenceLogConfig | null };
+  billing: BillingClient | null;
   startTime: number;
   meterSlug: string;
 }
@@ -302,15 +295,15 @@ interface MessageContext {
 async function handleStreamingResponse(
   _req: Request,
   res: Response,
-  mc: MessageContext,
+  mc: MessageContext
 ): Promise<void> {
-  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, dbConfig, startTime, meterSlug } = mc;
+  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, billing, startTime, meterSlug } = mc;
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
   });
 
   const messageId = `msg_${Date.now()}`;
@@ -324,11 +317,11 @@ async function handleStreamingResponse(
       messages: nonSystem.map((m) => ({
         role: m.role as 'user',
         content: m.content,
-        timestamp: Date.now(),
-      })),
+        timestamp: Date.now()
+      }))
     };
     const stream = ollama.adapter.stream(modelDesc, context, {
-      temperature: body.temperature,
+      temperature: body.temperature
     });
 
     let streamedContent = '';
@@ -340,9 +333,9 @@ async function handleStreamingResponse(
           choices: [{
             index: 0,
             delta: { content: event.delta, role: 'assistant' },
-            finish_reason: null as string | null,
+            finish_reason: null as string | null
           }],
-          model,
+          model
         };
         res.write(`data: ${JSON.stringify(sseEvent)}\n\n`);
       }
@@ -357,7 +350,7 @@ async function handleStreamingResponse(
       reasoning: result.usage.reasoning,
       cacheRead: result.usage.cacheRead,
       cacheWrite: result.usage.cacheWrite,
-      totalTokens: result.usage.totalTokens,
+      totalTokens: result.usage.totalTokens
     };
 
     res.write('data: [DONE]\n\n');
@@ -370,31 +363,28 @@ async function handleStreamingResponse(
           `INSERT INTO "${schemaName}"."${messageTableName}"
            (thread_id, owner_id, entity_id, author_role, parts, model)
            VALUES ($1, $2, (SELECT entity_id FROM "${schemaName}"."${threadTableName}" WHERE id = $1), $3, $4, $5)`,
-          [threadId, userId, 'assistant', JSON.stringify([{ type: 'text', text: content }]), model],
+          [threadId, userId, 'assistant', JSON.stringify([{ type: 'text', text: content }]), model]
         );
       }).catch((err) => log.error('Failed to persist assistant message:', err));
     }
 
-    // Record billing usage (fire-and-forget)
-    if (dbConfig.billing && usage.totalTokens > 0) {
-      recordUsage(ctx, dbConfig.billing, entityId, meterSlug, usage.totalTokens, {
+    // Record billing usage + inference log (fire-and-forget)
+    if (billing && usage.totalTokens > 0) {
+      billing.recordUsage(meterSlug, usage.totalTokens, {
         input_tokens: usage.input,
         output_tokens: usage.output,
         cache_read_tokens: usage.cacheRead,
         cache_write_tokens: usage.cacheWrite,
         model,
         latency_ms: latencyMs,
-        stream: true,
+        stream: true
       }).catch(() => {});
-    }
 
-    // Inference log (fire-and-forget)
-    if (dbConfig.inferenceLog) {
-      logInference(ctx, dbConfig.inferenceLog, {
+      billing.logInference({
         entityId, actorId: userId, model, provider: 'ollama',
         service: 'llm', operation: 'chat',
         inputTokens: usage.input, outputTokens: usage.output,
-        totalTokens: usage.totalTokens, latencyMs, status: 'ok',
+        totalTokens: usage.totalTokens, latencyMs, status: 'ok'
       }).catch(() => {});
     }
   } catch (streamErr: any) {
@@ -409,9 +399,9 @@ async function handleStreamingResponse(
 async function handleBatchResponse(
   _req: Request,
   res: Response,
-  mc: MessageContext,
+  mc: MessageContext
 ): Promise<void> {
-  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, dbConfig, startTime, meterSlug } = mc;
+  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, billing, startTime, meterSlug } = mc;
 
   const systemMsg = llmMessages.find(m => m.role === 'system');
   const nonSystem = llmMessages.filter(m => m.role !== 'system');
@@ -421,11 +411,11 @@ async function handleBatchResponse(
     messages: nonSystem.map((m) => ({
       role: m.role as 'user',
       content: m.content,
-      timestamp: Date.now(),
-    })),
+      timestamp: Date.now()
+    }))
   };
   const stream = ollama.adapter.stream(modelDesc, context, {
-    temperature: body.temperature,
+    temperature: body.temperature
   });
 
   const result = await stream.result();
@@ -440,7 +430,7 @@ async function handleBatchResponse(
     reasoning: result.usage.reasoning,
     cacheRead: result.usage.cacheRead,
     cacheWrite: result.usage.cacheWrite,
-    totalTokens: result.usage.totalTokens,
+    totalTokens: result.usage.totalTokens
   };
 
   // Persist assistant message
@@ -449,29 +439,27 @@ async function handleBatchResponse(
       `INSERT INTO "${schemaName}"."${messageTableName}"
        (thread_id, owner_id, entity_id, author_role, parts, model)
        VALUES ($1, $2, (SELECT entity_id FROM "${schemaName}"."${threadTableName}" WHERE id = $1), $3, $4, $5)`,
-      [threadId, userId, 'assistant', JSON.stringify([{ type: 'text', text: content }]), model],
+      [threadId, userId, 'assistant', JSON.stringify([{ type: 'text', text: content }]), model]
     );
   });
 
   // Record billing + inference log (fire-and-forget)
-  if (dbConfig.billing && usage.totalTokens > 0) {
-    recordUsage(ctx, dbConfig.billing, entityId, meterSlug, usage.totalTokens, {
+  if (billing && usage.totalTokens > 0) {
+    billing.recordUsage(meterSlug, usage.totalTokens, {
       input_tokens: usage.input,
       output_tokens: usage.output,
       cache_read_tokens: usage.cacheRead,
       cache_write_tokens: usage.cacheWrite,
       model,
       latency_ms: latencyMs,
-      stream: false,
+      stream: false
     }).catch(() => {});
-  }
 
-  if (dbConfig.inferenceLog) {
-    logInference(ctx, dbConfig.inferenceLog, {
+    billing.logInference({
       entityId, actorId: userId, model, provider: 'ollama',
       service: 'llm', operation: 'chat',
       inputTokens: usage.input, outputTokens: usage.output,
-      totalTokens: usage.totalTokens, latencyMs, status: 'ok',
+      totalTokens: usage.totalTokens, latencyMs, status: 'ok'
     }).catch(() => {});
   }
 
@@ -480,14 +468,14 @@ async function handleBatchResponse(
     choices: [{
       index: 0,
       message: { role: 'assistant', content },
-      finish_reason: 'stop',
+      finish_reason: 'stop'
     }],
     model,
     usage: {
       prompt_tokens: usage.input,
       completion_tokens: usage.output,
-      total_tokens: usage.totalTokens,
-    },
+      total_tokens: usage.totalTokens
+    }
   });
 }
 
@@ -515,16 +503,12 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
   const model = body.model ?? embedder.model;
   const inputs = Array.isArray(body.input) ? body.input : [body.input];
 
-  // Resolve billing + inference log config via loaders
-  const [billing, inferenceLog] = await Promise.all([
-    ctx.useModule('billing'),
-    ctx.useModule('inferenceLog'),
-  ]);
-  const dbConfig = { billing: billing ?? null, inferenceLog: inferenceLog ?? null };
+  // Resolve shared billing client
+  const billing = await ctx.useBilling();
 
   // Quota check
-  if (dbConfig.billing) {
-    const allowed = await checkQuota(ctx, dbConfig.billing, ctx.userId, model);
+  if (billing) {
+    const allowed = await billing.checkQuota(model);
     if (!allowed) {
       res.status(429).json({ error: 'Embedding quota exceeded', meter: model });
       return;
@@ -535,26 +519,24 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
 
   try {
     const results = await Promise.all(
-      inputs.map((text) => embedder.adapter.embed(text, model)),
+      inputs.map((text) => embedder.adapter.embed(text, model))
     );
 
     const latencyMs = Date.now() - startTime;
     const totalTokens = results.reduce((sum, r) => sum + r.promptTokens, 0);
 
-    // Record usage (fire-and-forget)
-    if (dbConfig.billing && totalTokens > 0) {
-      recordUsage(ctx, dbConfig.billing, ctx.userId, model, totalTokens, {
+    // Record usage + inference log (fire-and-forget)
+    if (billing && totalTokens > 0) {
+      billing.recordUsage(model, totalTokens, {
         input_tokens: totalTokens,
         model,
         latency_ms: latencyMs,
-        batch_size: inputs.length,
+        batch_size: inputs.length
       }).catch(() => {});
-    }
 
-    if (dbConfig.inferenceLog) {
-      logInference(ctx, dbConfig.inferenceLog, {
-        entityId: ctx.userId,
-        actorId: ctx.userId,
+      billing.logInference({
+        entityId: ctx.userId!,
+        actorId: ctx.userId!,
         model,
         provider: 'ollama',
         service: 'embedding',
@@ -563,7 +545,7 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
         outputTokens: 0,
         totalTokens,
         latencyMs,
-        status: 'ok',
+        status: 'ok'
       }).catch(() => {});
     }
 
@@ -572,13 +554,13 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
       data: results.map((r, i) => ({
         object: 'embedding',
         index: i,
-        embedding: r.embedding,
+        embedding: r.embedding
       })),
       model,
       usage: {
         prompt_tokens: totalTokens,
-        total_tokens: totalTokens,
-      },
+        total_tokens: totalTokens
+      }
     });
   } catch (err: any) {
     log.error('Embedding error:', err);
