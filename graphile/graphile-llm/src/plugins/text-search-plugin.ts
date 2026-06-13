@@ -24,8 +24,10 @@
  * (so the schema is stable) but will return a clear error at execution time.
  *
  * If the embedder returns null (e.g. quota exceeded when the metering
- * plugin is loaded), the text field is silently removed — the query
- * continues with text-only search as a graceful fallback.
+ * plugin is loaded), behavior depends on `onQuotaExceeded`:
+ * - `'degrade'` (default): silently removes the text field and continues
+ *   with text-only search as a graceful fallback.
+ * - `'throw'`: always throws an error, even if text adapters could handle it.
  */
 
 import type { GraphileConfig } from 'graphile-config';
@@ -62,7 +64,8 @@ function hasVectorColumns(pgCodec: any): boolean {
 export async function embedTextInWhere(
   obj: any,
   embedder: (text: string) => Promise<number[] | null>,
-  hasTextAdapters: boolean
+  hasTextAdapters: boolean,
+  onQuotaExceeded: 'degrade' | 'throw' = 'degrade'
 ): Promise<void> {
   if (!obj || typeof obj !== 'object') return;
 
@@ -79,15 +82,15 @@ export async function embedTextInWhere(
         const latencyMs = Date.now() - startTime;
 
         if (vector === null) {
-          // Embedder returned null (e.g. quota exceeded)
-          if (!hasTextAdapters) {
-            // No text adapters to fall back to — throw error
+          if (onQuotaExceeded === 'throw' || !hasTextAdapters) {
             throw new Error(
-              'unifiedSearch: embedding quota exceeded and no text search adapters available. ' +
-              'Upgrade your plan or add text search columns for graceful fallback.'
+              'unifiedSearch: embedding failed (quota exceeded or provider unavailable). ' +
+              (!hasTextAdapters
+                ? 'No text search adapters available for fallback. '
+                : 'onQuotaExceeded is set to \'throw\'. ') +
+              'Upgrade your plan or adjust onQuotaExceeded to \'degrade\' for text-only fallback.'
             );
           }
-          // Graceful degradation: leave as plain string, text adapters still work
           return;
         }
 
@@ -111,7 +114,12 @@ export async function embedTextInWhere(
         const latencyMs = Date.now() - startTime;
 
         if (vector === null) {
-          // Embedder returned null (e.g. quota exceeded) — skip vector search
+          if (onQuotaExceeded === 'throw') {
+            throw new Error(
+              'VectorNearbyInput: embedding failed (quota exceeded or provider unavailable). ' +
+              'Upgrade your plan or adjust onQuotaExceeded to \'degrade\' for graceful fallback.'
+            );
+          }
           delete value.text;
           return;
         }
@@ -129,11 +137,11 @@ export async function embedTextInWhere(
 
     // Recurse into nested filter objects (AND, OR, etc.)
     if (!Array.isArray(value)) {
-      pending.push(embedTextInWhere(value, embedder, hasTextAdapters));
+      pending.push(embedTextInWhere(value, embedder, hasTextAdapters, onQuotaExceeded));
     } else {
       // Handle arrays (e.g. AND: [...], OR: [...])
       for (const item of value) {
-        pending.push(embedTextInWhere(item, embedder, hasTextAdapters));
+        pending.push(embedTextInWhere(item, embedder, hasTextAdapters, onQuotaExceeded));
       }
     }
   }
@@ -150,7 +158,10 @@ export async function embedTextInWhere(
  * existing `vector` field. When a user provides `text`, the plugin's
  * resolver wrapper embeds it before passing to pgvector.
  */
-export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
+export function createLlmTextSearchPlugin(
+  options: { onQuotaExceeded?: 'degrade' | 'throw' } = {}
+): GraphileConfig.Plugin {
+  const { onQuotaExceeded = 'degrade' } = options;
   return {
     name: 'LlmTextSearchPlugin',
     version: '0.2.0',
@@ -243,12 +254,12 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
             async resolve(source: any, args: any, graphqlContext: any, info: any) {
               // If the query has a `where` argument, check for text/unifiedSearch fields
               if (args?.where) {
-                await embedTextInWhere(args.where, embedder, !!hasTextAdapters);
+                await embedTextInWhere(args.where, embedder, !!hasTextAdapters, onQuotaExceeded);
               }
 
               // Also handle `filter` for relay-style connections
               if (args?.filter) {
-                await embedTextInWhere(args.filter, embedder, !!hasTextAdapters);
+                await embedTextInWhere(args.filter, embedder, !!hasTextAdapters, onQuotaExceeded);
               }
 
               return oldResolve(source, args, graphqlContext, info);
