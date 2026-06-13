@@ -914,10 +914,17 @@ export function createUnifiedSearchPlugin(
           // Adds a single `unifiedSearch: String` field that fans out the same
           // text query to all adapters where supportsTextSearch is true.
           // WHERE clauses are combined with OR (match ANY algorithm).
+          //
+          // When graphile-llm is active, the resolver wrapper transforms the
+          // String value into { __text, __vector } so pgvector also participates.
           if (enableUnifiedSearch) {
             // Collect text-compatible adapters and their columns for this codec
             const textAdapterColumns = adapterColumns.filter(
               (ac) => ac.adapter.supportsTextSearch && ac.adapter.buildTextSearchInput
+            );
+            // Collect vector adapters (participate when __vector is injected by LLM plugin)
+            const vectorAdapterColumns = adapterColumns.filter(
+              (ac) => ac.adapter.name === 'vector'
             );
 
             if (textAdapterColumns.length > 0) {
@@ -935,19 +942,31 @@ export function createUnifiedSearchPlugin(
                       description: build.wrapDescription(
                         'Composite unified search. Provide a search string and it will be dispatched ' +
                         'to all text-compatible search algorithms (tsvector, BM25, pg_trgm) simultaneously. ' +
+                        'When the LLM plugin is active, pgvector also participates via auto-embedding. ' +
                         'Rows matching ANY algorithm are returned. All matching score fields are populated.',
                         'field'
                       ),
                       type: build.graphql.GraphQLString as any,
                       apply: function plan($condition: any, val: any) {
-                        if (val == null || (typeof val === 'string' && val.trim().length === 0)) return;
+                        if (val == null) return;
 
-                        const text = typeof val === 'string' ? val : String(val);
+                        // Support both plain string and { __text, __vector } from LLM plugin
+                        let text: string;
+                        let vector: number[] | null = null;
+                        if (typeof val === 'object' && val.__text) {
+                          text = val.__text;
+                          vector = val.__vector ?? null;
+                        } else {
+                          text = typeof val === 'string' ? val : String(val);
+                          if (text.trim().length === 0) return;
+                        }
+
                         const qb = getQueryBuilder(build, $condition);
 
                         // Collect all WHERE clauses (combined with OR)
                         const whereClauses: any[] = [];
 
+                        // Text adapters (tsvector, BM25, trgm)
                         for (const { adapter, columns } of textAdapterColumns) {
                           for (const column of columns) {
                             // Convert text to adapter-specific filter input
@@ -1005,6 +1024,58 @@ export function createUnifiedSearchPlugin(
                           }
                         }
 
+                        // Vector adapters (pgvector) — only when __vector is injected
+                        if (vector && vectorAdapterColumns.length > 0) {
+                          for (const { adapter, columns } of vectorAdapterColumns) {
+                            for (const column of columns) {
+                              const result = adapter.buildFilterApply(
+                                sql,
+                                $condition.alias,
+                                column,
+                                { vector, metric: 'COSINE' },
+                                build,
+                              );
+                              if (!result) continue;
+
+                              if (result.whereClause) {
+                                whereClauses.push(result.whereClause);
+                              }
+
+                              if (qb && qb.mode === 'normal') {
+                                const baseFieldName = inflection.attribute({
+                                  codec: pgCodec as any,
+                                  attributeName: column.attributeName,
+                                });
+                                const scoreMetaKey = `__unified_search_${adapter.name}_${baseFieldName}`;
+                                const wrappedScoreSql = sql`${sql.parens(result.scoreExpression)}::text`;
+                                const scoreIndex = qb.selectAndReturnIndex(wrappedScoreSql);
+                                qb.setMeta(scoreMetaKey, {
+                                  selectIndex: scoreIndex,
+                                } as SearchScoreDetails);
+
+                                const rankMetaKey = `${scoreMetaKey}__rank`;
+                                const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
+                                const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
+                                const rankIndex = qb.selectAndReturnIndex(rankSql);
+                                qb.setMeta(rankMetaKey, {
+                                  selectIndex: rankIndex,
+                                } as SearchScoreDetails);
+
+                                const orderKey = `unified_order_${adapter.name}_${baseFieldName}`;
+                                const dirs = _pendingOrderDirections.get($condition.alias);
+                                const explicitDir = dirs?.[orderKey];
+                                if (explicitDir) {
+                                  qb.orderBy({
+                                    fragment: result.scoreExpression,
+                                    codec: TYPES.float,
+                                    direction: explicitDir,
+                                  });
+                                }
+                              }
+                            }
+                          }
+                        }
+
                         // Apply combined WHERE with OR
                         if (whereClauses.length > 0) {
                           if (whereClauses.length === 1) {
@@ -1013,6 +1084,13 @@ export function createUnifiedSearchPlugin(
                             const combined = sql.fragment`(${sql.join(whereClauses, ' OR ')})`;
                             $condition.where(combined);
                           }
+                        } else if (vector && textAdapterColumns.length === 0) {
+                          // Vector-only table with no text adapters and embedding failed
+                          // This shouldn't happen (caught in resolver wrapper) but safety net
+                          throw new Error(
+                            'unifiedSearch: no text adapters available and vector search requires an embedding. ' +
+                            'Ensure the LLM plugin is configured or add text search columns.'
+                          );
                         }
                       },
                     }
