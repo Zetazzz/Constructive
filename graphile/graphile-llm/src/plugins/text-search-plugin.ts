@@ -59,9 +59,10 @@ function hasVectorColumns(pgCodec: any): boolean {
  * If the embedder returns null (e.g. quota exceeded), the text field is
  * removed so the pgvector filter is skipped — graceful text-only fallback.
  */
-async function embedTextInWhere(
+export async function embedTextInWhere(
   obj: any,
-  embedder: (text: string) => Promise<number[] | null>
+  embedder: (text: string) => Promise<number[] | null>,
+  hasTextAdapters: boolean
 ): Promise<void> {
   if (!obj || typeof obj !== 'object') return;
 
@@ -69,6 +70,37 @@ async function embedTextInWhere(
 
   for (const key of Object.keys(obj)) {
     const value = obj[key];
+
+    // Handle unifiedSearch: embed text and transform to { __text, __vector }
+    if (key === 'unifiedSearch' && typeof value === 'string' && value.trim().length > 0) {
+      pending.push((async () => {
+        const startTime = Date.now();
+        const vector = await embedder(value);
+        const latencyMs = Date.now() - startTime;
+
+        if (vector === null) {
+          // Embedder returned null (e.g. quota exceeded)
+          if (!hasTextAdapters) {
+            // No text adapters to fall back to — throw error
+            throw new Error(
+              'unifiedSearch: embedding quota exceeded and no text search adapters available. ' +
+              'Upgrade your plan or add text search columns for graceful fallback.'
+            );
+          }
+          // Graceful degradation: leave as plain string, text adapters still work
+          return;
+        }
+
+        console.log(
+          `[graphile-llm] unifiedSearch embed: dims=${vector.length}, latency=${latencyMs}ms`
+        );
+
+        // Transform to object shape that graphile-search understands
+        obj[key] = { __text: value, __vector: vector };
+      })());
+      continue;
+    }
+
     if (!value || typeof value !== 'object') continue;
 
     // Detect VectorNearbyInput shape: has `text` and no `vector`
@@ -97,11 +129,11 @@ async function embedTextInWhere(
 
     // Recurse into nested filter objects (AND, OR, etc.)
     if (!Array.isArray(value)) {
-      pending.push(embedTextInWhere(value, embedder));
+      pending.push(embedTextInWhere(value, embedder, hasTextAdapters));
     } else {
       // Handle arrays (e.g. AND: [...], OR: [...])
       for (const item of value) {
-        pending.push(embedTextInWhere(item, embedder));
+        pending.push(embedTextInWhere(item, embedder, hasTextAdapters));
       }
     }
   }
@@ -139,11 +171,9 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
          * The field is optional — clients provide either `text` or `vector`.
          */
         GraphQLInputObjectType_fields(fields, build, context) {
-          const {
-            scope: { inputObjectTypeName }
-          } = context as any;
+          const typeName = context.Self.name;
 
-          if (inputObjectTypeName !== 'VectorNearbyInput') {
+          if (typeName !== 'VectorNearbyInput') {
             return fields;
           }
 
@@ -168,8 +198,11 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
 
         /**
          * Wrap connection query resolvers to intercept `where` arguments that
-         * contain VectorNearbyInput with `text`, embed the text, and replace
-         * it with the resulting vector before the plan executes.
+         * contain VectorNearbyInput with `text` or `unifiedSearch` with text,
+         * embed the text, and inject the resulting vector before the plan executes.
+         *
+         * For tables with vector columns: embeds VectorNearbyInput.text → vector
+         * For ALL tables with unifiedSearch: embeds unifiedSearch text → { __text, __vector }
          *
          * Uses the same v4-style resolver wrapping pattern as graphile-upload-plugin
          * and graphile-bucket-provisioner-plugin.
@@ -179,15 +212,28 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
             scope: { isRootQuery, pgCodec }
           } = context as any;
 
-          // Only wrap root query fields on tables with vector columns
-          if (!isRootQuery || !pgCodec || !hasVectorColumns(pgCodec)) {
-            return field;
-          }
+          if (!isRootQuery || !pgCodec) return field;
+
+          // Wrap if the table has vector columns OR has any searchable columns
+          // (for unifiedSearch embedding support)
+          const hasVector = hasVectorColumns(pgCodec);
+          const hasSearchableColumns = pgCodec.attributes && Object.values(
+            pgCodec.attributes as Record<string, any>
+          ).some((attr: any) =>
+            attr.codec?.name === 'tsvector' || attr.codec?.name === 'vector'
+          );
+
+          if (!hasVector && !hasSearchableColumns) return field;
 
           const embedder = (build as any).llmEmbedder as
             | ((text: string) => Promise<number[] | null>)
             | null;
           if (!embedder) return field;
+
+          // Determine if this table has text-based search adapters for fallback logic
+          const hasTextAdapters = pgCodec.attributes && Object.values(
+            pgCodec.attributes as Record<string, any>
+          ).some((attr: any) => attr.codec?.name === 'tsvector');
 
           const defaultResolver = (obj: any) => obj[context.scope.fieldName];
           const { resolve: oldResolve = defaultResolver, ...rest } = field;
@@ -195,14 +241,14 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
           return {
             ...rest,
             async resolve(source: any, args: any, graphqlContext: any, info: any) {
-              // If the query has a `where` argument, check for text fields
+              // If the query has a `where` argument, check for text/unifiedSearch fields
               if (args?.where) {
-                await embedTextInWhere(args.where, embedder);
+                await embedTextInWhere(args.where, embedder, !!hasTextAdapters);
               }
 
               // Also handle `filter` for relay-style connections
               if (args?.filter) {
-                await embedTextInWhere(args.filter, embedder);
+                await embedTextInWhere(args.filter, embedder, !!hasTextAdapters);
               }
 
               return oldResolve(source, args, graphqlContext, info);

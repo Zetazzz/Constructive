@@ -543,6 +543,207 @@ describe('RRF scoring — multi-adapter combinations', () => {
   });
 });
 
+// ─── Test Suite: unifiedSearch + pgvector RRF Fusion ─────────────────────────
+//
+// When graphile-llm is active, it transforms unifiedSearch: "text" into
+// { __text, __vector } via a resolver wrapper. The apply function then
+// includes pgvector in the OR + RRF fusion.
+//
+// Testing the full resolver-wrapper → apply flow requires PostGraphile
+// server-level execution (Grafast plan-based fields skip `resolve` in
+// direct schema execution). Unit tests for the object-shape handling
+// are in graphile-llm/src/__tests__/unified-search-embedding.test.ts.
+//
+// Here we verify the equivalent end-user behavior: when both unifiedSearch
+// (text) AND vectorEmbedding (vector) filters are applied, RRF fuses all
+// adapter ranks correctly — which is what the LLM integration produces.
+
+describe('RRF scoring — unifiedSearch + pgvector fusion (simulating LLM path)', () => {
+  let db: PgTestClient;
+  let teardown: () => Promise<void>;
+  let query: QueryFn;
+
+  beforeAll(async () => {
+    const unifiedPlugin = createUnifiedSearchPlugin({
+      adapters: [
+        createTsvectorAdapter(),
+        createBm25Adapter(),
+        createTrgmAdapter({ defaultThreshold: 0.1 }),
+        createPgvectorAdapter(),
+      ],
+      enableSearchScore: true,
+      enableUnifiedSearch: true,
+      rrfK: 60,
+    });
+
+    const testPreset = {
+      extends: [ConnectionFilterPreset()],
+      plugins: [
+        TsvectorCodecPlugin,
+        Bm25CodecPlugin,
+        VectorCodecPlugin,
+        unifiedPlugin,
+      ],
+    };
+
+    const connections = await getConnections({
+      schemas: ['unified_search_test'],
+      preset: testPreset,
+      useRoot: true,
+      authRole: 'postgres',
+    }, [
+      seed.sqlfile([join(__dirname, './setup.sql')])
+    ]);
+
+    db = connections.db;
+    teardown = connections.teardown;
+    query = connections.query;
+
+    await db.client.query('BEGIN');
+  });
+
+  afterAll(async () => {
+    if (db) {
+      try { await db.client.query('ROLLBACK'); } catch {}
+    }
+    if (teardown) await teardown();
+  });
+
+  beforeEach(async () => { await db.beforeEach(); });
+  afterEach(async () => { await db.afterEach(); });
+
+  it('text-only unifiedSearch does NOT activate pgvector', async () => {
+    const result = await query<AllDocumentsResult>(`
+      query {
+        allDocuments(where: { unifiedSearch: "machine learning" }) {
+          nodes {
+            rowId
+            tsvRank
+            bodyBm25Score
+            embeddingVectorDistance
+            searchScore
+          }
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    const nodes = result.data?.allDocuments?.nodes ?? [];
+    expect(nodes.length).toBeGreaterThan(0);
+
+    // Text adapters should work
+    const hasTextScore = nodes.some((n) => n.tsvRank !== null || n.bodyBm25Score !== null);
+    expect(hasTextScore).toBe(true);
+
+    // pgvector should NOT participate without LLM injection
+    for (const node of nodes) {
+      expect(node.embeddingVectorDistance).toBeNull();
+    }
+  });
+
+  it('unifiedSearch + vectorEmbedding fuses all 4 adapter ranks via RRF', async () => {
+    // This is the equivalent end-state of what graphile-llm produces:
+    // text adapters handle the keyword matching, pgvector handles semantic
+    const result = await query<AllDocumentsResult>(`
+      query {
+        allDocuments(where: {
+          unifiedSearch: "machine learning"
+          vectorEmbedding: { vector: [1, 0, 0], metric: COSINE }
+        }) {
+          nodes {
+            rowId
+            title
+            tsvRank
+            bodyBm25Score
+            titleTrgmSimilarity
+            embeddingVectorDistance
+            searchScore
+          }
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    const nodes = result.data?.allDocuments?.nodes ?? [];
+    expect(nodes.length).toBeGreaterThan(0);
+
+    for (const node of nodes) {
+      expect(typeof node.searchScore).toBe('number');
+      expect(node.searchScore).toBeGreaterThanOrEqual(0);
+      expect(node.searchScore).toBeLessThanOrEqual(1);
+    }
+
+    // pgvector should participate
+    const hasVectorScore = nodes.some((n) => n.embeddingVectorDistance !== null);
+    expect(hasVectorScore).toBe(true);
+
+    // Document 1 has embedding [1,0,0] (exact match) AND contains "machine learning"
+    const doc1 = nodes.find((n) => n.rowId === 1);
+    if (doc1) {
+      expect(doc1.searchScore).toBeGreaterThan(0.5);
+      expect(doc1.embeddingVectorDistance).not.toBeNull();
+    }
+  });
+
+  it('doc scores higher with text + vector vs text-only (RRF boost)', async () => {
+    const textOnly = await query<AllDocumentsResult>(`
+      query {
+        allDocuments(where: { unifiedSearch: "machine learning" }) {
+          nodes { rowId searchScore }
+        }
+      }
+    `);
+
+    const textAndVector = await query<AllDocumentsResult>(`
+      query {
+        allDocuments(where: {
+          unifiedSearch: "machine learning"
+          vectorEmbedding: { vector: [1, 0, 0], metric: COSINE }
+        }) {
+          nodes { rowId searchScore }
+        }
+      }
+    `);
+
+    expect(textOnly.errors).toBeUndefined();
+    expect(textAndVector.errors).toBeUndefined();
+
+    const textOnlyNodes = textOnly.data?.allDocuments?.nodes ?? [];
+    const vectorNodes = textAndVector.data?.allDocuments?.nodes ?? [];
+
+    // Doc 1 should score higher when vector also contributes
+    const doc1TextOnly = textOnlyNodes.find((n) => n.rowId === 1);
+    const doc1Vector = vectorNodes.find((n) => n.rowId === 1);
+
+    if (doc1TextOnly && doc1Vector) {
+      expect(doc1Vector.searchScore).toBeGreaterThanOrEqual(doc1TextOnly.searchScore ?? 0);
+    }
+  });
+
+  it('searchScore stays [0,1] with all adapters active', async () => {
+    const result = await query<AllDocumentsResult>(`
+      query {
+        allDocuments(where: {
+          unifiedSearch: "neural networks deep learning"
+          vectorEmbedding: { vector: [0.5, 0.5, 0], metric: COSINE }
+        }) {
+          nodes { rowId title searchScore }
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    const nodes = result.data?.allDocuments?.nodes ?? [];
+
+    for (const node of nodes) {
+      if (node.searchScore !== null) {
+        expect(node.searchScore).toBeGreaterThanOrEqual(0);
+        expect(node.searchScore).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
 // ─── Test Suite: Chunk-Aware Tables ──────────────────────────────────────────
 
 describe('RRF scoring — chunk-aware tables', () => {
