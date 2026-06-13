@@ -59,7 +59,7 @@ function hasVectorColumns(pgCodec: any): boolean {
  * If the embedder returns null (e.g. quota exceeded), the text field is
  * removed so the pgvector filter is skipped — graceful text-only fallback.
  */
-async function embedTextInWhere(
+export async function embedTextInWhere(
   obj: any,
   embedder: (text: string) => Promise<number[] | null>,
   hasTextAdapters: boolean
@@ -171,11 +171,9 @@ export function createLlmTextSearchPlugin(): GraphileConfig.Plugin {
          * The field is optional — clients provide either `text` or `vector`.
          */
         GraphQLInputObjectType_fields(fields, build, context) {
-          const {
-            scope: { inputObjectTypeName }
-          } = context as any;
+          const typeName = context.Self.name;
 
-          if (inputObjectTypeName !== 'VectorNearbyInput') {
+          if (typeName !== 'VectorNearbyInput') {
             return fields;
           }
 

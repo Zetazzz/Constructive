@@ -41,7 +41,7 @@ export { GraphileLlmPreset } from './preset';
 export { createLlmModulePlugin } from './plugins/llm-module-plugin';
 export { createLlmRagPlugin } from './plugins/rag-plugin';
 export { createLlmTextMutationPlugin } from './plugins/text-mutation-plugin';
-export { createLlmTextSearchPlugin } from './plugins/text-search-plugin';
+export { createLlmTextSearchPlugin, embedTextInWhere } from './plugins/text-search-plugin';
 
 // Metering plugin (opt-in billing integration)
 export { createLlmMeteringPlugin } from './plugins/metering-plugin';

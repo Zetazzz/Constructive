@@ -1,95 +1,19 @@
 /**
- * Unit tests for LlmTextSearchPlugin's unifiedSearch embedding integration.
+ * Unit tests for LlmTextSearchPlugin's embedTextInWhere function.
  *
- * Tests the embedTextInWhere function which transforms:
+ * Tests the transformation logic:
  *   - unifiedSearch: "text" → unifiedSearch: { __text: "text", __vector: [...] }
  *   - VectorNearbyInput.text → VectorNearbyInput.vector (existing behavior)
  *
- * These are pure unit tests — no database or Ollama required.
+ * Pure unit tests — no database or Ollama required.
  */
 
-// We need to import the function via dynamic import since it's not exported
-// Instead, we test the behavior through the plugin's resolver wrapper pattern
+import { embedTextInWhere } from '../../src/plugins/text-search-plugin';
 
 describe('unifiedSearch embedding integration', () => {
-  // Mock embedder that returns a fixed vector
   const mockVector = [0.1, 0.2, 0.3, 0.4, 0.5];
   const mockEmbedder = jest.fn(async (_text: string) => mockVector);
-
-  // Null embedder (simulates quota exceeded)
   const nullEmbedder = jest.fn(async (_text: string) => null as number[] | null);
-
-  // Import the function under test
-  // Since embedTextInWhere is not exported, we test via the module internals
-  let embedTextInWhere: (
-    obj: any,
-    embedder: (text: string) => Promise<number[] | null>,
-    hasTextAdapters: boolean
-  ) => Promise<void>;
-
-  beforeAll(async () => {
-    // Access the function via module internals
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = require('../../src/plugins/text-search-plugin');
-    // The function is module-scoped, so we need to test through the plugin
-    // Instead, let's re-implement the logic here for testing
-    embedTextInWhere = async function embedTextInWhereImpl(
-      obj: any,
-      embedder: (text: string) => Promise<number[] | null>,
-      hasTextAdapters: boolean
-    ): Promise<void> {
-      if (!obj || typeof obj !== 'object') return;
-
-      const pending: Promise<void>[] = [];
-
-      for (const key of Object.keys(obj)) {
-        const value = obj[key];
-
-        if (key === 'unifiedSearch' && typeof value === 'string' && value.trim().length > 0) {
-          pending.push((async () => {
-            const vector = await embedder(value);
-            if (vector === null) {
-              if (!hasTextAdapters) {
-                throw new Error(
-                  'unifiedSearch: embedding quota exceeded and no text search adapters available.'
-                );
-              }
-              return;
-            }
-            obj[key] = { __text: value, __vector: vector };
-          })());
-          continue;
-        }
-
-        if (!value || typeof value !== 'object') continue;
-
-        if ('text' in value && typeof value.text === 'string' && !value.vector) {
-          pending.push((async () => {
-            const vector = await embedder(value.text);
-            if (vector === null) {
-              delete value.text;
-              return;
-            }
-            value.vector = vector;
-            delete value.text;
-          })());
-          continue;
-        }
-
-        if (!Array.isArray(value)) {
-          pending.push(embedTextInWhereImpl(value, embedder, hasTextAdapters));
-        } else {
-          for (const item of value) {
-            pending.push(embedTextInWhereImpl(item, embedder, hasTextAdapters));
-          }
-        }
-      }
-
-      if (pending.length > 0) {
-        await Promise.all(pending);
-      }
-    };
-  });
 
   beforeEach(() => {
     mockEmbedder.mockClear();

@@ -786,6 +786,50 @@ export function createUnifiedSearchPlugin(
             fieldWithHooks,
           } = context;
 
+          /**
+           * Inject a single adapter's score expression + rank window function
+           * into the query builder, and apply any pending ORDER BY direction.
+           *
+           * Shared by per-adapter filter fields AND the unifiedSearch
+           * composite filter (both text and vector adapter branches).
+           */
+          function injectScoreAndRank(
+            qb: any,
+            adapter: SearchAdapter,
+            column: SearchableColumn,
+            result: { scoreExpression: any },
+            codec_: PgCodecWithAttributes,
+            $condition: any,
+          ): void {
+            if (!qb || qb.mode !== 'normal') return;
+
+            const baseFieldName = inflection.attribute({
+              codec: codec_ as any,
+              attributeName: column.attributeName,
+            });
+            const scoreMetaKey = `__unified_search_${adapter.name}_${baseFieldName}`;
+            const wrappedScoreSql = sql`${sql.parens(result.scoreExpression)}::text`;
+            const scoreIndex = qb.selectAndReturnIndex(wrappedScoreSql);
+            qb.setMeta(scoreMetaKey, { selectIndex: scoreIndex } as SearchScoreDetails);
+
+            const rankMetaKey = `${scoreMetaKey}__rank`;
+            const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
+            const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
+            const rankIndex = qb.selectAndReturnIndex(rankSql);
+            qb.setMeta(rankMetaKey, { selectIndex: rankIndex } as SearchScoreDetails);
+
+            const orderKey = `unified_order_${adapter.name}_${baseFieldName}`;
+            const dirs = _pendingOrderDirections.get($condition.alias);
+            const explicitDir = dirs?.[orderKey];
+            if (explicitDir) {
+              qb.orderBy({
+                fragment: result.scoreExpression,
+                codec: TYPES.float,
+                direction: explicitDir,
+              });
+            }
+          }
+
           if (
             !isPgConnectionFilter ||
             !pgCodec ||
@@ -866,41 +910,8 @@ export function createUnifiedSearchPlugin(
                           $condition.where(result.whereClause);
                         }
 
-                        // Get the query builder for SELECT/ORDER BY injection
                         const qb = getQueryBuilder(build, $condition);
-
-                        if (qb && qb.mode === 'normal') {
-                          // Add score to the SELECT list
-                          const wrappedScoreSql = sql`${sql.parens(result.scoreExpression)}::text`;
-                          const scoreIndex = qb.selectAndReturnIndex(wrappedScoreSql);
-
-                          // Store the select index in meta for the output field plan
-                          qb.setMeta(scoreMetaKey, {
-                            selectIndex: scoreIndex,
-                          } as SearchScoreDetails);
-
-                          // Add rank (ROW_NUMBER window function) for RRF scoring
-                          const rankMetaKey = `${scoreMetaKey}__rank`;
-                          const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
-                          const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
-                          const rankIndex = qb.selectAndReturnIndex(rankSql);
-                          qb.setMeta(rankMetaKey, {
-                            selectIndex: rankIndex,
-                          } as SearchScoreDetails);
-
-                          // ORDER BY: read the direction stored by the orderBy
-                          // enum (which ran first) via the shared alias key.
-                          const orderKey = `unified_order_${adapter.name}_${baseFieldName}`;
-                          const dirs = _pendingOrderDirections.get($condition.alias);
-                          const explicitDir = dirs?.[orderKey];
-                          if (explicitDir) {
-                            qb.orderBy({
-                              fragment: result.scoreExpression,
-                              codec: TYPES.float,
-                              direction: explicitDir,
-                            });
-                          }
-                        }
+                        injectScoreAndRank(qb, adapter, column, result, codec, $condition);
                       },
                     }
                   ),
@@ -981,46 +992,10 @@ export function createUnifiedSearchPlugin(
                             );
                             if (!result) continue;
 
-                            // Collect WHERE clause for OR combination
                             if (result.whereClause) {
                               whereClauses.push(result.whereClause);
                             }
-
-                            // Still inject score into SELECT so score fields are populated
-                            if (qb && qb.mode === 'normal') {
-                              const baseFieldName = inflection.attribute({
-                                codec: pgCodec as any,
-                                attributeName: column.attributeName,
-                              });
-                              const scoreMetaKey = `__unified_search_${adapter.name}_${baseFieldName}`;
-                              const wrappedScoreSql = sql`${sql.parens(result.scoreExpression)}::text`;
-                              const scoreIndex = qb.selectAndReturnIndex(wrappedScoreSql);
-                              qb.setMeta(scoreMetaKey, {
-                                selectIndex: scoreIndex,
-                              } as SearchScoreDetails);
-
-                              // Add rank (ROW_NUMBER window function) for RRF scoring
-                              const rankMetaKey = `${scoreMetaKey}__rank`;
-                              const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
-                              const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
-                              const rankIndex = qb.selectAndReturnIndex(rankSql);
-                              qb.setMeta(rankMetaKey, {
-                                selectIndex: rankIndex,
-                              } as SearchScoreDetails);
-
-                              // ORDER BY: read the direction stored by the orderBy
-                              // enum (which ran first) via the shared alias key.
-                              const orderKey = `unified_order_${adapter.name}_${baseFieldName}`;
-                              const dirs = _pendingOrderDirections.get($condition.alias);
-                              const explicitDir = dirs?.[orderKey];
-                              if (explicitDir) {
-                                qb.orderBy({
-                                  fragment: result.scoreExpression,
-                                  codec: TYPES.float,
-                                  direction: explicitDir,
-                                });
-                              }
-                            }
+                            injectScoreAndRank(qb, adapter, column, result, codec, $condition);
                           }
                         }
 
@@ -1040,38 +1015,7 @@ export function createUnifiedSearchPlugin(
                               if (result.whereClause) {
                                 whereClauses.push(result.whereClause);
                               }
-
-                              if (qb && qb.mode === 'normal') {
-                                const baseFieldName = inflection.attribute({
-                                  codec: pgCodec as any,
-                                  attributeName: column.attributeName,
-                                });
-                                const scoreMetaKey = `__unified_search_${adapter.name}_${baseFieldName}`;
-                                const wrappedScoreSql = sql`${sql.parens(result.scoreExpression)}::text`;
-                                const scoreIndex = qb.selectAndReturnIndex(wrappedScoreSql);
-                                qb.setMeta(scoreMetaKey, {
-                                  selectIndex: scoreIndex,
-                                } as SearchScoreDetails);
-
-                                const rankMetaKey = `${scoreMetaKey}__rank`;
-                                const orderDirection = adapter.scoreSemantics.lowerIsBetter ? 'ASC' : 'DESC';
-                                const rankSql = sql`(ROW_NUMBER() OVER (ORDER BY ${sql.parens(result.scoreExpression)} ${orderDirection === 'ASC' ? sql.fragment`ASC` : sql.fragment`DESC`} NULLS LAST))::text`;
-                                const rankIndex = qb.selectAndReturnIndex(rankSql);
-                                qb.setMeta(rankMetaKey, {
-                                  selectIndex: rankIndex,
-                                } as SearchScoreDetails);
-
-                                const orderKey = `unified_order_${adapter.name}_${baseFieldName}`;
-                                const dirs = _pendingOrderDirections.get($condition.alias);
-                                const explicitDir = dirs?.[orderKey];
-                                if (explicitDir) {
-                                  qb.orderBy({
-                                    fragment: result.scoreExpression,
-                                    codec: TYPES.float,
-                                    direction: explicitDir,
-                                  });
-                                }
-                              }
+                              injectScoreAndRank(qb, adapter, column, result, codec, $condition);
                             }
                           }
                         }
