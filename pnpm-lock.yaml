@@ -387,6 +387,9 @@ importers:
       '@constructive-io/express-context':
         specifier: workspace:^
         version: link:../../packages/express-context/dist
+      '@constructive-io/llm-env':
+        specifier: workspace:^
+        version: link:../../packages/llm-env/dist
       '@dataplan/pg':
         specifier: 1.0.3
         version: 1.0.3(@dataplan/json@1.0.0(grafast@1.0.2(graphql@16.13.0)))(grafast@1.0.2(graphql@16.13.0))(graphile-config@1.0.1)(graphql@16.13.0)(pg-sql2@5.0.1)(pg@8.21.0)
@@ -2158,12 +2161,12 @@ importers:
       '@constructive-io/express-context':
         specifier: workspace:^
         version: link:../express-context/dist
+      '@constructive-io/llm-env':
+        specifier: workspace:^
+        version: link:../llm-env/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
-      graphile-llm:
-        specifier: workspace:^
-        version: link:../../graphile/graphile-llm/dist
       pg:
         specifier: ^8.21.0
         version: 8.21.0
@@ -2398,6 +2401,13 @@ importers:
       express:
         specifier: ^5.2.1
         version: 5.2.1
+      makage:
+        specifier: ^0.3.0
+        version: 0.3.0
+    publishDirectory: dist
+
+  packages/llm-env:
+    devDependencies:
       makage:
         specifier: ^0.3.0
         version: 0.3.0
