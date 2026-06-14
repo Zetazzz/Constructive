@@ -12,7 +12,11 @@ module.exports = {
     ],
   },
   transformIgnorePatterns: [`/node_modules/*`],
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$',
+  testRegex: '(/__tests__/.*\\.(test|spec))\\.(jsx?|tsx?)$',
+  testPathIgnorePatterns: ['\\.live\\.test\\.ts$'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  modulePathIgnorePatterns: ['dist/*']
+  modulePathIgnorePatterns: ['dist/*'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
 };

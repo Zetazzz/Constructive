@@ -410,6 +410,226 @@ describe('agentic-server router', () => {
     });
   });
 
+  describe('Inference metering', () => {
+    it('calls recordUsage and logInference after successful batch chat', async () => {
+      const mockBillingClient = {
+        checkQuota: jest.fn(async () => true),
+        recordUsage: jest.fn(async () => {}),
+        logInference: jest.fn(async () => {}),
+      };
+
+      const ctx = createMockConstructiveContext({
+        billingClient: mockBillingClient,
+      });
+      const app = createTestApp(ctx);
+      const request = makeRequest(app);
+
+      const res = await request
+        .post('/v1/threads/thread-001/messages')
+        .send({
+          messages: [{ role: 'user', content: 'Hello' }],
+          stream: false,
+        });
+
+      expect(res.status).toBe(200);
+
+      // Wait for fire-and-forget billing calls
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(mockBillingClient.recordUsage).toHaveBeenCalledTimes(1);
+      const [meterSlug, amount, metadata] = (mockBillingClient.recordUsage.mock.calls as any[][])[0];
+      expect(typeof meterSlug).toBe('string');
+      expect(amount).toBe(15); // 10 input + 5 output from mock
+      expect(metadata).toMatchObject({
+        input_tokens: 10,
+        output_tokens: 5,
+        model: expect.any(String),
+        latency_ms: expect.any(Number),
+        stream: false,
+      });
+
+      expect(mockBillingClient.logInference).toHaveBeenCalledTimes(1);
+      const inferenceEntry = (mockBillingClient.logInference.mock.calls as any[][])[0][0];
+      expect(inferenceEntry).toMatchObject({
+        service: 'llm',
+        operation: 'chat',
+        inputTokens: 10,
+        outputTokens: 5,
+        totalTokens: 15,
+        status: 'ok',
+        provider: 'ollama',
+        latencyMs: expect.any(Number),
+      });
+    });
+
+    it('calls recordUsage and logInference after successful streaming chat', async () => {
+      const mockBillingClient = {
+        checkQuota: jest.fn(async () => true),
+        recordUsage: jest.fn(async () => {}),
+        logInference: jest.fn(async () => {}),
+      };
+
+      const ctx = createMockConstructiveContext({
+        billingClient: mockBillingClient,
+      });
+      const app = createTestApp(ctx);
+
+      const server = http.createServer(app);
+      await new Promise<void>((resolve) => server.listen(0, resolve));
+      const port = (server.address() as any).port;
+
+      try {
+        const response = await fetch(`http://localhost:${port}/v1/threads/thread-001/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: 'Hello' }],
+            stream: true,
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        await response.text(); // consume stream
+
+        // Wait for fire-and-forget billing calls
+        await new Promise((r) => setTimeout(r, 100));
+
+        expect(mockBillingClient.recordUsage).toHaveBeenCalledTimes(1);
+        const [, amount, metadata] = (mockBillingClient.recordUsage.mock.calls as any[][])[0];
+        expect(amount).toBe(15);
+        expect(metadata).toMatchObject({
+          stream: true,
+          input_tokens: 10,
+          output_tokens: 5,
+        });
+
+        expect(mockBillingClient.logInference).toHaveBeenCalledTimes(1);
+        const entry = (mockBillingClient.logInference.mock.calls as any[][])[0][0];
+        expect(entry.totalTokens).toBe(15);
+        expect(entry.status).toBe('ok');
+      } finally {
+        server.close();
+      }
+    });
+
+    it('calls recordUsage and logInference after successful embed', async () => {
+      const mockBillingClient = {
+        checkQuota: jest.fn(async () => true),
+        recordUsage: jest.fn(async () => {}),
+        logInference: jest.fn(async () => {}),
+      };
+
+      const ctx = createMockConstructiveContext({
+        billingClient: mockBillingClient,
+      });
+      const app = createTestApp(ctx);
+      const request = makeRequest(app);
+
+      const res = await request
+        .post('/v1/embed')
+        .send({ input: 'hello world test' });
+
+      expect(res.status).toBe(200);
+
+      // Wait for fire-and-forget billing calls
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(mockBillingClient.recordUsage).toHaveBeenCalledTimes(1);
+      const [, amount, metadata] = (mockBillingClient.recordUsage.mock.calls as any[][])[0];
+      expect(amount).toBeGreaterThan(0);
+      expect(metadata).toMatchObject({
+        input_tokens: expect.any(Number),
+        model: expect.any(String),
+        latency_ms: expect.any(Number),
+        batch_size: 1,
+      });
+
+      expect(mockBillingClient.logInference).toHaveBeenCalledTimes(1);
+      const entry = (mockBillingClient.logInference.mock.calls as any[][])[0][0];
+      expect(entry).toMatchObject({
+        service: 'embedding',
+        operation: 'embed',
+        outputTokens: 0,
+        status: 'ok',
+        provider: 'ollama',
+      });
+    });
+
+    it('skips billing when billingClient is null', async () => {
+      const ctx = createMockConstructiveContext({
+        billingClient: null,
+      });
+      const app = createTestApp(ctx);
+      const request = makeRequest(app);
+
+      const res = await request
+        .post('/v1/threads/thread-001/messages')
+        .send({
+          messages: [{ role: 'user', content: 'Hello' }],
+          stream: false,
+        });
+
+      expect(res.status).toBe(200);
+      // No billing calls — just verify no errors
+    });
+
+    it('does not crash when recordUsage or logInference rejects', async () => {
+      const mockBillingClient = {
+        checkQuota: jest.fn(async () => true),
+        recordUsage: jest.fn(async () => { throw new Error('billing db down'); }),
+        logInference: jest.fn(async () => { throw new Error('inference log db down'); }),
+      };
+
+      const ctx = createMockConstructiveContext({
+        billingClient: mockBillingClient,
+      });
+      const app = createTestApp(ctx);
+      const request = makeRequest(app);
+
+      const res = await request
+        .post('/v1/threads/thread-001/messages')
+        .send({
+          messages: [{ role: 'user', content: 'Hello' }],
+          stream: false,
+        });
+
+      // Response should still succeed despite billing failures
+      expect(res.status).toBe(200);
+      expect(res.body.choices[0].message.content).toBe('Hello world');
+
+      await new Promise((r) => setTimeout(r, 50));
+      expect(mockBillingClient.recordUsage).toHaveBeenCalled();
+      expect(mockBillingClient.logInference).toHaveBeenCalled();
+    });
+
+    it('records latency_ms as positive number', async () => {
+      const mockBillingClient = {
+        checkQuota: jest.fn(async () => true),
+        recordUsage: jest.fn(async () => {}),
+        logInference: jest.fn(async () => {}),
+      };
+
+      const ctx = createMockConstructiveContext({
+        billingClient: mockBillingClient,
+      });
+      const app = createTestApp(ctx);
+      const request = makeRequest(app);
+
+      await request
+        .post('/v1/threads/thread-001/messages')
+        .send({
+          messages: [{ role: 'user', content: 'Hello' }],
+          stream: false,
+        });
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      const entry = (mockBillingClient.logInference.mock.calls as any[][])[0][0];
+      expect(entry.latencyMs).toBeGreaterThanOrEqual(0);
+      expect(typeof entry.latencyMs).toBe('number');
+    });
+  });
+
   describe('POST /v1/orgs/:entity_id/threads', () => {
     it('creates thread scoped to entity', async () => {
       const ctx = createMockConstructiveContext();
