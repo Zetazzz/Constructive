@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [5.7.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.5...graphile-settings@5.7.0) (2026-06-14)
+
+### Features
+
+- **graphile-settings:** wire GraphileLlmPreset into createConstructivePreset ([517ce84](https://github.com/constructive-io/constructive/commit/517ce845b2363bbdd3b3c8a18792d58117ab2c7c))
+
 ## [5.6.5](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.4...graphile-settings@5.6.5) (2026-06-12)
 
 ### Bug Fixes

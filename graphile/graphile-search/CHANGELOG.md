@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.17.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.16.0...graphile-search@1.17.0) (2026-06-14)
+
+### Bug Fixes
+
+- **graphile-llm:** fix all failing tests — RAG chunk discovery, mutation input detection, text-search scope ([49ead07](https://github.com/constructive-io/constructive/commit/49ead07fe1d863ea1c18bf4cb9446b031bd63188))
+- **graphile-search:** replace mock LLM plugin tests with Grafast-compatible integration tests ([53f2199](https://github.com/constructive-io/constructive/commit/53f21998fa854da19b031315846f4c9d4633ea71))
+
+### Features
+
+- **graphile-llm:** auto-embed unifiedSearch text for hybrid vector+keyword search ([dc4a5c1](https://github.com/constructive-io/constructive/commit/dc4a5c1befec668f93586fb94d02303b219e427c)), closes [#1054](https://github.com/constructive-io/constructive/issues/1054)
+
 # [1.16.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.4...graphile-search@1.16.0) (2026-06-12)
 
 ### Bug Fixes
