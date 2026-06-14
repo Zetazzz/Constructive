@@ -6,7 +6,7 @@
  * for tenant-scoped database access.
  *
  * LLM provider config is resolved per-database via `ctx.useLlm()` (from the
- * llm_module table), falling back to env vars from graphile-llm when the module
+ * llm_module table), falling back to env vars from @constructive-io/llm-env when the module
  * is not provisioned. Discovery and billing are handled by the shared loaders
  * in express-context — no custom caching here.
  *
@@ -32,6 +32,6 @@ export type {
   LlmConfig,
 } from '@constructive-io/express-context';
 
-// Re-export LLM env options from graphile-llm (single source of truth)
-export type { LlmEnvOptions, LlmProviderConfig } from 'graphile-llm';
-export { getLlmEnvOptions } from 'graphile-llm';
+// Re-export LLM env options from @constructive-io/llm-env (single source of truth)
+export type { LlmEnvOptions, LlmProviderConfig } from '@constructive-io/llm-env';
+export { getLlmEnvOptions } from '@constructive-io/llm-env';

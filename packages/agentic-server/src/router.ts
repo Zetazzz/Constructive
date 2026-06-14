@@ -23,7 +23,7 @@ import type { BillingClient, LlmConfig } from '@constructive-io/express-context'
 import { Logger } from '@pgpmjs/logger';
 import express, { Request, Response,Router } from 'express';
 
-import { getLlmEnvOptions } from 'graphile-llm';
+import { getLlmEnvOptions } from '@constructive-io/llm-env';
 
 const log = new Logger('agentic-server');
 
