@@ -1,0 +1,11 @@
+**/node_modules/
+**/.DS_Store
+**/dist
+**/yarn-error.log
+lerna-debug.log
+**/src/*.js
+**/src/*.d.ts
+.env
+.env.local
+**/.env
+**/.env.local

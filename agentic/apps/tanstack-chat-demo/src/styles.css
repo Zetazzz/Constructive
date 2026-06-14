@@ -1,0 +1,240 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+:root {
+  /* iOS system palette (light) */
+  --label-primary: #000000;
+  --label-secondary: rgba(60, 60, 67, 0.6);
+  --label-tertiary: rgba(60, 60, 67, 0.3);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f2f2f7;
+  --bg-grouped: #f2f2f7;
+  --bg-elevated: #ffffff;
+
+  --fill-primary: rgba(120, 120, 128, 0.2);
+  --fill-secondary: rgba(120, 120, 128, 0.16);
+  --fill-tertiary: rgba(118, 118, 128, 0.12);
+  --fill-quaternary: rgba(116, 116, 128, 0.08);
+
+  --separator: rgba(60, 60, 67, 0.29);
+  --separator-opaque: #c6c6c8;
+  --hairline: rgba(60, 60, 67, 0.12);
+
+  --ios-blue: #007aff;
+  --ios-blue-press: #0062cc;
+  --ios-blue-tint: rgba(0, 122, 255, 0.1);
+  --ios-green: #34c759;
+  --ios-red: #ff3b30;
+  --ios-red-soft: rgba(255, 59, 48, 0.1);
+  --ios-orange: #ff9500;
+  --ios-orange-soft: rgba(255, 149, 0, 0.12);
+
+  --bubble-assistant: #e9e9eb;
+  --bubble-user: #007aff;
+
+  /* shadcn bridge tokens */
+  --background: var(--bg-primary);
+  --foreground: var(--label-primary);
+  --card: var(--bg-elevated);
+  --card-foreground: var(--label-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--label-primary);
+  --primary: var(--ios-blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-secondary);
+  --secondary-foreground: var(--label-primary);
+  --muted: var(--bg-secondary);
+  --muted-foreground: var(--label-secondary);
+  --accent: var(--ios-blue-tint);
+  --accent-foreground: var(--ios-blue);
+  --destructive: var(--ios-red);
+  --input: var(--separator);
+  --border: var(--hairline);
+  --ring: var(--ios-blue);
+  --radius: 10px;
+
+  --sidebar: var(--bg-elevated);
+  --sidebar-foreground: var(--label-primary);
+  --sidebar-primary: var(--ios-blue);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--bg-secondary);
+  --sidebar-accent-foreground: var(--label-primary);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--ios-blue);
+  --chart-1: var(--ios-blue);
+  --chart-2: var(--ios-green);
+  --chart-3: var(--ios-orange);
+  --chart-4: var(--ios-red);
+  --chart-5: var(--label-secondary);
+}
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --color-label: var(--label-primary);
+  --color-label-2: var(--label-secondary);
+  --color-label-3: var(--label-tertiary);
+  --color-label-4: var(--label-quaternary);
+
+  --color-bg: var(--bg-primary);
+  --color-bg-2: var(--bg-secondary);
+  --color-bg-grouped: var(--bg-grouped);
+  --color-bg-elevated: var(--bg-elevated);
+
+  --color-fill-1: var(--fill-primary);
+  --color-fill-2: var(--fill-secondary);
+  --color-fill-3: var(--fill-tertiary);
+  --color-fill-4: var(--fill-quaternary);
+
+  --color-separator: var(--separator);
+  --color-hairline: var(--hairline);
+
+  --color-ios-blue: var(--ios-blue);
+  --color-ios-blue-press: var(--ios-blue-press);
+  --color-ios-blue-tint: var(--ios-blue-tint);
+  --color-ios-green: var(--ios-green);
+  --color-ios-red: var(--ios-red);
+  --color-ios-red-soft: var(--ios-red-soft);
+  --color-ios-orange: var(--ios-orange);
+  --color-ios-orange-soft: var(--ios-orange-soft);
+
+  --color-bubble-assistant: var(--bubble-assistant);
+  --color-bubble-user: var(--bubble-user);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 13px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 28px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/40;
+  }
+  html, body, #app {
+    height: 100%;
+  }
+  html {
+    background: var(--bg-secondary);
+  }
+  body {
+    @apply bg-bg text-label font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 15px;
+    line-height: 1.35;
+    letter-spacing: -0.24px;
+  }
+  button, [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+  }
+  code, kbd, pre, samp {
+    font-family: var(--font-mono);
+  }
+}
+
+.chrome-blur {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.press {
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms;
+}
+.press:active {
+  transform: scale(0.96);
+}
+
+@keyframes bubble-in {
+  0% { opacity: 0; transform: translateY(6px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.bubble-in {
+  animation: bubble-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--label-secondary);
+  animation: typing-bounce 1.2s infinite cubic-bezier(0.22, 1, 0.36, 1);
+}
+.typing-dot:nth-child(2) { animation-delay: 0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0.32s; }
+
+.caret-at {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: currentColor;
+  border-radius: 2px;
+  margin-left: 2px;
+  transform: translateY(0.17em);
+  animation: caret-blink 1s steps(1) infinite;
+  opacity: 0.7;
+}
+@keyframes caret-blink {
+  0%, 49% { opacity: 0.7; }
+  50%, 100% { opacity: 0; }
+}
+
+::selection {
+  background: color-mix(in oklab, var(--ios-blue) 22%, transparent);
+}
+
+.ios-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.ios-scroll::-webkit-scrollbar-track { background: transparent; }
+.ios-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.ios-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(60, 60, 67, 0.25);
+}

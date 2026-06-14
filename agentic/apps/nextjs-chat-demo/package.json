@@ -1,0 +1,30 @@
+{
+  "name": "nextjs-chat-demo",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "start": "next start --port 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@agentic-kit/agent": "workspace:*",
+    "@agentic-kit/openai": "workspace:*",
+    "@agentic-kit/react": "workspace:*",
+    "agentic-kit": "workspace:*",
+    "clsx": "^2.1.1",
+    "next": "15.0.4",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^22.10.2",
+    "@types/react": "19.0.0",
+    "@types/react-dom": "19.0.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.7.2"
+  }
+}
