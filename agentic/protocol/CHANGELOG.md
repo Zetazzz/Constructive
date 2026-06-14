@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# 1.2.0 (2026-06-14)
+
+### Features
+
+- merge agentic-kit monorepo into constructive ([33d9727](https://github.com/constructive-io/constructive/commit/33d9727340105643fa1531fba82149b50244243e))
+
 # 1.1.0 (2026-05-26)
 
 ### Features
