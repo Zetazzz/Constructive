@@ -32,6 +32,8 @@
 
 import type { GraphileConfig } from 'graphile-config';
 
+import { llmConfigStore } from '../embedder';
+import type { LlmConfigOverrides } from '../embedder';
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -151,6 +153,37 @@ export async function embedTextInWhere(
   }
 }
 
+/** Embedder signature expected by embedTextInWhere */
+type WhereEmbedder = (text: string) => Promise<number[] | null>;
+
+/**
+ * Resolve per-DB LLM config overrides from express-context.
+ * Returns an LlmConfigOverrides object if per-DB config is available,
+ * or null to use defaults. These overrides are string parameters only
+ * (model name, base URL) — the embedder function and its metering
+ * wrapper stay the same.
+ */
+async function resolveConfigOverrides(
+  graphqlContext: any
+): Promise<LlmConfigOverrides | null> {
+  const ctx = graphqlContext?.constructive;
+  if (!ctx?.useLlm) return null;
+
+  try {
+    const llm = await ctx.useLlm();
+    if (!llm?.embeddingModel) return null;
+
+    return {
+      embeddingModel: llm.embeddingModel,
+      embeddingBaseUrl: llm.embeddingBaseUrl,
+      chatModel: llm.chatModel ?? undefined,
+      chatBaseUrl: llm.chatBaseUrl ?? undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Creates the LlmTextSearchPlugin.
  *
@@ -237,7 +270,7 @@ export function createLlmTextSearchPlugin(
           if (!hasVector && !hasSearchableColumns) return field;
 
           const embedder = (build as any).llmEmbedder as
-            | ((text: string) => Promise<number[] | null>)
+            | WhereEmbedder
             | null;
           if (!embedder) return field;
 
@@ -252,17 +285,25 @@ export function createLlmTextSearchPlugin(
           return {
             ...rest,
             async resolve(source: any, args: any, graphqlContext: any, info: any) {
-              // If the query has a `where` argument, check for text/unifiedSearch fields
-              if (args?.where) {
-                await embedTextInWhere(args.where, embedder, !!hasTextAdapters, onQuotaExceeded);
-              }
+              // Resolve per-DB model/baseUrl overrides from express-context.
+              // These are just string parameters — the embedder function
+              // (and its metering wrapper) stays the same.
+              const overrides = await resolveConfigOverrides(graphqlContext);
 
-              // Also handle `filter` for relay-style connections
-              if (args?.filter) {
-                await embedTextInWhere(args.filter, embedder, !!hasTextAdapters, onQuotaExceeded);
-              }
+              // Run within llmConfigStore so the embedder picks up per-DB
+              // model/baseUrl at call time. Metering wraps the same function
+              // and is unaffected.
+              return llmConfigStore.run(overrides, async () => {
+                if (args?.where) {
+                  await embedTextInWhere(args.where, embedder, !!hasTextAdapters, onQuotaExceeded);
+                }
 
-              return oldResolve(source, args, graphqlContext, info);
+                if (args?.filter) {
+                  await embedTextInWhere(args.filter, embedder, !!hasTextAdapters, onQuotaExceeded);
+                }
+
+                return oldResolve(source, args, graphqlContext, info);
+              });
             }
           };
         },

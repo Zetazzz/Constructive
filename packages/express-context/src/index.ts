@@ -51,6 +51,7 @@ export type {
   DatabaseSettings,
   GenericModuleData,
   InferenceLogConfig,
+  LlmConfig,
   PublicKeyChallengeData,
   PubkeyChallengeSettings,
   RlsModule,
@@ -95,6 +96,7 @@ export {
   inferenceLogLoader,
   pubkeyLoader,
   rlsLoader,
+  llmLoader,
   webauthnLoader,
 } from './loaders';
 

@@ -137,6 +137,8 @@ function createMockConstructiveContext(overrides: any = {}) {
       }
       return undefined;
     }),
+    useBilling: jest.fn(async () => overrides.billingClient ?? null),
+    useLlm: jest.fn(async () => overrides.llmConfig ?? null),
     withPgClient: jest.fn(async (fn: any) => {
       const mockClient = {
         query: jest.fn(async (sql: string, _params?: any[]) => {
@@ -329,40 +331,14 @@ describe('agentic-server router', () => {
     });
 
     it('returns 429 when billing quota exceeded', async () => {
-      const ctx = createMockConstructiveContext({
-        modules: {
-          billing: {
-            publicSchema: 'billing_public',
-            privateSchema: 'billing_private',
-            recordUsageFunction: 'record_usage',
-            checkBillingQuotaFunction: 'check_billing_quota',
-          },
-        },
-      });
+      const mockBillingClient = {
+        checkQuota: jest.fn(async () => false),
+        recordUsage: jest.fn(async () => {}),
+        logInference: jest.fn(async () => {}),
+      };
 
-      // Override withPgClient to return quota exceeded
-      ctx.withPgClient = jest.fn(async (fn: any) => {
-        const mockClient = {
-          query: jest.fn(async (sql: string) => {
-            // Quota check returns false
-            if (sql.includes('check_billing_quota')) {
-              return { rows: [{ allowed: false }] };
-            }
-            // Thread lookup
-            if (sql.includes('SELECT id, mode, model')) {
-              return {
-                rows: [{
-                  id: 'thread-001', mode: 'ask',
-                  model: null as string | null,
-                  system_prompt: null as string | null,
-                  status: 'active',
-                }],
-              };
-            }
-            return { rows: [] };
-          }),
-        };
-        return fn(mockClient);
+      const ctx = createMockConstructiveContext({
+        billingClient: mockBillingClient,
       });
 
       const app = createTestApp(ctx);

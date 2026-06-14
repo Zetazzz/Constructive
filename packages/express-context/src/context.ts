@@ -25,7 +25,7 @@ import type { LoaderRegistry } from './loaders/registry';
 import type { LoaderContext } from './loaders/types';
 import { withPgClient as withPgClientFn } from './pg-client';
 import { buildPgSettings } from './pg-settings';
-import type { BillingConfig, BuiltinModuleMap, ConstructiveContext, InferenceLogConfig } from './types';
+import type { BillingConfig, BuiltinModuleMap, ConstructiveContext, InferenceLogConfig, LlmConfig } from './types';
 
 export interface ContextMiddlewareOptions {
   /** Base PG options for pool creation (host, port, user, password) */
@@ -102,6 +102,8 @@ export function buildContext(
 
   // Lazy-initialized billing client (cached per request)
   let billingClient: BillingClient | null | undefined;
+  // Lazy-initialized LLM config (cached per request)
+  let llmConfig: LlmConfig | null | undefined;
 
   return {
     api,
@@ -139,6 +141,12 @@ export function buildContext(
         inferenceLog ?? null
       );
       return billingClient;
+    },
+    async useLlm() {
+      if (llmConfig !== undefined) return llmConfig;
+      const resolved = await useModule('llm') as LlmConfig | undefined;
+      llmConfig = resolved ?? null;
+      return llmConfig;
     }
   };
 }

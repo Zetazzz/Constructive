@@ -31,6 +31,7 @@
   "dependencies": {
     "@agentic-kit/ollama": "^2.0.0",
     "@constructive-io/express-context": "workspace:^",
+    "@constructive-io/llm-env": "workspace:^",
     "@pgpmjs/logger": "workspace:^",
     "pg": "^8.21.0",
     "pg-cache": "workspace:^"

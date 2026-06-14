@@ -5,6 +5,11 @@
  * billing metering, and inference logging. Uses @constructive-io/express-context
  * for tenant-scoped database access.
  *
+ * LLM provider config is resolved per-database via `ctx.useLlm()` (from the
+ * llm_module table), falling back to env vars from @constructive-io/llm-env when the module
+ * is not provisioned. Discovery and billing are handled by the shared loaders
+ * in express-context — no custom caching here.
+ *
  * @example
  * ```typescript
  * import express from 'express';
@@ -18,18 +23,15 @@
  * ```
  */
 
-export { TtlCache } from './cache';
-export type {
-  AgentDiscovery,
-  AgentTableInfo,
-  BillingConfig,
-  DatabaseConfig,
-  InferenceLogConfig
-} from './discovery';
-export { clearAgentCache, clearConfigCache,getAgentDiscovery, getDatabaseConfig } from './discovery';
-export type { EnvOptions, ProviderConfig } from './env';
-export { getEnvOptions } from './env';
 export { createAgenticRouter } from './router';
 
-// Re-export billing client from express-context for convenience
-export type { BillingClient, InferenceLogEntry } from '@constructive-io/express-context';
+// Re-export types from express-context for convenience
+export type {
+  BillingClient,
+  InferenceLogEntry,
+  LlmConfig,
+} from '@constructive-io/express-context';
+
+// Re-export LLM env options from @constructive-io/llm-env (single source of truth)
+export type { LlmEnvOptions, LlmProviderConfig, ResolvedLlmEnvOptions } from '@constructive-io/llm-env';
+export { getEnvVars as getLlmEnvVars, getEnvOptions as getLlmEnvOptions, llmDefaults } from '@constructive-io/llm-env';

@@ -12,14 +12,18 @@
  * All routes require `req.constructive` (from @constructive-io/express-context).
  * Billing (check_quota + record_usage) and inference logging are automatic
  * when the billing/inference_log modules are provisioned.
+ *
+ * LLM provider config is resolved per-database via `ctx.useLlm()` from the
+ * llm_module table, falling back to env vars (EMBEDDER_*, CHAT_*) when the
+ * module is not provisioned.
  */
 
 import { OllamaAdapter } from '@agentic-kit/ollama';
-import type { BillingClient } from '@constructive-io/express-context';
+import type { BillingClient, LlmConfig } from '@constructive-io/express-context';
 import { Logger } from '@pgpmjs/logger';
 import express, { Request, Response,Router } from 'express';
 
-import { getEnvOptions } from './env';
+import { getEnvOptions as getLlmEnvOptions } from '@constructive-io/llm-env';
 
 const log = new Logger('agentic-server');
 
@@ -68,27 +72,39 @@ interface UsageResult {
   totalTokens: number;
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Resolved LLM Config ────────────────────────────────────────────────────
 
-function resolveOllamaAdapter(): { adapter: OllamaAdapter; model: string; baseUrl: string } | null {
-  const { chat } = getEnvOptions();
-  if (chat.provider === 'ollama') {
-    return {
-      adapter: new OllamaAdapter(chat.baseUrl),
-      model: chat.model,
-      baseUrl: chat.baseUrl
-    };
+interface ResolvedChatAdapter {
+  adapter: OllamaAdapter;
+  model: string;
+  baseUrl: string;
+  provider: string;
+}
+
+interface ResolvedEmbeddingAdapter {
+  adapter: OllamaAdapter;
+  model: string;
+  provider: string;
+}
+
+function resolveChatAdapter(llm: LlmConfig | null): ResolvedChatAdapter | null {
+  const provider = llm?.chatProvider ?? getLlmEnvOptions().chat.provider;
+  const model = llm?.chatModel ?? getLlmEnvOptions().chat.model;
+  const baseUrl = llm?.chatBaseUrl ?? getLlmEnvOptions().chat.baseUrl;
+
+  if (provider === 'ollama') {
+    return { adapter: new OllamaAdapter(baseUrl), model, baseUrl, provider };
   }
   return null;
 }
 
-function resolveEmbeddingAdapter(): { adapter: OllamaAdapter; model: string } | null {
-  const { embedding } = getEnvOptions();
-  if (embedding.provider === 'ollama') {
-    return {
-      adapter: new OllamaAdapter(embedding.baseUrl),
-      model: embedding.model
-    };
+function resolveEmbeddingAdapter(llm: LlmConfig | null): ResolvedEmbeddingAdapter | null {
+  const provider = llm?.embeddingProvider ?? getLlmEnvOptions().embedding.provider;
+  const model = llm?.embeddingModel ?? getLlmEnvOptions().embedding.model;
+  const baseUrl = llm?.embeddingBaseUrl ?? getLlmEnvOptions().embedding.baseUrl;
+
+  if (provider === 'ollama') {
+    return { adapter: new OllamaAdapter(baseUrl), model, provider };
   }
   return null;
 }
@@ -186,16 +202,16 @@ async function handleSendMessage(
     return;
   }
 
-  // Resolve shared billing client (lazy, cached per request)
-  const billing = await ctx.useBilling();
+  // Resolve shared billing client and LLM config (lazy, cached per request)
+  const [billing, llm] = await Promise.all([ctx.useBilling(), ctx.useLlm()]);
 
-  const ollama = resolveOllamaAdapter();
-  if (!ollama) {
+  const chatAdapter = resolveChatAdapter(llm);
+  if (!chatAdapter) {
     res.status(503).json({ error: 'No LLM provider configured' });
     return;
   }
 
-  const model = body.model ?? threadRow.model ?? ollama.model;
+  const model = body.model ?? threadRow.model ?? chatAdapter.model;
   const meterSlug = model;
 
   // Quota check
@@ -260,14 +276,14 @@ async function handleSendMessage(
 
   if (shouldStream) {
     await handleStreamingResponse(req, res, {
-      ctx, ollama, model, llmMessages, body,
+      ctx, chatAdapter, model, llmMessages, body,
       entityId, userId, threadId,
       schemaName, threadTableName, messageTableName,
       billing, startTime, meterSlug
     });
   } else {
     await handleBatchResponse(req, res, {
-      ctx, ollama, model, llmMessages, body,
+      ctx, chatAdapter, model, llmMessages, body,
       entityId, userId, threadId,
       schemaName, threadTableName, messageTableName,
       billing, startTime, meterSlug
@@ -277,7 +293,7 @@ async function handleSendMessage(
 
 interface MessageContext {
   ctx: NonNullable<Request['constructive']>;
-  ollama: { adapter: OllamaAdapter; model: string; baseUrl: string };
+  chatAdapter: ResolvedChatAdapter;
   model: string;
   llmMessages: Array<{ role: string; content: string }>;
   body: SendMessageBody;
@@ -297,7 +313,7 @@ async function handleStreamingResponse(
   res: Response,
   mc: MessageContext
 ): Promise<void> {
-  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, billing, startTime, meterSlug } = mc;
+  const { ctx, chatAdapter, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, billing, startTime, meterSlug } = mc;
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -311,7 +327,7 @@ async function handleStreamingResponse(
   try {
     const systemMsg = llmMessages.find(m => m.role === 'system');
     const nonSystem = llmMessages.filter(m => m.role !== 'system');
-    const modelDesc = ollama.adapter.createModel(model, { maxOutputTokens: undefined });
+    const modelDesc = chatAdapter.adapter.createModel(model, { maxOutputTokens: undefined });
     const context = {
       systemPrompt: systemMsg?.content,
       messages: nonSystem.map((m) => ({
@@ -320,7 +336,7 @@ async function handleStreamingResponse(
         timestamp: Date.now()
       }))
     };
-    const stream = ollama.adapter.stream(modelDesc, context, {
+    const stream = chatAdapter.adapter.stream(modelDesc, context, {
       temperature: body.temperature
     });
 
@@ -381,7 +397,7 @@ async function handleStreamingResponse(
       }).catch(() => {});
 
       billing.logInference({
-        entityId, actorId: userId, model, provider: 'ollama',
+        entityId, actorId: userId, model, provider: chatAdapter.provider,
         service: 'llm', operation: 'chat',
         inputTokens: usage.input, outputTokens: usage.output,
         totalTokens: usage.totalTokens, latencyMs, status: 'ok'
@@ -401,11 +417,11 @@ async function handleBatchResponse(
   res: Response,
   mc: MessageContext
 ): Promise<void> {
-  const { ctx, ollama, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, billing, startTime, meterSlug } = mc;
+  const { ctx, chatAdapter, model, llmMessages, body, entityId, userId, threadId, schemaName, threadTableName, messageTableName, billing, startTime, meterSlug } = mc;
 
   const systemMsg = llmMessages.find(m => m.role === 'system');
   const nonSystem = llmMessages.filter(m => m.role !== 'system');
-  const modelDesc = ollama.adapter.createModel(model, { maxOutputTokens: undefined });
+  const modelDesc = chatAdapter.adapter.createModel(model, { maxOutputTokens: undefined });
   const context = {
     systemPrompt: systemMsg?.content,
     messages: nonSystem.map((m) => ({
@@ -414,7 +430,7 @@ async function handleBatchResponse(
       timestamp: Date.now()
     }))
   };
-  const stream = ollama.adapter.stream(modelDesc, context, {
+  const stream = chatAdapter.adapter.stream(modelDesc, context, {
     temperature: body.temperature
   });
 
@@ -456,7 +472,7 @@ async function handleBatchResponse(
     }).catch(() => {});
 
     billing.logInference({
-      entityId, actorId: userId, model, provider: 'ollama',
+      entityId, actorId: userId, model, provider: chatAdapter.provider,
       service: 'llm', operation: 'chat',
       inputTokens: usage.input, outputTokens: usage.output,
       totalTokens: usage.totalTokens, latencyMs, status: 'ok'
@@ -494,13 +510,14 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const embedder = resolveEmbeddingAdapter();
-  if (!embedder) {
+  const llm = await ctx.useLlm();
+  const embedAdapter = resolveEmbeddingAdapter(llm);
+  if (!embedAdapter) {
     res.status(503).json({ error: 'No embedding provider configured' });
     return;
   }
 
-  const model = body.model ?? embedder.model;
+  const model = body.model ?? embedAdapter.model;
   const inputs = Array.isArray(body.input) ? body.input : [body.input];
 
   // Resolve shared billing client
@@ -519,7 +536,7 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
 
   try {
     const results = await Promise.all(
-      inputs.map((text) => embedder.adapter.embed(text, model))
+      inputs.map((text) => embedAdapter.adapter.embed(text, model))
     );
 
     const latencyMs = Date.now() - startTime;
@@ -538,7 +555,7 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
         entityId: ctx.userId!,
         actorId: ctx.userId!,
         model,
-        provider: 'ollama',
+        provider: embedAdapter.provider,
         service: 'embedding',
         operation: 'embed',
         inputTokens: totalTokens,
