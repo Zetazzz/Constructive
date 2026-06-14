@@ -32,6 +32,8 @@
 
 import type { GraphileConfig } from 'graphile-config';
 
+import { buildEmbedder } from '../embedder';
+import { getLlmEnvOptions } from '../env';
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -151,6 +153,60 @@ export async function embedTextInWhere(
   }
 }
 
+/** Embedder signature expected by embedTextInWhere */
+type WhereEmbedder = (text: string) => Promise<number[] | null>;
+
+/**
+ * Resolve the embedder to use for this request. Checks for per-database
+ * LLM config via `ctx.useLlm()` from express-context. If the per-DB config
+ * specifies a different provider/model/baseUrl than the env defaults, builds
+ * a tenant-specific embedder. Otherwise falls back to the build-time embedder
+ * (which may be wrapped with metering by `LlmMeteringPlugin`).
+ *
+ * Note: per-DB embedders bypass the graphile-llm metering plugin wrapper.
+ * Billing for those calls should be handled via `ctx.useBilling()` in
+ * express-context (which agentic-server and other callers already use).
+ */
+async function resolveRequestEmbedder(
+  graphqlContext: any,
+  buildTimeEmbedder: WhereEmbedder
+): Promise<WhereEmbedder> {
+  const ctx = graphqlContext?.constructive;
+  if (!ctx?.useLlm) return buildTimeEmbedder;
+
+  try {
+    const llm = await ctx.useLlm();
+    if (!llm?.embeddingProvider) return buildTimeEmbedder;
+
+    // Only build a new embedder if the per-DB config actually differs
+    // from env defaults. When they match, the build-time embedder (which
+    // includes metering wrapping) is correct and more efficient.
+    const envDefaults = getLlmEnvOptions();
+    const sameAsEnv =
+      llm.embeddingProvider === envDefaults.embedding.provider &&
+      llm.embeddingModel === envDefaults.embedding.model &&
+      llm.embeddingBaseUrl === envDefaults.embedding.baseUrl;
+
+    if (sameAsEnv) return buildTimeEmbedder;
+
+    const rawEmbedder = buildEmbedder({
+      provider: llm.embeddingProvider,
+      model: llm.embeddingModel,
+      baseUrl: llm.embeddingBaseUrl
+    });
+    if (rawEmbedder) {
+      return async (text: string) => {
+        const result = await rawEmbedder(text);
+        return result.embedding;
+      };
+    }
+  } catch {
+    // Per-DB resolution failed — fall back to build-time embedder
+  }
+
+  return buildTimeEmbedder;
+}
+
 /**
  * Creates the LlmTextSearchPlugin.
  *
@@ -236,10 +292,10 @@ export function createLlmTextSearchPlugin(
 
           if (!hasVector && !hasSearchableColumns) return field;
 
-          const embedder = (build as any).llmEmbedder as
-            | ((text: string) => Promise<number[] | null>)
+          const buildTimeEmbedder = (build as any).llmEmbedder as
+            | WhereEmbedder
             | null;
-          if (!embedder) return field;
+          if (!buildTimeEmbedder) return field;
 
           // Determine if this table has text-based search adapters for fallback logic
           const hasTextAdapters = pgCodec.attributes && Object.values(
@@ -252,6 +308,10 @@ export function createLlmTextSearchPlugin(
           return {
             ...rest,
             async resolve(source: any, args: any, graphqlContext: any, info: any) {
+              // Resolve per-database embedder from express-context if available,
+              // falling back to the build-time default embedder.
+              const embedder = await resolveRequestEmbedder(graphqlContext, buildTimeEmbedder);
+
               // If the query has a `where` argument, check for text/unifiedSearch fields
               if (args?.where) {
                 await embedTextInWhere(args.where, embedder, !!hasTextAdapters, onQuotaExceeded);

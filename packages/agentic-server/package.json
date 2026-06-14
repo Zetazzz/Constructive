@@ -32,6 +32,7 @@
     "@agentic-kit/ollama": "^2.0.0",
     "@constructive-io/express-context": "workspace:^",
     "@pgpmjs/logger": "workspace:^",
+    "graphile-llm": "workspace:^",
     "pg": "^8.21.0",
     "pg-cache": "workspace:^"
   },

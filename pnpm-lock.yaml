@@ -2161,6 +2161,9 @@ importers:
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
+      graphile-llm:
+        specifier: workspace:^
+        version: link:../../graphile/graphile-llm/dist
       pg:
         specifier: ^8.21.0
         version: 8.21.0

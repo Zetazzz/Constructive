@@ -11,8 +11,9 @@
  * to consume.
  *
  * Resolution order for the embedder:
- *   1. `llm_module` from api_modules (per-database, loaded at schema build time)
- *   2. `defaultEmbedder` from preset options (dev/testing fallback)
+ *   1. Per-database `llm_module` config via `ctx.useLlm()` (resolved at request time
+ *      by LlmTextSearchPlugin — takes priority over build-time config)
+ *   2. `defaultEmbedder` from preset options (build-time fallback)
  *   3. Environment variables (EMBEDDER_PROVIDER, EMBEDDER_MODEL, EMBEDDER_BASE_URL)
  *   4. null — LLM features are disabled
  *

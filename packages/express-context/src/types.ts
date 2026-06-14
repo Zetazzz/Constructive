@@ -153,6 +153,19 @@ export interface AgentChatConfig {
   taskTableName: string | null;
 }
 
+export interface LlmConfig {
+  embeddingProvider: string;
+  embeddingModel: string;
+  embeddingBaseUrl: string;
+  embeddingDimensions: number | null;
+  chatProvider: string | null;
+  chatModel: string | null;
+  chatBaseUrl: string | null;
+  rateLimitRpm: number | null;
+  maxTokensPerRequest: number | null;
+  ragContextLimit: number | null;
+}
+
 // ─── Module Types Map ───────────────────────────────────────────────────────
 
 /**
@@ -173,6 +186,7 @@ export interface BuiltinModuleMap {
   billing: BillingConfig;
   inferenceLog: InferenceLogConfig;
   agentChat: AgentChatConfig;
+  llm: LlmConfig;
 }
 
 // ─── Constructive Context ───────────────────────────────────────────────────
@@ -241,6 +255,18 @@ export interface ConstructiveContext {
    * Cached: subsequent calls return the same client instance.
    */
   useBilling(): Promise<BillingClient | null>;
+
+  /**
+   * Resolve per-database LLM provider config.
+   *
+   * Returns the resolved LlmConfig from the llm_module table, or null
+   * if the module is not provisioned for this database. Callers should
+   * fall back to environment variables when null.
+   *
+   * Lazy: only resolves the llm loader on first call.
+   * Cached: subsequent calls return the same config instance.
+   */
+  useLlm(): Promise<LlmConfig | null>;
 }
 
 // ─── Express Augmentation ───────────────────────────────────────────────────
