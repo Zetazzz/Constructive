@@ -386,6 +386,13 @@ query MetaContract {
           rightTable { name }
         }
       }
+      storage { isFilesTable isBucketsTable }
+      search {
+        algorithms
+        columns { name algorithm }
+        hasUnifiedSearch
+        config { weights boostRecent boostRecencyField boostRecencyDecay }
+      }
     }
   }
 }
@@ -449,6 +456,16 @@ const REQUIRED_META_QUERY_PATHS = [
   'relations.manyToMany.leftKeyAttributes.name',
   'relations.manyToMany.rightKeyAttributes.name',
   'relations.manyToMany.rightTable.name',
+  'storage.isFilesTable',
+  'storage.isBucketsTable',
+  'search.algorithms',
+  'search.columns.name',
+  'search.columns.algorithm',
+  'search.hasUnifiedSearch',
+  'search.config.weights',
+  'search.config.boostRecent',
+  'search.config.boostRecencyField',
+  'search.config.boostRecencyDecay',
 ];
 
 function collectSelectionPaths(selections: readonly SelectionNode[], prefix = ''): string[] {
@@ -1894,6 +1911,178 @@ describe('MetaSchemaPlugin', () => {
 
       expect(collectMetaInvariantErrors(normalized)).toEqual([]);
       expect(normalized).toMatchSnapshot();
+    });
+  });
+
+  describe('storage metadata', () => {
+    it('returns null storage for tables without storage tags', () => {
+      const build = createMockBuild({
+        user: {
+          codec: createMockCodec('user', { id: createMockAttribute('uuid') }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].storage).toBeNull();
+    });
+
+    it('detects @storageFiles tagged tables', () => {
+      const codec = createMockCodec('app_file', {
+        id: createMockAttribute('uuid'),
+        key: createMockAttribute('text'),
+        bucket_id: createMockAttribute('uuid'),
+      });
+      (codec as any).extensions = {
+        ...codec.extensions,
+        tags: { storageFiles: true },
+      };
+      const build = createMockBuild({
+        app_file: { codec, uniques: [], relations: {} },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].storage).toEqual({
+        isFilesTable: true,
+        isBucketsTable: false,
+      });
+    });
+
+    it('detects @storageBuckets tagged tables', () => {
+      const codec = createMockCodec('app_bucket', {
+        id: createMockAttribute('uuid'),
+        key: createMockAttribute('text'),
+      });
+      (codec as any).extensions = {
+        ...codec.extensions,
+        tags: { storageBuckets: true },
+      };
+      const build = createMockBuild({
+        app_bucket: { codec, uniques: [], relations: {} },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].storage).toEqual({
+        isFilesTable: false,
+        isBucketsTable: true,
+      });
+    });
+  });
+
+  describe('search metadata', () => {
+    it('returns null search for tables without search features', () => {
+      const build = createMockBuild({
+        user: {
+          codec: createMockCodec('user', { id: createMockAttribute('uuid') }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].search).toBeNull();
+    });
+
+    it('detects tsvector columns', () => {
+      const codec = createMockCodec('article', {
+        id: createMockAttribute('uuid'),
+        title: createMockAttribute('text'),
+        tsv: createMockAttribute('tsvector'),
+      });
+      const build = createMockBuild({
+        article: { codec, uniques: [], relations: {} },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].search).toEqual({
+        algorithms: ['tsvector'],
+        columns: [{ name: 'tsv', algorithm: 'tsvector' }],
+        hasUnifiedSearch: true,
+        config: null,
+      });
+    });
+
+    it('detects vector columns (pgvector)', () => {
+      const codec = createMockCodec('document', {
+        id: createMockAttribute('uuid'),
+        embedding: createMockAttribute('vector'),
+      });
+      const build = createMockBuild({
+        document: { codec, uniques: [], relations: {} },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].search).toEqual({
+        algorithms: ['vector'],
+        columns: [{ name: 'embedding', algorithm: 'vector' }],
+        hasUnifiedSearch: false,
+        config: null,
+      });
+    });
+
+    it('detects @bm25Index tagged columns', () => {
+      const bm25Attr = createMockAttribute('text');
+      (bm25Attr as any).extensions = { tags: { bm25Index: true } };
+      const codec = createMockCodec('article', {
+        id: createMockAttribute('uuid'),
+        body: bm25Attr,
+      });
+      const build = createMockBuild({
+        article: { codec, uniques: [], relations: {} },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].search).toEqual({
+        algorithms: ['bm25'],
+        columns: [{ name: 'body', algorithm: 'bm25' }],
+        hasUnifiedSearch: true,
+        config: null,
+      });
+    });
+
+    it('parses @searchConfig smart tag', () => {
+      const codec = createMockCodec('article', {
+        id: createMockAttribute('uuid'),
+        tsv: createMockAttribute('tsvector'),
+      });
+      (codec as any).extensions = {
+        ...codec.extensions,
+        tags: {
+          searchConfig: {
+            weights: { bm25: 0.6, tsv: 0.4 },
+            boost_recent: true,
+            boost_recency_field: 'created_at',
+            boost_recency_decay: 0.95,
+          },
+        },
+      };
+      const build = createMockBuild({
+        article: { codec, uniques: [], relations: {} },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].search).toEqual({
+        algorithms: ['tsvector'],
+        columns: [{ name: 'tsv', algorithm: 'tsvector' }],
+        hasUnifiedSearch: true,
+        config: {
+          weights: { bm25: 0.6, tsv: 0.4 },
+          boostRecent: true,
+          boostRecencyField: 'created_at',
+          boostRecencyDecay: 0.95,
+        },
+      });
+    });
+
+    it('detects multiple search algorithms on one table', () => {
+      const bm25Attr = createMockAttribute('text');
+      (bm25Attr as any).extensions = { tags: { bm25Index: true } };
+      const codec = createMockCodec('article', {
+        id: createMockAttribute('uuid'),
+        tsv: createMockAttribute('tsvector'),
+        embedding: createMockAttribute('vector'),
+        body: bm25Attr,
+      });
+      const build = createMockBuild({
+        article: { codec, uniques: [], relations: {} },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].search!.algorithms).toEqual(['bm25', 'tsvector', 'vector']);
+      expect(tables[0].search!.hasUnifiedSearch).toBe(true);
+      expect(tables[0].search!.columns).toHaveLength(3);
     });
   });
 

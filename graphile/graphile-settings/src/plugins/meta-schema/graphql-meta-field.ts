@@ -1,5 +1,6 @@
 import {
   GraphQLBoolean,
+  GraphQLFloat,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -194,6 +195,52 @@ function createMetaSchemaType(): GraphQLObjectType {
     }),
   });
 
+  const MetaStorageType = new GraphQLObjectType({
+    name: 'MetaStorage',
+    description: 'Storage metadata for a table',
+    fields: () => ({
+      isFilesTable: { type: nn(GraphQLBoolean), description: 'Whether this table is a storage files table' },
+      isBucketsTable: { type: nn(GraphQLBoolean), description: 'Whether this table is a storage buckets table' },
+    }),
+  });
+
+  const MetaSearchConfigType = new GraphQLObjectType({
+    name: 'MetaSearchConfig',
+    description: 'Per-table search configuration from @searchConfig smart tag',
+    fields: () => ({
+      weights: {
+        type: GraphQLString,
+        description: 'JSON-encoded per-adapter score weights',
+        resolve(source: any) {
+          return source.weights ? JSON.stringify(source.weights) : null;
+        },
+      },
+      boostRecent: { type: nn(GraphQLBoolean), description: 'Whether recency boosting is enabled' },
+      boostRecencyField: { type: GraphQLString, description: 'Field used for recency decay' },
+      boostRecencyDecay: { type: GraphQLFloat, description: 'Exponential decay factor per day' },
+    }),
+  });
+
+  const MetaSearchColumnType = new GraphQLObjectType({
+    name: 'MetaSearchColumn',
+    description: 'A searchable column with its algorithm',
+    fields: () => ({
+      name: { type: nn(GraphQLString), description: 'Column name (camelCase)' },
+      algorithm: { type: nn(GraphQLString), description: 'Search algorithm: tsvector, bm25, trgm, or vector' },
+    }),
+  });
+
+  const MetaSearchType = new GraphQLObjectType({
+    name: 'MetaSearch',
+    description: 'Search metadata for a table',
+    fields: () => ({
+      algorithms: { type: nnList(GraphQLString), description: 'Active search algorithms on this table' },
+      columns: { type: nnList(MetaSearchColumnType), description: 'Searchable columns with their algorithm' },
+      hasUnifiedSearch: { type: nn(GraphQLBoolean), description: 'Whether unifiedSearch composite filter is available' },
+      config: { type: MetaSearchConfigType, description: 'Per-table search configuration' },
+    }),
+  });
+
   const MetaTableType = new GraphQLObjectType({
     name: 'MetaTable',
     description: 'Information about a database table',
@@ -209,6 +256,8 @@ function createMetaSchemaType(): GraphQLObjectType {
       relations: { type: nn(MetaRelationsType) },
       inflection: { type: nn(MetaInflectionType) },
       query: { type: nn(MetaQueryType) },
+      storage: { type: MetaStorageType, description: 'Storage metadata (null if not a storage table)' },
+      search: { type: MetaSearchType, description: 'Search metadata (null if no search configured)' },
     }),
   });
 

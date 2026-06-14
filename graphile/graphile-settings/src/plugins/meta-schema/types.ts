@@ -10,6 +10,44 @@ export interface TableMeta {
   relations: RelationsMeta;
   inflection: InflectionMeta;
   query: QueryMeta;
+  storage: StorageMeta | null;
+  search: SearchMeta | null;
+}
+
+export interface StorageMeta {
+  /** Whether this table is tagged as a storage files table */
+  isFilesTable: boolean;
+  /** Whether this table is tagged as a storage buckets table */
+  isBucketsTable: boolean;
+}
+
+export interface SearchColumnMeta {
+  /** Column name (camelCase inflected) */
+  name: string;
+  /** Search algorithm: 'tsvector', 'bm25', 'trgm', 'vector' */
+  algorithm: string;
+}
+
+export interface SearchMeta {
+  /** Which search algorithms are active on this table */
+  algorithms: string[];
+  /** Searchable columns with their algorithm */
+  columns: SearchColumnMeta[];
+  /** Whether unifiedSearch composite filter is available */
+  hasUnifiedSearch: boolean;
+  /** Per-table search config from @searchConfig smart tag */
+  config: SearchConfigMeta | null;
+}
+
+export interface SearchConfigMeta {
+  /** Per-adapter score weights */
+  weights: Record<string, number> | null;
+  /** Whether recency boosting is enabled */
+  boostRecent: boolean;
+  /** Field used for recency decay */
+  boostRecencyField: string | null;
+  /** Exponential decay factor per day */
+  boostRecencyDecay: number | null;
 }
 
 export interface FieldMeta {
@@ -228,4 +266,11 @@ export interface MetaBuild extends GqlTypeResolverBuild {
     [key: string]: unknown;
   };
   pgManyToManyRealtionshipsByResource?: Map<unknown, unknown>;
+}
+
+export interface PgCodecExtensions {
+  pg?: {
+    schemaName?: string;
+  };
+  tags?: Record<string, unknown>;
 }

@@ -95,6 +95,20 @@ exports[`MetaSchemaPlugin _meta query contract contains required selection paths
   "relations.manyToMany.rightTable.name",
   "relations.manyToMany.type",
   "schemaName",
+  "search",
+  "search.algorithms",
+  "search.columns",
+  "search.columns.algorithm",
+  "search.columns.name",
+  "search.config",
+  "search.config.boostRecencyDecay",
+  "search.config.boostRecencyField",
+  "search.config.boostRecent",
+  "search.config.weights",
+  "search.hasUnifiedSearch",
+  "storage",
+  "storage.isBucketsTable",
+  "storage.isFilesTable",
   "uniqueConstraints",
   "uniqueConstraints.name",
 ]
@@ -235,6 +249,24 @@ exports[`MetaSchemaPlugin _meta query contract has stable printed GraphQL text 1
           rightTable {
             name
           }
+        }
+      }
+      storage {
+        isFilesTable
+        isBucketsTable
+      }
+      search {
+        algorithms
+        columns {
+          name
+          algorithm
+        }
+        hasUnifiedSearch
+        config {
+          weights
+          boostRecent
+          boostRecencyField
+          boostRecencyDecay
         }
       }
     }
@@ -657,6 +689,8 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "manyToMany": [],
     },
     "schemaName": "app_public",
+    "search": null,
+    "storage": null,
     "uniqueConstraints": [],
   },
   {
@@ -1235,6 +1269,8 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       ],
     },
     "schemaName": "app_public",
+    "search": null,
+    "storage": null,
     "uniqueConstraints": [],
   },
   {
@@ -1667,6 +1703,8 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "manyToMany": [],
     },
     "schemaName": "app_public",
+    "search": null,
+    "storage": null,
     "uniqueConstraints": [],
   },
   {
@@ -2088,6 +2126,8 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       ],
     },
     "schemaName": "app_public",
+    "search": null,
+    "storage": null,
     "uniqueConstraints": [
       {
         "fields": [
@@ -2424,6 +2464,8 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "manyToMany": [],
     },
     "schemaName": "app_public",
+    "search": null,
+    "storage": null,
     "uniqueConstraints": [
       {
         "fields": [
