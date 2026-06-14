@@ -3,7 +3,10 @@
   "version": "1.2.2",
   "author": "Dan Lynch <pyramation@gmail.com>",
   "description": "Anthropic (Claude) adapter for agentic-kit",
-  "homepage": "https://github.com/constructive-io/agentic-kit",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "homepage": "https://github.com/constructive-io/constructive",
   "license": "SEE LICENSE IN LICENSE",
   "publishConfig": {
     "access": "public",
@@ -11,10 +14,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/constructive-io/agentic-kit"
+    "url": "https://github.com/constructive-io/constructive"
   },
   "bugs": {
-    "url": "https://github.com/constructive-io/agentic-kit/issues"
+    "url": "https://github.com/constructive-io/constructive/issues"
   },
   "scripts": {
     "clean": "makage clean",
