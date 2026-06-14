@@ -3,6 +3,9 @@
   "version": "0.3.2",
   "author": "Dan Lynch <pyramation@gmail.com>",
   "description": "React bindings for agentic-kit (useChat hook)",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
   "homepage": "https://github.com/constructive-io/constructive",
   "license": "SEE LICENSE IN LICENSE",
   "publishConfig": {

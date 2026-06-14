@@ -3,6 +3,9 @@
   "version": "0.4.2",
   "author": "Dan Lynch <pyramation@gmail.com>",
   "description": "Minimal stateful agent runtime for agentic-kit",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
   "homepage": "https://github.com/constructive-io/constructive",
   "license": "SEE LICENSE IN LICENSE",
   "publishConfig": {
