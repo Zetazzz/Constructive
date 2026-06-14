@@ -32,8 +32,8 @@
 
 import type { GraphileConfig } from 'graphile-config';
 
-import { buildEmbedder } from '../embedder';
-import { getLlmEnvOptions } from '../env';
+import { llmConfigStore } from '../embedder';
+import type { LlmConfigOverrides } from '../embedder';
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -157,54 +157,31 @@ export async function embedTextInWhere(
 type WhereEmbedder = (text: string) => Promise<number[] | null>;
 
 /**
- * Resolve the embedder to use for this request. Checks for per-database
- * LLM config via `ctx.useLlm()` from express-context. If the per-DB config
- * specifies a different provider/model/baseUrl than the env defaults, builds
- * a tenant-specific embedder. Otherwise falls back to the build-time embedder
- * (which may be wrapped with metering by `LlmMeteringPlugin`).
- *
- * Note: per-DB embedders bypass the graphile-llm metering plugin wrapper.
- * Billing for those calls should be handled via `ctx.useBilling()` in
- * express-context (which agentic-server and other callers already use).
+ * Resolve per-DB LLM config overrides from express-context.
+ * Returns an LlmConfigOverrides object if per-DB config is available,
+ * or null to use defaults. These overrides are string parameters only
+ * (model name, base URL) — the embedder function and its metering
+ * wrapper stay the same.
  */
-async function resolveRequestEmbedder(
-  graphqlContext: any,
-  buildTimeEmbedder: WhereEmbedder
-): Promise<WhereEmbedder> {
+async function resolveConfigOverrides(
+  graphqlContext: any
+): Promise<LlmConfigOverrides | null> {
   const ctx = graphqlContext?.constructive;
-  if (!ctx?.useLlm) return buildTimeEmbedder;
+  if (!ctx?.useLlm) return null;
 
   try {
     const llm = await ctx.useLlm();
-    if (!llm?.embeddingProvider) return buildTimeEmbedder;
+    if (!llm?.embeddingModel) return null;
 
-    // Only build a new embedder if the per-DB config actually differs
-    // from env defaults. When they match, the build-time embedder (which
-    // includes metering wrapping) is correct and more efficient.
-    const envDefaults = getLlmEnvOptions();
-    const sameAsEnv =
-      llm.embeddingProvider === envDefaults.embedding.provider &&
-      llm.embeddingModel === envDefaults.embedding.model &&
-      llm.embeddingBaseUrl === envDefaults.embedding.baseUrl;
-
-    if (sameAsEnv) return buildTimeEmbedder;
-
-    const rawEmbedder = buildEmbedder({
-      provider: llm.embeddingProvider,
-      model: llm.embeddingModel,
-      baseUrl: llm.embeddingBaseUrl
-    });
-    if (rawEmbedder) {
-      return async (text: string) => {
-        const result = await rawEmbedder(text);
-        return result.embedding;
-      };
-    }
+    return {
+      embeddingModel: llm.embeddingModel,
+      embeddingBaseUrl: llm.embeddingBaseUrl,
+      chatModel: llm.chatModel ?? undefined,
+      chatBaseUrl: llm.chatBaseUrl ?? undefined,
+    };
   } catch {
-    // Per-DB resolution failed — fall back to build-time embedder
+    return null;
   }
-
-  return buildTimeEmbedder;
 }
 
 /**
@@ -292,10 +269,10 @@ export function createLlmTextSearchPlugin(
 
           if (!hasVector && !hasSearchableColumns) return field;
 
-          const buildTimeEmbedder = (build as any).llmEmbedder as
+          const embedder = (build as any).llmEmbedder as
             | WhereEmbedder
             | null;
-          if (!buildTimeEmbedder) return field;
+          if (!embedder) return field;
 
           // Determine if this table has text-based search adapters for fallback logic
           const hasTextAdapters = pgCodec.attributes && Object.values(
@@ -308,21 +285,25 @@ export function createLlmTextSearchPlugin(
           return {
             ...rest,
             async resolve(source: any, args: any, graphqlContext: any, info: any) {
-              // Resolve per-database embedder from express-context if available,
-              // falling back to the build-time default embedder.
-              const embedder = await resolveRequestEmbedder(graphqlContext, buildTimeEmbedder);
+              // Resolve per-DB model/baseUrl overrides from express-context.
+              // These are just string parameters — the embedder function
+              // (and its metering wrapper) stays the same.
+              const overrides = await resolveConfigOverrides(graphqlContext);
 
-              // If the query has a `where` argument, check for text/unifiedSearch fields
-              if (args?.where) {
-                await embedTextInWhere(args.where, embedder, !!hasTextAdapters, onQuotaExceeded);
-              }
+              // Run within llmConfigStore so the embedder picks up per-DB
+              // model/baseUrl at call time. Metering wraps the same function
+              // and is unaffected.
+              return llmConfigStore.run(overrides, async () => {
+                if (args?.where) {
+                  await embedTextInWhere(args.where, embedder, !!hasTextAdapters, onQuotaExceeded);
+                }
 
-              // Also handle `filter` for relay-style connections
-              if (args?.filter) {
-                await embedTextInWhere(args.filter, embedder, !!hasTextAdapters, onQuotaExceeded);
-              }
+                if (args?.filter) {
+                  await embedTextInWhere(args.filter, embedder, !!hasTextAdapters, onQuotaExceeded);
+                }
 
-              return oldResolve(source, args, graphqlContext, info);
+                return oldResolve(source, args, graphqlContext, info);
+              });
             }
           };
         },
