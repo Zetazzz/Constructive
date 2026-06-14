@@ -29,7 +29,7 @@
     "url": "https://github.com/constructive-io/constructive/issues"
   },
   "dependencies": {
-    "@agentic-kit/ollama": "^2.0.0",
+    "@agentic-kit/ollama": "workspace:*",
     "@constructive-io/express-context": "workspace:^",
     "@constructive-io/llm-env": "workspace:^",
     "graphile-cache": "workspace:^"
