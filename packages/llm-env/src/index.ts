@@ -5,6 +5,11 @@
  * Both graphile-llm and agentic-server import from here — no direct process.env
  * reads elsewhere.
  *
+ * Follows the same conventions as @pgpmjs/env:
+ *   - getEnvVars(env)    → raw env parser, no defaults, conditional spread
+ *   - llmDefaults        → defaults constant
+ *   - getEnvOptions(overrides, env) → merged: defaults → env → overrides
+ *
  * Environment variables:
  *   EMBEDDER_PROVIDER  - Embedding provider name (default: 'ollama')
  *   EMBEDDER_MODEL     - Embedding model (default: 'nomic-embed-text')
@@ -14,9 +19,28 @@
  *   CHAT_BASE_URL      - Chat provider URL (default: 'http://localhost:11434')
  */
 
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface LlmProviderConfig {
+  provider?: string;
+  model?: string;
+  baseUrl?: string;
+}
+
+export interface LlmEnvOptions {
+  embedding?: LlmProviderConfig;
+  chat?: LlmProviderConfig;
+}
+
+/** Fully resolved LLM config — every field guaranteed present after merge. */
+export interface ResolvedLlmEnvOptions {
+  embedding: Required<LlmProviderConfig>;
+  chat: Required<LlmProviderConfig>;
+}
+
 // ─── Defaults ───────────────────────────────────────────────────────────────
 
-export const LLM_DEFAULTS = {
+export const llmDefaults: ResolvedLlmEnvOptions = {
   embedding: {
     provider: 'ollama',
     model: 'nomic-embed-text',
@@ -27,40 +51,80 @@ export const LLM_DEFAULTS = {
     model: 'llama3',
     baseUrl: 'http://localhost:11434'
   }
-} as const;
+};
 
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-export interface LlmProviderConfig {
-  provider: string;
-  model: string;
-  baseUrl: string;
-}
-
-export interface LlmEnvOptions {
-  embedding: LlmProviderConfig;
-  chat: LlmProviderConfig;
-}
-
-// ─── Resolution ─────────────────────────────────────────────────────────────
+// ─── Env Parsing ────────────────────────────────────────────────────────────
 
 /**
- * Resolve LLM configuration from environment variables with sensible defaults.
+ * Parse LLM-related environment variables.
  *
- * Call this once and pass the result around — never read process.env directly
- * in plugin code.
+ * Returns only keys that are actually set — no defaults mixed in.
+ * Follows the @pgpmjs/env `getEnvVars(env)` pattern.
+ *
+ * @param env - Environment object to read from (defaults to process.env)
  */
-export function getLlmEnvOptions(): LlmEnvOptions {
+export const getEnvVars = (env: NodeJS.ProcessEnv = process.env): LlmEnvOptions => {
+  const {
+    EMBEDDER_PROVIDER,
+    EMBEDDER_MODEL,
+    EMBEDDER_BASE_URL,
+    CHAT_PROVIDER,
+    CHAT_MODEL,
+    CHAT_BASE_URL,
+  } = env;
+
+  return {
+    ...((EMBEDDER_PROVIDER || EMBEDDER_MODEL || EMBEDDER_BASE_URL) && {
+      embedding: {
+        ...(EMBEDDER_PROVIDER && { provider: EMBEDDER_PROVIDER }),
+        ...(EMBEDDER_MODEL && { model: EMBEDDER_MODEL }),
+        ...(EMBEDDER_BASE_URL && { baseUrl: EMBEDDER_BASE_URL }),
+      },
+    }),
+    ...((CHAT_PROVIDER || CHAT_MODEL || CHAT_BASE_URL) && {
+      chat: {
+        ...(CHAT_PROVIDER && { provider: CHAT_PROVIDER }),
+        ...(CHAT_MODEL && { model: CHAT_MODEL }),
+        ...(CHAT_BASE_URL && { baseUrl: CHAT_BASE_URL }),
+      },
+    }),
+  };
+};
+
+// ─── Merged Resolution ──────────────────────────────────────────────────────
+
+/**
+ * Get fully resolved LLM configuration by merging:
+ *   1. llmDefaults
+ *   2. Environment variables
+ *   3. Runtime overrides
+ *
+ * @param overrides - Runtime overrides to apply last
+ * @param env - Environment object to read from (defaults to process.env)
+ */
+export const getEnvOptions = (
+  overrides: LlmEnvOptions = {},
+  env: NodeJS.ProcessEnv = process.env
+): ResolvedLlmEnvOptions => {
+  const envOptions = getEnvVars(env);
+
   return {
     embedding: {
-      provider: process.env.EMBEDDER_PROVIDER ?? LLM_DEFAULTS.embedding.provider,
-      model: process.env.EMBEDDER_MODEL ?? LLM_DEFAULTS.embedding.model,
-      baseUrl: process.env.EMBEDDER_BASE_URL ?? LLM_DEFAULTS.embedding.baseUrl
+      ...llmDefaults.embedding,
+      ...envOptions.embedding,
+      ...overrides.embedding,
     },
     chat: {
-      provider: process.env.CHAT_PROVIDER ?? LLM_DEFAULTS.chat.provider,
-      model: process.env.CHAT_MODEL ?? LLM_DEFAULTS.chat.model,
-      baseUrl: process.env.CHAT_BASE_URL ?? LLM_DEFAULTS.chat.baseUrl
-    }
+      ...llmDefaults.chat,
+      ...envOptions.chat,
+      ...overrides.chat,
+    },
   };
-}
+};
+
+/**
+ * @deprecated Use `getEnvOptions()` instead. Kept for backward compatibility.
+ */
+export const getLlmEnvOptions = (
+  env: NodeJS.ProcessEnv = process.env
+): ResolvedLlmEnvOptions => getEnvOptions({}, env);

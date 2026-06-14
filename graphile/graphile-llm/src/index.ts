@@ -30,9 +30,9 @@
  * ```
  */
 
-// Environment configuration (single source of truth for LLM defaults)
-export type { LlmEnvOptions, LlmProviderConfig } from './env';
-export { getLlmEnvOptions } from './env';
+// Environment configuration (re-exported from @constructive-io/llm-env)
+export type { LlmEnvOptions, LlmProviderConfig, ResolvedLlmEnvOptions } from './env';
+export { getEnvVars, getEnvOptions, getLlmEnvOptions, llmDefaults } from './env';
 
 // Preset (recommended entry point)
 export { GraphileLlmPreset } from './preset';

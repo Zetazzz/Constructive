@@ -33,5 +33,5 @@ export type {
 } from '@constructive-io/express-context';
 
 // Re-export LLM env options from @constructive-io/llm-env (single source of truth)
-export type { LlmEnvOptions, LlmProviderConfig } from '@constructive-io/llm-env';
-export { getLlmEnvOptions } from '@constructive-io/llm-env';
+export type { LlmEnvOptions, LlmProviderConfig, ResolvedLlmEnvOptions } from '@constructive-io/llm-env';
+export { getEnvVars as getLlmEnvVars, getEnvOptions as getLlmEnvOptions, llmDefaults } from '@constructive-io/llm-env';

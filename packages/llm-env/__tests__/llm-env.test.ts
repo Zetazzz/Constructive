@@ -1,72 +1,118 @@
-import { getLlmEnvOptions, LLM_DEFAULTS } from '../src';
+import { getEnvVars, getEnvOptions, getLlmEnvOptions, llmDefaults } from '../src';
 
-describe('getLlmEnvOptions', () => {
-  const originalEnv = process.env;
-
-  beforeEach(() => {
-    process.env = { ...originalEnv };
-    delete process.env.EMBEDDER_PROVIDER;
-    delete process.env.EMBEDDER_MODEL;
-    delete process.env.EMBEDDER_BASE_URL;
-    delete process.env.CHAT_PROVIDER;
-    delete process.env.CHAT_MODEL;
-    delete process.env.CHAT_BASE_URL;
+describe('getEnvVars', () => {
+  it('returns empty object when no env vars are set', () => {
+    const result = getEnvVars({});
+    expect(result).toEqual({});
   });
 
-  afterEach(() => {
-    process.env = originalEnv;
+  it('returns only embedding keys that are set', () => {
+    const result = getEnvVars({
+      EMBEDDER_PROVIDER: 'openai',
+      EMBEDDER_MODEL: 'text-embedding-3-small',
+    });
+    expect(result).toEqual({
+      embedding: {
+        provider: 'openai',
+        model: 'text-embedding-3-small',
+      },
+    });
+    expect(result.chat).toBeUndefined();
   });
 
-  it('returns defaults when no env vars are set', () => {
-    const opts = getLlmEnvOptions();
-    expect(opts.embedding.provider).toBe('ollama');
-    expect(opts.embedding.model).toBe('nomic-embed-text');
-    expect(opts.embedding.baseUrl).toBe('http://localhost:11434');
-    expect(opts.chat.provider).toBe('ollama');
-    expect(opts.chat.model).toBe('llama3');
-    expect(opts.chat.baseUrl).toBe('http://localhost:11434');
+  it('returns only chat keys that are set', () => {
+    const result = getEnvVars({
+      CHAT_PROVIDER: 'openai',
+      CHAT_MODEL: 'gpt-4o',
+      CHAT_BASE_URL: 'https://api.openai.com',
+    });
+    expect(result).toEqual({
+      chat: {
+        provider: 'openai',
+        model: 'gpt-4o',
+        baseUrl: 'https://api.openai.com',
+      },
+    });
+    expect(result.embedding).toBeUndefined();
   });
 
-  it('overrides embedding config from env vars', () => {
-    process.env.EMBEDDER_PROVIDER = 'openai';
-    process.env.EMBEDDER_MODEL = 'text-embedding-3-small';
-    process.env.EMBEDDER_BASE_URL = 'https://api.openai.com';
-
-    const opts = getLlmEnvOptions();
-    expect(opts.embedding.provider).toBe('openai');
-    expect(opts.embedding.model).toBe('text-embedding-3-small');
-    expect(opts.embedding.baseUrl).toBe('https://api.openai.com');
-    // Chat should still be defaults
-    expect(opts.chat.provider).toBe('ollama');
+  it('returns both embedding and chat when both are set', () => {
+    const result = getEnvVars({
+      EMBEDDER_MODEL: 'nomic-embed-text',
+      CHAT_MODEL: 'llama3',
+    });
+    expect(result.embedding).toEqual({ model: 'nomic-embed-text' });
+    expect(result.chat).toEqual({ model: 'llama3' });
   });
 
-  it('overrides chat config from env vars', () => {
-    process.env.CHAT_PROVIDER = 'openai';
-    process.env.CHAT_MODEL = 'gpt-4o';
-    process.env.CHAT_BASE_URL = 'https://api.openai.com';
-
-    const opts = getLlmEnvOptions();
-    expect(opts.chat.provider).toBe('openai');
-    expect(opts.chat.model).toBe('gpt-4o');
-    expect(opts.chat.baseUrl).toBe('https://api.openai.com');
-    // Embedding should still be defaults
-    expect(opts.embedding.provider).toBe('ollama');
-  });
-
-  it('supports partial overrides', () => {
-    process.env.EMBEDDER_MODEL = 'mxbai-embed-large';
-
-    const opts = getLlmEnvOptions();
-    expect(opts.embedding.provider).toBe('ollama');
-    expect(opts.embedding.model).toBe('mxbai-embed-large');
-    expect(opts.embedding.baseUrl).toBe('http://localhost:11434');
+  it('supports partial overrides within a section', () => {
+    const result = getEnvVars({
+      EMBEDDER_MODEL: 'mxbai-embed-large',
+    });
+    expect(result).toEqual({
+      embedding: { model: 'mxbai-embed-large' },
+    });
   });
 });
 
-describe('LLM_DEFAULTS', () => {
-  it('exports the default values', () => {
-    expect(LLM_DEFAULTS.embedding.provider).toBe('ollama');
-    expect(LLM_DEFAULTS.embedding.model).toBe('nomic-embed-text');
-    expect(LLM_DEFAULTS.chat.model).toBe('llama3');
+describe('getEnvOptions', () => {
+  it('returns defaults when no env vars or overrides', () => {
+    const result = getEnvOptions({}, {});
+    expect(result).toEqual(llmDefaults);
+  });
+
+  it('merges env vars over defaults', () => {
+    const result = getEnvOptions({}, {
+      EMBEDDER_MODEL: 'text-embedding-3-small',
+    });
+    expect(result.embedding.model).toBe('text-embedding-3-small');
+    expect(result.embedding.provider).toBe('ollama');
+    expect(result.embedding.baseUrl).toBe('http://localhost:11434');
+    expect(result.chat).toEqual(llmDefaults.chat);
+  });
+
+  it('merges overrides over env vars over defaults', () => {
+    const result = getEnvOptions(
+      { embedding: { model: 'override-model' } },
+      { EMBEDDER_MODEL: 'env-model' }
+    );
+    expect(result.embedding.model).toBe('override-model');
+    expect(result.embedding.provider).toBe('ollama');
+  });
+
+  it('chat overrides apply correctly', () => {
+    const result = getEnvOptions(
+      { chat: { provider: 'anthropic', model: 'claude-4' } },
+      {}
+    );
+    expect(result.chat.provider).toBe('anthropic');
+    expect(result.chat.model).toBe('claude-4');
+    expect(result.chat.baseUrl).toBe('http://localhost:11434');
+  });
+});
+
+describe('getLlmEnvOptions (backward compat)', () => {
+  it('returns resolved options using getEnvOptions', () => {
+    const result = getLlmEnvOptions({});
+    expect(result).toEqual(llmDefaults);
+  });
+
+  it('respects env parameter', () => {
+    const result = getLlmEnvOptions({
+      EMBEDDER_PROVIDER: 'openai',
+    });
+    expect(result.embedding.provider).toBe('openai');
+    expect(result.embedding.model).toBe('nomic-embed-text');
+  });
+});
+
+describe('llmDefaults', () => {
+  it('exports default values', () => {
+    expect(llmDefaults.embedding.provider).toBe('ollama');
+    expect(llmDefaults.embedding.model).toBe('nomic-embed-text');
+    expect(llmDefaults.embedding.baseUrl).toBe('http://localhost:11434');
+    expect(llmDefaults.chat.provider).toBe('ollama');
+    expect(llmDefaults.chat.model).toBe('llama3');
+    expect(llmDefaults.chat.baseUrl).toBe('http://localhost:11434');
   });
 });
