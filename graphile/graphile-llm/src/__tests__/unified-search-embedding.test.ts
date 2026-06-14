@@ -46,7 +46,7 @@ describe('unifiedSearch embedding integration', () => {
 
       await expect(
         embedTextInWhere(where, nullEmbedder, false)
-      ).rejects.toThrow('embedding quota exceeded');
+      ).rejects.toThrow('embedding failed');
     });
 
     it('does not embed empty unifiedSearch strings', async () => {
@@ -131,6 +131,60 @@ describe('unifiedSearch embedding integration', () => {
         __text: 'second query',
         __vector: mockVector,
       });
+    });
+  });
+
+  describe('onQuotaExceeded option', () => {
+    it('degrade mode (default): leaves unifiedSearch as string when embedder returns null', async () => {
+      const where = { unifiedSearch: 'some query' };
+      await embedTextInWhere(where, nullEmbedder, true, 'degrade');
+
+      expect(where.unifiedSearch).toBe('some query');
+    });
+
+    it('throw mode: throws on unifiedSearch when embedder returns null even with text adapters', async () => {
+      const where = { unifiedSearch: 'some query' };
+
+      await expect(
+        embedTextInWhere(where, nullEmbedder, true, 'throw')
+      ).rejects.toThrow('onQuotaExceeded is set to \'throw\'');
+    });
+
+    it('throw mode: throws on VectorNearbyInput.text when embedder returns null', async () => {
+      const where = { vectorEmbedding: { text: 'semantic query' } };
+
+      await expect(
+        embedTextInWhere(where, nullEmbedder, true, 'throw')
+      ).rejects.toThrow('VectorNearbyInput: embedding failed');
+    });
+
+    it('degrade mode: silently removes VectorNearbyInput.text when embedder returns null', async () => {
+      const where = { vectorEmbedding: { text: 'failed query' } };
+      await embedTextInWhere(where, nullEmbedder, true, 'degrade');
+
+      expect(where.vectorEmbedding).toEqual({});
+    });
+
+    it('throw mode: still works normally when embedder succeeds', async () => {
+      const where = { unifiedSearch: 'good query' };
+      await embedTextInWhere(where, mockEmbedder, true, 'throw');
+
+      expect(where.unifiedSearch).toEqual({
+        __text: 'good query',
+        __vector: mockVector,
+      });
+    });
+
+    it('no text adapters: throws regardless of onQuotaExceeded setting', async () => {
+      const where1 = { unifiedSearch: 'query1' };
+      await expect(
+        embedTextInWhere(where1, nullEmbedder, false, 'degrade')
+      ).rejects.toThrow('No text search adapters available');
+
+      const where2 = { unifiedSearch: 'query2' };
+      await expect(
+        embedTextInWhere(where2, nullEmbedder, false, 'throw')
+      ).rejects.toThrow('No text search adapters available');
     });
   });
 
