@@ -911,6 +911,9 @@ importers:
       graphile-i18n:
         specifier: workspace:^
         version: link:../graphile-i18n/dist
+      graphile-llm:
+        specifier: workspace:^
+        version: link:../graphile-llm/dist
       graphile-ltree:
         specifier: workspace:^
         version: link:../graphile-ltree/dist

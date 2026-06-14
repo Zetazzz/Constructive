@@ -10,8 +10,8 @@
  * - Adds `{column}Text: String` companion fields on mutation inputs for vector columns
  * - Optionally enables billing/metering via the LlmMeteringPlugin
  *
- * This preset is standalone — it is NOT included in ConstructivePreset by default.
- * Projects that want LLM features opt in by adding it to their preset.
+ * Included in ConstructivePreset when `enableLlm` is true (the default).
+ * Can also be used standalone by adding it directly to your preset's `extends` array.
  *
  * @example
  * ```typescript

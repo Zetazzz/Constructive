@@ -52,6 +52,7 @@
     "graphile-bulk-mutations": "workspace:^",
     "graphile-config": "1.0.1",
     "graphile-connection-filter": "workspace:^",
+    "graphile-llm": "workspace:^",
     "graphile-i18n": "workspace:^",
     "graphile-ltree": "workspace:^",
     "graphile-pg-aggregates": "workspace:^",
