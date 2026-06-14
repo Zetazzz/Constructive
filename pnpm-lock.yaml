@@ -106,8 +106,8 @@ importers:
   agentic/agentic-server:
     dependencies:
       '@agentic-kit/ollama':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: workspace:*
+        version: link:../ollama/dist
       '@constructive-io/express-context':
         specifier: workspace:^
         version: link:../../packages/express-context/dist
@@ -509,8 +509,8 @@ importers:
   graphile/graphile-llm:
     dependencies:
       '@agentic-kit/ollama':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: workspace:*
+        version: link:../../agentic/ollama/dist
       '@constructive-io/express-context':
         specifier: workspace:^
         version: link:../../packages/express-context/dist
@@ -1648,8 +1648,8 @@ importers:
   graphql/server:
     dependencies:
       '@agentic-kit/ollama':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: workspace:*
+        version: link:../../agentic/ollama/dist
       '@constructive-io/csrf':
         specifier: workspace:^
         version: link:../../packages/csrf/dist
@@ -1846,8 +1846,8 @@ importers:
         specifier: ^1.2.0
         version: 1.2.0(graphql@16.13.0)
       '@agentic-kit/ollama':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: workspace:*
+        version: link:../../agentic/ollama/dist
       '@constructive-io/graphql-codegen':
         specifier: workspace:^
         version: link:../codegen/dist
@@ -3279,8 +3279,8 @@ importers:
         specifier: ^1.1.2
         version: 1.2.0(graphql@16.13.0)
       '@agentic-kit/ollama':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: workspace:*
+        version: link:../../agentic/ollama/dist
       '@constructive-io/graphql-query':
         specifier: workspace:^
         version: link:../../graphql/query/dist
@@ -3579,9 +3579,6 @@ packages:
     peerDependenciesMeta:
       graphql:
         optional: true
-
-  '@agentic-kit/ollama@2.0.0':
-    resolution: {integrity: sha512-nEcy1Mq079OLOlifWO2op8WP/MF5HMBXSgLCdd2E5ZzFmiBmAEV5hZlf5aas6+vZI04F0baBAlqatqvShCt1CA==}
 
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
@@ -10750,8 +10747,6 @@ snapshots:
   '@0no-co/graphql.web@1.2.0(graphql@16.13.0)':
     optionalDependencies:
       graphql: 16.13.0
-
-  '@agentic-kit/ollama@2.0.0': {}
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
