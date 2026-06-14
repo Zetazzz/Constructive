@@ -4,7 +4,7 @@ import {
   createAssistantMessageEventStream,
   type ModelDescriptor,
   type ProviderAdapter,
-} from 'agentic-kit';
+} from '../../agentic-kit/src';
 
 import { makeFakeAssistantMessage, makeFakeModel } from './fixtures';
 

@@ -7,7 +7,7 @@ module.exports = {
       'ts-jest',
       {
         babelConfig: false,
-        tsconfig: '__tests__/tsconfig.json',
+        tsconfig: 'tsconfig.json',
       },
     ],
   },
@@ -16,6 +16,6 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   modulePathIgnorePatterns: ['dist/*'],
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
-  }
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
 };

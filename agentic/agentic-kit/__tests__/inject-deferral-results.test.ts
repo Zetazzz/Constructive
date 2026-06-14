@@ -1,4 +1,4 @@
-import { makeFakeAssistantMessage } from '@test/index';
+import { makeFakeAssistantMessage } from '../../tools/test';
 
 import type { AssistantMessage, Message, ToolResultMessage } from '../src';
 import { injectDeferralResults } from '../src';

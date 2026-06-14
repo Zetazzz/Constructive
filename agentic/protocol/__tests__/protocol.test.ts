@@ -8,7 +8,7 @@ import {
   type ModelDescriptor,
   normalizeBaseUrl,
   parsePartialJson,
-} from '../src/index.js';
+} from '../src';
 
 const model: ModelDescriptor = {
   id: 'test-model',

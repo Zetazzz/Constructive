@@ -1,5 +1,5 @@
 import type { AgentEvent } from '@agentic-kit/agent';
-import { createScriptedSSEResponse, makeFakeAssistantMessage, ZERO_USAGE } from '@test/index';
+import { createScriptedSSEResponse, makeFakeAssistantMessage, ZERO_USAGE } from '../../tools/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { AssistantMessage, Message, UserMessage } from 'agentic-kit';
 

@@ -23,7 +23,6 @@
     "clean": "makage clean",
     "prepack": "npm run build",
     "build": "makage build",
-    "postbuild": "node ../../scripts/write-esm-package-json.js",
     "build:dev": "makage build --dev",
     "lint": "eslint . --fix",
     "test": "jest",

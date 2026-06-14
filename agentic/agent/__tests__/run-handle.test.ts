@@ -2,7 +2,7 @@ import {
   createScriptedProvider,
   makeFakeAssistantMessage,
   makeFakeModel,
-} from '@test/index';
+} from '../../tools/test';
 import {
   type AssistantMessageEvent,
   type Context,

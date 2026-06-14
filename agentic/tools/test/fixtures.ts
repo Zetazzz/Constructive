@@ -1,4 +1,4 @@
-import type { AssistantMessage, ModelDescriptor, Usage } from 'agentic-kit';
+import type { AssistantMessage, ModelDescriptor, Usage } from '../../agentic-kit/src';
 
 export const ZERO_USAGE: Usage = {
   input: 0,

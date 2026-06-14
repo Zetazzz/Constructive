@@ -7,7 +7,7 @@ module.exports = {
       'ts-jest',
       {
         babelConfig: false,
-        tsconfig: '__tests__/tsconfig.json',
+        tsconfig: 'tsconfig.json',
       },
     ],
   },
@@ -17,9 +17,5 @@ module.exports = {
   modulePathIgnorePatterns: ['dist/*'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^@test/(.*)$': '<rootDir>/../tools/test/$1',
-    '^agentic-kit$': '<rootDir>/src',
-    '^@agentic-kit/(.*)$': '<rootDir>/../$1/src',
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js']
 };

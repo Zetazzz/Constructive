@@ -5,23 +5,21 @@ import {
   OpenAIAdapter,
   type OpenAIOptions,
 } from '@agentic-kit/openai';
-import type {
-  AssistantMessage,
-  AssistantMessageEventStream,
-  Context,
-  LegacyChatMessage,
-  LegacyGenerateInput,
-  LegacyStreamingOptions,
-  ModelDescriptor,
-  ProviderAdapter,
-  StreamOptions,
-} from '@agentic-kit/protocol';
 import {
+  type AssistantMessage,
+  type AssistantMessageEventStream,
+  type Context,
   createAssistantMessageEventStream,
   createEmptyUsage,
   EventStream,
   getMessageText,
+  type LegacyChatMessage,
+  type LegacyGenerateInput,
+  type LegacyStreamingOptions,
+  type ModelDescriptor,
   normalizeContext,
+  type ProviderAdapter,
+  type StreamOptions,
 } from '@agentic-kit/protocol';
 
 import {

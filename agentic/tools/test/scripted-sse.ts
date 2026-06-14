@@ -1,4 +1,4 @@
-import type { AgentEvent } from '@agentic-kit/agent';
+import type { AgentEvent } from '../../agent/src';
 
 export function createScriptedSSEResponse(events: AgentEvent[]): Response {
   const encoder = new TextEncoder();
