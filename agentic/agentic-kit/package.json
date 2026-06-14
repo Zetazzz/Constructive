@@ -3,9 +3,6 @@
   "version": "1.3.2",
   "author": "Dan Lynch <pyramation@gmail.com>",
   "description": "Provider-agnostic LLM adapter with streaming and multi-turn support",
-  "main": "index.js",
-  "module": "esm/index.js",
-  "types": "index.d.ts",
   "homepage": "https://github.com/constructive-io/constructive",
   "license": "SEE LICENSE IN LICENSE",
   "publishConfig": {
