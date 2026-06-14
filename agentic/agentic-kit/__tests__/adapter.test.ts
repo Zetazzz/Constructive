@@ -2,7 +2,7 @@ import {
   createScriptedProvider,
   makeFakeAssistantMessage,
   makeFakeModel,
-} from '../../tools/test';
+} from './helpers';
 
 import {
   AgentKit,

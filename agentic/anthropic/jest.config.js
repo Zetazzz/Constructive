@@ -12,11 +12,11 @@ module.exports = {
     ],
   },
   transformIgnorePatterns: [`/node_modules/*`],
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$',
+  testRegex: '(/__tests__/.*\\.(test|spec))\\.(jsx?|tsx?)$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   modulePathIgnorePatterns: ['dist/*'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  setupFiles: ['../tools/test/setup-fetch.ts'],
+  setupFiles: ['./__tests__/setup.ts'],
 };

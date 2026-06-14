@@ -3,7 +3,7 @@ import {
   makeFakeAssistantMessage,
   makeFakeModel,
   ZERO_USAGE,
-} from '../../tools/test';
+} from './helpers';
 import {
   type AssistantMessage,
   type Context,
