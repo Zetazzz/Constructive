@@ -1,5 +1,9 @@
 # @constructive-io/llm-env
 
+<p align="center" width="100%">
+  <img height="250" src="https://raw.githubusercontent.com/constructive-io/constructive/refs/heads/main/assets/outline-logo.svg" />
+</p>
+
 Single source of truth for all LLM-related environment variables and defaults.
 Follows the same conventions as `@pgpmjs/env`.
 
