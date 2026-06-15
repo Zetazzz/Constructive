@@ -33,6 +33,11 @@ exports[`MetaSchemaPlugin _meta query contract contains required selection paths
   "foreignKeyConstraints.refFields.name",
   "foreignKeyConstraints.referencedFields",
   "foreignKeyConstraints.referencedTable",
+  "i18n",
+  "i18n.translatableFields",
+  "i18n.translatableFields.name",
+  "i18n.translatableFields.type",
+  "i18n.translationTable",
   "indexes",
   "indexes.columns",
   "indexes.fields",
@@ -49,6 +54,8 @@ exports[`MetaSchemaPlugin _meta query contract contains required selection paths
   "query.delete",
   "query.one",
   "query.update",
+  "realtime",
+  "realtime.subscriptionFieldName",
   "relations",
   "relations.belongsTo",
   "relations.belongsTo.fieldName",
@@ -275,6 +282,16 @@ exports[`MetaSchemaPlugin _meta query contract has stable printed GraphQL text 1
           boostRecencyField
           boostRecencyDecay
         }
+      }
+      i18n {
+        translationTable
+        translatableFields {
+          name
+          type
+        }
+      }
+      realtime {
+        subscriptionFieldName
       }
     }
   }
@@ -575,6 +592,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
         "referencedTable": "post",
       },
     ],
+    "i18n": null,
     "indexes": [
       {
         "columns": [
@@ -650,6 +668,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "one": "comment",
       "update": "updatecomment",
     },
+    "realtime": null,
     "relations": {
       "belongsTo": [
         {
@@ -913,6 +932,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
         "referencedTable": "user",
       },
     ],
+    "i18n": null,
     "indexes": [
       {
         "columns": [
@@ -988,6 +1008,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "one": "post",
       "update": "updatepost",
     },
+    "realtime": null,
     "relations": {
       "belongsTo": [
         {
@@ -1596,6 +1617,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
         "referencedTable": "tag",
       },
     ],
+    "i18n": null,
     "indexes": [
       {
         "columns": [
@@ -1706,6 +1728,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "one": "post_tag",
       "update": "updatepost_tag",
     },
+    "realtime": null,
     "relations": {
       "belongsTo": [
         {
@@ -1860,6 +1883,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       },
     ],
     "foreignKeyConstraints": [],
+    "i18n": null,
     "indexes": [
       {
         "columns": [
@@ -1962,6 +1986,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "one": "tag",
       "update": "updatetag",
     },
+    "realtime": null,
     "relations": {
       "belongsTo": [],
       "has": [
@@ -2340,6 +2365,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       },
     ],
     "foreignKeyConstraints": [],
+    "i18n": null,
     "indexes": [
       {
         "columns": [
@@ -2442,6 +2468,7 @@ exports[`MetaSchemaPlugin snapshot scenarios produces stable metadata for a mult
       "one": "user",
       "update": "updateuser",
     },
+    "realtime": null,
     "relations": {
       "belongsTo": [],
       "has": [

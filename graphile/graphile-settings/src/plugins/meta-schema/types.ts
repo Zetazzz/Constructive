@@ -12,6 +12,8 @@ export interface TableMeta {
   query: QueryMeta;
   storage: StorageMeta | null;
   search: SearchMeta | null;
+  i18n: I18nMeta | null;
+  realtime: RealtimeMeta | null;
 }
 
 export interface StorageMeta {
@@ -48,6 +50,25 @@ export interface SearchConfigMeta {
   boostRecencyField: string | null;
   /** Exponential decay factor per day */
   boostRecencyDecay: number | null;
+}
+
+export interface I18nFieldMeta {
+  /** Inflected GraphQL field name */
+  name: string;
+  /** PostgreSQL column type (text, citext) */
+  type: string;
+}
+
+export interface I18nMeta {
+  /** Name of the translation table */
+  translationTable: string;
+  /** Fields that are translatable */
+  translatableFields: I18nFieldMeta[];
+}
+
+export interface RealtimeMeta {
+  /** The generated subscription field name (e.g. onPostChanged) */
+  subscriptionFieldName: string;
 }
 
 export interface EnumMeta {

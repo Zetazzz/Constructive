@@ -393,6 +393,13 @@ query MetaContract {
         hasUnifiedSearch
         config { weights boostRecent boostRecencyField boostRecencyDecay }
       }
+      i18n {
+        translationTable
+        translatableFields { name type }
+      }
+      realtime {
+        subscriptionFieldName
+      }
     }
   }
 }
@@ -469,6 +476,10 @@ const REQUIRED_META_QUERY_PATHS = [
   'search.config.boostRecencyDecay',
   'fields.enumValues.name',
   'fields.enumValues.values',
+  'i18n.translationTable',
+  'i18n.translatableFields.name',
+  'i18n.translatableFields.type',
+  'realtime.subscriptionFieldName',
 ];
 
 function collectSelectionPaths(selections: readonly SelectionNode[], prefix = ''): string[] {
@@ -2197,6 +2208,188 @@ describe('MetaSchemaPlugin', () => {
       const tables = callInitHook(build);
       const tagsField = tables[0].fields.find((f: any) => f.name === 'tags');
       expect(tagsField.enumValues).toBeNull();
+    });
+  });
+
+  describe('i18n metadata', () => {
+    it('returns null i18n for tables without @i18n tag', () => {
+      const build = createMockBuild({
+        user: {
+          codec: createMockCodec('user', {
+            id: createMockAttribute('uuid'),
+            name: createMockAttribute('text'),
+          }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].i18n).toBeNull();
+    });
+
+    it('detects @i18n tagged tables with translation table name', () => {
+      const baseCodec = {
+        name: 'post',
+        attributes: {
+          id: createMockAttribute('uuid'),
+          title: createMockAttribute('text'),
+          body: createMockAttribute('text'),
+          views: createMockAttribute('int4'),
+        },
+        isAnonymous: false,
+        extensions: {
+          pg: { schemaName: 'app_public' },
+          tags: { i18n: 'post_translations' },
+        },
+      };
+      const translationCodec = {
+        name: 'postTranslations',
+        attributes: {
+          post_id: createMockAttribute('uuid'),
+          lang_code: createMockAttribute('text'),
+          title: createMockAttribute('text'),
+          body: createMockAttribute('text'),
+        },
+        isAnonymous: false,
+        extensions: {
+          pg: { schemaName: 'app_public', name: 'post_translations' },
+        },
+      };
+      const build = createMockBuild({
+        post: {
+          codec: baseCodec,
+          uniques: [],
+          relations: {},
+        },
+        post_translations: {
+          codec: translationCodec,
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      const postTable = tables.find((t: any) => t.name === 'Post');
+      expect(postTable.i18n).toEqual({
+        translationTable: 'post_translations',
+        translatableFields: [
+          { name: 'title', type: 'text' },
+          { name: 'body', type: 'text' },
+        ],
+      });
+    });
+
+    it('excludes non-text columns from translatable fields', () => {
+      const baseCodec = {
+        name: 'item',
+        attributes: {
+          id: createMockAttribute('uuid'),
+          label: createMockAttribute('text'),
+          count: createMockAttribute('int4'),
+        },
+        isAnonymous: false,
+        extensions: {
+          pg: { schemaName: 'app_public' },
+          tags: { i18n: 'item_translations' },
+        },
+      };
+      const translationCodec = {
+        name: 'itemTranslations',
+        attributes: {
+          item_id: createMockAttribute('uuid'),
+          lang_code: createMockAttribute('text'),
+          label: createMockAttribute('text'),
+        },
+        isAnonymous: false,
+        extensions: {
+          pg: { schemaName: 'app_public', name: 'item_translations' },
+        },
+      };
+      const build = createMockBuild({
+        item: {
+          codec: baseCodec,
+          uniques: [],
+          relations: {},
+        },
+        item_translations: {
+          codec: translationCodec,
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      const itemTable = tables.find((t: any) => t.name === 'Item');
+      expect(itemTable.i18n).toEqual({
+        translationTable: 'item_translations',
+        translatableFields: [{ name: 'label', type: 'text' }],
+      });
+    });
+  });
+
+  describe('realtime metadata', () => {
+    it('returns null realtime for tables without @realtime tag', () => {
+      const build = createMockBuild({
+        user: {
+          codec: createMockCodec('user', {
+            id: createMockAttribute('uuid'),
+            name: createMockAttribute('text'),
+          }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].realtime).toBeNull();
+    });
+
+    it('detects @realtime tagged tables', () => {
+      const realtimeCodec = {
+        name: 'message',
+        attributes: {
+          id: createMockAttribute('uuid'),
+          content: createMockAttribute('text'),
+        },
+        isAnonymous: false,
+        extensions: {
+          pg: { schemaName: 'app_public' },
+          tags: { realtime: true },
+        },
+      };
+      const build = createMockBuild({
+        message: {
+          codec: realtimeCodec,
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].realtime).toEqual({
+        subscriptionFieldName: 'onMessageChanged',
+      });
+    });
+
+    it('generates correct subscription field name from table type', () => {
+      const realtimeCodec = {
+        name: 'chat_room',
+        attributes: {
+          id: createMockAttribute('uuid'),
+        },
+        isAnonymous: false,
+        extensions: {
+          pg: { schemaName: 'app_public' },
+          tags: { realtime: true },
+        },
+      };
+      const build = createMockBuild({
+        chat_room: {
+          codec: realtimeCodec,
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      expect(tables[0].realtime).toEqual({
+        subscriptionFieldName: 'onChatRoomChanged',
+      });
     });
   });
 

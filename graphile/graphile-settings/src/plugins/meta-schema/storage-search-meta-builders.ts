@@ -1,5 +1,8 @@
 import type {
+  I18nFieldMeta,
+  I18nMeta,
   PgCodec,
+  RealtimeMeta,
   SearchColumnMeta,
   SearchConfigMeta,
   SearchMeta,
@@ -101,6 +104,82 @@ export function buildSearchMeta(
     columns,
     hasUnifiedSearch,
     config,
+  };
+}
+
+/**
+ * Detect i18n metadata from a codec's @i18n smart tag.
+ * The @i18n tag value is the name of the translation table.
+ * Translatable fields are discovered by matching text/citext columns
+ * between the base table and the translation table codec.
+ */
+export function buildI18nMeta(
+  codec: PgCodec,
+  build: unknown,
+  inflectAttr: (attrName: string, codec: PgCodec) => string,
+): I18nMeta | null {
+  const tags = (codec as any).extensions?.tags;
+  if (!tags) return null;
+
+  const i18nTag = tags.i18n;
+  if (typeof i18nTag !== 'string' || i18nTag.length === 0) return null;
+
+  const attributes = codec.attributes;
+  if (!attributes) return { translationTable: i18nTag, translatableFields: [] };
+
+  // Discover translatable fields: text/citext columns on the base table
+  const allowedTypes = ['text', 'citext'];
+  const translatableFields: I18nFieldMeta[] = [];
+
+  // Try to find the translation codec to get the intersection of fields
+  const pgRegistry = (build as any)?.input?.pgRegistry;
+  let translationAttrs: Set<string> | null = null;
+  if (pgRegistry?.pgResources) {
+    for (const r of Object.values(pgRegistry.pgResources)) {
+      const sqlName = (r as any)?.codec?.extensions?.pg?.name ?? (r as any)?.codec?.name;
+      if (sqlName === i18nTag) {
+        const tAttrs = (r as any)?.codec?.attributes;
+        if (tAttrs) {
+          translationAttrs = new Set(Object.keys(tAttrs));
+        }
+        break;
+      }
+    }
+  }
+
+  for (const [attrName, attr] of Object.entries(attributes)) {
+    const pgType = (attr as any)?.codec?.name;
+    if (!pgType || !allowedTypes.includes(pgType)) continue;
+    // If we found the translation table, only include columns that exist there too
+    if (translationAttrs && !translationAttrs.has(attrName)) continue;
+    translatableFields.push({
+      name: inflectAttr(attrName, codec),
+      type: pgType,
+    });
+  }
+
+  return {
+    translationTable: i18nTag,
+    translatableFields,
+  };
+}
+
+/**
+ * Detect realtime metadata from a codec's @realtime smart tag.
+ * Tables tagged with @realtime get subscription fields generated.
+ */
+export function buildRealtimeMeta(
+  codec: PgCodec,
+  build: unknown,
+): RealtimeMeta | null {
+  const tags = (codec as any).extensions?.tags;
+  if (!tags?.realtime) return null;
+
+  const typeName = (build as any).inflection?.tableType?.(codec);
+  if (!typeName) return null;
+
+  return {
+    subscriptionFieldName: `on${typeName}Changed`,
   };
 }
 
