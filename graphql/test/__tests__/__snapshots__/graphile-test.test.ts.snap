@@ -1598,57 +1598,6 @@ based pagination. May not be used with \`last\`.",
           "possibleTypes": null,
         },
         {
-          "description": "Information about a PostgreSQL enum type",
-          "enumValues": null,
-          "fields": [
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "The PostgreSQL enum type name",
-              "isDeprecated": false,
-              "name": "name",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Allowed values for this enum",
-              "isDeprecated": false,
-              "name": "values",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "LIST",
-                  "name": null,
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "SCALAR",
-                      "name": "String",
-                      "ofType": null,
-                    },
-                  },
-                },
-              },
-            },
-          ],
-          "inputFields": null,
-          "interfaces": [],
-          "kind": "OBJECT",
-          "name": "MetaEnum",
-          "possibleTypes": null,
-        },
-        {
           "description": "Information about a PostgreSQL type",
           "enumValues": null,
           "fields": [
@@ -1741,6 +1690,57 @@ based pagination. May not be used with \`last\`.",
           "interfaces": [],
           "kind": "OBJECT",
           "name": "MetaType",
+          "possibleTypes": null,
+        },
+        {
+          "description": "Information about a PostgreSQL enum type",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "The PostgreSQL enum type name",
+              "isDeprecated": false,
+              "name": "name",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Allowed values for this enum",
+              "isDeprecated": false,
+              "name": "values",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "String",
+                      "ofType": null,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaEnum",
           "possibleTypes": null,
         },
         {
