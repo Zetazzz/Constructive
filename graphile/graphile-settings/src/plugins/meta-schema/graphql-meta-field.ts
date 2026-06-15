@@ -36,6 +36,15 @@ function createMetaSchemaType(): GraphQLObjectType {
     }),
   });
 
+  const MetaEnumType = new GraphQLObjectType({
+    name: 'MetaEnum',
+    description: 'Information about a PostgreSQL enum type',
+    fields: () => ({
+      name: { type: nn(GraphQLString), description: 'The PostgreSQL enum type name' },
+      values: { type: nnList(GraphQLString), description: 'Allowed values for this enum' },
+    }),
+  });
+
   const MetaFieldType = new GraphQLObjectType({
     name: 'MetaField',
     description: 'Information about a table field/column',
@@ -47,6 +56,7 @@ function createMetaSchemaType(): GraphQLObjectType {
       isPrimaryKey: { type: nn(GraphQLBoolean) },
       isForeignKey: { type: nn(GraphQLBoolean) },
       description: { type: GraphQLString },
+      enumValues: { type: MetaEnumType, description: 'Enum metadata if this field has an enum type' },
     }),
   });
 

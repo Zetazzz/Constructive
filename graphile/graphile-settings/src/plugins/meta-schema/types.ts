@@ -50,6 +50,13 @@ export interface SearchConfigMeta {
   boostRecencyDecay: number | null;
 }
 
+export interface EnumMeta {
+  /** The PostgreSQL enum type name */
+  name: string;
+  /** Allowed values for this enum */
+  values: string[];
+}
+
 export interface FieldMeta {
   name: string;
   type: TypeMeta;
@@ -58,6 +65,7 @@ export interface FieldMeta {
   isPrimaryKey: boolean;
   isForeignKey: boolean;
   description: string | null;
+  enumValues: EnumMeta | null;
 }
 
 export interface TypeMeta {
