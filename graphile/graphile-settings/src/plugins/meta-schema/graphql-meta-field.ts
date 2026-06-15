@@ -251,6 +251,32 @@ function createMetaSchemaType(): GraphQLObjectType {
     }),
   });
 
+  const MetaI18nFieldType = new GraphQLObjectType({
+    name: 'MetaI18nField',
+    description: 'A translatable field',
+    fields: () => ({
+      name: { type: nn(GraphQLString), description: 'GraphQL field name' },
+      type: { type: nn(GraphQLString), description: 'PostgreSQL column type (text, citext)' },
+    }),
+  });
+
+  const MetaI18nType = new GraphQLObjectType({
+    name: 'MetaI18n',
+    description: 'i18n metadata for a table with @i18n tag',
+    fields: () => ({
+      translationTable: { type: nn(GraphQLString), description: 'Name of the translation table' },
+      translatableFields: { type: nnList(MetaI18nFieldType), description: 'Fields that are translatable' },
+    }),
+  });
+
+  const MetaRealtimeType = new GraphQLObjectType({
+    name: 'MetaRealtime',
+    description: 'Realtime metadata for a table with @realtime tag',
+    fields: () => ({
+      subscriptionFieldName: { type: nn(GraphQLString), description: 'The generated subscription field name (e.g. onPostChanged)' },
+    }),
+  });
+
   const MetaTableType = new GraphQLObjectType({
     name: 'MetaTable',
     description: 'Information about a database table',
@@ -268,6 +294,8 @@ function createMetaSchemaType(): GraphQLObjectType {
       query: { type: nn(MetaQueryType) },
       storage: { type: MetaStorageType, description: 'Storage metadata (null if not a storage table)' },
       search: { type: MetaSearchType, description: 'Search metadata (null if no search configured)' },
+      i18n: { type: MetaI18nType, description: 'i18n metadata (null if no @i18n tag)' },
+      realtime: { type: MetaRealtimeType, description: 'Realtime metadata (null if no @realtime tag)' },
     }),
   });
 

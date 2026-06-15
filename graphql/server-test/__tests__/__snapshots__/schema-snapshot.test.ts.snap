@@ -1441,6 +1441,12 @@ type MetaTable {
 
   """Search metadata (null if no search configured)"""
   search: MetaSearch
+
+  """i18n metadata (null if no @i18n tag)"""
+  i18n: MetaI18n
+
+  """Realtime metadata (null if no @realtime tag)"""
+  realtime: MetaRealtime
 }
 
 """Information about a table field/column"""
@@ -1631,6 +1637,30 @@ type MetaSearchConfig {
 
   """Exponential decay factor per day"""
   boostRecencyDecay: Float
+}
+
+"""i18n metadata for a table with @i18n tag"""
+type MetaI18n {
+  """Name of the translation table"""
+  translationTable: String!
+
+  """Fields that are translatable"""
+  translatableFields: [MetaI18nField!]!
+}
+
+"""A translatable field"""
+type MetaI18nField {
+  """GraphQL field name"""
+  name: String!
+
+  """PostgreSQL column type (text, citext)"""
+  type: String!
+}
+
+"""Realtime metadata for a table with @realtime tag"""
+type MetaRealtime {
+  """The generated subscription field name (e.g. onPostChanged)"""
+  subscriptionFieldName: String!
 }
 
 """
