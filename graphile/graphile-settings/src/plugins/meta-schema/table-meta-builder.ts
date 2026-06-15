@@ -10,6 +10,7 @@ import {
   buildManyToManyRelations,
   buildReverseRelations,
 } from './relation-meta-builders';
+import { buildStorageMeta, buildSearchMeta } from './storage-search-meta-builders';
 import { buildFieldMeta } from './type-mappings';
 import {
   createBuildContext,
@@ -90,6 +91,9 @@ function buildTableMeta(
 
   const tableType = resolveTableType(context.build, codec);
 
+  const storage = buildStorageMeta(codec);
+  const search = buildSearchMeta(codec, context.build, context.inflectAttr);
+
   return {
     name: tableType,
     schemaName,
@@ -102,6 +106,8 @@ function buildTableMeta(
     relations: relationsMeta,
     inflection: buildInflectionMeta(resource, tableType, context.build),
     query: buildQueryMeta(resource, uniques, tableType, context.build),
+    storage,
+    search,
   };
 }
 
