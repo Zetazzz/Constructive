@@ -37,7 +37,7 @@ import { createRequestLogger } from './middleware/observability/request-logger';
 // Auth cookie handling is done via AuthCookiePlugin in grafserv
 import { createCaptchaMiddleware } from './middleware/captcha';
 import { parseCookieValue, SESSION_COOKIE_NAME } from './middleware/cookie';
-import { createLlmApiRouter } from './middleware/llm-api';
+import { createAgenticRouter } from 'agentic-server';
 import { createContextMiddleware, requestIdMiddleware } from '@constructive-io/express-context';
 import { startDebugSampler } from './diagnostics/debug-sampler';
 
@@ -198,7 +198,7 @@ class Server {
 
     // LLM Agent REST API — mounted before graphile so SSE streaming
     // routes are handled without going through PostGraphile
-    app.use(createLlmApiRouter());
+    app.use(createAgenticRouter());
 
     app.use(graphile(effectiveOpts));
     app.use(flush);
