@@ -346,7 +346,7 @@ query MetaContract {
       name
       schemaName
       query { all one create update delete }
-      fields { name type { pgType gqlType isArray subtype } }
+      fields { name type { pgType gqlType isArray subtype } enumValues { name values } }
       indexes { name isUnique isPrimary columns fields { name } }
       constraints {
         primaryKey { name }
@@ -396,6 +396,7 @@ query MetaContract {
     }
   }
 }
+
 `;
 
 const REQUIRED_META_QUERY_PATHS = [
@@ -466,6 +467,8 @@ const REQUIRED_META_QUERY_PATHS = [
   'search.config.boostRecent',
   'search.config.boostRecencyField',
   'search.config.boostRecencyDecay',
+  'fields.enumValues.name',
+  'fields.enumValues.values',
 ];
 
 function collectSelectionPaths(selections: readonly SelectionNode[], prefix = ''): string[] {
@@ -829,6 +832,7 @@ describe('MetaSchemaPlugin', () => {
         isPrimaryKey: false,
         isForeignKey: false,
         description: null,
+        enumValues: null,
       });
     });
 
@@ -2083,6 +2087,116 @@ describe('MetaSchemaPlugin', () => {
       expect(tables[0].search!.algorithms).toEqual(['bm25', 'tsvector', 'vector']);
       expect(tables[0].search!.hasUnifiedSearch).toBe(true);
       expect(tables[0].search!.columns).toHaveLength(3);
+    });
+  });
+
+  describe('enum metadata', () => {
+    it('returns null enumValues for non-enum fields', () => {
+      const build = createMockBuild({
+        user: {
+          codec: createMockCodec('user', {
+            id: createMockAttribute('uuid'),
+            name: createMockAttribute('text'),
+          }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      for (const field of tables[0].fields) {
+        expect(field.enumValues).toBeNull();
+      }
+    });
+
+    it('detects enum type on a field', () => {
+      const enumCodec = {
+        name: 'status_enum',
+        values: [{ value: 'active' }, { value: 'inactive' }, { value: 'pending' }],
+      };
+      const build = createMockBuild({
+        task: {
+          codec: createMockCodec('task', {
+            id: createMockAttribute('uuid'),
+            status: createMockAttribute('status_enum', { codec: enumCodec }),
+          }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      const statusField = tables[0].fields.find((f: any) => f.name === 'status');
+      expect(statusField.enumValues).toEqual({
+        name: 'status_enum',
+        values: ['active', 'inactive', 'pending'],
+      });
+    });
+
+    it('detects enum values as plain strings', () => {
+      const enumCodec = {
+        name: 'priority_enum',
+        values: ['low', 'medium', 'high'],
+      };
+      const build = createMockBuild({
+        task: {
+          codec: createMockCodec('task', {
+            id: createMockAttribute('uuid'),
+            priority: createMockAttribute('priority_enum', { codec: enumCodec }),
+          }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      const priorityField = tables[0].fields.find((f: any) => f.name === 'priority');
+      expect(priorityField.enumValues).toEqual({
+        name: 'priority_enum',
+        values: ['low', 'medium', 'high'],
+      });
+    });
+
+    it('detects enum through domain wrapper', () => {
+      const innerEnumCodec = {
+        name: 'color_enum',
+        values: [{ value: 'red' }, { value: 'green' }, { value: 'blue' }],
+      };
+      const domainCodec = {
+        name: 'color_domain',
+        domainOfCodec: innerEnumCodec,
+      };
+      const build = createMockBuild({
+        item: {
+          codec: createMockCodec('item', {
+            id: createMockAttribute('uuid'),
+            color: createMockAttribute('color_domain', { codec: domainCodec }),
+          }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      const colorField = tables[0].fields.find((f: any) => f.name === 'color');
+      expect(colorField.enumValues).toEqual({
+        name: 'color_enum',
+        values: ['red', 'green', 'blue'],
+      });
+    });
+
+    it('does not detect enum on non-enum array codec', () => {
+      const innerCodec = { name: 'text', arrayOfCodec: null as any };
+      const arrayCodec = { name: '_text', arrayOfCodec: innerCodec };
+      const build = createMockBuild({
+        item: {
+          codec: createMockCodec('item', {
+            id: createMockAttribute('uuid'),
+            tags: createMockAttribute('_text', { codec: arrayCodec }),
+          }),
+          uniques: [],
+          relations: {},
+        },
+      });
+      const tables = callInitHook(build);
+      const tagsField = tables[0].fields.find((f: any) => f.name === 'tags');
+      expect(tagsField.enumValues).toBeNull();
     });
   });
 

@@ -1452,6 +1452,9 @@ type MetaField {
   isPrimaryKey: Boolean!
   isForeignKey: Boolean!
   description: String
+
+  """Enum metadata if this field has an enum type"""
+  enumValues: MetaEnum
 }
 
 """Information about a PostgreSQL type"""
@@ -1462,6 +1465,15 @@ type MetaType {
   isNotNull: Boolean
   hasDefault: Boolean
   subtype: String
+}
+
+"""Information about a PostgreSQL enum type"""
+type MetaEnum {
+  """The PostgreSQL enum type name"""
+  name: String!
+
+  """Allowed values for this enum"""
+  values: [String!]!
 }
 
 """Information about a database index"""
