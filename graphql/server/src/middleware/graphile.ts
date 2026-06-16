@@ -14,7 +14,6 @@ import {
   getTenantInstance,
   getOrCreateTenantInstance,
   shutdownMultiTenancyCache,
-  flushByDatabaseId,
 } from 'graphile-multi-tenancy-cache';
 import './types'; // for Request type
 import { isGraphqlObservabilityEnabled } from '../diagnostics/observability';
@@ -454,14 +453,42 @@ export async function shutdownMultiTenancy(): Promise<void> {
  * Selected when opts.api.useMultiTenancyCache === true.
  * Calls configureMultiTenancyCache() once at startup (package owns wrapping).
  * Uses getTenantInstance() for fast-path cache hit.
- * On miss, calls getOrCreateTenantInstance() — no preset builder passed from server.
- * Routes request to tenant.handler — the package's Grafast context callback
- * handles pgSqlTextTransform injection internally.
+ * On miss, calls getOrCreateTenantInstance(); the package handles buildKey
+ * dedupe while this server injects the concrete Graphile handler factory.
+ * Routes request to tenant.handler.
  */
 export const multiTenancyHandler = (opts: ConstructiveOptions): RequestHandler => {
+  const observabilityEnabled = isGraphqlObservabilityEnabled(opts.server?.host);
+
   // One-time bootstrap: configure the multi-tenancy cache with our preset builder
   configureMultiTenancyCache({
-    basePresetBuilder: buildPreset,
+    handlerFactory: async ({
+      buildKey,
+      svcKey,
+      pool,
+      schemas,
+      anonRole,
+      roleName,
+      databaseId,
+      presetOptions,
+    }) => {
+      const databaseSettings = presetOptions as DatabaseSettings | undefined;
+      const preset = buildPreset(pool, schemas, anonRole, roleName, databaseSettings);
+      return observeGraphileBuild(
+        {
+          cacheKey: buildKey,
+          serviceKey: svcKey,
+          databaseId: databaseId ?? null,
+        },
+        () =>
+          createGraphileInstance({
+            preset,
+            cacheKey: buildKey,
+            enableRealtime: databaseSettings?.enableRealtime,
+          }),
+        { enabled: observabilityEnabled },
+      );
+    },
   });
 
   log.info('Multi-tenancy cache handler initialized');
@@ -505,6 +532,7 @@ export const multiTenancyHandler = (opts: ConstructiveOptions): RequestHandler =
         anonRole,
         roleName,
         databaseId: api.databaseId,
+        presetOptions: api.databaseSettings,
       });
 
       return tenant.handler(req, res, next);
