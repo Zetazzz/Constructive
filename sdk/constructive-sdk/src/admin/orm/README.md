@@ -24,23 +24,20 @@ const db = createClient({
 | `orgGetManagersRecord` | findMany, findOne, create, update, delete |
 | `orgGetSubordinatesRecord` | findMany, findOne, create, update, delete |
 | `appPermission` | findMany, findOne, create, update, delete |
+| `appPermissionDefaultGrant` | findMany, findOne, create, update, delete |
 | `orgPermission` | findMany, findOne, create, update, delete |
-| `appLevelRequirement` | findMany, findOne, create, update, delete |
+| `orgPermissionDefaultPermission` | findMany, findOne, create, update, delete |
+| `orgPermissionDefaultGrant` | findMany, findOne, create, update, delete |
 | `orgMember` | findMany, findOne, create, update, delete |
 | `appPermissionDefault` | findMany, findOne, create, update, delete |
 | `orgPermissionDefault` | findMany, findOne, create, update, delete |
+| `appPermissionDefaultPermission` | findMany, findOne, create, update, delete |
 | `appAdminGrant` | findMany, findOne, create, update, delete |
 | `appOwnerGrant` | findMany, findOne, create, update, delete |
-| `appLimitDefault` | findMany, findOne, create, update, delete |
-| `orgLimitDefault` | findMany, findOne, create, update, delete |
 | `orgAdminGrant` | findMany, findOne, create, update, delete |
 | `orgOwnerGrant` | findMany, findOne, create, update, delete |
-| `appLimit` | findMany, findOne, create, update, delete |
-| `appAchievement` | findMany, findOne, create, update, delete |
-| `appStep` | findMany, findOne, create, update, delete |
-| `appClaimedInvite` | findMany, findOne, create, update, delete |
 | `orgChartEdgeGrant` | findMany, findOne, create, update, delete |
-| `orgLimit` | findMany, findOne, create, update, delete |
+| `appClaimedInvite` | findMany, findOne, create, update, delete |
 | `membershipType` | findMany, findOne, create, update, delete |
 | `appGrant` | findMany, findOne, create, update, delete |
 | `appMembershipDefault` | findMany, findOne, create, update, delete |
@@ -48,13 +45,12 @@ const db = createClient({
 | `orgClaimedInvite` | findMany, findOne, create, update, delete |
 | `orgGrant` | findMany, findOne, create, update, delete |
 | `orgChartEdge` | findMany, findOne, create, update, delete |
-| `orgMemberProfile` | findMany, findOne, create, update, delete |
 | `orgMembershipSetting` | findMany, findOne, create, update, delete |
-| `appLevel` | findMany, findOne, create, update, delete |
-| `appInvite` | findMany, findOne, create, update, delete |
-| `orgInvite` | findMany, findOne, create, update, delete |
 | `appMembership` | findMany, findOne, create, update, delete |
 | `orgMembership` | findMany, findOne, create, update, delete |
+| `orgMemberProfile` | findMany, findOne, create, update, delete |
+| `appInvite` | findMany, findOne, create, update, delete |
+| `orgInvite` | findMany, findOne, create, update, delete |
 
 ## Table Operations
 
@@ -151,6 +147,40 @@ const updated = await db.appPermission.update({ where: { id: '<UUID>' }, data: {
 const deleted = await db.appPermission.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
+### `db.appPermissionDefaultGrant`
+
+CRUD operations for AppPermissionDefaultGrant records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `permissionId` | UUID | Yes |
+| `isGrant` | Boolean | Yes |
+| `grantorId` | UUID | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+
+**Operations:**
+
+```typescript
+// List all appPermissionDefaultGrant records
+const items = await db.appPermissionDefaultGrant.findMany({ select: { id: true, permissionId: true, isGrant: true, grantorId: true, createdAt: true, updatedAt: true } }).execute();
+
+// Get one by id
+const item = await db.appPermissionDefaultGrant.findOne({ id: '<UUID>', select: { id: true, permissionId: true, isGrant: true, grantorId: true, createdAt: true, updatedAt: true } }).execute();
+
+// Create
+const created = await db.appPermissionDefaultGrant.create({ data: { permissionId: '<UUID>', isGrant: '<Boolean>', grantorId: '<UUID>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.appPermissionDefaultGrant.update({ where: { id: '<UUID>' }, data: { permissionId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.appPermissionDefaultGrant.delete({ where: { id: '<UUID>' } }).execute();
+```
+
 ### `db.orgPermission`
 
 CRUD operations for OrgPermission records.
@@ -184,40 +214,72 @@ const updated = await db.orgPermission.update({ where: { id: '<UUID>' }, data: {
 const deleted = await db.orgPermission.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
-### `db.appLevelRequirement`
+### `db.orgPermissionDefaultPermission`
 
-CRUD operations for AppLevelRequirement records.
+CRUD operations for OrgPermissionDefaultPermission records.
 
 **Fields:**
 
 | Field | Type | Editable |
 |-------|------|----------|
 | `id` | UUID | No |
-| `name` | String | Yes |
-| `level` | String | Yes |
-| `description` | String | Yes |
-| `requiredCount` | Int | Yes |
-| `priority` | Int | Yes |
+| `permissionId` | UUID | Yes |
+| `entityId` | UUID | Yes |
 | `createdAt` | Datetime | No |
 | `updatedAt` | Datetime | No |
 
 **Operations:**
 
 ```typescript
-// List all appLevelRequirement records
-const items = await db.appLevelRequirement.findMany({ select: { id: true, name: true, level: true, description: true, requiredCount: true, priority: true, createdAt: true, updatedAt: true } }).execute();
+// List all orgPermissionDefaultPermission records
+const items = await db.orgPermissionDefaultPermission.findMany({ select: { id: true, permissionId: true, entityId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Get one by id
-const item = await db.appLevelRequirement.findOne({ id: '<UUID>', select: { id: true, name: true, level: true, description: true, requiredCount: true, priority: true, createdAt: true, updatedAt: true } }).execute();
+const item = await db.orgPermissionDefaultPermission.findOne({ id: '<UUID>', select: { id: true, permissionId: true, entityId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Create
-const created = await db.appLevelRequirement.create({ data: { name: '<String>', level: '<String>', description: '<String>', requiredCount: '<Int>', priority: '<Int>' }, select: { id: true } }).execute();
+const created = await db.orgPermissionDefaultPermission.create({ data: { permissionId: '<UUID>', entityId: '<UUID>' }, select: { id: true } }).execute();
 
 // Update
-const updated = await db.appLevelRequirement.update({ where: { id: '<UUID>' }, data: { name: '<String>' }, select: { id: true } }).execute();
+const updated = await db.orgPermissionDefaultPermission.update({ where: { id: '<UUID>' }, data: { permissionId: '<UUID>' }, select: { id: true } }).execute();
 
 // Delete
-const deleted = await db.appLevelRequirement.delete({ where: { id: '<UUID>' } }).execute();
+const deleted = await db.orgPermissionDefaultPermission.delete({ where: { id: '<UUID>' } }).execute();
+```
+
+### `db.orgPermissionDefaultGrant`
+
+CRUD operations for OrgPermissionDefaultGrant records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `permissionId` | UUID | Yes |
+| `isGrant` | Boolean | Yes |
+| `grantorId` | UUID | Yes |
+| `entityId` | UUID | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+
+**Operations:**
+
+```typescript
+// List all orgPermissionDefaultGrant records
+const items = await db.orgPermissionDefaultGrant.findMany({ select: { id: true, permissionId: true, isGrant: true, grantorId: true, entityId: true, createdAt: true, updatedAt: true } }).execute();
+
+// Get one by id
+const item = await db.orgPermissionDefaultGrant.findOne({ id: '<UUID>', select: { id: true, permissionId: true, isGrant: true, grantorId: true, entityId: true, createdAt: true, updatedAt: true } }).execute();
+
+// Create
+const created = await db.orgPermissionDefaultGrant.create({ data: { permissionId: '<UUID>', isGrant: '<Boolean>', grantorId: '<UUID>', entityId: '<UUID>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.orgPermissionDefaultGrant.update({ where: { id: '<UUID>' }, data: { permissionId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.orgPermissionDefaultGrant.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.orgMember`
@@ -313,6 +375,38 @@ const updated = await db.orgPermissionDefault.update({ where: { id: '<UUID>' }, 
 const deleted = await db.orgPermissionDefault.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
+### `db.appPermissionDefaultPermission`
+
+CRUD operations for AppPermissionDefaultPermission records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `permissionId` | UUID | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+
+**Operations:**
+
+```typescript
+// List all appPermissionDefaultPermission records
+const items = await db.appPermissionDefaultPermission.findMany({ select: { id: true, permissionId: true, createdAt: true, updatedAt: true } }).execute();
+
+// Get one by id
+const item = await db.appPermissionDefaultPermission.findOne({ id: '<UUID>', select: { id: true, permissionId: true, createdAt: true, updatedAt: true } }).execute();
+
+// Create
+const created = await db.appPermissionDefaultPermission.create({ data: { permissionId: '<UUID>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.appPermissionDefaultPermission.update({ where: { id: '<UUID>' }, data: { permissionId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.appPermissionDefaultPermission.delete({ where: { id: '<UUID>' } }).execute();
+```
+
 ### `db.appAdminGrant`
 
 CRUD operations for AppAdminGrant records.
@@ -379,68 +473,6 @@ const updated = await db.appOwnerGrant.update({ where: { id: '<UUID>' }, data: {
 
 // Delete
 const deleted = await db.appOwnerGrant.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.appLimitDefault`
-
-CRUD operations for AppLimitDefault records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `name` | String | Yes |
-| `max` | Int | Yes |
-
-**Operations:**
-
-```typescript
-// List all appLimitDefault records
-const items = await db.appLimitDefault.findMany({ select: { id: true, name: true, max: true } }).execute();
-
-// Get one by id
-const item = await db.appLimitDefault.findOne({ id: '<UUID>', select: { id: true, name: true, max: true } }).execute();
-
-// Create
-const created = await db.appLimitDefault.create({ data: { name: '<String>', max: '<Int>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.appLimitDefault.update({ where: { id: '<UUID>' }, data: { name: '<String>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.appLimitDefault.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.orgLimitDefault`
-
-CRUD operations for OrgLimitDefault records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `name` | String | Yes |
-| `max` | Int | Yes |
-
-**Operations:**
-
-```typescript
-// List all orgLimitDefault records
-const items = await db.orgLimitDefault.findMany({ select: { id: true, name: true, max: true } }).execute();
-
-// Get one by id
-const item = await db.orgLimitDefault.findOne({ id: '<UUID>', select: { id: true, name: true, max: true } }).execute();
-
-// Create
-const created = await db.orgLimitDefault.create({ data: { name: '<String>', max: '<Int>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.orgLimitDefault.update({ where: { id: '<UUID>' }, data: { name: '<String>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.orgLimitDefault.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.orgAdminGrant`
@@ -513,141 +545,6 @@ const updated = await db.orgOwnerGrant.update({ where: { id: '<UUID>' }, data: {
 const deleted = await db.orgOwnerGrant.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
-### `db.appLimit`
-
-CRUD operations for AppLimit records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `name` | String | Yes |
-| `actorId` | UUID | Yes |
-| `num` | Int | Yes |
-| `max` | Int | Yes |
-
-**Operations:**
-
-```typescript
-// List all appLimit records
-const items = await db.appLimit.findMany({ select: { id: true, name: true, actorId: true, num: true, max: true } }).execute();
-
-// Get one by id
-const item = await db.appLimit.findOne({ id: '<UUID>', select: { id: true, name: true, actorId: true, num: true, max: true } }).execute();
-
-// Create
-const created = await db.appLimit.create({ data: { name: '<String>', actorId: '<UUID>', num: '<Int>', max: '<Int>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.appLimit.update({ where: { id: '<UUID>' }, data: { name: '<String>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.appLimit.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.appAchievement`
-
-CRUD operations for AppAchievement records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `actorId` | UUID | Yes |
-| `name` | String | Yes |
-| `count` | Int | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-
-**Operations:**
-
-```typescript
-// List all appAchievement records
-const items = await db.appAchievement.findMany({ select: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } }).execute();
-
-// Get one by id
-const item = await db.appAchievement.findOne({ id: '<UUID>', select: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } }).execute();
-
-// Create
-const created = await db.appAchievement.create({ data: { actorId: '<UUID>', name: '<String>', count: '<Int>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.appAchievement.update({ where: { id: '<UUID>' }, data: { actorId: '<UUID>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.appAchievement.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.appStep`
-
-CRUD operations for AppStep records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `actorId` | UUID | Yes |
-| `name` | String | Yes |
-| `count` | Int | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-
-**Operations:**
-
-```typescript
-// List all appStep records
-const items = await db.appStep.findMany({ select: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } }).execute();
-
-// Get one by id
-const item = await db.appStep.findOne({ id: '<UUID>', select: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } }).execute();
-
-// Create
-const created = await db.appStep.create({ data: { actorId: '<UUID>', name: '<String>', count: '<Int>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.appStep.update({ where: { id: '<UUID>' }, data: { actorId: '<UUID>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.appStep.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.appClaimedInvite`
-
-CRUD operations for AppClaimedInvite records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `data` | JSON | Yes |
-| `senderId` | UUID | Yes |
-| `receiverId` | UUID | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-
-**Operations:**
-
-```typescript
-// List all appClaimedInvite records
-const items = await db.appClaimedInvite.findMany({ select: { id: true, data: true, senderId: true, receiverId: true, createdAt: true, updatedAt: true } }).execute();
-
-// Get one by id
-const item = await db.appClaimedInvite.findOne({ id: '<UUID>', select: { id: true, data: true, senderId: true, receiverId: true, createdAt: true, updatedAt: true } }).execute();
-
-// Create
-const created = await db.appClaimedInvite.create({ data: { data: '<JSON>', senderId: '<UUID>', receiverId: '<UUID>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.appClaimedInvite.update({ where: { id: '<UUID>' }, data: { data: '<JSON>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.appClaimedInvite.delete({ where: { id: '<UUID>' } }).execute();
-```
-
 ### `db.orgChartEdgeGrant`
 
 CRUD operations for OrgChartEdgeGrant records.
@@ -685,38 +582,38 @@ const updated = await db.orgChartEdgeGrant.update({ where: { id: '<UUID>' }, dat
 const deleted = await db.orgChartEdgeGrant.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
-### `db.orgLimit`
+### `db.appClaimedInvite`
 
-CRUD operations for OrgLimit records.
+CRUD operations for AppClaimedInvite records.
 
 **Fields:**
 
 | Field | Type | Editable |
 |-------|------|----------|
 | `id` | UUID | No |
-| `name` | String | Yes |
-| `actorId` | UUID | Yes |
-| `num` | Int | Yes |
-| `max` | Int | Yes |
-| `entityId` | UUID | Yes |
+| `data` | JSON | Yes |
+| `senderId` | UUID | Yes |
+| `receiverId` | UUID | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
 
 **Operations:**
 
 ```typescript
-// List all orgLimit records
-const items = await db.orgLimit.findMany({ select: { id: true, name: true, actorId: true, num: true, max: true, entityId: true } }).execute();
+// List all appClaimedInvite records
+const items = await db.appClaimedInvite.findMany({ select: { id: true, data: true, senderId: true, receiverId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Get one by id
-const item = await db.orgLimit.findOne({ id: '<UUID>', select: { id: true, name: true, actorId: true, num: true, max: true, entityId: true } }).execute();
+const item = await db.appClaimedInvite.findOne({ id: '<UUID>', select: { id: true, data: true, senderId: true, receiverId: true, createdAt: true, updatedAt: true } }).execute();
 
 // Create
-const created = await db.orgLimit.create({ data: { name: '<String>', actorId: '<UUID>', num: '<Int>', max: '<Int>', entityId: '<UUID>' }, select: { id: true } }).execute();
+const created = await db.appClaimedInvite.create({ data: { data: '<JSON>', senderId: '<UUID>', receiverId: '<UUID>' }, select: { id: true } }).execute();
 
 // Update
-const updated = await db.orgLimit.update({ where: { id: '<UUID>' }, data: { name: '<String>' }, select: { id: true } }).execute();
+const updated = await db.appClaimedInvite.update({ where: { id: '<UUID>' }, data: { data: '<JSON>' }, select: { id: true } }).execute();
 
 // Delete
-const deleted = await db.orgLimit.delete({ where: { id: '<UUID>' } }).execute();
+const deleted = await db.appClaimedInvite.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.membershipType`
@@ -730,7 +627,7 @@ CRUD operations for MembershipType records.
 | `id` | Int | No |
 | `name` | String | Yes |
 | `description` | String | Yes |
-| `prefix` | String | Yes |
+| `scope` | String | Yes |
 | `parentMembershipType` | Int | Yes |
 | `hasUsersTableEntry` | Boolean | Yes |
 
@@ -738,13 +635,13 @@ CRUD operations for MembershipType records.
 
 ```typescript
 // List all membershipType records
-const items = await db.membershipType.findMany({ select: { id: true, name: true, description: true, prefix: true, parentMembershipType: true, hasUsersTableEntry: true } }).execute();
+const items = await db.membershipType.findMany({ select: { id: true, name: true, description: true, scope: true, parentMembershipType: true, hasUsersTableEntry: true } }).execute();
 
 // Get one by id
-const item = await db.membershipType.findOne({ id: '<Int>', select: { id: true, name: true, description: true, prefix: true, parentMembershipType: true, hasUsersTableEntry: true } }).execute();
+const item = await db.membershipType.findOne({ id: '<Int>', select: { id: true, name: true, description: true, scope: true, parentMembershipType: true, hasUsersTableEntry: true } }).execute();
 
 // Create
-const created = await db.membershipType.create({ data: { name: '<String>', description: '<String>', prefix: '<String>', parentMembershipType: '<Int>', hasUsersTableEntry: '<Boolean>' }, select: { id: true } }).execute();
+const created = await db.membershipType.create({ data: { name: '<String>', description: '<String>', scope: '<String>', parentMembershipType: '<Int>', hasUsersTableEntry: '<Boolean>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.membershipType.update({ where: { id: '<Int>' }, data: { name: '<String>' }, select: { id: true } }).execute();
@@ -965,45 +862,6 @@ const updated = await db.orgChartEdge.update({ where: { id: '<UUID>' }, data: { 
 const deleted = await db.orgChartEdge.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
-### `db.orgMemberProfile`
-
-CRUD operations for OrgMemberProfile records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-| `membershipId` | UUID | Yes |
-| `entityId` | UUID | Yes |
-| `actorId` | UUID | Yes |
-| `displayName` | String | Yes |
-| `email` | String | Yes |
-| `title` | String | Yes |
-| `bio` | String | Yes |
-| `profilePicture` | ConstructiveInternalTypeImage | Yes |
-
-**Operations:**
-
-```typescript
-// List all orgMemberProfile records
-const items = await db.orgMemberProfile.findMany({ select: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } }).execute();
-
-// Get one by id
-const item = await db.orgMemberProfile.findOne({ id: '<UUID>', select: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } }).execute();
-
-// Create
-const created = await db.orgMemberProfile.create({ data: { membershipId: '<UUID>', entityId: '<UUID>', actorId: '<UUID>', displayName: '<String>', email: '<String>', title: '<String>', bio: '<String>', profilePicture: '<Image>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.orgMemberProfile.update({ where: { id: '<UUID>' }, data: { membershipId: '<UUID>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.orgMemberProfile.delete({ where: { id: '<UUID>' } }).execute();
-```
-
 ### `db.orgMembershipSetting`
 
 CRUD operations for OrgMembershipSetting records.
@@ -1023,142 +881,27 @@ CRUD operations for OrgMembershipSetting records.
 | `createChildCascadeAdmins` | Boolean | Yes |
 | `createChildCascadeMembers` | Boolean | Yes |
 | `allowExternalMembers` | Boolean | Yes |
+| `inviteProfileAssignmentMode` | String | Yes |
 | `populateMemberEmail` | Boolean | Yes |
+| `limitAllocationMode` | String | Yes |
 
 **Operations:**
 
 ```typescript
 // List all orgMembershipSetting records
-const items = await db.orgMembershipSetting.findMany({ select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, populateMemberEmail: true } }).execute();
+const items = await db.orgMembershipSetting.findMany({ select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, inviteProfileAssignmentMode: true, populateMemberEmail: true, limitAllocationMode: true } }).execute();
 
 // Get one by id
-const item = await db.orgMembershipSetting.findOne({ id: '<UUID>', select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, populateMemberEmail: true } }).execute();
+const item = await db.orgMembershipSetting.findOne({ id: '<UUID>', select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, inviteProfileAssignmentMode: true, populateMemberEmail: true, limitAllocationMode: true } }).execute();
 
 // Create
-const created = await db.orgMembershipSetting.create({ data: { createdBy: '<UUID>', updatedBy: '<UUID>', entityId: '<UUID>', deleteMemberCascadeChildren: '<Boolean>', createChildCascadeOwners: '<Boolean>', createChildCascadeAdmins: '<Boolean>', createChildCascadeMembers: '<Boolean>', allowExternalMembers: '<Boolean>', populateMemberEmail: '<Boolean>' }, select: { id: true } }).execute();
+const created = await db.orgMembershipSetting.create({ data: { createdBy: '<UUID>', updatedBy: '<UUID>', entityId: '<UUID>', deleteMemberCascadeChildren: '<Boolean>', createChildCascadeOwners: '<Boolean>', createChildCascadeAdmins: '<Boolean>', createChildCascadeMembers: '<Boolean>', allowExternalMembers: '<Boolean>', inviteProfileAssignmentMode: '<String>', populateMemberEmail: '<Boolean>', limitAllocationMode: '<String>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.orgMembershipSetting.update({ where: { id: '<UUID>' }, data: { createdBy: '<UUID>' }, select: { id: true } }).execute();
 
 // Delete
 const deleted = await db.orgMembershipSetting.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.appLevel`
-
-CRUD operations for AppLevel records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `name` | String | Yes |
-| `description` | String | Yes |
-| `image` | ConstructiveInternalTypeImage | Yes |
-| `ownerId` | UUID | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-
-**Operations:**
-
-```typescript
-// List all appLevel records
-const items = await db.appLevel.findMany({ select: { id: true, name: true, description: true, image: true, ownerId: true, createdAt: true, updatedAt: true } }).execute();
-
-// Get one by id
-const item = await db.appLevel.findOne({ id: '<UUID>', select: { id: true, name: true, description: true, image: true, ownerId: true, createdAt: true, updatedAt: true } }).execute();
-
-// Create
-const created = await db.appLevel.create({ data: { name: '<String>', description: '<String>', image: '<Image>', ownerId: '<UUID>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.appLevel.update({ where: { id: '<UUID>' }, data: { name: '<String>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.appLevel.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.appInvite`
-
-CRUD operations for AppInvite records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `email` | ConstructiveInternalTypeEmail | Yes |
-| `senderId` | UUID | Yes |
-| `inviteToken` | String | Yes |
-| `inviteValid` | Boolean | Yes |
-| `inviteLimit` | Int | Yes |
-| `inviteCount` | Int | Yes |
-| `multiple` | Boolean | Yes |
-| `data` | JSON | Yes |
-| `expiresAt` | Datetime | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-
-**Operations:**
-
-```typescript
-// List all appInvite records
-const items = await db.appInvite.findMany({ select: { id: true, email: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true } }).execute();
-
-// Get one by id
-const item = await db.appInvite.findOne({ id: '<UUID>', select: { id: true, email: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true } }).execute();
-
-// Create
-const created = await db.appInvite.create({ data: { email: '<Email>', senderId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', expiresAt: '<Datetime>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.appInvite.update({ where: { id: '<UUID>' }, data: { email: '<Email>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.appInvite.delete({ where: { id: '<UUID>' } }).execute();
-```
-
-### `db.orgInvite`
-
-CRUD operations for OrgInvite records.
-
-**Fields:**
-
-| Field | Type | Editable |
-|-------|------|----------|
-| `id` | UUID | No |
-| `email` | ConstructiveInternalTypeEmail | Yes |
-| `senderId` | UUID | Yes |
-| `receiverId` | UUID | Yes |
-| `inviteToken` | String | Yes |
-| `inviteValid` | Boolean | Yes |
-| `inviteLimit` | Int | Yes |
-| `inviteCount` | Int | Yes |
-| `multiple` | Boolean | Yes |
-| `data` | JSON | Yes |
-| `expiresAt` | Datetime | Yes |
-| `createdAt` | Datetime | No |
-| `updatedAt` | Datetime | No |
-| `entityId` | UUID | Yes |
-
-**Operations:**
-
-```typescript
-// List all orgInvite records
-const items = await db.orgInvite.findMany({ select: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
-
-// Get one by id
-const item = await db.orgInvite.findOne({ id: '<UUID>', select: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
-
-// Create
-const created = await db.orgInvite.create({ data: { email: '<Email>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', expiresAt: '<Datetime>', entityId: '<UUID>' }, select: { id: true } }).execute();
-
-// Update
-const updated = await db.orgInvite.update({ where: { id: '<UUID>' }, data: { email: '<Email>' }, select: { id: true } }).execute();
-
-// Delete
-const deleted = await db.orgInvite.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.appMembership`
@@ -1179,7 +922,6 @@ CRUD operations for AppMembership records.
 | `isDisabled` | Boolean | Yes |
 | `isVerified` | Boolean | Yes |
 | `isActive` | Boolean | Yes |
-| `isExternal` | Boolean | Yes |
 | `isOwner` | Boolean | Yes |
 | `isAdmin` | Boolean | Yes |
 | `permissions` | BitString | Yes |
@@ -1191,13 +933,13 @@ CRUD operations for AppMembership records.
 
 ```typescript
 // List all appMembership records
-const items = await db.appMembership.findMany({ select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isExternal: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } }).execute();
+const items = await db.appMembership.findMany({ select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } }).execute();
 
 // Get one by id
-const item = await db.appMembership.findOne({ id: '<UUID>', select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isExternal: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } }).execute();
+const item = await db.appMembership.findOne({ id: '<UUID>', select: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } }).execute();
 
 // Create
-const created = await db.appMembership.create({ data: { createdBy: '<UUID>', updatedBy: '<UUID>', isApproved: '<Boolean>', isBanned: '<Boolean>', isDisabled: '<Boolean>', isVerified: '<Boolean>', isActive: '<Boolean>', isExternal: '<Boolean>', isOwner: '<Boolean>', isAdmin: '<Boolean>', permissions: '<BitString>', granted: '<BitString>', actorId: '<UUID>', profileId: '<UUID>' }, select: { id: true } }).execute();
+const created = await db.appMembership.create({ data: { createdBy: '<UUID>', updatedBy: '<UUID>', isApproved: '<Boolean>', isBanned: '<Boolean>', isDisabled: '<Boolean>', isVerified: '<Boolean>', isActive: '<Boolean>', isOwner: '<Boolean>', isAdmin: '<Boolean>', permissions: '<BitString>', granted: '<BitString>', actorId: '<UUID>', profileId: '<UUID>' }, select: { id: true } }).execute();
 
 // Update
 const updated = await db.appMembership.update({ where: { id: '<UUID>' }, data: { createdBy: '<UUID>' }, select: { id: true } }).execute();
@@ -1250,6 +992,134 @@ const updated = await db.orgMembership.update({ where: { id: '<UUID>' }, data: {
 
 // Delete
 const deleted = await db.orgMembership.delete({ where: { id: '<UUID>' } }).execute();
+```
+
+### `db.orgMemberProfile`
+
+CRUD operations for OrgMemberProfile records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+| `membershipId` | UUID | Yes |
+| `entityId` | UUID | Yes |
+| `actorId` | UUID | Yes |
+| `displayName` | String | Yes |
+| `email` | String | Yes |
+| `title` | String | Yes |
+| `bio` | String | Yes |
+| `profilePicture` | ConstructiveInternalTypeImage | Yes |
+
+**Operations:**
+
+```typescript
+// List all orgMemberProfile records
+const items = await db.orgMemberProfile.findMany({ select: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } }).execute();
+
+// Get one by id
+const item = await db.orgMemberProfile.findOne({ id: '<UUID>', select: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } }).execute();
+
+// Create
+const created = await db.orgMemberProfile.create({ data: { membershipId: '<UUID>', entityId: '<UUID>', actorId: '<UUID>', displayName: '<String>', email: '<String>', title: '<String>', bio: '<String>', profilePicture: '<Image>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.orgMemberProfile.update({ where: { id: '<UUID>' }, data: { membershipId: '<UUID>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.orgMemberProfile.delete({ where: { id: '<UUID>' } }).execute();
+```
+
+### `db.appInvite`
+
+CRUD operations for AppInvite records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `channel` | String | Yes |
+| `email` | ConstructiveInternalTypeEmail | Yes |
+| `phone` | String | Yes |
+| `senderId` | UUID | Yes |
+| `inviteToken` | String | Yes |
+| `inviteValid` | Boolean | Yes |
+| `inviteLimit` | Int | Yes |
+| `inviteCount` | Int | Yes |
+| `multiple` | Boolean | Yes |
+| `data` | JSON | Yes |
+| `profileId` | UUID | Yes |
+| `expiresAt` | Datetime | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+
+**Operations:**
+
+```typescript
+// List all appInvite records
+const items = await db.appInvite.findMany({ select: { id: true, channel: true, email: true, phone: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true } }).execute();
+
+// Get one by id
+const item = await db.appInvite.findOne({ id: '<UUID>', select: { id: true, channel: true, email: true, phone: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true } }).execute();
+
+// Create
+const created = await db.appInvite.create({ data: { channel: '<String>', email: '<Email>', phone: '<String>', senderId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', expiresAt: '<Datetime>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.appInvite.update({ where: { id: '<UUID>' }, data: { channel: '<String>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.appInvite.delete({ where: { id: '<UUID>' } }).execute();
+```
+
+### `db.orgInvite`
+
+CRUD operations for OrgInvite records.
+
+**Fields:**
+
+| Field | Type | Editable |
+|-------|------|----------|
+| `id` | UUID | No |
+| `channel` | String | Yes |
+| `email` | ConstructiveInternalTypeEmail | Yes |
+| `phone` | String | Yes |
+| `senderId` | UUID | Yes |
+| `receiverId` | UUID | Yes |
+| `inviteToken` | String | Yes |
+| `inviteValid` | Boolean | Yes |
+| `inviteLimit` | Int | Yes |
+| `inviteCount` | Int | Yes |
+| `multiple` | Boolean | Yes |
+| `data` | JSON | Yes |
+| `profileId` | UUID | Yes |
+| `isReadOnly` | Boolean | Yes |
+| `expiresAt` | Datetime | Yes |
+| `createdAt` | Datetime | No |
+| `updatedAt` | Datetime | No |
+| `entityId` | UUID | Yes |
+
+**Operations:**
+
+```typescript
+// List all orgInvite records
+const items = await db.orgInvite.findMany({ select: { id: true, channel: true, email: true, phone: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
+
+// Get one by id
+const item = await db.orgInvite.findOne({ id: '<UUID>', select: { id: true, channel: true, email: true, phone: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } }).execute();
+
+// Create
+const created = await db.orgInvite.create({ data: { channel: '<String>', email: '<Email>', phone: '<String>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', isReadOnly: '<Boolean>', expiresAt: '<Datetime>', entityId: '<UUID>' }, select: { id: true } }).execute();
+
+// Update
+const updated = await db.orgInvite.update({ where: { id: '<UUID>' }, data: { channel: '<String>' }, select: { id: true } }).execute();
+
+// Delete
+const deleted = await db.orgInvite.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ## Custom Operations
@@ -1332,22 +1202,6 @@ orgPermissionsGetMask
 const result = await db.query.orgPermissionsGetMask({ ids: '<UUID>' }).execute();
 ```
 
-### `db.query.stepsAchieved`
-
-stepsAchieved
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `level` | String |
-  | `roleId` | UUID |
-
-```typescript
-const result = await db.query.stepsAchieved({ level: '<String>', roleId: '<UUID>' }).execute();
-```
-
 ### `db.query.appPermissionsGetMaskByNames`
 
 appPermissionsGetMaskByNames
@@ -1414,25 +1268,6 @@ Reads and enables pagination through a set of `OrgPermission`.
 const result = await db.query.orgPermissionsGetByMask({ mask: '<BitString>', first: '<Int>', offset: '<Int>', after: '<Cursor>' }).execute();
 ```
 
-### `db.query.stepsRequired`
-
-Reads and enables pagination through a set of `AppLevelRequirement`.
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `level` | String |
-  | `roleId` | UUID |
-  | `first` | Int |
-  | `offset` | Int |
-  | `after` | Cursor |
-
-```typescript
-const result = await db.query.stepsRequired({ level: '<String>', roleId: '<UUID>', first: '<Int>', offset: '<Int>', after: '<Cursor>' }).execute();
-```
-
 ### `db.mutation.submitAppInviteCode`
 
 submitAppInviteCode
@@ -1461,41 +1296,6 @@ submitOrgInviteCode
 
 ```typescript
 const result = await db.mutation.submitOrgInviteCode({ input: { token: '<String>' } }).execute();
-```
-
-### `db.mutation.requestUploadUrl`
-
-Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | RequestUploadUrlInput (required) |
-
-```typescript
-const result = await db.mutation.requestUploadUrl({ input: '<RequestUploadUrlInput>' }).execute();
-```
-
-### `db.mutation.confirmUpload`
-
-Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | ConfirmUploadInput (required) |
-
-```typescript
-const result = await db.mutation.confirmUpload({ input: { fileId: '<UUID>' } }).execute();
 ```
 
 ### `db.mutation.provisionBucket`

@@ -1,6 +1,6 @@
 {
   "name": "@constructive-io/knative-job-service",
-  "version": "2.11.9",
+  "version": "2.20.8",
   "description": "knative job service",
   "author": "Constructive <developers@constructive.io>",
   "homepage": "https://github.com/constructive-io/jobs/tree/master/packages/knative-job-service#readme",
@@ -62,11 +62,11 @@
     "@constructive-io/knative-job-fn": "workspace:^",
     "@constructive-io/knative-job-server": "workspace:^",
     "@constructive-io/knative-job-worker": "workspace:^",
-    "@constructive-io/send-email-link-fn": "workspace:^",
-    "@constructive-io/simple-email-fn": "workspace:^",
+    "@constructive-io/send-email-fn": "workspace:^",
+    "@constructive-io/send-verification-link-fn": "workspace:^",
     "@pgpmjs/env": "workspace:^",
     "@pgpmjs/logger": "workspace:^",
     "async-retry": "1.3.3",
-    "pg": "8.20.0"
+    "pg": "8.21.0"
   }
 }

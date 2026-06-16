@@ -21,15 +21,16 @@ import type {
   ProvisionNewUserInput,
   ResetPasswordInput,
   SignInCrossOriginInput,
+  SignInSmsOtpInput,
+  SignUpSmsInput,
   SignUpInput,
-  RequestCrossOriginTokenInput,
   SignInInput,
+  LinkIdentityInput,
   ExtendTokenExpiresInput,
   CreateApiKeyInput,
+  RequestCrossOriginTokenInput,
   ForgotPasswordInput,
   SendVerificationEmailInput,
-  RequestUploadUrlInput,
-  ConfirmUploadInput,
   ProvisionBucketInput,
   SignOutPayload,
   SendAccountDeletionEmailPayload,
@@ -45,15 +46,16 @@ import type {
   ProvisionNewUserPayload,
   ResetPasswordPayload,
   SignInCrossOriginPayload,
+  SignInSmsOtpPayload,
+  SignUpSmsPayload,
   SignUpPayload,
-  RequestCrossOriginTokenPayload,
   SignInPayload,
+  LinkIdentityPayload,
   ExtendTokenExpiresPayload,
   CreateApiKeyPayload,
+  RequestCrossOriginTokenPayload,
   ForgotPasswordPayload,
   SendVerificationEmailPayload,
-  RequestUploadUrlPayload,
-  ConfirmUploadPayload,
   ProvisionBucketPayload,
   SignOutPayloadSelect,
   SendAccountDeletionEmailPayloadSelect,
@@ -69,15 +71,16 @@ import type {
   ProvisionNewUserPayloadSelect,
   ResetPasswordPayloadSelect,
   SignInCrossOriginPayloadSelect,
+  SignInSmsOtpPayloadSelect,
+  SignUpSmsPayloadSelect,
   SignUpPayloadSelect,
-  RequestCrossOriginTokenPayloadSelect,
   SignInPayloadSelect,
+  LinkIdentityPayloadSelect,
   ExtendTokenExpiresPayloadSelect,
   CreateApiKeyPayloadSelect,
+  RequestCrossOriginTokenPayloadSelect,
   ForgotPasswordPayloadSelect,
   SendVerificationEmailPayloadSelect,
-  RequestUploadUrlPayloadSelect,
-  ConfirmUploadPayloadSelect,
   ProvisionBucketPayloadSelect,
 } from '../input-types';
 import { connectionFieldsMap } from '../input-types';
@@ -123,14 +126,20 @@ export interface ResetPasswordVariables {
 export interface SignInCrossOriginVariables {
   input: SignInCrossOriginInput;
 }
+export interface SignInSmsOtpVariables {
+  input: SignInSmsOtpInput;
+}
+export interface SignUpSmsVariables {
+  input: SignUpSmsInput;
+}
 export interface SignUpVariables {
   input: SignUpInput;
 }
-export interface RequestCrossOriginTokenVariables {
-  input: RequestCrossOriginTokenInput;
-}
 export interface SignInVariables {
   input: SignInInput;
+}
+export interface LinkIdentityVariables {
+  input: LinkIdentityInput;
 }
 export interface ExtendTokenExpiresVariables {
   input: ExtendTokenExpiresInput;
@@ -138,30 +147,14 @@ export interface ExtendTokenExpiresVariables {
 export interface CreateApiKeyVariables {
   input: CreateApiKeyInput;
 }
+export interface RequestCrossOriginTokenVariables {
+  input: RequestCrossOriginTokenInput;
+}
 export interface ForgotPasswordVariables {
   input: ForgotPasswordInput;
 }
 export interface SendVerificationEmailVariables {
   input: SendVerificationEmailInput;
-}
-/**
- * Variables for requestUploadUrl
- * Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
- */
-export interface RequestUploadUrlVariables {
-  input: RequestUploadUrlInput;
-}
-/**
- * Variables for confirmUpload
- * Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
- */
-export interface ConfirmUploadVariables {
-  input: ConfirmUploadInput;
 }
 /**
  * Variables for provisionBucket
@@ -581,6 +574,64 @@ export function createMutationOperations(client: OrmClient) {
           'SignInCrossOriginPayload'
         ),
       }),
+    signInSmsOtp: <S extends SignInSmsOtpPayloadSelect>(
+      args: SignInSmsOtpVariables,
+      options: {
+        select: S;
+      } & StrictSelect<S, SignInSmsOtpPayloadSelect>
+    ) =>
+      new QueryBuilder<{
+        signInSmsOtp: InferSelectResult<SignInSmsOtpPayload, S> | null;
+      }>({
+        client,
+        operation: 'mutation',
+        operationName: 'SignInSmsOtp',
+        fieldName: 'signInSmsOtp',
+        ...buildCustomDocument(
+          'mutation',
+          'SignInSmsOtp',
+          'signInSmsOtp',
+          options.select,
+          args,
+          [
+            {
+              name: 'input',
+              type: 'SignInSmsOtpInput!',
+            },
+          ],
+          connectionFieldsMap,
+          'SignInSmsOtpPayload'
+        ),
+      }),
+    signUpSms: <S extends SignUpSmsPayloadSelect>(
+      args: SignUpSmsVariables,
+      options: {
+        select: S;
+      } & StrictSelect<S, SignUpSmsPayloadSelect>
+    ) =>
+      new QueryBuilder<{
+        signUpSms: InferSelectResult<SignUpSmsPayload, S> | null;
+      }>({
+        client,
+        operation: 'mutation',
+        operationName: 'SignUpSms',
+        fieldName: 'signUpSms',
+        ...buildCustomDocument(
+          'mutation',
+          'SignUpSms',
+          'signUpSms',
+          options.select,
+          args,
+          [
+            {
+              name: 'input',
+              type: 'SignUpSmsInput!',
+            },
+          ],
+          connectionFieldsMap,
+          'SignUpSmsPayload'
+        ),
+      }),
     signUp: <S extends SignUpPayloadSelect>(
       args: SignUpVariables,
       options: {
@@ -610,35 +661,6 @@ export function createMutationOperations(client: OrmClient) {
           'SignUpPayload'
         ),
       }),
-    requestCrossOriginToken: <S extends RequestCrossOriginTokenPayloadSelect>(
-      args: RequestCrossOriginTokenVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, RequestCrossOriginTokenPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        requestCrossOriginToken: InferSelectResult<RequestCrossOriginTokenPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'RequestCrossOriginToken',
-        fieldName: 'requestCrossOriginToken',
-        ...buildCustomDocument(
-          'mutation',
-          'RequestCrossOriginToken',
-          'requestCrossOriginToken',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'RequestCrossOriginTokenInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'RequestCrossOriginTokenPayload'
-        ),
-      }),
     signIn: <S extends SignInPayloadSelect>(
       args: SignInVariables,
       options: {
@@ -666,6 +688,35 @@ export function createMutationOperations(client: OrmClient) {
           ],
           connectionFieldsMap,
           'SignInPayload'
+        ),
+      }),
+    linkIdentity: <S extends LinkIdentityPayloadSelect>(
+      args: LinkIdentityVariables,
+      options: {
+        select: S;
+      } & StrictSelect<S, LinkIdentityPayloadSelect>
+    ) =>
+      new QueryBuilder<{
+        linkIdentity: InferSelectResult<LinkIdentityPayload, S> | null;
+      }>({
+        client,
+        operation: 'mutation',
+        operationName: 'LinkIdentity',
+        fieldName: 'linkIdentity',
+        ...buildCustomDocument(
+          'mutation',
+          'LinkIdentity',
+          'linkIdentity',
+          options.select,
+          args,
+          [
+            {
+              name: 'input',
+              type: 'LinkIdentityInput!',
+            },
+          ],
+          connectionFieldsMap,
+          'LinkIdentityPayload'
         ),
       }),
     extendTokenExpires: <S extends ExtendTokenExpiresPayloadSelect>(
@@ -726,6 +777,35 @@ export function createMutationOperations(client: OrmClient) {
           'CreateApiKeyPayload'
         ),
       }),
+    requestCrossOriginToken: <S extends RequestCrossOriginTokenPayloadSelect>(
+      args: RequestCrossOriginTokenVariables,
+      options: {
+        select: S;
+      } & StrictSelect<S, RequestCrossOriginTokenPayloadSelect>
+    ) =>
+      new QueryBuilder<{
+        requestCrossOriginToken: InferSelectResult<RequestCrossOriginTokenPayload, S> | null;
+      }>({
+        client,
+        operation: 'mutation',
+        operationName: 'RequestCrossOriginToken',
+        fieldName: 'requestCrossOriginToken',
+        ...buildCustomDocument(
+          'mutation',
+          'RequestCrossOriginToken',
+          'requestCrossOriginToken',
+          options.select,
+          args,
+          [
+            {
+              name: 'input',
+              type: 'RequestCrossOriginTokenInput!',
+            },
+          ],
+          connectionFieldsMap,
+          'RequestCrossOriginTokenPayload'
+        ),
+      }),
     forgotPassword: <S extends ForgotPasswordPayloadSelect>(
       args: ForgotPasswordVariables,
       options: {
@@ -782,64 +862,6 @@ export function createMutationOperations(client: OrmClient) {
           ],
           connectionFieldsMap,
           'SendVerificationEmailPayload'
-        ),
-      }),
-    requestUploadUrl: <S extends RequestUploadUrlPayloadSelect>(
-      args: RequestUploadUrlVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, RequestUploadUrlPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        requestUploadUrl: InferSelectResult<RequestUploadUrlPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'RequestUploadUrl',
-        fieldName: 'requestUploadUrl',
-        ...buildCustomDocument(
-          'mutation',
-          'RequestUploadUrl',
-          'requestUploadUrl',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'RequestUploadUrlInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'RequestUploadUrlPayload'
-        ),
-      }),
-    confirmUpload: <S extends ConfirmUploadPayloadSelect>(
-      args: ConfirmUploadVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, ConfirmUploadPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        confirmUpload: InferSelectResult<ConfirmUploadPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'ConfirmUpload',
-        fieldName: 'confirmUpload',
-        ...buildCustomDocument(
-          'mutation',
-          'ConfirmUpload',
-          'confirmUpload',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'ConfirmUploadInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'ConfirmUploadPayload'
         ),
       }),
     provisionBucket: <S extends ProvisionBucketPayloadSelect>(

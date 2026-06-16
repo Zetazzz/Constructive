@@ -42,6 +42,7 @@ export type SelectConfig<TFields extends string> = {
  */
 export interface NestedSelectConfig {
   select?: Record<string, boolean | NestedSelectConfig>;
+  args?: Record<string, unknown>;
   first?: number;
   last?: number;
   after?: string;
@@ -140,7 +141,7 @@ export type InferSelectResult<TEntity, TSelect> = TSelect extends undefined
         ? K extends keyof TEntity
           ? TEntity[K]
           : never
-        : TSelect[K] extends { select: infer NestedSelect }
+        : TSelect[K] extends { args: Record<string, unknown>; select: infer NestedSelect }
           ? K extends keyof TEntity
             ? NonNullable<TEntity[K]> extends ConnectionResult<infer NodeType>
               ? ConnectionResult<InferSelectResult<NodeType, NestedSelect>>
@@ -148,7 +149,15 @@ export type InferSelectResult<TEntity, TSelect> = TSelect extends undefined
                   | InferSelectResult<NonNullable<TEntity[K]>, NestedSelect>
                   | (null extends TEntity[K] ? null : never)
             : never
-          : K extends keyof TEntity
+          : TSelect[K] extends { select: infer NestedSelect }
+            ? K extends keyof TEntity
+              ? NonNullable<TEntity[K]> extends ConnectionResult<infer NodeType>
+                ? ConnectionResult<InferSelectResult<NodeType, NestedSelect>>
+                :
+                    | InferSelectResult<NonNullable<TEntity[K]>, NestedSelect>
+                    | (null extends TEntity[K] ? null : never)
+              : never
+            : K extends keyof TEntity
             ? TEntity[K]
             : never;
     };
@@ -215,9 +224,10 @@ export interface FindManyArgs<TSelect, TWhere, TOrderBy> {
 /**
  * Arguments for findFirst/findUnique operations
  */
-export interface FindFirstArgs<TSelect, TWhere> {
+export interface FindFirstArgs<TSelect, TWhere, TOrderBy> {
   select?: TSelect;
   where?: TWhere;
+  orderBy?: TOrderBy[];
 }
 
 /**

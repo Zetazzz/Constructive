@@ -17,8 +17,6 @@
  * Any changes here will affect all generated CLI embedder modules.
  */
 
-import OllamaClient from '@agentic-kit/ollama';
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type EmbedderFunction = (text: string) => Promise<number[]>;
@@ -36,11 +34,22 @@ export interface EmbedderConfig {
 
 function createOllamaEmbedder(
   baseUrl: string = 'http://localhost:11434',
-  model: string = 'nomic-embed-text',
+  model: string = 'nomic-embed-text'
 ): EmbedderFunction {
-  const client = new OllamaClient(baseUrl);
+  let clientP: Promise<{ generateEmbedding: (text: string, model: string) => Promise<{ embedding: number[] }> }> | undefined;
   return async (text: string): Promise<number[]> => {
-    return client.generateEmbedding(text, model);
+    if (!clientP) {
+      clientP = import('@agentic-kit/ollama')
+        .then((m) => new m.default(baseUrl))
+        .catch(() => {
+          throw new Error(
+            'The ollama embedder requires @agentic-kit/ollama. Install it: npm i @agentic-kit/ollama'
+          );
+        });
+    }
+    const client = await clientP;
+    const result = await client.generateEmbedding(text, model);
+    return result.embedding;
   };
 }
 
@@ -58,7 +67,7 @@ function createOllamaEmbedder(
  * @returns An EmbedderFunction or null if no embedder is configured
  */
 export function resolveEmbedder(
-  store?: { getVar: (key: string) => string | undefined },
+  store?: { getVar: (key: string) => string | undefined }
 ): EmbedderFunction | null {
   // 1. Check environment variables first
   const envProvider = process.env.EMBEDDER_PROVIDER;
@@ -66,7 +75,7 @@ export function resolveEmbedder(
     return buildEmbedder({
       provider: envProvider,
       model: process.env.EMBEDDER_MODEL,
-      baseUrl: process.env.EMBEDDER_BASE_URL,
+      baseUrl: process.env.EMBEDDER_BASE_URL
     });
   }
 
@@ -77,7 +86,7 @@ export function resolveEmbedder(
       return buildEmbedder({
         provider: configProvider,
         model: store.getVar('embedder.model'),
-        baseUrl: store.getVar('embedder.baseUrl'),
+        baseUrl: store.getVar('embedder.baseUrl')
       });
     }
   }
@@ -91,13 +100,13 @@ export function resolveEmbedder(
  */
 function buildEmbedder(config: EmbedderConfig): EmbedderFunction | null {
   switch (config.provider) {
-    case 'ollama':
-      return createOllamaEmbedder(config.baseUrl, config.model);
-    default:
-      console.error(
-        `Unknown embedder provider: '${config.provider}'. Supported: ollama`,
-      );
-      return null;
+  case 'ollama':
+    return createOllamaEmbedder(config.baseUrl, config.model);
+  default:
+    console.error(
+      `Unknown embedder provider: '${config.provider}'. Supported: ollama`
+    );
+    return null;
   }
 }
 
@@ -116,7 +125,7 @@ function buildEmbedder(config: EmbedderConfig): EmbedderFunction | null {
 export async function autoEmbedWhere<T extends object>(
   where: T,
   vectorFieldNames: string[],
-  embedder: EmbedderFunction,
+  embedder: EmbedderFunction
 ): Promise<T> {
   const rec = where as unknown as Record<string, unknown>;
   for (const fieldName of vectorFieldNames) {
@@ -161,7 +170,7 @@ export async function autoEmbedWhere<T extends object>(
 export async function autoEmbedInput<T extends object>(
   data: T,
   vectorFieldNames: string[],
-  embedder: EmbedderFunction,
+  embedder: EmbedderFunction
 ): Promise<T> {
   const rec = data as unknown as Record<string, unknown>;
   for (const fieldName of vectorFieldNames) {

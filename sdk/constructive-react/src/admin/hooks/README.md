@@ -41,16 +41,26 @@ function App() {
 | `useCreateAppPermissionMutation` | Mutation | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
 | `useUpdateAppPermissionMutation` | Mutation | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
 | `useDeleteAppPermissionMutation` | Mutation | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
+| `useAppPermissionDefaultGrantsQuery` | Query | Audit log of permission additions and removals from the defaults bitmask |
+| `useAppPermissionDefaultGrantQuery` | Query | Audit log of permission additions and removals from the defaults bitmask |
+| `useCreateAppPermissionDefaultGrantMutation` | Mutation | Audit log of permission additions and removals from the defaults bitmask |
+| `useUpdateAppPermissionDefaultGrantMutation` | Mutation | Audit log of permission additions and removals from the defaults bitmask |
+| `useDeleteAppPermissionDefaultGrantMutation` | Mutation | Audit log of permission additions and removals from the defaults bitmask |
 | `useOrgPermissionsQuery` | Query | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
 | `useOrgPermissionQuery` | Query | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
 | `useCreateOrgPermissionMutation` | Mutation | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
 | `useUpdateOrgPermissionMutation` | Mutation | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
 | `useDeleteOrgPermissionMutation` | Mutation | Defines available permissions as named bits within a bitmask, used by the RBAC system for access control |
-| `useAppLevelRequirementsQuery` | Query | Defines the specific requirements that must be met to achieve a level |
-| `useAppLevelRequirementQuery` | Query | Defines the specific requirements that must be met to achieve a level |
-| `useCreateAppLevelRequirementMutation` | Mutation | Defines the specific requirements that must be met to achieve a level |
-| `useUpdateAppLevelRequirementMutation` | Mutation | Defines the specific requirements that must be met to achieve a level |
-| `useDeleteAppLevelRequirementMutation` | Mutation | Defines the specific requirements that must be met to achieve a level |
+| `useOrgPermissionDefaultPermissionsQuery` | Query | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useOrgPermissionDefaultPermissionQuery` | Query | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useCreateOrgPermissionDefaultPermissionMutation` | Mutation | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useUpdateOrgPermissionDefaultPermissionMutation` | Mutation | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useDeleteOrgPermissionDefaultPermissionMutation` | Mutation | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useOrgPermissionDefaultGrantsQuery` | Query | Audit log of permission additions and removals from the defaults bitmask |
+| `useOrgPermissionDefaultGrantQuery` | Query | Audit log of permission additions and removals from the defaults bitmask |
+| `useCreateOrgPermissionDefaultGrantMutation` | Mutation | Audit log of permission additions and removals from the defaults bitmask |
+| `useUpdateOrgPermissionDefaultGrantMutation` | Mutation | Audit log of permission additions and removals from the defaults bitmask |
+| `useDeleteOrgPermissionDefaultGrantMutation` | Mutation | Audit log of permission additions and removals from the defaults bitmask |
 | `useOrgMembersQuery` | Query | Simplified view of active members in an entity, used for listing who belongs to an org or group |
 | `useOrgMemberQuery` | Query | Simplified view of active members in an entity, used for listing who belongs to an org or group |
 | `useCreateOrgMemberMutation` | Mutation | Simplified view of active members in an entity, used for listing who belongs to an org or group |
@@ -66,6 +76,11 @@ function App() {
 | `useCreateOrgPermissionDefaultMutation` | Mutation | Stores the default permission bitmask assigned to new members upon joining |
 | `useUpdateOrgPermissionDefaultMutation` | Mutation | Stores the default permission bitmask assigned to new members upon joining |
 | `useDeleteOrgPermissionDefaultMutation` | Mutation | Stores the default permission bitmask assigned to new members upon joining |
+| `useAppPermissionDefaultPermissionsQuery` | Query | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useAppPermissionDefaultPermissionQuery` | Query | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useCreateAppPermissionDefaultPermissionMutation` | Mutation | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useUpdateAppPermissionDefaultPermissionMutation` | Mutation | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
+| `useDeleteAppPermissionDefaultPermissionMutation` | Mutation | Join table linking permission defaults to individual permissions; recompute trigger rebuilds the defaults bitmask |
 | `useAppAdminGrantsQuery` | Query | Records of admin role grants and revocations between members |
 | `useAppAdminGrantQuery` | Query | Records of admin role grants and revocations between members |
 | `useCreateAppAdminGrantMutation` | Mutation | Records of admin role grants and revocations between members |
@@ -76,16 +91,6 @@ function App() {
 | `useCreateAppOwnerGrantMutation` | Mutation | Records of ownership transfers and grants between members |
 | `useUpdateAppOwnerGrantMutation` | Mutation | Records of ownership transfers and grants between members |
 | `useDeleteAppOwnerGrantMutation` | Mutation | Records of ownership transfers and grants between members |
-| `useAppLimitDefaultsQuery` | Query | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useAppLimitDefaultQuery` | Query | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useCreateAppLimitDefaultMutation` | Mutation | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useUpdateAppLimitDefaultMutation` | Mutation | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useDeleteAppLimitDefaultMutation` | Mutation | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useOrgLimitDefaultsQuery` | Query | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useOrgLimitDefaultQuery` | Query | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useCreateOrgLimitDefaultMutation` | Mutation | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useUpdateOrgLimitDefaultMutation` | Mutation | Default maximum values for each named limit, applied when no per-actor override exists |
-| `useDeleteOrgLimitDefaultMutation` | Mutation | Default maximum values for each named limit, applied when no per-actor override exists |
 | `useOrgAdminGrantsQuery` | Query | Records of admin role grants and revocations between members |
 | `useOrgAdminGrantQuery` | Query | Records of admin role grants and revocations between members |
 | `useCreateOrgAdminGrantMutation` | Mutation | Records of admin role grants and revocations between members |
@@ -96,36 +101,16 @@ function App() {
 | `useCreateOrgOwnerGrantMutation` | Mutation | Records of ownership transfers and grants between members |
 | `useUpdateOrgOwnerGrantMutation` | Mutation | Records of ownership transfers and grants between members |
 | `useDeleteOrgOwnerGrantMutation` | Mutation | Records of ownership transfers and grants between members |
-| `useAppLimitsQuery` | Query | Tracks per-actor usage counts against configurable maximum limits |
-| `useAppLimitQuery` | Query | Tracks per-actor usage counts against configurable maximum limits |
-| `useCreateAppLimitMutation` | Mutation | Tracks per-actor usage counts against configurable maximum limits |
-| `useUpdateAppLimitMutation` | Mutation | Tracks per-actor usage counts against configurable maximum limits |
-| `useDeleteAppLimitMutation` | Mutation | Tracks per-actor usage counts against configurable maximum limits |
-| `useAppAchievementsQuery` | Query | Aggregated user progress for level requirements, tallying the total count; updated via triggers and should not be modified manually |
-| `useAppAchievementQuery` | Query | Aggregated user progress for level requirements, tallying the total count; updated via triggers and should not be modified manually |
-| `useCreateAppAchievementMutation` | Mutation | Aggregated user progress for level requirements, tallying the total count; updated via triggers and should not be modified manually |
-| `useUpdateAppAchievementMutation` | Mutation | Aggregated user progress for level requirements, tallying the total count; updated via triggers and should not be modified manually |
-| `useDeleteAppAchievementMutation` | Mutation | Aggregated user progress for level requirements, tallying the total count; updated via triggers and should not be modified manually |
-| `useAppStepsQuery` | Query | Log of individual user actions toward level requirements; every single step ever taken is recorded here |
-| `useAppStepQuery` | Query | Log of individual user actions toward level requirements; every single step ever taken is recorded here |
-| `useCreateAppStepMutation` | Mutation | Log of individual user actions toward level requirements; every single step ever taken is recorded here |
-| `useUpdateAppStepMutation` | Mutation | Log of individual user actions toward level requirements; every single step ever taken is recorded here |
-| `useDeleteAppStepMutation` | Mutation | Log of individual user actions toward level requirements; every single step ever taken is recorded here |
-| `useAppClaimedInvitesQuery` | Query | Records of successfully claimed invitations, linking senders to receivers |
-| `useAppClaimedInviteQuery` | Query | Records of successfully claimed invitations, linking senders to receivers |
-| `useCreateAppClaimedInviteMutation` | Mutation | Records of successfully claimed invitations, linking senders to receivers |
-| `useUpdateAppClaimedInviteMutation` | Mutation | Records of successfully claimed invitations, linking senders to receivers |
-| `useDeleteAppClaimedInviteMutation` | Mutation | Records of successfully claimed invitations, linking senders to receivers |
 | `useOrgChartEdgeGrantsQuery` | Query | Append-only log of hierarchy edge grants and revocations; triggers apply changes to the edges table |
 | `useOrgChartEdgeGrantQuery` | Query | Append-only log of hierarchy edge grants and revocations; triggers apply changes to the edges table |
 | `useCreateOrgChartEdgeGrantMutation` | Mutation | Append-only log of hierarchy edge grants and revocations; triggers apply changes to the edges table |
 | `useUpdateOrgChartEdgeGrantMutation` | Mutation | Append-only log of hierarchy edge grants and revocations; triggers apply changes to the edges table |
 | `useDeleteOrgChartEdgeGrantMutation` | Mutation | Append-only log of hierarchy edge grants and revocations; triggers apply changes to the edges table |
-| `useOrgLimitsQuery` | Query | Tracks per-actor usage counts against configurable maximum limits |
-| `useOrgLimitQuery` | Query | Tracks per-actor usage counts against configurable maximum limits |
-| `useCreateOrgLimitMutation` | Mutation | Tracks per-actor usage counts against configurable maximum limits |
-| `useUpdateOrgLimitMutation` | Mutation | Tracks per-actor usage counts against configurable maximum limits |
-| `useDeleteOrgLimitMutation` | Mutation | Tracks per-actor usage counts against configurable maximum limits |
+| `useAppClaimedInvitesQuery` | Query | Records of successfully claimed invitations, linking senders to receivers |
+| `useAppClaimedInviteQuery` | Query | Records of successfully claimed invitations, linking senders to receivers |
+| `useCreateAppClaimedInviteMutation` | Mutation | Records of successfully claimed invitations, linking senders to receivers |
+| `useUpdateAppClaimedInviteMutation` | Mutation | Records of successfully claimed invitations, linking senders to receivers |
+| `useDeleteAppClaimedInviteMutation` | Mutation | Records of successfully claimed invitations, linking senders to receivers |
 | `useMembershipTypesQuery` | Query | Defines the different scopes of membership (e.g. App Member, Organization Member, Group Member) |
 | `useMembershipTypeQuery` | Query | Defines the different scopes of membership (e.g. App Member, Organization Member, Group Member) |
 | `useCreateMembershipTypeMutation` | Mutation | Defines the different scopes of membership (e.g. App Member, Organization Member, Group Member) |
@@ -161,31 +146,11 @@ function App() {
 | `useCreateOrgChartEdgeMutation` | Mutation | Organizational chart edges defining parent-child reporting relationships between members within an entity |
 | `useUpdateOrgChartEdgeMutation` | Mutation | Organizational chart edges defining parent-child reporting relationships between members within an entity |
 | `useDeleteOrgChartEdgeMutation` | Mutation | Organizational chart edges defining parent-child reporting relationships between members within an entity |
-| `useOrgMemberProfilesQuery` | Query | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
-| `useOrgMemberProfileQuery` | Query | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
-| `useCreateOrgMemberProfileMutation` | Mutation | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
-| `useUpdateOrgMemberProfileMutation` | Mutation | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
-| `useDeleteOrgMemberProfileMutation` | Mutation | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
 | `useOrgMembershipSettingsQuery` | Query | Per-entity settings for the memberships module |
 | `useOrgMembershipSettingQuery` | Query | Per-entity settings for the memberships module |
 | `useCreateOrgMembershipSettingMutation` | Mutation | Per-entity settings for the memberships module |
 | `useUpdateOrgMembershipSettingMutation` | Mutation | Per-entity settings for the memberships module |
 | `useDeleteOrgMembershipSettingMutation` | Mutation | Per-entity settings for the memberships module |
-| `useAppLevelsQuery` | Query | Defines available levels that users can achieve by completing requirements |
-| `useAppLevelQuery` | Query | Defines available levels that users can achieve by completing requirements |
-| `useCreateAppLevelMutation` | Mutation | Defines available levels that users can achieve by completing requirements |
-| `useUpdateAppLevelMutation` | Mutation | Defines available levels that users can achieve by completing requirements |
-| `useDeleteAppLevelMutation` | Mutation | Defines available levels that users can achieve by completing requirements |
-| `useAppInvitesQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useAppInviteQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useCreateAppInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useUpdateAppInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useDeleteAppInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useOrgInvitesQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useOrgInviteQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useCreateOrgInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useUpdateOrgInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
-| `useDeleteOrgInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
 | `useAppMembershipsQuery` | Query | Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status |
 | `useAppMembershipQuery` | Query | Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status |
 | `useCreateAppMembershipMutation` | Mutation | Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status |
@@ -196,26 +161,32 @@ function App() {
 | `useCreateOrgMembershipMutation` | Mutation | Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status |
 | `useUpdateOrgMembershipMutation` | Mutation | Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status |
 | `useDeleteOrgMembershipMutation` | Mutation | Tracks membership records linking actors to entities with permission bitmasks, ownership, and admin status |
+| `useOrgMemberProfilesQuery` | Query | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
+| `useOrgMemberProfileQuery` | Query | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
+| `useCreateOrgMemberProfileMutation` | Mutation | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
+| `useUpdateOrgMemberProfileMutation` | Mutation | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
+| `useDeleteOrgMemberProfileMutation` | Mutation | Per-membership profile information visible to other entity members (display name, email, title, bio, avatar) |
+| `useAppInvitesQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useAppInviteQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useCreateAppInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useUpdateAppInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useDeleteAppInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useOrgInvitesQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useOrgInviteQuery` | Query | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useCreateOrgInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useUpdateOrgInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
+| `useDeleteOrgInviteMutation` | Mutation | Invitation records sent to prospective members via email, with token-based redemption and expiration |
 | `useAppPermissionsGetPaddedMaskQuery` | Query | appPermissionsGetPaddedMask |
 | `useOrgPermissionsGetPaddedMaskQuery` | Query | orgPermissionsGetPaddedMask |
 | `useOrgIsManagerOfQuery` | Query | orgIsManagerOf |
 | `useAppPermissionsGetMaskQuery` | Query | appPermissionsGetMask |
 | `useOrgPermissionsGetMaskQuery` | Query | orgPermissionsGetMask |
-| `useStepsAchievedQuery` | Query | stepsAchieved |
 | `useAppPermissionsGetMaskByNamesQuery` | Query | appPermissionsGetMaskByNames |
 | `useOrgPermissionsGetMaskByNamesQuery` | Query | orgPermissionsGetMaskByNames |
 | `useAppPermissionsGetByMaskQuery` | Query | Reads and enables pagination through a set of `AppPermission`. |
 | `useOrgPermissionsGetByMaskQuery` | Query | Reads and enables pagination through a set of `OrgPermission`. |
-| `useStepsRequiredQuery` | Query | Reads and enables pagination through a set of `AppLevelRequirement`. |
 | `useSubmitAppInviteCodeMutation` | Mutation | submitAppInviteCode |
 | `useSubmitOrgInviteCodeMutation` | Mutation | submitOrgInviteCode |
-| `useRequestUploadUrlMutation` | Mutation | Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl. |
-| `useConfirmUploadMutation` | Mutation | Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'. |
 | `useProvisionBucketMutation` | Mutation | Provision an S3 bucket for a logical bucket in the database.
 Reads the bucket config via RLS, then creates and configures
 the S3 bucket with the appropriate privacy policies, CORS rules,
@@ -274,6 +245,27 @@ const { mutate: create } = useCreateAppPermissionMutation({
 create({ name: '<String>', bitnum: '<Int>', bitstr: '<BitString>', description: '<String>' });
 ```
 
+### AppPermissionDefaultGrant
+
+```typescript
+// List all appPermissionDefaultGrants
+const { data, isLoading } = useAppPermissionDefaultGrantsQuery({
+  selection: { fields: { id: true, permissionId: true, isGrant: true, grantorId: true, createdAt: true, updatedAt: true } },
+});
+
+// Get one appPermissionDefaultGrant
+const { data: item } = useAppPermissionDefaultGrantQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, permissionId: true, isGrant: true, grantorId: true, createdAt: true, updatedAt: true } },
+});
+
+// Create a appPermissionDefaultGrant
+const { mutate: create } = useCreateAppPermissionDefaultGrantMutation({
+  selection: { fields: { id: true } },
+});
+create({ permissionId: '<UUID>', isGrant: '<Boolean>', grantorId: '<UUID>' });
+```
+
 ### OrgPermission
 
 ```typescript
@@ -295,25 +287,46 @@ const { mutate: create } = useCreateOrgPermissionMutation({
 create({ name: '<String>', bitnum: '<Int>', bitstr: '<BitString>', description: '<String>' });
 ```
 
-### AppLevelRequirement
+### OrgPermissionDefaultPermission
 
 ```typescript
-// List all appLevelRequirements
-const { data, isLoading } = useAppLevelRequirementsQuery({
-  selection: { fields: { id: true, name: true, level: true, description: true, requiredCount: true, priority: true, createdAt: true, updatedAt: true } },
+// List all orgPermissionDefaultPermissions
+const { data, isLoading } = useOrgPermissionDefaultPermissionsQuery({
+  selection: { fields: { id: true, permissionId: true, entityId: true, createdAt: true, updatedAt: true } },
 });
 
-// Get one appLevelRequirement
-const { data: item } = useAppLevelRequirementQuery({
+// Get one orgPermissionDefaultPermission
+const { data: item } = useOrgPermissionDefaultPermissionQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, name: true, level: true, description: true, requiredCount: true, priority: true, createdAt: true, updatedAt: true } },
+  selection: { fields: { id: true, permissionId: true, entityId: true, createdAt: true, updatedAt: true } },
 });
 
-// Create a appLevelRequirement
-const { mutate: create } = useCreateAppLevelRequirementMutation({
+// Create a orgPermissionDefaultPermission
+const { mutate: create } = useCreateOrgPermissionDefaultPermissionMutation({
   selection: { fields: { id: true } },
 });
-create({ name: '<String>', level: '<String>', description: '<String>', requiredCount: '<Int>', priority: '<Int>' });
+create({ permissionId: '<UUID>', entityId: '<UUID>' });
+```
+
+### OrgPermissionDefaultGrant
+
+```typescript
+// List all orgPermissionDefaultGrants
+const { data, isLoading } = useOrgPermissionDefaultGrantsQuery({
+  selection: { fields: { id: true, permissionId: true, isGrant: true, grantorId: true, entityId: true, createdAt: true, updatedAt: true } },
+});
+
+// Get one orgPermissionDefaultGrant
+const { data: item } = useOrgPermissionDefaultGrantQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, permissionId: true, isGrant: true, grantorId: true, entityId: true, createdAt: true, updatedAt: true } },
+});
+
+// Create a orgPermissionDefaultGrant
+const { mutate: create } = useCreateOrgPermissionDefaultGrantMutation({
+  selection: { fields: { id: true } },
+});
+create({ permissionId: '<UUID>', isGrant: '<Boolean>', grantorId: '<UUID>', entityId: '<UUID>' });
 ```
 
 ### OrgMember
@@ -379,6 +392,27 @@ const { mutate: create } = useCreateOrgPermissionDefaultMutation({
 create({ permissions: '<BitString>', entityId: '<UUID>' });
 ```
 
+### AppPermissionDefaultPermission
+
+```typescript
+// List all appPermissionDefaultPermissions
+const { data, isLoading } = useAppPermissionDefaultPermissionsQuery({
+  selection: { fields: { id: true, permissionId: true, createdAt: true, updatedAt: true } },
+});
+
+// Get one appPermissionDefaultPermission
+const { data: item } = useAppPermissionDefaultPermissionQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, permissionId: true, createdAt: true, updatedAt: true } },
+});
+
+// Create a appPermissionDefaultPermission
+const { mutate: create } = useCreateAppPermissionDefaultPermissionMutation({
+  selection: { fields: { id: true } },
+});
+create({ permissionId: '<UUID>' });
+```
+
 ### AppAdminGrant
 
 ```typescript
@@ -419,48 +453,6 @@ const { mutate: create } = useCreateAppOwnerGrantMutation({
   selection: { fields: { id: true } },
 });
 create({ isGrant: '<Boolean>', actorId: '<UUID>', grantorId: '<UUID>' });
-```
-
-### AppLimitDefault
-
-```typescript
-// List all appLimitDefaults
-const { data, isLoading } = useAppLimitDefaultsQuery({
-  selection: { fields: { id: true, name: true, max: true } },
-});
-
-// Get one appLimitDefault
-const { data: item } = useAppLimitDefaultQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, name: true, max: true } },
-});
-
-// Create a appLimitDefault
-const { mutate: create } = useCreateAppLimitDefaultMutation({
-  selection: { fields: { id: true } },
-});
-create({ name: '<String>', max: '<Int>' });
-```
-
-### OrgLimitDefault
-
-```typescript
-// List all orgLimitDefaults
-const { data, isLoading } = useOrgLimitDefaultsQuery({
-  selection: { fields: { id: true, name: true, max: true } },
-});
-
-// Get one orgLimitDefault
-const { data: item } = useOrgLimitDefaultQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, name: true, max: true } },
-});
-
-// Create a orgLimitDefault
-const { mutate: create } = useCreateOrgLimitDefaultMutation({
-  selection: { fields: { id: true } },
-});
-create({ name: '<String>', max: '<Int>' });
 ```
 
 ### OrgAdminGrant
@@ -505,67 +497,25 @@ const { mutate: create } = useCreateOrgOwnerGrantMutation({
 create({ isGrant: '<Boolean>', actorId: '<UUID>', entityId: '<UUID>', grantorId: '<UUID>' });
 ```
 
-### AppLimit
+### OrgChartEdgeGrant
 
 ```typescript
-// List all appLimits
-const { data, isLoading } = useAppLimitsQuery({
-  selection: { fields: { id: true, name: true, actorId: true, num: true, max: true } },
+// List all orgChartEdgeGrants
+const { data, isLoading } = useOrgChartEdgeGrantsQuery({
+  selection: { fields: { id: true, entityId: true, childId: true, parentId: true, grantorId: true, isGrant: true, positionTitle: true, positionLevel: true, createdAt: true } },
 });
 
-// Get one appLimit
-const { data: item } = useAppLimitQuery({
+// Get one orgChartEdgeGrant
+const { data: item } = useOrgChartEdgeGrantQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, name: true, actorId: true, num: true, max: true } },
+  selection: { fields: { id: true, entityId: true, childId: true, parentId: true, grantorId: true, isGrant: true, positionTitle: true, positionLevel: true, createdAt: true } },
 });
 
-// Create a appLimit
-const { mutate: create } = useCreateAppLimitMutation({
+// Create a orgChartEdgeGrant
+const { mutate: create } = useCreateOrgChartEdgeGrantMutation({
   selection: { fields: { id: true } },
 });
-create({ name: '<String>', actorId: '<UUID>', num: '<Int>', max: '<Int>' });
-```
-
-### AppAchievement
-
-```typescript
-// List all appAchievements
-const { data, isLoading } = useAppAchievementsQuery({
-  selection: { fields: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } },
-});
-
-// Get one appAchievement
-const { data: item } = useAppAchievementQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } },
-});
-
-// Create a appAchievement
-const { mutate: create } = useCreateAppAchievementMutation({
-  selection: { fields: { id: true } },
-});
-create({ actorId: '<UUID>', name: '<String>', count: '<Int>' });
-```
-
-### AppStep
-
-```typescript
-// List all appSteps
-const { data, isLoading } = useAppStepsQuery({
-  selection: { fields: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } },
-});
-
-// Get one appStep
-const { data: item } = useAppStepQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, actorId: true, name: true, count: true, createdAt: true, updatedAt: true } },
-});
-
-// Create a appStep
-const { mutate: create } = useCreateAppStepMutation({
-  selection: { fields: { id: true } },
-});
-create({ actorId: '<UUID>', name: '<String>', count: '<Int>' });
+create({ entityId: '<UUID>', childId: '<UUID>', parentId: '<UUID>', grantorId: '<UUID>', isGrant: '<Boolean>', positionTitle: '<String>', positionLevel: '<Int>' });
 ```
 
 ### AppClaimedInvite
@@ -589,67 +539,25 @@ const { mutate: create } = useCreateAppClaimedInviteMutation({
 create({ data: '<JSON>', senderId: '<UUID>', receiverId: '<UUID>' });
 ```
 
-### OrgChartEdgeGrant
-
-```typescript
-// List all orgChartEdgeGrants
-const { data, isLoading } = useOrgChartEdgeGrantsQuery({
-  selection: { fields: { id: true, entityId: true, childId: true, parentId: true, grantorId: true, isGrant: true, positionTitle: true, positionLevel: true, createdAt: true } },
-});
-
-// Get one orgChartEdgeGrant
-const { data: item } = useOrgChartEdgeGrantQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, entityId: true, childId: true, parentId: true, grantorId: true, isGrant: true, positionTitle: true, positionLevel: true, createdAt: true } },
-});
-
-// Create a orgChartEdgeGrant
-const { mutate: create } = useCreateOrgChartEdgeGrantMutation({
-  selection: { fields: { id: true } },
-});
-create({ entityId: '<UUID>', childId: '<UUID>', parentId: '<UUID>', grantorId: '<UUID>', isGrant: '<Boolean>', positionTitle: '<String>', positionLevel: '<Int>' });
-```
-
-### OrgLimit
-
-```typescript
-// List all orgLimits
-const { data, isLoading } = useOrgLimitsQuery({
-  selection: { fields: { id: true, name: true, actorId: true, num: true, max: true, entityId: true } },
-});
-
-// Get one orgLimit
-const { data: item } = useOrgLimitQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, name: true, actorId: true, num: true, max: true, entityId: true } },
-});
-
-// Create a orgLimit
-const { mutate: create } = useCreateOrgLimitMutation({
-  selection: { fields: { id: true } },
-});
-create({ name: '<String>', actorId: '<UUID>', num: '<Int>', max: '<Int>', entityId: '<UUID>' });
-```
-
 ### MembershipType
 
 ```typescript
 // List all membershipTypes
 const { data, isLoading } = useMembershipTypesQuery({
-  selection: { fields: { id: true, name: true, description: true, prefix: true, parentMembershipType: true, hasUsersTableEntry: true } },
+  selection: { fields: { id: true, name: true, description: true, scope: true, parentMembershipType: true, hasUsersTableEntry: true } },
 });
 
 // Get one membershipType
 const { data: item } = useMembershipTypeQuery({
   id: '<Int>',
-  selection: { fields: { id: true, name: true, description: true, prefix: true, parentMembershipType: true, hasUsersTableEntry: true } },
+  selection: { fields: { id: true, name: true, description: true, scope: true, parentMembershipType: true, hasUsersTableEntry: true } },
 });
 
 // Create a membershipType
 const { mutate: create } = useCreateMembershipTypeMutation({
   selection: { fields: { id: true } },
 });
-create({ name: '<String>', description: '<String>', prefix: '<String>', parentMembershipType: '<Int>', hasUsersTableEntry: '<Boolean>' });
+create({ name: '<String>', description: '<String>', scope: '<String>', parentMembershipType: '<Int>', hasUsersTableEntry: '<Boolean>' });
 ```
 
 ### AppGrant
@@ -778,109 +686,25 @@ const { mutate: create } = useCreateOrgChartEdgeMutation({
 create({ entityId: '<UUID>', childId: '<UUID>', parentId: '<UUID>', positionTitle: '<String>', positionLevel: '<Int>' });
 ```
 
-### OrgMemberProfile
-
-```typescript
-// List all orgMemberProfiles
-const { data, isLoading } = useOrgMemberProfilesQuery({
-  selection: { fields: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } },
-});
-
-// Get one orgMemberProfile
-const { data: item } = useOrgMemberProfileQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } },
-});
-
-// Create a orgMemberProfile
-const { mutate: create } = useCreateOrgMemberProfileMutation({
-  selection: { fields: { id: true } },
-});
-create({ membershipId: '<UUID>', entityId: '<UUID>', actorId: '<UUID>', displayName: '<String>', email: '<String>', title: '<String>', bio: '<String>', profilePicture: '<Image>' });
-```
-
 ### OrgMembershipSetting
 
 ```typescript
 // List all orgMembershipSettings
 const { data, isLoading } = useOrgMembershipSettingsQuery({
-  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, populateMemberEmail: true } },
+  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, inviteProfileAssignmentMode: true, populateMemberEmail: true, limitAllocationMode: true } },
 });
 
 // Get one orgMembershipSetting
 const { data: item } = useOrgMembershipSettingQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, populateMemberEmail: true } },
+  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, entityId: true, deleteMemberCascadeChildren: true, createChildCascadeOwners: true, createChildCascadeAdmins: true, createChildCascadeMembers: true, allowExternalMembers: true, inviteProfileAssignmentMode: true, populateMemberEmail: true, limitAllocationMode: true } },
 });
 
 // Create a orgMembershipSetting
 const { mutate: create } = useCreateOrgMembershipSettingMutation({
   selection: { fields: { id: true } },
 });
-create({ createdBy: '<UUID>', updatedBy: '<UUID>', entityId: '<UUID>', deleteMemberCascadeChildren: '<Boolean>', createChildCascadeOwners: '<Boolean>', createChildCascadeAdmins: '<Boolean>', createChildCascadeMembers: '<Boolean>', allowExternalMembers: '<Boolean>', populateMemberEmail: '<Boolean>' });
-```
-
-### AppLevel
-
-```typescript
-// List all appLevels
-const { data, isLoading } = useAppLevelsQuery({
-  selection: { fields: { id: true, name: true, description: true, image: true, ownerId: true, createdAt: true, updatedAt: true } },
-});
-
-// Get one appLevel
-const { data: item } = useAppLevelQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, name: true, description: true, image: true, ownerId: true, createdAt: true, updatedAt: true } },
-});
-
-// Create a appLevel
-const { mutate: create } = useCreateAppLevelMutation({
-  selection: { fields: { id: true } },
-});
-create({ name: '<String>', description: '<String>', image: '<Image>', ownerId: '<UUID>' });
-```
-
-### AppInvite
-
-```typescript
-// List all appInvites
-const { data, isLoading } = useAppInvitesQuery({
-  selection: { fields: { id: true, email: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true } },
-});
-
-// Get one appInvite
-const { data: item } = useAppInviteQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, email: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true } },
-});
-
-// Create a appInvite
-const { mutate: create } = useCreateAppInviteMutation({
-  selection: { fields: { id: true } },
-});
-create({ email: '<Email>', senderId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', expiresAt: '<Datetime>' });
-```
-
-### OrgInvite
-
-```typescript
-// List all orgInvites
-const { data, isLoading } = useOrgInvitesQuery({
-  selection: { fields: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
-});
-
-// Get one orgInvite
-const { data: item } = useOrgInviteQuery({
-  id: '<UUID>',
-  selection: { fields: { id: true, email: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
-});
-
-// Create a orgInvite
-const { mutate: create } = useCreateOrgInviteMutation({
-  selection: { fields: { id: true } },
-});
-create({ email: '<Email>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', expiresAt: '<Datetime>', entityId: '<UUID>' });
+create({ createdBy: '<UUID>', updatedBy: '<UUID>', entityId: '<UUID>', deleteMemberCascadeChildren: '<Boolean>', createChildCascadeOwners: '<Boolean>', createChildCascadeAdmins: '<Boolean>', createChildCascadeMembers: '<Boolean>', allowExternalMembers: '<Boolean>', inviteProfileAssignmentMode: '<String>', populateMemberEmail: '<Boolean>', limitAllocationMode: '<String>' });
 ```
 
 ### AppMembership
@@ -888,20 +712,20 @@ create({ email: '<Email>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken
 ```typescript
 // List all appMemberships
 const { data, isLoading } = useAppMembershipsQuery({
-  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isExternal: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } },
+  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } },
 });
 
 // Get one appMembership
 const { data: item } = useAppMembershipQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isExternal: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } },
+  selection: { fields: { id: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true, isApproved: true, isBanned: true, isDisabled: true, isVerified: true, isActive: true, isOwner: true, isAdmin: true, permissions: true, granted: true, actorId: true, profileId: true } },
 });
 
 // Create a appMembership
 const { mutate: create } = useCreateAppMembershipMutation({
   selection: { fields: { id: true } },
 });
-create({ createdBy: '<UUID>', updatedBy: '<UUID>', isApproved: '<Boolean>', isBanned: '<Boolean>', isDisabled: '<Boolean>', isVerified: '<Boolean>', isActive: '<Boolean>', isExternal: '<Boolean>', isOwner: '<Boolean>', isAdmin: '<Boolean>', permissions: '<BitString>', granted: '<BitString>', actorId: '<UUID>', profileId: '<UUID>' });
+create({ createdBy: '<UUID>', updatedBy: '<UUID>', isApproved: '<Boolean>', isBanned: '<Boolean>', isDisabled: '<Boolean>', isVerified: '<Boolean>', isActive: '<Boolean>', isOwner: '<Boolean>', isAdmin: '<Boolean>', permissions: '<BitString>', granted: '<BitString>', actorId: '<UUID>', profileId: '<UUID>' });
 ```
 
 ### OrgMembership
@@ -923,6 +747,69 @@ const { mutate: create } = useCreateOrgMembershipMutation({
   selection: { fields: { id: true } },
 });
 create({ createdBy: '<UUID>', updatedBy: '<UUID>', isApproved: '<Boolean>', isBanned: '<Boolean>', isDisabled: '<Boolean>', isActive: '<Boolean>', isExternal: '<Boolean>', isOwner: '<Boolean>', isAdmin: '<Boolean>', permissions: '<BitString>', granted: '<BitString>', actorId: '<UUID>', entityId: '<UUID>', isReadOnly: '<Boolean>', profileId: '<UUID>' });
+```
+
+### OrgMemberProfile
+
+```typescript
+// List all orgMemberProfiles
+const { data, isLoading } = useOrgMemberProfilesQuery({
+  selection: { fields: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } },
+});
+
+// Get one orgMemberProfile
+const { data: item } = useOrgMemberProfileQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, createdAt: true, updatedAt: true, membershipId: true, entityId: true, actorId: true, displayName: true, email: true, title: true, bio: true, profilePicture: true } },
+});
+
+// Create a orgMemberProfile
+const { mutate: create } = useCreateOrgMemberProfileMutation({
+  selection: { fields: { id: true } },
+});
+create({ membershipId: '<UUID>', entityId: '<UUID>', actorId: '<UUID>', displayName: '<String>', email: '<String>', title: '<String>', bio: '<String>', profilePicture: '<Image>' });
+```
+
+### AppInvite
+
+```typescript
+// List all appInvites
+const { data, isLoading } = useAppInvitesQuery({
+  selection: { fields: { id: true, channel: true, email: true, phone: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true } },
+});
+
+// Get one appInvite
+const { data: item } = useAppInviteQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, channel: true, email: true, phone: true, senderId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, expiresAt: true, createdAt: true, updatedAt: true } },
+});
+
+// Create a appInvite
+const { mutate: create } = useCreateAppInviteMutation({
+  selection: { fields: { id: true } },
+});
+create({ channel: '<String>', email: '<Email>', phone: '<String>', senderId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', expiresAt: '<Datetime>' });
+```
+
+### OrgInvite
+
+```typescript
+// List all orgInvites
+const { data, isLoading } = useOrgInvitesQuery({
+  selection: { fields: { id: true, channel: true, email: true, phone: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
+});
+
+// Get one orgInvite
+const { data: item } = useOrgInviteQuery({
+  id: '<UUID>',
+  selection: { fields: { id: true, channel: true, email: true, phone: true, senderId: true, receiverId: true, inviteToken: true, inviteValid: true, inviteLimit: true, inviteCount: true, multiple: true, data: true, profileId: true, isReadOnly: true, expiresAt: true, createdAt: true, updatedAt: true, entityId: true } },
+});
+
+// Create a orgInvite
+const { mutate: create } = useCreateOrgInviteMutation({
+  selection: { fields: { id: true } },
+});
+create({ channel: '<String>', email: '<Email>', phone: '<String>', senderId: '<UUID>', receiverId: '<UUID>', inviteToken: '<String>', inviteValid: '<Boolean>', inviteLimit: '<Int>', inviteCount: '<Int>', multiple: '<Boolean>', data: '<JSON>', profileId: '<UUID>', isReadOnly: '<Boolean>', expiresAt: '<Datetime>', entityId: '<UUID>' });
 ```
 
 ## Custom Operation Hooks
@@ -985,18 +872,6 @@ orgPermissionsGetMask
   |----------|------|
   | `ids` | [UUID] |
 
-### `useStepsAchievedQuery`
-
-stepsAchieved
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `level` | String |
-  | `roleId` | UUID |
-
 ### `useAppPermissionsGetMaskByNamesQuery`
 
 appPermissionsGetMaskByNames
@@ -1047,21 +922,6 @@ Reads and enables pagination through a set of `OrgPermission`.
   | `offset` | Int |
   | `after` | Cursor |
 
-### `useStepsRequiredQuery`
-
-Reads and enables pagination through a set of `AppLevelRequirement`.
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `level` | String |
-  | `roleId` | UUID |
-  | `first` | Int |
-  | `offset` | Int |
-  | `after` | Cursor |
-
 ### `useSubmitAppInviteCodeMutation`
 
 submitAppInviteCode
@@ -1083,33 +943,6 @@ submitOrgInviteCode
   | Argument | Type |
   |----------|------|
   | `input` | SubmitOrgInviteCodeInput (required) |
-
-### `useRequestUploadUrlMutation`
-
-Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | RequestUploadUrlInput (required) |
-
-### `useConfirmUploadMutation`
-
-Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | ConfirmUploadInput (required) |
 
 ### `useProvisionBucketMutation`
 

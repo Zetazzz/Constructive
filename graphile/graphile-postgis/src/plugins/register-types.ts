@@ -2,7 +2,7 @@ import 'graphile-build';
 import 'graphile-build-pg';
 import type { PgCodec } from '@dataplan/pg';
 import type { GraphileConfig } from 'graphile-config';
-import type { ValueNode } from 'graphql';
+import type { GraphQLInterfaceType, GraphQLObjectType, GraphQLOutputType, ValueNode } from 'graphql';
 import sql from 'pg-sql2';
 import type { SQL } from 'pg-sql2';
 import { GisSubtype, CONCRETE_SUBTYPES } from '../constants';
@@ -115,7 +115,7 @@ export const PostgisRegisterTypesPlugin: GraphileConfig.Plugin = {
             () => ({
               description: `All ${typeName} types implement this interface`,
               fields: () => {
-                const geoJsonType = build.getTypeByName('GeoJSON');
+                const geoJsonType = build.getTypeByName('GeoJSON') as GraphQLOutputType | undefined;
                 if (!geoJsonType) {
                   throw new Error('PostGIS: GeoJSON scalar type not found.');
                 }
@@ -159,7 +159,7 @@ export const PostgisRegisterTypesPlugin: GraphileConfig.Plugin = {
                 () => ({
                   description: `All ${typeName} ${coords[zmflag]} types implement this interface`,
                   fields: () => {
-                    const geoJsonType = build.getTypeByName('GeoJSON');
+                    const geoJsonType = build.getTypeByName('GeoJSON') as GraphQLOutputType | undefined;
                     if (!geoJsonType) {
                       throw new Error('PostGIS: GeoJSON scalar type not found.');
                     }
@@ -202,11 +202,11 @@ export const PostgisRegisterTypesPlugin: GraphileConfig.Plugin = {
                   () => ({
                     description: `A PostGIS ${typeName} ${getGISTypeName(subtype, hasZ, hasM)} type`,
                     interfaces: () => [
-                      build.getTypeByName(mainInterfaceName),
-                      build.getTypeByName(dimInterfaceName)
+                      build.getTypeByName(mainInterfaceName) as GraphQLInterfaceType,
+                      build.getTypeByName(dimInterfaceName) as GraphQLInterfaceType
                     ].filter(Boolean),
                     fields: () => {
-                      const geoJsonType = build.getTypeByName('GeoJSON');
+                      const geoJsonType = build.getTypeByName('GeoJSON') as GraphQLOutputType | undefined;
                       if (!geoJsonType) {
                         throw new Error('PostGIS: GeoJSON scalar type not found.');
                       }
@@ -289,7 +289,7 @@ export const PostgisRegisterTypesPlugin: GraphileConfig.Plugin = {
             const gisTypeKey = getGISTypeName(subtype, hasZ, hasM);
             const resolvedTypeName = constructedTypes[gisCodecName]?.[gisTypeKey];
             if (typeof resolvedTypeName === 'string') {
-              return build.getTypeByName(resolvedTypeName);
+              return build.getTypeByName(resolvedTypeName) as GraphQLObjectType | GraphQLInterfaceType | undefined;
             }
             return undefined;
           },

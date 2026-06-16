@@ -1,6 +1,6 @@
 import { uploadFile } from '../src/upload';
 import { UploadError } from '../src/types';
-import { REQUEST_UPLOAD_URL_MUTATION, CONFIRM_UPLOAD_MUTATION } from '../src/queries';
+import { DEFAULT_BUCKET_QUERY_FIELD } from '../src/queries';
 import type { GraphQLExecutor, FileInput } from '../src/types';
 
 /**
@@ -34,7 +34,6 @@ const HELLO_WORLD_HASH = 'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7
 const originalFetch = global.fetch;
 
 beforeEach(() => {
-  // Reset fetch mock before each test
   global.fetch = originalFetch;
 });
 
@@ -42,41 +41,40 @@ afterAll(() => {
   global.fetch = originalFetch;
 });
 
+/**
+ * Build a mock executor that returns data nested under the bucket query field.
+ * The per-table pattern returns: { bucketByKey: { requestUploadUrl: { ... } } }
+ */
+function createMockExecutor(
+  payload: Record<string, unknown>,
+  bucketQueryField = DEFAULT_BUCKET_QUERY_FIELD,
+): { execute: GraphQLExecutor; calls: Array<{ query: string; variables: Record<string, unknown> }> } {
+  const calls: Array<{ query: string; variables: Record<string, unknown> }> = [];
+  const execute: GraphQLExecutor = async (query, variables) => {
+    calls.push({ query, variables });
+    return {
+      [bucketQueryField]: {
+        id: 'bucket-uuid',
+        requestUploadUrl: payload,
+      },
+    };
+  };
+  return { execute, calls };
+}
+
 describe('uploadFile', () => {
   describe('fresh upload (not deduplicated)', () => {
-    it('should hash, request URL, PUT to S3, and confirm', async () => {
+    it('should hash, request URL via bucket field, and PUT to S3', async () => {
       const file = createMockFile('hello world');
-      const executeCalls: Array<{ query: string; variables: Record<string, unknown> }> = [];
+      const { execute, calls } = createMockExecutor({
+        uploadUrl: 'https://s3.example.com/presigned-put-url',
+        fileId: 'file-uuid-123',
+        key: HELLO_WORLD_HASH,
+        deduplicated: false,
+        expiresAt: new Date(Date.now() + 900_000).toISOString(),
+        previousVersionId: null,
+      });
 
-      const execute: GraphQLExecutor = async (query, variables) => {
-        executeCalls.push({ query, variables });
-
-        if (query === REQUEST_UPLOAD_URL_MUTATION) {
-          return {
-            requestUploadUrl: {
-              uploadUrl: 'https://s3.example.com/presigned-put-url',
-              fileId: 'file-uuid-123',
-              key: HELLO_WORLD_HASH,
-              deduplicated: false,
-              expiresAt: new Date(Date.now() + 900_000).toISOString(),
-            },
-          };
-        }
-
-        if (query === CONFIRM_UPLOAD_MUTATION) {
-          return {
-            confirmUpload: {
-              fileId: 'file-uuid-123',
-              status: 'ready',
-              success: true,
-            },
-          };
-        }
-
-        throw new Error(`Unexpected query: ${query}`);
-      };
-
-      // Mock fetch for S3 PUT
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -89,20 +87,19 @@ describe('uploadFile', () => {
         execute,
       });
 
-      // Verify result
       expect(result.fileId).toBe('file-uuid-123');
       expect(result.key).toBe(HELLO_WORLD_HASH);
       expect(result.deduplicated).toBe(false);
-      expect(result.status).toBe('ready');
 
-      // Verify requestUploadUrl was called with correct input
-      expect(executeCalls[0].query).toBe(REQUEST_UPLOAD_URL_MUTATION);
-      const requestInput = (executeCalls[0].variables.input as Record<string, unknown>);
-      expect(requestInput.bucketKey).toBe('avatars');
-      expect(requestInput.contentHash).toBe(HELLO_WORLD_HASH);
-      expect(requestInput.contentType).toBe('text/plain');
-      expect(requestInput.size).toBe(11);
-      expect(requestInput.filename).toBe('test.txt');
+      // Verify per-table query was called with flat variables (not input object)
+      expect(calls).toHaveLength(1);
+      expect(calls[0].query).toContain('bucketByKey');
+      expect(calls[0].query).toContain('requestUploadUrl');
+      expect(calls[0].variables.key).toBe('avatars');
+      expect(calls[0].variables.contentHash).toBe(HELLO_WORLD_HASH);
+      expect(calls[0].variables.contentType).toBe('text/plain');
+      expect(calls[0].variables.size).toBe(11);
+      expect(calls[0].variables.filename).toBe('test.txt');
 
       // Verify S3 PUT was called
       expect(global.fetch).toHaveBeenCalledWith(
@@ -112,35 +109,20 @@ describe('uploadFile', () => {
           headers: { 'Content-Type': 'text/plain' },
         }),
       );
-
-      // Verify confirmUpload was called
-      expect(executeCalls[1].query).toBe(CONFIRM_UPLOAD_MUTATION);
-      expect(executeCalls[1].variables).toEqual({ input: { fileId: 'file-uuid-123' } });
     });
   });
 
   describe('deduplicated upload', () => {
-    it('should skip PUT and confirm when deduplicated', async () => {
+    it('should skip PUT when deduplicated', async () => {
       const file = createMockFile('hello world');
-      const executeCalls: Array<{ query: string }> = [];
-
-      const execute: GraphQLExecutor = async (query) => {
-        executeCalls.push({ query });
-
-        if (query === REQUEST_UPLOAD_URL_MUTATION) {
-          return {
-            requestUploadUrl: {
-              uploadUrl: null,
-              fileId: 'existing-file-uuid',
-              key: HELLO_WORLD_HASH,
-              deduplicated: true,
-              expiresAt: null,
-            },
-          };
-        }
-
-        throw new Error(`Unexpected query after dedup: ${query}`);
-      };
+      const { execute, calls } = createMockExecutor({
+        uploadUrl: null,
+        fileId: 'existing-file-uuid',
+        key: HELLO_WORLD_HASH,
+        deduplicated: true,
+        expiresAt: null,
+        previousVersionId: null,
+      });
 
       global.fetch = jest.fn();
 
@@ -152,12 +134,41 @@ describe('uploadFile', () => {
 
       expect(result.fileId).toBe('existing-file-uuid');
       expect(result.deduplicated).toBe(true);
-      expect(result.status).toBe('ready');
 
-      // Only requestUploadUrl should have been called (no confirm, no PUT)
-      expect(executeCalls).toHaveLength(1);
-      expect(executeCalls[0].query).toBe(REQUEST_UPLOAD_URL_MUTATION);
+      expect(calls).toHaveLength(1);
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('custom bucketQueryField', () => {
+    it('should use the provided bucket query field name', async () => {
+      const file = createMockFile('hello world');
+      const { execute, calls } = createMockExecutor(
+        {
+          uploadUrl: 'https://s3.example.com/put',
+          fileId: 'file-1',
+          key: HELLO_WORLD_HASH,
+          deduplicated: false,
+          expiresAt: new Date().toISOString(),
+          previousVersionId: null,
+        },
+        'appBucketByKey',
+      );
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => '',
+      });
+
+      await uploadFile({
+        file,
+        bucketKey: 'private',
+        execute,
+        bucketQueryField: 'appBucketByKey',
+      });
+
+      expect(calls[0].query).toContain('appBucketByKey');
     });
   });
 
@@ -177,7 +188,7 @@ describe('uploadFile', () => {
       ).rejects.toMatchObject({ code: 'INVALID_FILE' });
     });
 
-    it('should throw REQUEST_UPLOAD_URL_FAILED when mutation fails', async () => {
+    it('should throw REQUEST_UPLOAD_URL_FAILED when query fails', async () => {
       const file = createMockFile('test');
       const execute: GraphQLExecutor = async () => {
         throw new Error('Network error');
@@ -188,22 +199,27 @@ describe('uploadFile', () => {
       ).rejects.toMatchObject({ code: 'REQUEST_UPLOAD_URL_FAILED' });
     });
 
+    it('should throw REQUEST_UPLOAD_URL_FAILED when bucket not found', async () => {
+      const file = createMockFile('test');
+      const execute: GraphQLExecutor = async () => {
+        return { bucketByKey: null } as any;
+      };
+
+      await expect(
+        uploadFile({ file, bucketKey: 'nonexistent', execute }),
+      ).rejects.toMatchObject({ code: 'REQUEST_UPLOAD_URL_FAILED' });
+    });
+
     it('should throw PUT_UPLOAD_FAILED when S3 returns error', async () => {
       const file = createMockFile('test');
-      const execute: GraphQLExecutor = async (query) => {
-        if (query === REQUEST_UPLOAD_URL_MUTATION) {
-          return {
-            requestUploadUrl: {
-              uploadUrl: 'https://s3.example.com/put',
-              fileId: 'file-1',
-              key: 'hash',
-              deduplicated: false,
-              expiresAt: new Date().toISOString(),
-            },
-          };
-        }
-        throw new Error('Unexpected');
-      };
+      const { execute } = createMockExecutor({
+        uploadUrl: 'https://s3.example.com/put',
+        fileId: 'file-1',
+        key: 'hash',
+        deduplicated: false,
+        expiresAt: new Date().toISOString(),
+        previousVersionId: null,
+      });
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
@@ -214,40 +230,6 @@ describe('uploadFile', () => {
       await expect(
         uploadFile({ file, bucketKey: 'test', execute }),
       ).rejects.toMatchObject({ code: 'PUT_UPLOAD_FAILED' });
-    });
-
-    it('should throw CONFIRM_UPLOAD_FAILED when confirm mutation fails', async () => {
-      const file = createMockFile('test');
-      let callCount = 0;
-
-      const execute: GraphQLExecutor = async (query) => {
-        callCount++;
-        if (query === REQUEST_UPLOAD_URL_MUTATION) {
-          return {
-            requestUploadUrl: {
-              uploadUrl: 'https://s3.example.com/put',
-              fileId: 'file-1',
-              key: 'hash',
-              deduplicated: false,
-              expiresAt: new Date().toISOString(),
-            },
-          };
-        }
-        if (query === CONFIRM_UPLOAD_MUTATION) {
-          throw new Error('Database error');
-        }
-        throw new Error('Unexpected');
-      };
-
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '',
-      });
-
-      await expect(
-        uploadFile({ file, bucketKey: 'test', execute }),
-      ).rejects.toMatchObject({ code: 'CONFIRM_UPLOAD_FAILED' });
     });
   });
 
@@ -267,26 +249,14 @@ describe('uploadFile', () => {
   describe('content type handling', () => {
     it('should use application/octet-stream when file.type is empty', async () => {
       const file = createMockFile('binary data', 'file.bin', '');
-      const executeCalls: Array<{ query: string; variables: Record<string, unknown> }> = [];
-
-      const execute: GraphQLExecutor = async (query, variables) => {
-        executeCalls.push({ query, variables });
-        if (query === REQUEST_UPLOAD_URL_MUTATION) {
-          return {
-            requestUploadUrl: {
-              uploadUrl: 'https://s3.example.com/put',
-              fileId: 'file-1',
-              key: 'hash',
-              deduplicated: false,
-              expiresAt: new Date().toISOString(),
-            },
-          };
-        }
-        if (query === CONFIRM_UPLOAD_MUTATION) {
-          return { confirmUpload: { fileId: 'file-1', status: 'ready', success: true } };
-        }
-        throw new Error('Unexpected');
-      };
+      const { execute, calls } = createMockExecutor({
+        uploadUrl: 'https://s3.example.com/put',
+        fileId: 'file-1',
+        key: 'hash',
+        deduplicated: false,
+        expiresAt: new Date().toISOString(),
+        previousVersionId: null,
+      });
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -296,8 +266,7 @@ describe('uploadFile', () => {
 
       await uploadFile({ file, bucketKey: 'test', execute });
 
-      const requestInput = (executeCalls[0].variables.input as Record<string, unknown>);
-      expect(requestInput.contentType).toBe('application/octet-stream');
+      expect(calls[0].variables.contentType).toBe('application/octet-stream');
     });
   });
 });

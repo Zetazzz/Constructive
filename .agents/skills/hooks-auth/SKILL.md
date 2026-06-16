@@ -1,13 +1,13 @@
 ---
 name: hooks-auth
-description: React Query hooks for the auth API — provides typed query and mutation hooks for 9 tables and 29 custom operations
+description: React Query hooks for the auth API — provides typed query and mutation hooks for 9 tables and 30 custom operations
 ---
 
 # hooks-auth
 
 <!-- @constructive-io/graphql-codegen - DO NOT EDIT -->
 
-React Query hooks for the auth API — provides typed query and mutation hooks for 9 tables and 29 custom operations
+React Query hooks for the auth API — provides typed query and mutation hooks for 9 tables and 30 custom operations
 
 ## Usage
 
@@ -17,6 +17,7 @@ import { useEmailsQuery } from './hooks';
 
 // Query hooks: use<Model>Query, use<Model>sQuery
 // Mutation hooks: useCreate<Model>Mutation, useUpdate<Model>Mutation, useDelete<Model>Mutation
+// Bulk mutation hooks (when enabled): useBulkCreate<Model>Mutation, useBulkUpsert<Model>Mutation, etc.
 
 const { data, isLoading } = useEmailsQuery({
   selection: { fields: { id: true } },
@@ -41,7 +42,7 @@ See the `references/` directory for detailed per-entity API documentation:
 - [phone-number](references/phone-number.md)
 - [crypto-address](references/crypto-address.md)
 - [webauthn-credential](references/webauthn-credential.md)
-- [audit-log](references/audit-log.md)
+- [audit-log-auth](references/audit-log-auth.md)
 - [identity-provider](references/identity-provider.md)
 - [role-type](references/role-type.md)
 - [user-connected-account](references/user-connected-account.md)
@@ -65,13 +66,14 @@ See the `references/` directory for detailed per-entity API documentation:
 - [provision-new-user](references/provision-new-user.md)
 - [reset-password](references/reset-password.md)
 - [sign-in-cross-origin](references/sign-in-cross-origin.md)
+- [sign-in-sms-otp](references/sign-in-sms-otp.md)
+- [sign-up-sms](references/sign-up-sms.md)
 - [sign-up](references/sign-up.md)
-- [request-cross-origin-token](references/request-cross-origin-token.md)
 - [sign-in](references/sign-in.md)
+- [link-identity](references/link-identity.md)
 - [extend-token-expires](references/extend-token-expires.md)
 - [create-api-key](references/create-api-key.md)
+- [request-cross-origin-token](references/request-cross-origin-token.md)
 - [forgot-password](references/forgot-password.md)
 - [send-verification-email](references/send-verification-email.md)
-- [request-upload-url](references/request-upload-url.md)
-- [confirm-upload](references/confirm-upload.md)
 - [provision-bucket](references/provision-bucket.md)

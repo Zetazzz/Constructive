@@ -842,15 +842,62 @@ function buildSelectTypeLiteral(
 ): t.TSTypeLiteral {
   const members: t.TSTypeElement[] = [];
 
-  // Add scalar fields
+  // Add scalar fields (and fields with arguments)
   for (const field of table.fields) {
     if (!isRelationField(field.name, table)) {
-      const prop = t.tsPropertySignature(
-        t.identifier(field.name),
-        t.tsTypeAnnotation(t.tsBooleanKeyword()),
-      );
-      prop.optional = true;
-      members.push(prop);
+      if (field.args && field.args.length > 0) {
+        // Field with arguments (e.g. requestUploadUrl on bucket types)
+        const argMembers: t.TSTypeElement[] = field.args.map((arg) => {
+          const tsType = typeRefToTs(arg.type);
+          const argProp = t.tsPropertySignature(
+            t.identifier(arg.name),
+            t.tsTypeAnnotation(parseTypeString(tsType)),
+          );
+          argProp.optional = !arg.isRequired;
+          return argProp;
+        });
+
+        const prop = t.tsPropertySignature(
+          t.identifier(field.name),
+          t.tsTypeAnnotation(
+            t.tsTypeLiteral([
+              (() => {
+                const argsProp = t.tsPropertySignature(
+                  t.identifier('args'),
+                  t.tsTypeAnnotation(t.tsTypeLiteral(argMembers)),
+                );
+                argsProp.optional = false;
+                return argsProp;
+              })(),
+              (() => {
+                const selectProp = t.tsPropertySignature(
+                  t.identifier('select'),
+                  t.tsTypeAnnotation(
+                    t.tsTypeReference(
+                      t.identifier('Record'),
+                      t.tsTypeParameterInstantiation([
+                        t.tsStringKeyword(),
+                        t.tsBooleanKeyword(),
+                      ]),
+                    ),
+                  ),
+                );
+                selectProp.optional = true;
+                return selectProp;
+              })(),
+            ]),
+          ),
+        );
+        prop.optional = true;
+        members.push(prop);
+      } else {
+        const prop = t.tsPropertySignature(
+          t.identifier(field.name),
+          t.tsTypeAnnotation(t.tsBooleanKeyword()),
+        );
+        prop.optional = true;
+        members.push(prop);
+      }
     }
   }
 
@@ -1512,19 +1559,21 @@ function generateAllCrudInputTypes(
 // ============================================================================
 
 /**
- * Collect all input type names used by operations
+ * Collect all input type names used by operations and table field arguments.
+ *
+ * Scans both custom operation args and computed-field args (e.g.
+ * `requestBulkUploadUrls(files: [FooBulkUploadFileInput!]!)` on bucket
+ * tables) so that referenced Input types are registered for generation.
  */
 export function collectInputTypeNames(
   operations: Array<{ args: Argument[] }>,
+  tables?: Table[],
 ): Set<string> {
   const inputTypes = new Set<string>();
 
   function collectFromTypeRef(typeRef: Argument['type']) {
     const baseName = getTypeBaseName(typeRef);
-    if (baseName && baseName.endsWith('Input')) {
-      inputTypes.add(baseName);
-    }
-    if (baseName && baseName.endsWith('Filter')) {
+    if (baseName && (baseName.endsWith('Input') || baseName.endsWith('Filter'))) {
       inputTypes.add(baseName);
     }
   }
@@ -1535,7 +1584,67 @@ export function collectInputTypeNames(
     }
   }
 
+  if (tables) {
+    for (const table of tables) {
+      for (const field of table.fields) {
+        if (!field.args) continue;
+        for (const arg of field.args) {
+          collectFromTypeRef(arg.type);
+        }
+      }
+    }
+  }
+
   return inputTypes;
+}
+
+/**
+ * Collect input type names referenced by CRUD entity input fields.
+ *
+ * When a table's Create/Patch input contains fields that reference non-scalar
+ * input types (e.g. `requiredConfigs: [FunctionRequirementInput]`), those
+ * types must be generated. The CRUD generator inlines the field types as
+ * strings but doesn't track which input types they reference.
+ */
+export function collectCrudNestedInputTypes(
+  tables: Table[],
+  typeRegistry: TypeRegistry,
+): Set<string> {
+  const nestedTypes = new Set<string>();
+
+  for (const table of tables) {
+    // Check Create entity input
+    const createInputTypeName = getCreateInputTypeName(table);
+    collectNestedInputTypesFromInput(createInputTypeName, typeRegistry, nestedTypes);
+
+    // Check Patch entity input
+    const patchTypeName = getPatchTypeName(table);
+    collectNestedInputTypesFromInput(patchTypeName, typeRegistry, nestedTypes);
+  }
+
+  return nestedTypes;
+}
+
+function collectNestedInputTypesFromInput(
+  inputTypeName: string,
+  typeRegistry: TypeRegistry,
+  collected: Set<string>,
+): void {
+  const inputType = typeRegistry.get(inputTypeName);
+  if (!inputType || inputType.kind !== 'INPUT_OBJECT' || !inputType.inputFields) return;
+
+  for (const field of inputType.inputFields) {
+    const baseName = getTypeBaseName(field.type);
+    if (!baseName) continue;
+    if (SCALAR_NAMES.has(baseName)) continue;
+    if (collected.has(baseName)) continue;
+
+    const refType = typeRegistry.get(baseName);
+    if (refType?.kind === 'INPUT_OBJECT') {
+      collected.add(baseName);
+      collectNestedInputTypesFromInput(baseName, typeRegistry, collected);
+    }
+  }
 }
 
 /**
@@ -2010,6 +2119,7 @@ export function generateInputTypesFile(
 
   // 7. Custom input types from TypeRegistry
   // Also include any extra types referenced by plugin-injected filter fields
+  // and by table field arguments (e.g. bucket computed-field args)
   const mergedUsedInputTypes = new Set(usedInputTypes);
   if (hasTables) {
     const filterExtraTypes = collectFilterExtraInputTypes(
@@ -2017,6 +2127,16 @@ export function generateInputTypesFile(
       typeRegistry,
     );
     for (const typeName of filterExtraTypes) {
+      mergedUsedInputTypes.add(typeName);
+    }
+    const fieldArgTypes = collectInputTypeNames([], tablesList);
+    for (const typeName of fieldArgTypes) {
+      mergedUsedInputTypes.add(typeName);
+    }
+    // Collect input types nested inside CRUD entity inputs (e.g. FunctionRequirementInput
+    // referenced by Create/Patch fields) that the CRUD generator inlines as type strings
+    const crudNestedTypes = collectCrudNestedInputTypes(tablesList, typeRegistry);
+    for (const typeName of crudNestedTypes) {
       mergedUsedInputTypes.add(typeName);
     }
   }

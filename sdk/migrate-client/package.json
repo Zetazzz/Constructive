@@ -1,6 +1,6 @@
 {
   "name": "@pgpmjs/migrate-client",
-  "version": "0.5.2",
+  "version": "0.15.8",
   "author": "Constructive <developers@constructive.io>",
   "description": "Typed GraphQL ORM client for the Constructive Migrate API (db_migrate schema)",
   "main": "index.js",
@@ -40,6 +40,7 @@
   ],
   "dependencies": {
     "@0no-co/graphql.web": "^1.1.2",
+    "@constructive-io/graphql-query": "workspace:^",
     "@constructive-io/graphql-types": "workspace:^",
     "gql-ast": "workspace:^",
     "graphql": "16.13.0"

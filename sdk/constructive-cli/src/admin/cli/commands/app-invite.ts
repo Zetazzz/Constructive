@@ -17,7 +17,9 @@ import type {
 import type { FindManyArgs, FindFirstArgs } from '../../orm/select-types';
 const fieldSchema: FieldSchema = {
   id: 'uuid',
+  channel: 'string',
   email: 'string',
+  phone: 'string',
   senderId: 'uuid',
   inviteToken: 'string',
   inviteValid: 'boolean',
@@ -25,12 +27,13 @@ const fieldSchema: FieldSchema = {
   inviteCount: 'int',
   multiple: 'boolean',
   data: 'json',
+  profileId: 'uuid',
   expiresAt: 'string',
   createdAt: 'string',
   updatedAt: 'string',
 };
 const usage =
-  '\napp-invite <command>\n\nCommands:\n  list                  List appInvite records\n  find-first            Find first matching appInvite record\n  get                   Get a appInvite by ID\n  create                Create a new appInvite\n  update                Update an existing appInvite\n  delete                Delete a appInvite\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\napp-invite <command>\n\nCommands:\n  list                  List appInvite records\n  find-first            Find first matching appInvite record\n  get                   Get a appInvite by ID\n  create                Create a new appInvite\n  update                Update an existing appInvite\n  delete                Delete a appInvite\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -81,7 +84,9 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
   try {
     const defaultSelect = {
       id: true,
+      channel: true,
       email: true,
+      phone: true,
       senderId: true,
       inviteToken: true,
       inviteValid: true,
@@ -89,6 +94,7 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       inviteCount: true,
       multiple: true,
       data: true,
+      profileId: true,
       expiresAt: true,
       createdAt: true,
       updatedAt: true,
@@ -113,7 +119,9 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
   try {
     const defaultSelect = {
       id: true,
+      channel: true,
       email: true,
+      phone: true,
       senderId: true,
       inviteToken: true,
       inviteValid: true,
@@ -121,12 +129,13 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       inviteCount: true,
       multiple: true,
       data: true,
+      profileId: true,
       expiresAt: true,
       createdAt: true,
       updatedAt: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<AppInviteSelect, AppInviteFilter> & {
+      FindFirstArgs<AppInviteSelect, AppInviteFilter, AppInviteOrderBy> & {
         select: AppInviteSelect;
       }
     >(argv, defaultSelect);
@@ -157,7 +166,9 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
         id: answers.id as string,
         select: {
           id: true,
+          channel: true,
           email: true,
+          phone: true,
           senderId: true,
           inviteToken: true,
           inviteValid: true,
@@ -165,6 +176,7 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           inviteCount: true,
           multiple: true,
           data: true,
+          profileId: true,
           expiresAt: true,
           createdAt: true,
           updatedAt: true,
@@ -185,8 +197,22 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
     const rawAnswers = await prompter.prompt(argv, [
       {
         type: 'text',
+        name: 'channel',
+        message: 'channel',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'email',
         message: 'email',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'phone',
+        message: 'phone',
         required: false,
         skipPrompt: true,
       },
@@ -241,6 +267,13 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'profileId',
+        message: 'profileId',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'expiresAt',
         message: 'expiresAt',
         required: false,
@@ -253,7 +286,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
     const result = await client.appInvite
       .create({
         data: {
+          channel: cleanedData.channel,
           email: cleanedData.email,
+          phone: cleanedData.phone,
           senderId: cleanedData.senderId,
           inviteToken: cleanedData.inviteToken,
           inviteValid: cleanedData.inviteValid,
@@ -261,11 +296,14 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: cleanedData.inviteCount,
           multiple: cleanedData.multiple,
           data: cleanedData.data,
+          profileId: cleanedData.profileId,
           expiresAt: cleanedData.expiresAt,
         },
         select: {
           id: true,
+          channel: true,
           email: true,
+          phone: true,
           senderId: true,
           inviteToken: true,
           inviteValid: true,
@@ -273,6 +311,7 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: true,
           multiple: true,
           data: true,
+          profileId: true,
           expiresAt: true,
           createdAt: true,
           updatedAt: true,
@@ -299,8 +338,22 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'channel',
+        message: 'channel',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'email',
         message: 'email',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'phone',
+        message: 'phone',
         required: false,
         skipPrompt: true,
       },
@@ -355,6 +408,13 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'profileId',
+        message: 'profileId',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'expiresAt',
         message: 'expiresAt',
         required: false,
@@ -370,7 +430,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           id: answers.id as string,
         },
         data: {
+          channel: cleanedData.channel,
           email: cleanedData.email,
+          phone: cleanedData.phone,
           senderId: cleanedData.senderId,
           inviteToken: cleanedData.inviteToken,
           inviteValid: cleanedData.inviteValid,
@@ -378,11 +440,14 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: cleanedData.inviteCount,
           multiple: cleanedData.multiple,
           data: cleanedData.data,
+          profileId: cleanedData.profileId,
           expiresAt: cleanedData.expiresAt,
         },
         select: {
           id: true,
+          channel: true,
           email: true,
+          phone: true,
           senderId: true,
           inviteToken: true,
           inviteValid: true,
@@ -390,6 +455,7 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: true,
           multiple: true,
           data: true,
+          profileId: true,
           expiresAt: true,
           createdAt: true,
           updatedAt: true,

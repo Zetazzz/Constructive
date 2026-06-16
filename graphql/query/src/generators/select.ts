@@ -4,7 +4,7 @@
  */
 import * as t from 'gql-ast';
 import { Kind, OperationTypeNode, print } from 'graphql';
-import type { ArgumentNode, FieldNode, VariableDefinitionNode } from 'graphql';
+import type { ArgumentNode, FieldNode, TypeNode, VariableDefinitionNode } from 'graphql';
 
 import { TypedDocumentString } from '../client/typed-document';
 import {
@@ -22,7 +22,7 @@ import type {
   QuerySelectionOptions,
 } from '../types';
 import type { QueryOptions } from '../types/query';
-import type { Table } from '../types/schema';
+import type { Table, TypeRef } from '../types/schema';
 import type { FieldSelection } from '../types/selection';
 import { convertToSelectionOptions, isRelationalField } from './field-selector';
 import { fuzzyFindByName } from 'inflekt';
@@ -356,12 +356,14 @@ function generateSelectQueryAST(
 ): string {
   const pluralName = toCamelCasePlural(table.name, table);
 
-  // Generate field selections
+  // Generate field selections, collecting any variable definitions from field args
+  const fieldArgVarDefs: VariableDefinitionNode[] = [];
   const fieldSelections = generateFieldSelectionsFromOptions(
     table,
     allTables,
     selection,
     relationFieldMap,
+    fieldArgVarDefs,
   );
 
   // Build the query AST
@@ -505,7 +507,7 @@ function generateSelectQueryAST(
       t.operationDefinition({
         operation: OperationTypeNode.QUERY,
         name: `${pluralName}Query`,
-        variableDefinitions,
+        variableDefinitions: [...variableDefinitions, ...fieldArgVarDefs],
         selectionSet: t.selectionSet({
           selections: [
             t.field({
@@ -525,6 +527,20 @@ function generateSelectQueryAST(
 }
 
 /**
+ * Convert a TypeRef to a GraphQL AST type node for variable definitions
+ */
+function typeRefToGqlAstType(ref: TypeRef): TypeNode {
+  if (ref.kind === 'NON_NULL' && ref.ofType) {
+    const inner = typeRefToGqlAstType(ref.ofType);
+    return t.nonNullType({ type: inner as ReturnType<typeof t.namedType> });
+  }
+  if (ref.kind === 'LIST' && ref.ofType) {
+    return t.listType({ type: typeRefToGqlAstType(ref.ofType) as ReturnType<typeof t.namedType> });
+  }
+  return t.namedType({ type: ref.name ?? 'String' });
+}
+
+/**
  * Generate field selections from SelectionOptions
  */
 function generateFieldSelectionsFromOptions(
@@ -532,6 +548,7 @@ function generateFieldSelectionsFromOptions(
   allTables: Table[],
   selection: QuerySelectionOptions | null,
   relationFieldMap?: Record<string, string | null>,
+  collectedVarDefs?: VariableDefinitionNode[],
 ): FieldNode[] {
   const DEFAULT_NESTED_RELATION_FIRST = 20;
 
@@ -570,6 +587,48 @@ function generateFieldSelectionsFromOptions(
           createFieldSelectionNode(resolvedField.name, resolvedField.alias),
         );
       }
+    } else if (typeof fieldOptions === 'object' && fieldOptions.args) {
+      // Field with arguments (e.g. requestUploadUrl on bucket types)
+      const fieldDef = table.fields.find((f) => f.name === fieldName);
+      const fieldArgDefs = fieldDef?.args ?? [];
+      const fieldArgNodes: ArgumentNode[] = [];
+
+      for (const [argName, _argValue] of Object.entries(fieldOptions.args)) {
+        const varName = `${fieldName}_${argName}`;
+        const argDef = fieldArgDefs.find((a) => a.name === argName);
+        const gqlType = argDef
+          ? typeRefToGqlAstType(argDef.type)
+          : t.namedType({ type: 'String' });
+
+        collectedVarDefs?.push(
+          t.variableDefinition({
+            variable: t.variable({ name: varName }),
+            type: gqlType,
+          }),
+        );
+        fieldArgNodes.push(
+          t.argument({
+            name: argName,
+            value: t.variable({ name: varName }),
+          }),
+        );
+      }
+
+      const nestedSelectObj = fieldOptions.select;
+      const nestedFields: FieldNode[] = Object.entries(nestedSelectObj)
+        .filter(([, include]) => include)
+        .map(([nestedField]) => t.field({ name: nestedField }));
+
+      fieldSelections.push(
+        createFieldSelectionNode(
+          resolvedField.name,
+          resolvedField.alias,
+          fieldArgNodes,
+          nestedFields.length > 0
+            ? t.selectionSet({ selections: nestedFields })
+            : undefined,
+        ),
+      );
     } else if (typeof fieldOptions === 'object' && fieldOptions.select) {
       // Nested field selection (for relation fields)
       const nestedSelections: FieldNode[] = [];

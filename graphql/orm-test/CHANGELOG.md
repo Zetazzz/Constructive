@@ -3,6 +3,272 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.14](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.13...graphql-orm-test@0.16.14) (2026-06-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.13](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.12...graphql-orm-test@0.16.13) (2026-06-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.12](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.11...graphql-orm-test@0.16.12) (2026-06-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.11](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.10...graphql-orm-test@0.16.11) (2026-06-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.10](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.9...graphql-orm-test@0.16.10) (2026-06-12)
+
+### Bug Fixes
+
+- **orm-test:** update searchScore assertions for RRF (allows 1.0) ([0b8f6ce](https://github.com/constructive-io/constructive/commit/0b8f6ce34414ab4eebb04a71e00a59011ebd326d))
+- restore ROW_NUMBER() for per-adapter RRF + VACUUM BM25 index in seed ([589ec10](https://github.com/constructive-io/constructive/commit/589ec10cb2d7ae281ab011eb99eb38548dd069c6))
+- update BM25 seed comment to reference pg_textsearch instead of ParadeDB ([f8c9a1c](https://github.com/constructive-io/constructive/commit/f8c9a1cfbd95aa3284e90ad0d164cfe7b74e770d))
+
+## [0.16.9](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.8...graphql-orm-test@0.16.9) (2026-06-11)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.8](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.7...graphql-orm-test@0.16.8) (2026-06-07)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.7](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.6...graphql-orm-test@0.16.7) (2026-06-06)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.6](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.5...graphql-orm-test@0.16.6) (2026-06-06)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.5](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.4...graphql-orm-test@0.16.5) (2026-06-05)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.4](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.3...graphql-orm-test@0.16.4) (2026-06-01)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.2...graphql-orm-test@0.16.3) (2026-06-01)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.1...graphql-orm-test@0.16.2) (2026-05-31)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.16.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.16.0...graphql-orm-test@0.16.1) (2026-05-31)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.16.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.15.3...graphql-orm-test@0.16.0) (2026-05-30)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.15.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.15.2...graphql-orm-test@0.15.3) (2026-05-29)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.15.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.15.1...graphql-orm-test@0.15.2) (2026-05-29)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.15.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.15.0...graphql-orm-test@0.15.1) (2026-05-24)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.15.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.7...graphql-orm-test@0.15.0) (2026-05-23)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.14.7](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.6...graphql-orm-test@0.14.7) (2026-05-21)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.14.6](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.5...graphql-orm-test@0.14.6) (2026-05-21)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.14.5](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.4...graphql-orm-test@0.14.5) (2026-05-20)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.14.4](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.3...graphql-orm-test@0.14.4) (2026-05-19)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.14.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.2...graphql-orm-test@0.14.3) (2026-05-17)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.14.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.1...graphql-orm-test@0.14.2) (2026-05-15)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.14.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.14.0...graphql-orm-test@0.14.1) (2026-05-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.14.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.10...graphql-orm-test@0.14.0) (2026-05-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.10](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.9...graphql-orm-test@0.13.10) (2026-05-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.9](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.8...graphql-orm-test@0.13.9) (2026-05-14)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.8](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.7...graphql-orm-test@0.13.8) (2026-05-13)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.7](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.6...graphql-orm-test@0.13.7) (2026-05-13)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.6](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.5...graphql-orm-test@0.13.6) (2026-05-13)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.5](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.4...graphql-orm-test@0.13.5) (2026-05-12)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.4](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.3...graphql-orm-test@0.13.4) (2026-05-12)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.2...graphql-orm-test@0.13.3) (2026-05-11)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.1...graphql-orm-test@0.13.2) (2026-05-11)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.13.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.13.0...graphql-orm-test@0.13.1) (2026-05-11)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.13.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.7...graphql-orm-test@0.13.0) (2026-05-11)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.12.7](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.6...graphql-orm-test@0.12.7) (2026-05-10)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.12.6](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.5...graphql-orm-test@0.12.6) (2026-05-10)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.12.5](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.4...graphql-orm-test@0.12.5) (2026-05-10)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.12.4](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.3...graphql-orm-test@0.12.4) (2026-05-09)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.12.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.2...graphql-orm-test@0.12.3) (2026-05-09)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.12.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.1...graphql-orm-test@0.12.2) (2026-05-09)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.12.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.12.0...graphql-orm-test@0.12.1) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.12.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.11.2...graphql-orm-test@0.12.0) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.11.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.11.1...graphql-orm-test@0.11.2) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.11.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.11.0...graphql-orm-test@0.11.1) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.11.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.10.4...graphql-orm-test@0.11.0) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.10.4](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.10.3...graphql-orm-test@0.10.4) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.10.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.10.2...graphql-orm-test@0.10.3) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.10.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.10.1...graphql-orm-test@0.10.2) (2026-05-08)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.10.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.10.0...graphql-orm-test@0.10.1) (2026-05-07)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.10.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.9.4...graphql-orm-test@0.10.0) (2026-05-06)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.9.4](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.9.3...graphql-orm-test@0.9.4) (2026-05-06)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.9.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.9.2...graphql-orm-test@0.9.3) (2026-05-05)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.9.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.9.1...graphql-orm-test@0.9.2) (2026-05-05)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.9.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.9.0...graphql-orm-test@0.9.1) (2026-05-05)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.9.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.8.1...graphql-orm-test@0.9.0) (2026-05-04)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.8.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.8.0...graphql-orm-test@0.8.1) (2026-05-03)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.8.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.7.3...graphql-orm-test@0.8.0) (2026-04-30)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.7.3](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.7.2...graphql-orm-test@0.7.3) (2026-04-29)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.7.2](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.7.1...graphql-orm-test@0.7.2) (2026-04-28)
+
+**Note:** Version bump only for package graphql-orm-test
+
+## [0.7.1](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.7.0...graphql-orm-test@0.7.1) (2026-04-27)
+
+**Note:** Version bump only for package graphql-orm-test
+
+# [0.7.0](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.6.9...graphql-orm-test@0.7.0) (2026-04-27)
+
+### Features
+
+- consolidate codegen test helper + runtime sub-export ([e13cd76](https://github.com/constructive-io/constructive/commit/e13cd76230c09b21de14abf68ca5160375923abc)), closes [#1](https://github.com/constructive-io/constructive/issues/1) [#2](https://github.com/constructive-io/constructive/issues/2)
+
 ## [0.6.9](https://github.com/constructive-io/constructive/compare/graphql-orm-test@0.6.8...graphql-orm-test@0.6.9) (2026-04-20)
 
 **Note:** Version bump only for package graphql-orm-test

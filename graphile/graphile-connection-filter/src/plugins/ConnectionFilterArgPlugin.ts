@@ -1,5 +1,6 @@
 import '../augmentations';
 import type { GraphileConfig } from 'graphile-config';
+import type { GraphQLInputType, GraphQLNamedType } from 'graphql';
 import { isEmpty } from '../utils';
 
 const version = '1.0.0';
@@ -64,12 +65,12 @@ export const ConnectionFilterArgPlugin: GraphileConfig.Plugin = {
         const nodeType = build.getGraphQLTypeByPgCodec(
           returnCodec,
           'output'
-        );
+        ) as GraphQLNamedType | undefined;
         if (!nodeType) return args;
 
         const nodeTypeName = nodeType.name;
         const filterTypeName = inflection.filterType(nodeTypeName);
-        const FilterType = build.getTypeByName(filterTypeName);
+        const FilterType = build.getTypeByName(filterTypeName) as GraphQLInputType | undefined;
         if (!FilterType) return args;
 
         // For setof functions returning scalars, track the codec

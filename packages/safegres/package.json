@@ -1,0 +1,61 @@
+{
+  "name": "safegres",
+  "version": "0.10.4",
+  "author": "Constructive <developers@constructive.io>",
+  "description": "Pure-Postgres Row-Level Security auditor: grants, RLS enforcement, policy coverage, and risky SQL policy patterns. No app framework required.",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "homepage": "https://github.com/constructive-io/constructive",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/constructive-io/constructive"
+  },
+  "bugs": {
+    "url": "https://github.com/constructive-io/constructive/issues"
+  },
+  "bin": {
+    "safegres": "cli.js"
+  },
+  "scripts": {
+    "clean": "makage clean",
+    "prepack": "npm run build",
+    "build": "makage build && chmod +x dist/cli.js",
+    "build:dev": "makage build --dev && chmod +x dist/cli.js",
+    "lint": "eslint . --fix",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "postgres",
+    "rls",
+    "row-level-security",
+    "audit",
+    "security",
+    "safegres",
+    "constructive"
+  ],
+  "dependencies": {
+    "@inquirerer/utils": "^3.3.7",
+    "@pgpmjs/logger": "workspace:^",
+    "@pgsql/traverse": "^17.2.6",
+    "@pgsql/types": "^17.6.2",
+    "inquirerer": "^4.8.1",
+    "pg": "^8.21.0",
+    "pg-env": "workspace:^",
+    "pgsql-deparser": "^17.18.3",
+    "pgsql-parser": "^17.9.15",
+    "yanse": "^0.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.20.0",
+    "makage": "^0.3.0",
+    "pgsql-test": "workspace:^"
+  }
+}

@@ -3,6 +3,260 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.28.4](https://github.com/constructive-io/constructive/compare/pgpm@4.28.3...pgpm@4.28.4) (2026-06-14)
+
+**Note:** Version bump only for package pgpm
+
+## [4.28.3](https://github.com/constructive-io/constructive/compare/pgpm@4.28.2...pgpm@4.28.3) (2026-06-14)
+
+**Note:** Version bump only for package pgpm
+
+## [4.28.2](https://github.com/constructive-io/constructive/compare/pgpm@4.28.1...pgpm@4.28.2) (2026-06-12)
+
+**Note:** Version bump only for package pgpm
+
+## [4.28.1](https://github.com/constructive-io/constructive/compare/pgpm@4.28.0...pgpm@4.28.1) (2026-06-09)
+
+**Note:** Version bump only for package pgpm
+
+# [4.28.0](https://github.com/constructive-io/constructive/compare/pgpm@4.27.0...pgpm@4.28.0) (2026-06-07)
+
+### Bug Fixes
+
+- **pgpm/cli:** skip skill install in tests via PGPM_SKIP_SKILL_INSTALL env var ([efc61a6](https://github.com/constructive-io/constructive/commit/efc61a6c9b4ec2dc15a344432260c22d38478ad7))
+
+### Features
+
+- **pgpm:** use built-in SkillInstaller for fast skill installation ([e3b5819](https://github.com/constructive-io/constructive/commit/e3b5819ef620825f3c33745e4c5a9ed4afe71bb4))
+
+# [4.27.0](https://github.com/constructive-io/constructive/compare/pgpm@4.26.4...pgpm@4.27.0) (2026-06-06)
+
+### Features
+
+- **pgpm:** install skills from .boilerplate.json after scaffold ([835c827](https://github.com/constructive-io/constructive/commit/835c8277393d8e00fe87a5f019fcac46d746b68d))
+
+## [4.26.4](https://github.com/constructive-io/constructive/compare/pgpm@4.26.3...pgpm@4.26.4) (2026-06-06)
+
+**Note:** Version bump only for package pgpm
+
+## [4.26.3](https://github.com/constructive-io/constructive/compare/pgpm@4.26.2...pgpm@4.26.3) (2026-06-05)
+
+**Note:** Version bump only for package pgpm
+
+## [4.26.2](https://github.com/constructive-io/constructive/compare/pgpm@4.26.1...pgpm@4.26.2) (2026-06-03)
+
+**Note:** Version bump only for package pgpm
+
+## [4.26.1](https://github.com/constructive-io/constructive/compare/pgpm@4.26.0...pgpm@4.26.1) (2026-05-31)
+
+**Note:** Version bump only for package pgpm
+
+# [4.26.0](https://github.com/constructive-io/constructive/compare/pgpm@4.25.4...pgpm@4.26.0) (2026-05-30)
+
+**Note:** Version bump only for package pgpm
+
+## [4.25.4](https://github.com/constructive-io/constructive/compare/pgpm@4.25.3...pgpm@4.25.4) (2026-05-29)
+
+**Note:** Version bump only for package pgpm
+
+## [4.25.3](https://github.com/constructive-io/constructive/compare/pgpm@4.25.2...pgpm@4.25.3) (2026-05-29)
+
+**Note:** Version bump only for package pgpm
+
+## [4.25.2](https://github.com/constructive-io/constructive/compare/pgpm@4.25.1...pgpm@4.25.2) (2026-05-29)
+
+**Note:** Version bump only for package pgpm
+
+## [4.25.1](https://github.com/constructive-io/constructive/compare/pgpm@4.25.0...pgpm@4.25.1) (2026-05-24)
+
+**Note:** Version bump only for package pgpm
+
+# [4.25.0](https://github.com/constructive-io/constructive/compare/pgpm@4.24.6...pgpm@4.25.0) (2026-05-23)
+
+**Note:** Version bump only for package pgpm
+
+## [4.24.6](https://github.com/constructive-io/constructive/compare/pgpm@4.24.5...pgpm@4.24.6) (2026-05-21)
+
+**Note:** Version bump only for package pgpm
+
+## [4.24.5](https://github.com/constructive-io/constructive/compare/pgpm@4.24.4...pgpm@4.24.5) (2026-05-20)
+
+**Note:** Version bump only for package pgpm
+
+## [4.24.4](https://github.com/constructive-io/constructive/compare/pgpm@4.24.3...pgpm@4.24.4) (2026-05-19)
+
+**Note:** Version bump only for package pgpm
+
+## [4.24.3](https://github.com/constructive-io/constructive/compare/pgpm@4.24.2...pgpm@4.24.3) (2026-05-17)
+
+**Note:** Version bump only for package pgpm
+
+## [4.24.2](https://github.com/constructive-io/constructive/compare/pgpm@4.24.1...pgpm@4.24.2) (2026-05-15)
+
+**Note:** Version bump only for package pgpm
+
+## [4.24.1](https://github.com/constructive-io/constructive/compare/pgpm@4.24.0...pgpm@4.24.1) (2026-05-14)
+
+**Note:** Version bump only for package pgpm
+
+# [4.24.0](https://github.com/constructive-io/constructive/compare/pgpm@4.23.9...pgpm@4.24.0) (2026-05-14)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.9](https://github.com/constructive-io/constructive/compare/pgpm@4.23.8...pgpm@4.23.9) (2026-05-14)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.8](https://github.com/constructive-io/constructive/compare/pgpm@4.23.7...pgpm@4.23.8) (2026-05-14)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.7](https://github.com/constructive-io/constructive/compare/pgpm@4.23.6...pgpm@4.23.7) (2026-05-13)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.6](https://github.com/constructive-io/constructive/compare/pgpm@4.23.5...pgpm@4.23.6) (2026-05-13)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.5](https://github.com/constructive-io/constructive/compare/pgpm@4.23.4...pgpm@4.23.5) (2026-05-12)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.4](https://github.com/constructive-io/constructive/compare/pgpm@4.23.3...pgpm@4.23.4) (2026-05-12)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.3](https://github.com/constructive-io/constructive/compare/pgpm@4.23.2...pgpm@4.23.3) (2026-05-11)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.2](https://github.com/constructive-io/constructive/compare/pgpm@4.23.1...pgpm@4.23.2) (2026-05-11)
+
+**Note:** Version bump only for package pgpm
+
+## [4.23.1](https://github.com/constructive-io/constructive/compare/pgpm@4.23.0...pgpm@4.23.1) (2026-05-11)
+
+**Note:** Version bump only for package pgpm
+
+# [4.23.0](https://github.com/constructive-io/constructive/compare/pgpm@4.22.7...pgpm@4.23.0) (2026-05-11)
+
+**Note:** Version bump only for package pgpm
+
+## [4.22.7](https://github.com/constructive-io/constructive/compare/pgpm@4.22.6...pgpm@4.22.7) (2026-05-10)
+
+**Note:** Version bump only for package pgpm
+
+## [4.22.6](https://github.com/constructive-io/constructive/compare/pgpm@4.22.5...pgpm@4.22.6) (2026-05-10)
+
+**Note:** Version bump only for package pgpm
+
+## [4.22.5](https://github.com/constructive-io/constructive/compare/pgpm@4.22.4...pgpm@4.22.5) (2026-05-10)
+
+**Note:** Version bump only for package pgpm
+
+## [4.22.4](https://github.com/constructive-io/constructive/compare/pgpm@4.22.3...pgpm@4.22.4) (2026-05-09)
+
+**Note:** Version bump only for package pgpm
+
+## [4.22.3](https://github.com/constructive-io/constructive/compare/pgpm@4.22.2...pgpm@4.22.3) (2026-05-09)
+
+**Note:** Version bump only for package pgpm
+
+## [4.22.2](https://github.com/constructive-io/constructive/compare/pgpm@4.22.1...pgpm@4.22.2) (2026-05-09)
+
+**Note:** Version bump only for package pgpm
+
+## [4.22.1](https://github.com/constructive-io/constructive/compare/pgpm@4.22.0...pgpm@4.22.1) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+# [4.22.0](https://github.com/constructive-io/constructive/compare/pgpm@4.21.2...pgpm@4.22.0) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+## [4.21.2](https://github.com/constructive-io/constructive/compare/pgpm@4.21.1...pgpm@4.21.2) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+## [4.21.1](https://github.com/constructive-io/constructive/compare/pgpm@4.21.0...pgpm@4.21.1) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+# [4.21.0](https://github.com/constructive-io/constructive/compare/pgpm@4.20.4...pgpm@4.21.0) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+## [4.20.4](https://github.com/constructive-io/constructive/compare/pgpm@4.20.3...pgpm@4.20.4) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+## [4.20.3](https://github.com/constructive-io/constructive/compare/pgpm@4.20.2...pgpm@4.20.3) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+## [4.20.2](https://github.com/constructive-io/constructive/compare/pgpm@4.20.1...pgpm@4.20.2) (2026-05-08)
+
+**Note:** Version bump only for package pgpm
+
+## [4.20.1](https://github.com/constructive-io/constructive/compare/pgpm@4.20.0...pgpm@4.20.1) (2026-05-07)
+
+**Note:** Version bump only for package pgpm
+
+# [4.20.0](https://github.com/constructive-io/constructive/compare/pgpm@4.19.4...pgpm@4.20.0) (2026-05-06)
+
+**Note:** Version bump only for package pgpm
+
+## [4.19.4](https://github.com/constructive-io/constructive/compare/pgpm@4.19.3...pgpm@4.19.4) (2026-05-06)
+
+**Note:** Version bump only for package pgpm
+
+## [4.19.3](https://github.com/constructive-io/constructive/compare/pgpm@4.19.2...pgpm@4.19.3) (2026-05-05)
+
+**Note:** Version bump only for package pgpm
+
+## [4.19.2](https://github.com/constructive-io/constructive/compare/pgpm@4.19.1...pgpm@4.19.2) (2026-05-05)
+
+**Note:** Version bump only for package pgpm
+
+## [4.19.1](https://github.com/constructive-io/constructive/compare/pgpm@4.19.0...pgpm@4.19.1) (2026-05-05)
+
+**Note:** Version bump only for package pgpm
+
+# [4.19.0](https://github.com/constructive-io/constructive/compare/pgpm@4.18.1...pgpm@4.19.0) (2026-05-04)
+
+**Note:** Version bump only for package pgpm
+
+## [4.18.1](https://github.com/constructive-io/constructive/compare/pgpm@4.18.0...pgpm@4.18.1) (2026-05-03)
+
+**Note:** Version bump only for package pgpm
+
+# [4.18.0](https://github.com/constructive-io/constructive/compare/pgpm@4.17.1...pgpm@4.18.0) (2026-05-01)
+
+### Bug Fixes
+
+- **pgpm:** use correct relative path in cd hint after init ([aecc39e](https://github.com/constructive-io/constructive/commit/aecc39ed4a98330818670ebb69588d47b0811c4e))
+
+## [4.17.1](https://github.com/constructive-io/constructive/compare/pgpm@4.17.0...pgpm@4.17.1) (2026-04-30)
+
+**Note:** Version bump only for package pgpm
+
+# [4.17.0](https://github.com/constructive-io/constructive/compare/pgpm@4.16.6...pgpm@4.17.0) (2026-04-30)
+
+**Note:** Version bump only for package pgpm
+
+## [4.16.6](https://github.com/constructive-io/constructive/compare/pgpm@4.16.5...pgpm@4.16.6) (2026-04-29)
+
+**Note:** Version bump only for package pgpm
+
+## [4.16.5](https://github.com/constructive-io/constructive/compare/pgpm@4.16.4...pgpm@4.16.5) (2026-04-28)
+
+**Note:** Version bump only for package pgpm
+
+## [4.16.4](https://github.com/constructive-io/constructive/compare/pgpm@4.16.3...pgpm@4.16.4) (2026-04-27)
+
+**Note:** Version bump only for package pgpm
+
 ## [4.16.3](https://github.com/constructive-io/constructive/compare/pgpm@4.16.2...pgpm@4.16.3) (2026-04-20)
 
 **Note:** Version bump only for package pgpm

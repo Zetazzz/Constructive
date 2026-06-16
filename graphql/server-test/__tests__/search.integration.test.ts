@@ -20,9 +20,12 @@ import type supertest from 'supertest';
 
 jest.setTimeout(60000);
 
-const seedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const localSeedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const sharedSeedRoot = path.join(__dirname, '..', '..', '..', '__fixtures__', 'seed');
 const sql = (seedDir: string, file: string) =>
-  path.join(seedRoot, seedDir, file);
+  path.join(localSeedRoot, seedDir, file);
+const shared = (...segments: string[]) =>
+  path.join(sharedSeedRoot, ...segments);
 
 const schemas = ['search_public'];
 
@@ -48,7 +51,8 @@ describe('Unified Search — server integration', () => {
       },
       [
         seed.sqlfile([
-          sql('search-seed', 'setup.sql'),
+          shared('base', 'setup.sql'),
+          sql('search-seed', 'extensions.sql'),
           sql('search-seed', 'schema.sql'),
           sql('search-seed', 'test-data.sql'),
         ]),

@@ -14,7 +14,7 @@ import type { CorsRule } from './types';
  * This allows:
  * - PUT: for presigned uploads from the browser
  * - GET: for presigned downloads and public file access
- * - HEAD: for confirmUpload verification and cache headers
+ * - HEAD: for cache headers and object existence checks
  *
  * @param allowedOrigins - Domains allowed to make cross-origin requests.
  *                          Use specific domains in production (e.g., ["https://app.example.com"]).

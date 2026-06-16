@@ -17,7 +17,9 @@ import type {
 import type { FindManyArgs, FindFirstArgs } from '../../orm/select-types';
 const fieldSchema: FieldSchema = {
   id: 'uuid',
+  channel: 'string',
   email: 'string',
+  phone: 'string',
   senderId: 'uuid',
   receiverId: 'uuid',
   inviteToken: 'string',
@@ -26,13 +28,15 @@ const fieldSchema: FieldSchema = {
   inviteCount: 'int',
   multiple: 'boolean',
   data: 'json',
+  profileId: 'uuid',
+  isReadOnly: 'boolean',
   expiresAt: 'string',
   createdAt: 'string',
   updatedAt: 'string',
   entityId: 'uuid',
 };
 const usage =
-  '\norg-invite <command>\n\nCommands:\n  list                  List orgInvite records\n  find-first            Find first matching orgInvite record\n  get                   Get a orgInvite by ID\n  create                Create a new orgInvite\n  update                Update an existing orgInvite\n  delete                Delete a orgInvite\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\norg-invite <command>\n\nCommands:\n  list                  List orgInvite records\n  find-first            Find first matching orgInvite record\n  get                   Get a orgInvite by ID\n  create                Create a new orgInvite\n  update                Update an existing orgInvite\n  delete                Delete a orgInvite\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -83,7 +87,9 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
   try {
     const defaultSelect = {
       id: true,
+      channel: true,
       email: true,
+      phone: true,
       senderId: true,
       receiverId: true,
       inviteToken: true,
@@ -92,6 +98,8 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       inviteCount: true,
       multiple: true,
       data: true,
+      profileId: true,
+      isReadOnly: true,
       expiresAt: true,
       createdAt: true,
       updatedAt: true,
@@ -117,7 +125,9 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
   try {
     const defaultSelect = {
       id: true,
+      channel: true,
       email: true,
+      phone: true,
       senderId: true,
       receiverId: true,
       inviteToken: true,
@@ -126,13 +136,15 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       inviteCount: true,
       multiple: true,
       data: true,
+      profileId: true,
+      isReadOnly: true,
       expiresAt: true,
       createdAt: true,
       updatedAt: true,
       entityId: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<OrgInviteSelect, OrgInviteFilter> & {
+      FindFirstArgs<OrgInviteSelect, OrgInviteFilter, OrgInviteOrderBy> & {
         select: OrgInviteSelect;
       }
     >(argv, defaultSelect);
@@ -163,7 +175,9 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
         id: answers.id as string,
         select: {
           id: true,
+          channel: true,
           email: true,
+          phone: true,
           senderId: true,
           receiverId: true,
           inviteToken: true,
@@ -172,6 +186,8 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           inviteCount: true,
           multiple: true,
           data: true,
+          profileId: true,
+          isReadOnly: true,
           expiresAt: true,
           createdAt: true,
           updatedAt: true,
@@ -193,8 +209,22 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
     const rawAnswers = await prompter.prompt(argv, [
       {
         type: 'text',
+        name: 'channel',
+        message: 'channel',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'email',
         message: 'email',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'phone',
+        message: 'phone',
         required: false,
         skipPrompt: true,
       },
@@ -256,6 +286,20 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'profileId',
+        message: 'profileId',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'boolean',
+        name: 'isReadOnly',
+        message: 'isReadOnly',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'expiresAt',
         message: 'expiresAt',
         required: false,
@@ -274,7 +318,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
     const result = await client.orgInvite
       .create({
         data: {
+          channel: cleanedData.channel,
           email: cleanedData.email,
+          phone: cleanedData.phone,
           senderId: cleanedData.senderId,
           receiverId: cleanedData.receiverId,
           inviteToken: cleanedData.inviteToken,
@@ -283,12 +329,16 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: cleanedData.inviteCount,
           multiple: cleanedData.multiple,
           data: cleanedData.data,
+          profileId: cleanedData.profileId,
+          isReadOnly: cleanedData.isReadOnly,
           expiresAt: cleanedData.expiresAt,
           entityId: cleanedData.entityId,
         },
         select: {
           id: true,
+          channel: true,
           email: true,
+          phone: true,
           senderId: true,
           receiverId: true,
           inviteToken: true,
@@ -297,6 +347,8 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: true,
           multiple: true,
           data: true,
+          profileId: true,
+          isReadOnly: true,
           expiresAt: true,
           createdAt: true,
           updatedAt: true,
@@ -324,8 +376,22 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'channel',
+        message: 'channel',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'email',
         message: 'email',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'phone',
+        message: 'phone',
         required: false,
         skipPrompt: true,
       },
@@ -387,6 +453,20 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
+        name: 'profileId',
+        message: 'profileId',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'boolean',
+        name: 'isReadOnly',
+        message: 'isReadOnly',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
         name: 'expiresAt',
         message: 'expiresAt',
         required: false,
@@ -408,7 +488,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           id: answers.id as string,
         },
         data: {
+          channel: cleanedData.channel,
           email: cleanedData.email,
+          phone: cleanedData.phone,
           senderId: cleanedData.senderId,
           receiverId: cleanedData.receiverId,
           inviteToken: cleanedData.inviteToken,
@@ -417,12 +499,16 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: cleanedData.inviteCount,
           multiple: cleanedData.multiple,
           data: cleanedData.data,
+          profileId: cleanedData.profileId,
+          isReadOnly: cleanedData.isReadOnly,
           expiresAt: cleanedData.expiresAt,
           entityId: cleanedData.entityId,
         },
         select: {
           id: true,
+          channel: true,
           email: true,
+          phone: true,
           senderId: true,
           receiverId: true,
           inviteToken: true,
@@ -431,6 +517,8 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           inviteCount: true,
           multiple: true,
           data: true,
+          profileId: true,
+          isReadOnly: true,
           expiresAt: true,
           createdAt: true,
           updatedAt: true,

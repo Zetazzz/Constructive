@@ -1,5 +1,6 @@
 jest.setTimeout(60000);
 process.env.PGPM_SKIP_UPDATE_CHECK = 'true';
+process.env.PGPM_SKIP_SKILL_INSTALL = 'true';
 
 import { PgpmPackage } from '@pgpmjs/core';
 import { existsSync } from 'fs';

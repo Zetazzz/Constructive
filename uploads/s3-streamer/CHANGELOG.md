@@ -3,6 +3,64 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.26.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.25.1...@constructive-io/s3-streamer@2.26.0) (2026-05-30)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+## [2.25.1](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.25.0...@constructive-io/s3-streamer@2.25.1) (2026-05-29)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+# [2.25.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.24.1...@constructive-io/s3-streamer@2.25.0) (2026-05-23)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+## [2.24.1](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.24.0...@constructive-io/s3-streamer@2.24.1) (2026-05-21)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+# [2.24.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.23.2...@constructive-io/s3-streamer@2.24.0) (2026-05-14)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+## [2.23.2](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.23.1...@constructive-io/s3-streamer@2.23.2) (2026-05-14)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+## [2.23.1](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.23.0...@constructive-io/s3-streamer@2.23.1) (2026-05-11)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+# [2.23.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.22.0...@constructive-io/s3-streamer@2.23.0) (2026-05-11)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+# [2.22.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.21.0...@constructive-io/s3-streamer@2.22.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+# [2.21.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.20.0...@constructive-io/s3-streamer@2.21.0) (2026-05-08)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+# [2.20.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.19.1...@constructive-io/s3-streamer@2.20.0) (2026-05-06)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+## [2.19.1](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.19.0...@constructive-io/s3-streamer@2.19.1) (2026-04-28)
+
+**Note:** Version bump only for package @constructive-io/s3-streamer
+
+# [2.19.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.18.0...@constructive-io/s3-streamer@2.19.0) (2026-04-27)
+
+### Bug Fixes
+
+- remove anti-pattern of re-exporting third-party types from barrel ([2872096](https://github.com/constructive-io/constructive/commit/28720967fec32419b005cf1cab5833778d1058ba))
+
+### Features
+
+- consolidate S3 client factory + presigned URL helpers into s3-utils ([cf436df](https://github.com/constructive-io/constructive/commit/cf436df711fb239c640a99655e0e1a572480feb7))
+
 # [2.18.0](https://github.com/constructive-io/constructive/compare/@constructive-io/s3-streamer@2.17.4...@constructive-io/s3-streamer@2.18.0) (2026-04-18)
 
 **Note:** Version bump only for package @constructive-io/s3-streamer

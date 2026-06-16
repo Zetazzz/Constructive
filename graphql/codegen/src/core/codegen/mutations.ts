@@ -9,7 +9,7 @@
  */
 import * as t from '@babel/types';
 
-import type { Table } from '../../types/schema';
+import type { Table, TypeRegistry } from '../../types/schema';
 import {
   addJSDocComment,
   buildSelectionArgsCall,
@@ -39,14 +39,25 @@ import {
   voidStatement,
 } from './hooks-ast';
 import {
+  getBulkCreateMutationFileName,
+  getBulkCreateMutationHookName,
+  getBulkDeleteMutationFileName,
+  getBulkDeleteMutationHookName,
+  getBulkUpdateMutationFileName,
+  getBulkUpdateMutationHookName,
+  getBulkUpsertMutationFileName,
+  getBulkUpsertMutationHookName,
   getCreateMutationFileName,
   getCreateMutationHookName,
   getCreateMutationName,
+  getDeleteInputTypeName,
   getDeleteMutationFileName,
   getDeleteMutationHookName,
   getDeleteMutationName,
+  getExtraInputKeys,
   getPrimaryKeyInfo,
   getTableNames,
+  getUpdateInputTypeName,
   getUpdateMutationFileName,
   getUpdateMutationHookName,
   getUpdateMutationName,
@@ -62,6 +73,7 @@ export interface GeneratedMutationFile {
 export interface MutationGeneratorOptions {
   reactQueryEnabled?: boolean;
   useCentralizedKeys?: boolean;
+  typeRegistry?: TypeRegistry;
 }
 
 function buildMutationResultType(
@@ -324,7 +336,7 @@ export function generateUpdateMutationHook(
   table: Table,
   options: MutationGeneratorOptions = {},
 ): GeneratedMutationFile | null {
-  const { reactQueryEnabled = true, useCentralizedKeys = true } = options;
+  const { reactQueryEnabled = true, useCentralizedKeys = true, typeRegistry } = options;
 
   if (!reactQueryEnabled) return null;
   if (table.query?.update === null) return null;
@@ -346,6 +358,14 @@ export function generateUpdateMutationHook(
 
   const pkTsType =
     pkField.tsType === 'string' ? t.tsStringKeyword() : t.tsNumberKeyword();
+
+  const updateInputTypeName = getUpdateInputTypeName(table);
+  const updateExtraKeys = getExtraInputKeys(
+    updateInputTypeName,
+    new Set(pkFields.map((pk) => pk.name)),
+    patchFieldName,
+    typeRegistry,
+  );
 
   const statements: t.Statement[] = [];
 
@@ -401,11 +421,21 @@ export function generateUpdateMutationHook(
     ),
   );
 
-  // Variable type: { pkField: type; patchFieldName: PatchType }
+  // Variable type: { pkField: type; extraKeys...; patchFieldName: PatchType }
   const updateVarType = t.tsTypeLiteral([
     t.tsPropertySignature(
       t.identifier(pkField.name),
       t.tsTypeAnnotation(pkTsType),
+    ),
+    ...updateExtraKeys.map((ek) =>
+      t.tsPropertySignature(
+        t.identifier(ek.name),
+        t.tsTypeAnnotation(
+          ek.tsType === 'number' ? t.tsNumberKeyword() :
+          ek.tsType === 'boolean' ? t.tsBooleanKeyword() :
+          t.tsStringKeyword()
+        ),
+      ),
     ),
     t.tsPropertySignature(
       t.identifier(patchFieldName),
@@ -477,6 +507,7 @@ export function generateUpdateMutationHook(
   //   getClient().singular.update({ where: { pkField }, data: patchFieldName, select: ... }).unwrap()
   const destructParam = t.objectPattern([
     shorthandProp(pkField.name),
+    ...updateExtraKeys.map((ek) => shorthandProp(ek.name)),
     shorthandProp(patchFieldName),
   ]);
   destructParam.typeAnnotation = t.tsTypeAnnotation(updateVarType);
@@ -486,7 +517,10 @@ export function generateUpdateMutationHook(
       singularName,
       'update',
       t.objectExpression([
-        objectProp('where', t.objectExpression([shorthandProp(pkField.name)])),
+        objectProp('where', t.objectExpression([
+          shorthandProp(pkField.name),
+          ...updateExtraKeys.map((ek) => shorthandProp(ek.name)),
+        ])),
         objectProp('data', t.identifier(patchFieldName)),
         objectProp(
           'select',
@@ -584,7 +618,7 @@ export function generateDeleteMutationHook(
   table: Table,
   options: MutationGeneratorOptions = {},
 ): GeneratedMutationFile | null {
-  const { reactQueryEnabled = true, useCentralizedKeys = true } = options;
+  const { reactQueryEnabled = true, useCentralizedKeys = true, typeRegistry } = options;
 
   if (!reactQueryEnabled) return null;
   if (table.query?.delete === null) return null;
@@ -603,6 +637,14 @@ export function generateDeleteMutationHook(
 
   const pkTsType =
     pkField.tsType === 'string' ? t.tsStringKeyword() : t.tsNumberKeyword();
+
+  const deleteInputTypeName = getDeleteInputTypeName(table);
+  const deleteExtraKeys = getExtraInputKeys(
+    deleteInputTypeName,
+    new Set(pkFields.map((pk) => pk.name)),
+    null,
+    typeRegistry,
+  );
 
   const statements: t.Statement[] = [];
 
@@ -658,11 +700,21 @@ export function generateDeleteMutationHook(
     ),
   );
 
-  // Variable type: { pkField: type }
+  // Variable type: { pkField: type; extraKeys... }
   const deleteVarType = t.tsTypeLiteral([
     t.tsPropertySignature(
       t.identifier(pkField.name),
       t.tsTypeAnnotation(pkTsType),
+    ),
+    ...deleteExtraKeys.map((ek) =>
+      t.tsPropertySignature(
+        t.identifier(ek.name),
+        t.tsTypeAnnotation(
+          ek.tsType === 'number' ? t.tsNumberKeyword() :
+          ek.tsType === 'boolean' ? t.tsBooleanKeyword() :
+          t.tsStringKeyword()
+        ),
+      ),
     ),
   ]);
 
@@ -728,7 +780,10 @@ export function generateDeleteMutationHook(
 
   // mutationFn: ({ pkField }: { pkField: type }) =>
   //   getClient().singular.delete({ where: { pkField }, select: ... }).unwrap()
-  const destructParam = t.objectPattern([shorthandProp(pkField.name)]);
+  const destructParam = t.objectPattern([
+    shorthandProp(pkField.name),
+    ...deleteExtraKeys.map((ek) => shorthandProp(ek.name)),
+  ]);
   destructParam.typeAnnotation = t.tsTypeAnnotation(deleteVarType);
   const mutationFnExpr = t.arrowFunctionExpression(
     [destructParam],
@@ -736,7 +791,10 @@ export function generateDeleteMutationHook(
       singularName,
       'delete',
       t.objectExpression([
-        objectProp('where', t.objectExpression([shorthandProp(pkField.name)])),
+        objectProp('where', t.objectExpression([
+          shorthandProp(pkField.name),
+          ...deleteExtraKeys.map((ek) => shorthandProp(ek.name)),
+        ])),
         objectProp(
           'select',
           t.memberExpression(t.identifier('args'), t.identifier('select')),
@@ -827,6 +885,325 @@ export function generateDeleteMutationHook(
   };
 }
 
+// ============================================================================
+// Bulk Mutation Hook Generators
+// ============================================================================
+
+type BulkOp = 'bulkCreate' | 'bulkUpsert' | 'bulkUpdate' | 'bulkDelete';
+
+function generateBulkMutationHook(
+  table: Table,
+  op: BulkOp,
+  options: MutationGeneratorOptions = {},
+): GeneratedMutationFile | null {
+  const { reactQueryEnabled = true, useCentralizedKeys = true } = options;
+  if (!reactQueryEnabled) return null;
+
+  const mutationFieldName = (() => {
+    switch (op) {
+      case 'bulkCreate': return table.query?.bulkInsert;
+      case 'bulkUpsert': return table.query?.bulkUpsert;
+      case 'bulkUpdate': return table.query?.bulkUpdate;
+      case 'bulkDelete': return table.query?.bulkDelete;
+    }
+  })();
+  if (!mutationFieldName) return null;
+
+  const { typeName, singularName } = getTableNames(table);
+  const hookName = (() => {
+    switch (op) {
+      case 'bulkCreate': return getBulkCreateMutationHookName(table);
+      case 'bulkUpsert': return getBulkUpsertMutationHookName(table);
+      case 'bulkUpdate': return getBulkUpdateMutationHookName(table);
+      case 'bulkDelete': return getBulkDeleteMutationHookName(table);
+    }
+  })();
+  const fileName = (() => {
+    switch (op) {
+      case 'bulkCreate': return getBulkCreateMutationFileName(table);
+      case 'bulkUpsert': return getBulkUpsertMutationFileName(table);
+      case 'bulkUpdate': return getBulkUpdateMutationFileName(table);
+      case 'bulkDelete': return getBulkDeleteMutationFileName(table);
+    }
+  })();
+  const keysName = `${lcFirst(typeName)}Keys`;
+  const mutationKeysName = `${lcFirst(typeName)}MutationKeys`;
+  const selectTypeName = `${typeName}Select`;
+  const relationTypeName = `${typeName}WithRelations`;
+  const createInputTypeName = `Create${typeName}Input`;
+  const patchTypeName = `${typeName}Patch`;
+  const filterTypeName = `${typeName}Filter`;
+
+  const statements: t.Statement[] = [];
+
+  // Imports
+  statements.push(
+    createImportDeclaration('@tanstack/react-query', [
+      'useMutation',
+      'useQueryClient',
+    ]),
+  );
+  statements.push(
+    createImportDeclaration(
+      '@tanstack/react-query',
+      ['UseMutationOptions', 'UseMutationResult'],
+      true,
+    ),
+  );
+  statements.push(createImportDeclaration('../client', ['getClient']));
+  statements.push(
+    createImportDeclaration('../selection', ['buildSelectionArgs']),
+  );
+  statements.push(
+    createImportDeclaration('../selection', ['SelectionConfig'], true),
+  );
+
+  if (useCentralizedKeys) {
+    statements.push(createImportDeclaration('../query-keys', [keysName]));
+    statements.push(
+      createImportDeclaration('../mutation-keys', [mutationKeysName]),
+    );
+  }
+
+  // Determine which types to import
+  const typeImports = [selectTypeName, relationTypeName];
+  if (op === 'bulkCreate' || op === 'bulkUpsert') {
+    typeImports.push(createInputTypeName);
+  }
+  if (op === 'bulkUpdate') {
+    typeImports.push(patchTypeName);
+    typeImports.push(filterTypeName);
+  }
+  if (op === 'bulkDelete') {
+    typeImports.push(filterTypeName);
+  }
+  statements.push(
+    createImportDeclaration('../../orm/input-types', typeImports, true),
+  );
+  statements.push(
+    createImportDeclaration(
+      '../../orm/select-types',
+      ['InferSelectResult', 'BulkMutationResult', 'HookStrictSelect'],
+      true,
+    ),
+  );
+
+  // Re-exports
+  statements.push(createTypeReExport(typeImports, '../../orm/input-types'));
+
+  // Build the variable type for the mutationFn parameter
+  const varType = (() => {
+    switch (op) {
+      case 'bulkCreate':
+        return t.tsTypeLiteral([
+          t.tsPropertySignature(
+            t.identifier('data'),
+            t.tsTypeAnnotation(
+              t.tsArrayType(
+                t.tsIndexedAccessType(
+                  typeRef(createInputTypeName),
+                  t.tsLiteralType(t.stringLiteral(singularName)),
+                ),
+              ),
+            ),
+          ),
+          (() => {
+            const p = t.tsPropertySignature(
+              t.identifier('onConflict'),
+              t.tsTypeAnnotation(t.tsUnknownKeyword()),
+            );
+            p.optional = true;
+            return p;
+          })(),
+        ]);
+      case 'bulkUpsert':
+        return t.tsTypeLiteral([
+          t.tsPropertySignature(
+            t.identifier('data'),
+            t.tsTypeAnnotation(
+              t.tsArrayType(
+                t.tsIndexedAccessType(
+                  typeRef(createInputTypeName),
+                  t.tsLiteralType(t.stringLiteral(singularName)),
+                ),
+              ),
+            ),
+          ),
+          t.tsPropertySignature(
+            t.identifier('onConflict'),
+            t.tsTypeAnnotation(t.tsUnknownKeyword()),
+          ),
+        ]);
+      case 'bulkUpdate':
+        return t.tsTypeLiteral([
+          t.tsPropertySignature(
+            t.identifier('where'),
+            t.tsTypeAnnotation(typeRef(filterTypeName)),
+          ),
+          t.tsPropertySignature(
+            t.identifier('data'),
+            t.tsTypeAnnotation(typeRef(patchTypeName)),
+          ),
+        ]);
+      case 'bulkDelete':
+        return t.tsTypeLiteral([
+          t.tsPropertySignature(
+            t.identifier('where'),
+            t.tsTypeAnnotation(typeRef(filterTypeName)),
+          ),
+        ]);
+    }
+  })();
+
+  // Result type: BulkMutationResult<InferSelectResult<Relation, S>>
+  const bulkResultType = (sel: t.TSType) =>
+    typeRef('BulkMutationResult', [inferSelectResultType(relationTypeName, sel)]);
+
+  // Overload with fields
+  const o1ParamType = t.tsIntersectionType([
+    t.tsTypeLiteral([
+      t.tsPropertySignature(
+        t.identifier('selection'),
+        t.tsTypeAnnotation(buildFieldsSelectionType(sRef(), selectTypeName)),
+      ),
+    ]),
+    useMutationOptionsType(bulkResultType(sRef()), varType),
+  ]);
+  const o1 = exportDeclareFunction(
+    hookName,
+    createSTypeParam(selectTypeName),
+    [createFunctionParam('params', o1ParamType)],
+    useMutationResultType(bulkResultType(sRef()), varType),
+  );
+  addJSDocComment(o1, [
+    table.description || `Bulk ${op.replace('bulk', '').toLowerCase()} mutation hook for ${typeName}`,
+  ]);
+  statements.push(o1);
+
+  // Implementation
+  const implSelProp = t.tsPropertySignature(
+    t.identifier('selection'),
+    t.tsTypeAnnotation(selectionConfigType(typeRef(selectTypeName))),
+  );
+  const implParamType = t.tsIntersectionType([
+    t.tsTypeLiteral([implSelProp]),
+    omitType(
+      typeRef('UseMutationOptions', [
+        t.tsAnyKeyword(),
+        typeRef('Error'),
+        varType,
+      ]),
+      ['mutationFn'],
+    ),
+  ]);
+
+  const body: t.Statement[] = [];
+  body.push(buildSelectionArgsCall(selectTypeName));
+  body.push(destructureParamsWithSelection('mutationOptions'));
+  body.push(voidStatement('_selection'));
+  body.push(constDecl('queryClient', callExpr('useQueryClient', [])));
+
+  const mutationKeyExpr = useCentralizedKeys
+    ? callExpr(
+        t.memberExpression(
+          t.identifier(mutationKeysName),
+          t.identifier(op),
+        ),
+        [],
+      )
+    : undefined;
+
+  // Build the ORM method call depending on the operation
+  const ormMethodName = op;
+  const mutationFnArgs = (() => {
+    switch (op) {
+      case 'bulkCreate':
+        return t.objectExpression([
+          shorthandProp('data'),
+          objectProp('onConflict', t.memberExpression(t.identifier('vars'), t.identifier('onConflict'))),
+          objectProp('select', t.memberExpression(t.identifier('args'), t.identifier('select'))),
+        ]);
+      case 'bulkUpsert':
+        return t.objectExpression([
+          shorthandProp('data'),
+          objectProp('onConflict', t.memberExpression(t.identifier('vars'), t.identifier('onConflict'))),
+          objectProp('select', t.memberExpression(t.identifier('args'), t.identifier('select'))),
+        ]);
+      case 'bulkUpdate':
+        return t.objectExpression([
+          objectProp('where', t.memberExpression(t.identifier('vars'), t.identifier('where'))),
+          shorthandProp('data'),
+          objectProp('select', t.memberExpression(t.identifier('args'), t.identifier('select'))),
+        ]);
+      case 'bulkDelete':
+        return t.objectExpression([
+          objectProp('where', t.memberExpression(t.identifier('vars'), t.identifier('where'))),
+          objectProp('select', t.memberExpression(t.identifier('args'), t.identifier('select'))),
+        ]);
+    }
+  })();
+
+  const varsParam = createFunctionParam('vars', varType);
+  const mutationFnExpr = t.arrowFunctionExpression(
+    [varsParam],
+    getClientCallUnwrap(singularName, ormMethodName, mutationFnArgs),
+  );
+
+  // onSuccess: invalidate lists
+  const listKeyExpr = useCentralizedKeys
+    ? callExpr(
+        t.memberExpression(t.identifier(keysName), t.identifier('lists')),
+        [],
+      )
+    : t.arrayExpression([
+        t.stringLiteral(typeName.toLowerCase()),
+        t.stringLiteral('list'),
+      ]);
+
+  const onSuccessFn = t.arrowFunctionExpression(
+    [],
+    t.blockStatement([
+      t.expressionStatement(
+        callExpr(
+          t.memberExpression(
+            t.identifier('queryClient'),
+            t.identifier('invalidateQueries'),
+          ),
+          [t.objectExpression([objectProp('queryKey', listKeyExpr)])],
+        ),
+      ),
+    ]),
+  );
+
+  body.push(
+    returnUseMutation(
+      mutationFnExpr,
+      [
+        objectProp('onSuccess', onSuccessFn),
+        spreadObj(t.identifier('mutationOptions')),
+      ],
+      mutationKeyExpr,
+    ),
+  );
+
+  statements.push(
+    exportFunction(
+      hookName,
+      null,
+      [createFunctionParam('params', implParamType)],
+      body,
+    ),
+  );
+
+  return {
+    fileName,
+    content: generateHookFileCode(
+      table.description || `Bulk ${op.replace('bulk', '').toLowerCase()} mutation hook for ${typeName}`,
+      statements,
+    ),
+  };
+}
+
 export function generateAllMutationHooks(
   tables: Table[],
   options: MutationGeneratorOptions = {},
@@ -847,6 +1224,15 @@ export function generateAllMutationHooks(
     const deleteHook = generateDeleteMutationHook(table, options);
     if (deleteHook) {
       files.push(deleteHook);
+    }
+
+    // Bulk mutation hooks
+    const bulkOps: BulkOp[] = ['bulkCreate', 'bulkUpsert', 'bulkUpdate', 'bulkDelete'];
+    for (const op of bulkOps) {
+      const hook = generateBulkMutationHook(table, op, options);
+      if (hook) {
+        files.push(hook);
+      }
     }
   }
 

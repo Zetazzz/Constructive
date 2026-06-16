@@ -28,9 +28,12 @@ import { getConnections, seed } from '../src';
 
 jest.setTimeout(60000);
 
-const seedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const localSeedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
+const sharedSeedRoot = path.join(__dirname, '..', '..', '..', '__fixtures__', 'seed');
 const sql = (seedDir: string, file: string) =>
-  path.join(seedRoot, seedDir, file);
+  path.join(localSeedRoot, seedDir, file);
+const shared = (...segments: string[]) =>
+  path.join(sharedSeedRoot, ...segments);
 
 const schemas = ['snapshot_public'];
 
@@ -49,7 +52,7 @@ describe('Schema Snapshot', () => {
       },
       [
         seed.sqlfile([
-          sql('schema-snapshot', 'setup.sql'),
+          shared('base', 'setup.sql'),
           sql('schema-snapshot', 'schema.sql'),
           sql('schema-snapshot', 'test-data.sql'),
         ]),

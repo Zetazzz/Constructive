@@ -1,10 +1,10 @@
 /**
  * Presigned URL Plugin for PostGraphile v5
  *
- * Provides presigned URL upload capabilities for PostGraphile v5:
- * - requestUploadUrl mutation (presigned PUT URL generation)
- * - confirmUpload mutation (upload verification + status transition)
- * - downloadUrl computed field (presigned GET URL / public URL)
+ * Provides per-table S3 storage middleware for PostGraphile v5:
+ * - Upload fields on @storageBuckets types (requestUploadUrl, requestBulkUploadUrls)
+ * - Delete middleware on @storageFiles tables (S3 cleanup on delete)
+ * - downloadUrl computed field on @storageFiles types
  *
  * @example
  * ```typescript
@@ -30,15 +30,13 @@
 export { PresignedUrlPlugin, createPresignedUrlPlugin } from './plugin';
 export { createDownloadUrlPlugin } from './download-url-field';
 export { PresignedUrlPreset } from './preset';
-export { getStorageModuleConfig, getStorageModuleConfigForOwner, getBucketConfig, resolveStorageModuleByFileId, clearStorageModuleCache, clearBucketCache, isS3BucketProvisioned, markS3BucketProvisioned } from './storage-module-cache';
-export { generatePresignedPutUrl, generatePresignedGetUrl, headObject } from './s3-signer';
+export { getStorageModuleConfig, getStorageModuleConfigForOwner, getBucketConfig, resolveStorageModuleByFileId, loadAllStorageModules, resolveStorageConfigFromCodec, clearStorageModuleCache, clearBucketCache, isS3BucketProvisioned, markS3BucketProvisioned } from './storage-module-cache';
+export { generatePresignedPutUrl, generatePresignedGetUrl, deleteS3Object, headObject } from './s3-signer';
 export type {
   BucketConfig,
   StorageModuleConfig,
   RequestUploadUrlInput,
   RequestUploadUrlPayload,
-  ConfirmUploadInput,
-  ConfirmUploadPayload,
   S3Config,
   S3ConfigOrGetter,
   PresignedUrlPluginOptions,

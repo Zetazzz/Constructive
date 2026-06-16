@@ -3,6 +3,62 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.13.1](https://github.com/constructive-io/constructive/compare/graphile-cache@3.13.0...graphile-cache@3.13.1) (2026-06-14)
+
+**Note:** Version bump only for package graphile-cache
+
+# [3.13.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.12.1...graphile-cache@3.13.0) (2026-05-30)
+
+**Note:** Version bump only for package graphile-cache
+
+## [3.12.1](https://github.com/constructive-io/constructive/compare/graphile-cache@3.12.0...graphile-cache@3.12.1) (2026-05-29)
+
+**Note:** Version bump only for package graphile-cache
+
+# [3.12.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.11.2...graphile-cache@3.12.0) (2026-05-23)
+
+### Features
+
+- **pg-cache:** make pool cache configurable via env vars + align cache limits ([c6326d7](https://github.com/constructive-io/constructive/commit/c6326d7913030554a12170cba4d4d5521d807d22))
+
+## [3.11.2](https://github.com/constructive-io/constructive/compare/graphile-cache@3.11.1...graphile-cache@3.11.2) (2026-05-21)
+
+**Note:** Version bump only for package graphile-cache
+
+## [3.11.1](https://github.com/constructive-io/constructive/compare/graphile-cache@3.11.0...graphile-cache@3.11.1) (2026-05-14)
+
+**Note:** Version bump only for package graphile-cache
+
+# [3.11.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.10.1...graphile-cache@3.11.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-cache
+
+## [3.10.1](https://github.com/constructive-io/constructive/compare/graphile-cache@3.10.0...graphile-cache@3.10.1) (2026-05-11)
+
+**Note:** Version bump only for package graphile-cache
+
+# [3.10.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.9.0...graphile-cache@3.10.0) (2026-05-11)
+
+### Features
+
+- integrate RealtimeManager into constructive preset and cache lifecycle ([a4dd5b9](https://github.com/constructive-io/constructive/commit/a4dd5b9e8b0440ed49749f0eac1b3d2f3841f4a5))
+
+# [3.9.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.8.0...graphile-cache@3.9.0) (2026-05-11)
+
+**Note:** Version bump only for package graphile-cache
+
+# [3.8.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.7.0...graphile-cache@3.8.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-cache
+
+# [3.7.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.6.0...graphile-cache@3.7.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-cache
+
+# [3.6.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.5.0...graphile-cache@3.6.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-cache
+
 # [3.5.0](https://github.com/constructive-io/constructive/compare/graphile-cache@3.4.4...graphile-cache@3.5.0) (2026-04-18)
 
 **Note:** Version bump only for package graphile-cache

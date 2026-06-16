@@ -25,7 +25,7 @@ const db = createClient({
 | `phoneNumber` | findMany, findOne, create, update, delete |
 | `cryptoAddress` | findMany, findOne, create, update, delete |
 | `webauthnCredential` | findMany, findOne, create, update, delete |
-| `auditLog` | findMany, findOne, create, update, delete |
+| `auditLogAuth` | findMany, findOne, create, update, delete |
 | `identityProvider` | findMany, findOne, create, update, delete |
 | `roleType` | findMany, findOne, create, update, delete |
 | `userConnectedAccount` | findMany, findOne, create, update, delete |
@@ -184,14 +184,15 @@ const updated = await db.webauthnCredential.update({ where: { id: '<UUID>' }, da
 const deleted = await db.webauthnCredential.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
-### `db.auditLog`
+### `db.auditLogAuth`
 
-CRUD operations for AuditLog records.
+CRUD operations for AuditLogAuth records.
 
 **Fields:**
 
 | Field | Type | Editable |
 |-------|------|----------|
+| `createdAt` | Datetime | No |
 | `id` | UUID | No |
 | `event` | String | Yes |
 | `actorId` | UUID | Yes |
@@ -199,25 +200,24 @@ CRUD operations for AuditLog records.
 | `userAgent` | String | Yes |
 | `ipAddress` | InternetAddress | Yes |
 | `success` | Boolean | Yes |
-| `createdAt` | Datetime | No |
 
 **Operations:**
 
 ```typescript
-// List all auditLog records
-const items = await db.auditLog.findMany({ select: { id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true, createdAt: true } }).execute();
+// List all auditLogAuth records
+const items = await db.auditLogAuth.findMany({ select: { createdAt: true, id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true } }).execute();
 
 // Get one by id
-const item = await db.auditLog.findOne({ id: '<UUID>', select: { id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true, createdAt: true } }).execute();
+const item = await db.auditLogAuth.findOne({ id: '<UUID>', select: { createdAt: true, id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true } }).execute();
 
 // Create
-const created = await db.auditLog.create({ data: { event: '<String>', actorId: '<UUID>', origin: '<Origin>', userAgent: '<String>', ipAddress: '<InternetAddress>', success: '<Boolean>' }, select: { id: true } }).execute();
+const created = await db.auditLogAuth.create({ data: { event: '<String>', actorId: '<UUID>', origin: '<Origin>', userAgent: '<String>', ipAddress: '<InternetAddress>', success: '<Boolean>' }, select: { id: true } }).execute();
 
 // Update
-const updated = await db.auditLog.update({ where: { id: '<UUID>' }, data: { event: '<String>' }, select: { id: true } }).execute();
+const updated = await db.auditLogAuth.update({ where: { id: '<UUID>' }, data: { event: '<String>' }, select: { id: true } }).execute();
 
 // Delete
-const deleted = await db.auditLog.delete({ where: { id: '<UUID>' } }).execute();
+const deleted = await db.auditLogAuth.delete({ where: { id: '<UUID>' } }).execute();
 ```
 
 ### `db.identityProvider`
@@ -632,6 +632,36 @@ signInCrossOrigin
 const result = await db.mutation.signInCrossOrigin({ input: { token: '<String>', credentialKind: '<String>' } }).execute();
 ```
 
+### `db.mutation.signInSmsOtp`
+
+signInSmsOtp
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | SignInSmsOtpInput (required) |
+
+```typescript
+const result = await db.mutation.signInSmsOtp({ input: { phone: '<String>', code: '<String>', credentialKind: '<String>', rememberMe: '<Boolean>', deviceToken: '<String>' } }).execute();
+```
+
+### `db.mutation.signUpSms`
+
+signUpSms
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | SignUpSmsInput (required) |
+
+```typescript
+const result = await db.mutation.signUpSms({ input: { phone: '<String>', code: '<String>', credentialKind: '<String>', rememberMe: '<Boolean>', deviceToken: '<String>' } }).execute();
+```
+
 ### `db.mutation.signUp`
 
 signUp
@@ -644,22 +674,7 @@ signUp
   | `input` | SignUpInput (required) |
 
 ```typescript
-const result = await db.mutation.signUp({ input: { email: '<String>', password: '<String>', rememberMe: '<Boolean>', credentialKind: '<String>', csrfToken: '<String>' } }).execute();
-```
-
-### `db.mutation.requestCrossOriginToken`
-
-requestCrossOriginToken
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | RequestCrossOriginTokenInput (required) |
-
-```typescript
-const result = await db.mutation.requestCrossOriginToken({ input: { email: '<String>', password: '<String>', origin: '<Origin>', rememberMe: '<Boolean>' } }).execute();
+const result = await db.mutation.signUp({ input: '<SignUpInput>' }).execute();
 ```
 
 ### `db.mutation.signIn`
@@ -675,6 +690,21 @@ signIn
 
 ```typescript
 const result = await db.mutation.signIn({ input: '<SignInInput>' }).execute();
+```
+
+### `db.mutation.linkIdentity`
+
+linkIdentity
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | LinkIdentityInput (required) |
+
+```typescript
+const result = await db.mutation.linkIdentity({ input: { service: '<String>', identifier: '<String>', details: '<JSON>' } }).execute();
 ```
 
 ### `db.mutation.extendTokenExpires`
@@ -707,6 +737,21 @@ createApiKey
 const result = await db.mutation.createApiKey({ input: { keyName: '<String>', accessLevel: '<String>', mfaLevel: '<String>', expiresIn: '<IntervalInput>' } }).execute();
 ```
 
+### `db.mutation.requestCrossOriginToken`
+
+requestCrossOriginToken
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | RequestCrossOriginTokenInput (required) |
+
+```typescript
+const result = await db.mutation.requestCrossOriginToken({ input: { email: '<String>', password: '<String>', origin: '<Origin>', rememberMe: '<Boolean>' } }).execute();
+```
+
 ### `db.mutation.forgotPassword`
 
 forgotPassword
@@ -735,41 +780,6 @@ sendVerificationEmail
 
 ```typescript
 const result = await db.mutation.sendVerificationEmail({ input: { email: '<Email>' } }).execute();
-```
-
-### `db.mutation.requestUploadUrl`
-
-Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | RequestUploadUrlInput (required) |
-
-```typescript
-const result = await db.mutation.requestUploadUrl({ input: '<RequestUploadUrlInput>' }).execute();
-```
-
-### `db.mutation.confirmUpload`
-
-Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | ConfirmUploadInput (required) |
-
-```typescript
-const result = await db.mutation.confirmUpload({ input: { fileId: '<UUID>' } }).execute();
 ```
 
 ### `db.mutation.provisionBucket`

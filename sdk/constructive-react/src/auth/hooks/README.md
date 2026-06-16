@@ -52,11 +52,11 @@ function App() {
 | `useCreateWebauthnCredentialMutation` | Mutation | WebAuthn/passkey credentials owned by users. One row per registered authenticator (security key, device biometric, synced passkey). Schema mirrors SimpleWebAuthn's canonical Passkey object. |
 | `useUpdateWebauthnCredentialMutation` | Mutation | WebAuthn/passkey credentials owned by users. One row per registered authenticator (security key, device biometric, synced passkey). Schema mirrors SimpleWebAuthn's canonical Passkey object. |
 | `useDeleteWebauthnCredentialMutation` | Mutation | WebAuthn/passkey credentials owned by users. One row per registered authenticator (security key, device biometric, synced passkey). Schema mirrors SimpleWebAuthn's canonical Passkey object. |
-| `useAuditLogsQuery` | Query | Append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
-| `useAuditLogQuery` | Query | Append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
-| `useCreateAuditLogMutation` | Mutation | Append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
-| `useUpdateAuditLogMutation` | Mutation | Append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
-| `useDeleteAuditLogMutation` | Mutation | Append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
+| `useAuditLogAuthsQuery` | Query | Partitioned append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
+| `useAuditLogAuthQuery` | Query | Partitioned append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
+| `useCreateAuditLogAuthMutation` | Mutation | Partitioned append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
+| `useUpdateAuditLogAuthMutation` | Mutation | Partitioned append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
+| `useDeleteAuditLogAuthMutation` | Mutation | Partitioned append-only audit log of authentication events (sign-in, sign-up, password changes, etc.) |
 | `useIdentityProvidersQuery` | Query | List all identityProviders |
 | `useCreateIdentityProviderMutation` | Mutation | Create a identityProvider |
 | `useRoleTypesQuery` | Query | List all roleTypes |
@@ -93,20 +93,16 @@ function App() {
 | `useProvisionNewUserMutation` | Mutation | provisionNewUser |
 | `useResetPasswordMutation` | Mutation | resetPassword |
 | `useSignInCrossOriginMutation` | Mutation | signInCrossOrigin |
+| `useSignInSmsOtpMutation` | Mutation | signInSmsOtp |
+| `useSignUpSmsMutation` | Mutation | signUpSms |
 | `useSignUpMutation` | Mutation | signUp |
-| `useRequestCrossOriginTokenMutation` | Mutation | requestCrossOriginToken |
 | `useSignInMutation` | Mutation | signIn |
+| `useLinkIdentityMutation` | Mutation | linkIdentity |
 | `useExtendTokenExpiresMutation` | Mutation | extendTokenExpires |
 | `useCreateApiKeyMutation` | Mutation | createApiKey |
+| `useRequestCrossOriginTokenMutation` | Mutation | requestCrossOriginToken |
 | `useForgotPasswordMutation` | Mutation | forgotPassword |
 | `useSendVerificationEmailMutation` | Mutation | sendVerificationEmail |
-| `useRequestUploadUrlMutation` | Mutation | Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl. |
-| `useConfirmUploadMutation` | Mutation | Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'. |
 | `useProvisionBucketMutation` | Mutation | Provision an S3 bucket for a logical bucket in the database.
 Reads the bucket config via RLS, then creates and configures
 the S3 bucket with the appropriate privacy policies, CORS rules,
@@ -198,22 +194,22 @@ const { mutate: create } = useCreateWebauthnCredentialMutation({
 create({ ownerId: '<UUID>', credentialId: '<String>', publicKey: '<Base64EncodedBinary>', signCount: '<BigInt>', webauthnUserId: '<String>', transports: '<String>', credentialDeviceType: '<String>', backupEligible: '<Boolean>', backupState: '<Boolean>', name: '<String>', lastUsedAt: '<Datetime>' });
 ```
 
-### AuditLog
+### AuditLogAuth
 
 ```typescript
-// List all auditLogs
-const { data, isLoading } = useAuditLogsQuery({
-  selection: { fields: { id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true, createdAt: true } },
+// List all auditLogAuths
+const { data, isLoading } = useAuditLogAuthsQuery({
+  selection: { fields: { createdAt: true, id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true } },
 });
 
-// Get one auditLog
-const { data: item } = useAuditLogQuery({
+// Get one auditLogAuth
+const { data: item } = useAuditLogAuthQuery({
   id: '<UUID>',
-  selection: { fields: { id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true, createdAt: true } },
+  selection: { fields: { createdAt: true, id: true, event: true, actorId: true, origin: true, userAgent: true, ipAddress: true, success: true } },
 });
 
-// Create a auditLog
-const { mutate: create } = useCreateAuditLogMutation({
+// Create a auditLogAuth
+const { mutate: create } = useCreateAuditLogAuthMutation({
   selection: { fields: { id: true } },
 });
 create({ event: '<String>', actorId: '<UUID>', origin: '<Origin>', userAgent: '<String>', ipAddress: '<InternetAddress>', success: '<Boolean>' });
@@ -492,6 +488,28 @@ signInCrossOrigin
   |----------|------|
   | `input` | SignInCrossOriginInput (required) |
 
+### `useSignInSmsOtpMutation`
+
+signInSmsOtp
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | SignInSmsOtpInput (required) |
+
+### `useSignUpSmsMutation`
+
+signUpSms
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | SignUpSmsInput (required) |
+
 ### `useSignUpMutation`
 
 signUp
@@ -503,17 +521,6 @@ signUp
   |----------|------|
   | `input` | SignUpInput (required) |
 
-### `useRequestCrossOriginTokenMutation`
-
-requestCrossOriginToken
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | RequestCrossOriginTokenInput (required) |
-
 ### `useSignInMutation`
 
 signIn
@@ -524,6 +531,17 @@ signIn
   | Argument | Type |
   |----------|------|
   | `input` | SignInInput (required) |
+
+### `useLinkIdentityMutation`
+
+linkIdentity
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | LinkIdentityInput (required) |
 
 ### `useExtendTokenExpiresMutation`
 
@@ -547,6 +565,17 @@ createApiKey
   |----------|------|
   | `input` | CreateApiKeyInput (required) |
 
+### `useRequestCrossOriginTokenMutation`
+
+requestCrossOriginToken
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `input` | RequestCrossOriginTokenInput (required) |
+
 ### `useForgotPasswordMutation`
 
 forgotPassword
@@ -568,33 +597,6 @@ sendVerificationEmail
   | Argument | Type |
   |----------|------|
   | `input` | SendVerificationEmailInput (required) |
-
-### `useRequestUploadUrlMutation`
-
-Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | RequestUploadUrlInput (required) |
-
-### `useConfirmUploadMutation`
-
-Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `input` | ConfirmUploadInput (required) |
 
 ### `useProvisionBucketMutation`
 

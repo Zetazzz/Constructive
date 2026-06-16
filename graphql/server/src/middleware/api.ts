@@ -2,20 +2,30 @@ import { getNodeEnv } from '@pgpmjs/env';
 import { Logger } from '@pgpmjs/logger';
 import { svcCache } from '@pgpmjs/server-utils';
 import { parseUrl } from '@constructive-io/url-domains';
+import {
+  createDefaultRegistry,
+  LoaderContext,
+  LoaderRegistry,
+} from '@constructive-io/express-context';
 import { NextFunction, Request, Response } from 'express';
 import { Pool } from 'pg';
 import { getPgPool } from 'pg-cache';
 
 import errorPage50x from '../errors/50x';
 import errorPage404Message from '../errors/404-message';
-import { ApiConfigResult, ApiError, ApiOptions, ApiStructure, AuthSettings, RlsModule } from '../types';
+import { ApiConfigResult, ApiError, ApiOptions, ApiStructure, AuthSettings, DatabaseSettings, PubkeyChallengeSettings, RlsModule, WebauthnSettings } from '../types';
 import './types';
 
 const log = new Logger('api');
-const isDev = () => getNodeEnv() === 'development';
 
 // =============================================================================
-// SQL Queries
+// Module Loader Registry (replaces inline SQL queries for per-db config)
+// =============================================================================
+
+const defaultRegistry: LoaderRegistry = createDefaultRegistry();
+
+// =============================================================================
+// SQL Queries (API resolution only — module queries now live in loaders)
 // =============================================================================
 
 const DOMAIN_LOOKUP_SQL = `
@@ -79,45 +89,8 @@ const API_LIST_SQL = `
   LIMIT 100
 `;
 
-const RLS_MODULE_SQL = `
-  SELECT data
-  FROM services_public.api_modules
-  WHERE api_id = $1 AND name = 'rls_module'
-  LIMIT 1
-`;
-
-/**
- * Discover auth settings table location via public metaschema tables.
- * Joins sessions_module with metaschema_public.schema to resolve
- * the schema name + table name without touching private schemas.
- */
-const AUTH_SETTINGS_DISCOVERY_SQL = `
-  SELECT s.schema_name, sm.auth_settings_table AS table_name
-  FROM metaschema_modules_public.sessions_module sm
-  JOIN metaschema_public.schema s ON s.id = sm.schema_id
-  LIMIT 1
-`;
-
-/**
- * Query auth settings from the discovered table.
- * Schema and table name are resolved dynamically from metaschema modules.
- */
-const AUTH_SETTINGS_SQL = (schemaName: string, tableName: string) => `
-  SELECT
-    cookie_secure,
-    cookie_samesite,
-    cookie_domain,
-    cookie_httponly,
-    cookie_max_age,
-    cookie_path,
-    enable_captcha,
-    captcha_site_key
-  FROM "${schemaName}"."${tableName}"
-  LIMIT 1
-`;
-
 // =============================================================================
-// Types
+// Types (API resolution only — module types now in express-context)
 // =============================================================================
 
 interface ApiRow {
@@ -128,32 +101,6 @@ interface ApiRow {
   anon_role: string;
   is_public: boolean;
   schemas: string[];
-}
-
-interface RlsModuleData {
-  authenticate: string;
-  authenticate_strict: string;
-  authenticate_schema: string;
-  role_schema: string;
-  current_role: string;
-  current_role_id: string;
-  current_ip_address: string;
-  current_user_agent: string;
-}
-
-interface AuthSettingsRow {
-  cookie_secure: boolean;
-  cookie_samesite: string;
-  cookie_domain: string | null;
-  cookie_httponly: boolean;
-  cookie_max_age: string | null;
-  cookie_path: string;
-  enable_captcha: boolean;
-  captcha_site_key: string | null;
-}
-
-interface RlsModuleRow {
-  data: RlsModuleData | null;
 }
 
 interface ApiListRow {
@@ -187,6 +134,69 @@ type ResolutionMode =
   | 'api-name-header'
   | 'meta-schema-header'
   | 'domain-lookup';
+
+// =============================================================================
+// Module Resolution (via loader registry)
+// =============================================================================
+
+interface ResolvedModuleSettings {
+  rlsModule?: RlsModule;
+  authSettings?: AuthSettings;
+  corsOrigins?: string[];
+  databaseSettings?: DatabaseSettings;
+  pubkeyChallengeSettings?: PubkeyChallengeSettings;
+  webauthnSettings?: WebauthnSettings;
+}
+
+/**
+ * Build a LoaderContext from the API row and options.
+ * This is used to resolve per-database module settings via the loader registry.
+ */
+const buildLoaderContext = (
+  servicesPool: Pool,
+  opts: ApiOptions,
+  row: ApiRow,
+): LoaderContext => ({
+  servicesPool,
+  tenantPool: getPgPool({ ...opts.pg, database: row.dbname }),
+  databaseId: row.database_id,
+  apiId: row.api_id,
+  dbname: row.dbname,
+});
+
+/**
+ * Resolve all per-database module settings in parallel via the loader registry.
+ * Each loader independently caches by databaseId — repeated calls are cheap.
+ */
+const resolveModuleSettings = async (
+  registry: LoaderRegistry,
+  ctx: LoaderContext,
+): Promise<ResolvedModuleSettings> => {
+  const [
+    rlsModule,
+    authSettings,
+    corsOrigins,
+    databaseSettings,
+    pubkeyChallengeSettings,
+    webauthnSettings,
+  ] = await Promise.all([
+    registry.resolve<RlsModule>('rlsModule', ctx),
+    registry.resolve<AuthSettings>('authSettings', ctx),
+    registry.resolve<string[]>('corsOrigins', ctx),
+    registry.resolve<DatabaseSettings>('databaseSettings', ctx),
+    registry.resolve<PubkeyChallengeSettings>('pubkeyChallengeSettings', ctx),
+    registry.resolve<WebauthnSettings>('webauthnSettings', ctx),
+  ]);
+
+  return {
+    rlsModule,
+    authSettings,
+    corsOrigins,
+    databaseSettings,
+    pubkeyChallengeSettings,
+    webauthnSettings,
+  };
+};
 
 // =============================================================================
 // Helpers
@@ -230,51 +240,22 @@ export const getSvcKey = (opts: ApiOptions, req: Request): string => {
   return baseKey;
 };
 
-const toRlsModule = (row: RlsModuleRow | null): RlsModule | undefined => {
-  if (!row?.data) return undefined;
-  const d = row.data;
-  return {
-    authenticate: d.authenticate,
-    authenticateStrict: d.authenticate_strict,
-    privateSchema: {
-      schemaName: d.authenticate_schema,
-    },
-    publicSchema: {
-      schemaName: d.role_schema,
-    },
-    currentRole: d.current_role,
-    currentRoleId: d.current_role_id,
-    currentIpAddress: d.current_ip_address,
-    currentUserAgent: d.current_user_agent,
-  };
-};
-
-const toAuthSettings = (row: AuthSettingsRow | null): AuthSettings | undefined => {
-  if (!row) return undefined;
-  return {
-    cookieSecure: row.cookie_secure,
-    cookieSamesite: row.cookie_samesite,
-    cookieDomain: row.cookie_domain,
-    cookieHttponly: row.cookie_httponly,
-    cookieMaxAge: row.cookie_max_age,
-    cookiePath: row.cookie_path,
-    enableCaptcha: row.enable_captcha,
-    captchaSiteKey: row.captcha_site_key,
-  };
-};
-
-const toApiStructure = (row: ApiRow, opts: ApiOptions, rlsModuleRow?: RlsModuleRow | null, authSettingsRow?: AuthSettingsRow | null): ApiStructure => ({
+const toApiStructure = (row: ApiRow, opts: ApiOptions, settings: ResolvedModuleSettings = {}): ApiStructure => ({
   apiId: row.api_id,
   dbname: row.dbname || opts.pg?.database || '',
   anonRole: row.anon_role || 'anon',
   roleName: row.role_name || 'authenticated',
   schema: row.schemas || [],
   apiModules: [],
-  rlsModule: toRlsModule(rlsModuleRow ?? null),
+  rlsModule: settings.rlsModule,
   domains: [],
   databaseId: row.database_id,
   isPublic: row.is_public,
-  authSettings: toAuthSettings(authSettingsRow ?? null),
+  authSettings: settings.authSettings,
+  corsOrigins: settings.corsOrigins,
+  databaseSettings: settings.databaseSettings,
+  pubkeyChallengeSettings: settings.pubkeyChallengeSettings,
+  webauthnSettings: settings.webauthnSettings,
 });
 
 const createAdminStructure = (
@@ -293,7 +274,7 @@ const createAdminStructure = (
 });
 
 // =============================================================================
-// Database Queries
+// Database Queries (API resolution only)
 // =============================================================================
 
 const validateSchemata = async (pool: Pool, schemas: string[]): Promise<string[]> => {
@@ -327,42 +308,6 @@ const queryByApiName = async (
 const queryApiList = async (pool: Pool, isPublic: boolean): Promise<ApiListRow[]> => {
   const result = await pool.query<ApiListRow>(API_LIST_SQL, [isPublic]);
   return result.rows;
-};
-
-const queryRlsModule = async (pool: Pool, apiId: string): Promise<RlsModuleRow | null> => {
-  const result = await pool.query<RlsModuleRow>(RLS_MODULE_SQL, [apiId]);
-  return result.rows[0] ?? null;
-};
-
-/**
- * Load server-relevant auth settings from the tenant DB.
- * Discovers the auth settings table dynamically by joining
- * metaschema_modules_public.sessions_module with metaschema_public.schema
- * (both public schemas). Fails gracefully if modules or table don't exist yet.
- */
-const queryAuthSettings = async (
-  opts: ApiOptions,
-  dbname: string
-): Promise<AuthSettingsRow | null> => {
-  try {
-    const tenantPool = getPgPool({ ...opts.pg, database: dbname });
-
-    // Discover the auth settings schema + table name from public metaschema tables
-    const discovery = await tenantPool.query<{ schema_name: string; table_name: string }>(AUTH_SETTINGS_DISCOVERY_SQL);
-    const resolved = discovery.rows[0];
-    if (!resolved) {
-      log.debug('[auth-settings] No sessions_module row found in tenant DB');
-      return null;
-    }
-
-    // Query the discovered auth settings table
-    const result = await tenantPool.query<AuthSettingsRow>(AUTH_SETTINGS_SQL(resolved.schema_name, resolved.table_name));
-    return result.rows[0] ?? null;
-  } catch (e: any) {
-    // Table/module may not exist yet if the 2FA migration hasn't been applied
-    log.debug(`[auth-settings] Failed to load auth settings: ${e.message}`);
-    return null;
-  }
 };
 
 // =============================================================================
@@ -423,10 +368,10 @@ const resolveApiNameHeader = async (ctx: ResolveContext): Promise<ApiStructure |
     return null;
   }
 
-  const rlsModule = await queryRlsModule(pool, row.api_id);
-  const authSettings = await queryAuthSettings(opts, row.dbname);
-  log.debug(`[api-name-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${rlsModule ? 'found' : 'none'}, authSettings: ${authSettings ? 'found' : 'none'}`);
-  return toApiStructure(row, opts, rlsModule, authSettings);
+  const loaderCtx = buildLoaderContext(pool, opts, row);
+  const settings = await resolveModuleSettings(defaultRegistry, loaderCtx);
+  log.debug(`[api-name-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${settings.rlsModule ? 'found' : 'none'}, authSettings: ${settings.authSettings ? 'found' : 'none'}`);
+  return toApiStructure(row, opts, settings);
 };
 
 const resolveMetaSchemaHeader = (
@@ -449,10 +394,10 @@ const resolveDomainLookup = async (ctx: ResolveContext): Promise<ApiStructure | 
     return null;
   }
 
-  const rlsModule = await queryRlsModule(pool, row.api_id);
-  const authSettings = await queryAuthSettings(opts, row.dbname);
-  log.debug(`[domain-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${rlsModule ? 'found' : 'none'}, authSettings: ${authSettings ? 'found' : 'none'}`);
-  return toApiStructure(row, opts, rlsModule, authSettings);
+  const loaderCtx = buildLoaderContext(pool, opts, row);
+  const settings = await resolveModuleSettings(defaultRegistry, loaderCtx);
+  log.debug(`[domain-lookup] resolved schemas: [${row.schemas?.join(', ')}], rlsModule: ${settings.rlsModule ? 'found' : 'none'}, authSettings: ${settings.authSettings ? 'found' : 'none'}`);
+  return toApiStructure(row, opts, settings);
 };
 
 const buildDevFallbackError = async (

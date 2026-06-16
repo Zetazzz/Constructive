@@ -15,6 +15,7 @@ import {
   generateCreateClientFile,
   generateOrmClientFile,
   generateQueryBuilderFile,
+  generateRealtimeFile,
   generateSelectTypesFile,
 } from './client-generator';
 import {
@@ -74,9 +75,12 @@ export function generateOrm(options: GenerateOrmOptions): GenerateOrmResult {
   const hasCustomMutations = (customOperations?.mutations.length ?? 0) > 0;
   const typeRegistry = customOperations?.typeRegistry;
 
-  // 1. Generate runtime files (client, query-builder, select-types)
+  // 1. Generate runtime files (client, query-builder, select-types, realtime)
   const clientFile = generateOrmClientFile();
   files.push({ path: clientFile.fileName, content: clientFile.content });
+
+  const realtimeFile = generateRealtimeFile();
+  files.push({ path: realtimeFile.fileName, content: realtimeFile.content });
 
   const queryBuilderFile = generateQueryBuilderFile();
   files.push({
@@ -91,7 +95,7 @@ export function generateOrm(options: GenerateOrmOptions): GenerateOrmResult {
   });
 
   // 2. Generate model files
-  const modelFiles = generateAllModelFiles(tables, useSharedTypes);
+  const modelFiles = generateAllModelFiles(tables, useSharedTypes, typeRegistry);
   for (const modelFile of modelFiles) {
     files.push({
       path: `models/${modelFile.fileName}`,
@@ -113,7 +117,7 @@ export function generateOrm(options: GenerateOrmOptions): GenerateOrmResult {
       ...(customOperations?.queries ?? []),
       ...(customOperations?.mutations ?? []),
     ];
-    const usedInputTypes = collectInputTypeNames(allOps);
+    const usedInputTypes = collectInputTypeNames(allOps, tables);
     const usedPayloadTypes = collectPayloadTypeNames(allOps);
 
     // Also include payload types for table CRUD mutations (they reference Edge types)
@@ -173,7 +177,6 @@ export function generateOrm(options: GenerateOrmOptions): GenerateOrmResult {
     tables,
     hasCustomQueries,
     hasCustomMutations,
-    { nodeHttpAdapter: !!options.config.nodeHttpAdapter },
   );
   files.push({ path: indexFile.fileName, content: indexFile.content });
 
@@ -193,6 +196,7 @@ export { generateModelsBarrel, generateTypesBarrel } from './barrel';
 export {
   generateOrmClientFile,
   generateQueryBuilderFile,
+  generateRealtimeFile,
   generateSelectTypesFile,
 } from './client-generator';
 export {

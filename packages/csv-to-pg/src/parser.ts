@@ -15,6 +15,7 @@ interface ParserConfig {
   input?: string;
   debug?: boolean;
   fields: Record<string, unknown>;
+  preserveEmptyStrings?: boolean;
 }
 
 interface CsvOptions {

@@ -3,6 +3,97 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.12.4](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.12.3...graphile-connection-filter@1.12.4) (2026-06-07)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.12.3](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.12.2...graphile-connection-filter@1.12.3) (2026-06-06)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.12.2](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.12.1...graphile-connection-filter@1.12.2) (2026-06-06)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.12.1](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.12.0...graphile-connection-filter@1.12.1) (2026-06-05)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+# [1.12.0](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.11.2...graphile-connection-filter@1.12.0) (2026-05-30)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.11.2](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.11.1...graphile-connection-filter@1.11.2) (2026-05-29)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.11.1](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.11.0...graphile-connection-filter@1.11.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+# [1.11.0](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.10.3...graphile-connection-filter@1.11.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.10.3](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.10.2...graphile-connection-filter@1.10.3) (2026-05-21)
+
+### Bug Fixes
+
+- add type assertions for graphql@16.13.0 stricter types ([0687bd0](https://github.com/constructive-io/constructive/commit/0687bd06a2d5053af587f6f06cc0ae8564e909ba))
+- add type assertions for remaining connection-filter plugins ([06ef28a](https://github.com/constructive-io/constructive/commit/06ef28a8ea8f3d0c816c7af1a3b2f1196694af0c))
+
+## [1.10.2](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.10.1...graphile-connection-filter@1.10.2) (2026-05-20)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.10.1](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.10.0...graphile-connection-filter@1.10.1) (2026-05-17)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+# [1.10.0](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.9.2...graphile-connection-filter@1.10.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.9.2](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.9.1...graphile-connection-filter@1.9.2) (2026-05-12)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.9.1](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.9.0...graphile-connection-filter@1.9.1) (2026-05-11)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+# [1.9.0](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.8.2...graphile-connection-filter@1.9.0) (2026-05-11)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.8.2](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.8.1...graphile-connection-filter@1.8.2) (2026-05-10)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.8.1](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.8.0...graphile-connection-filter@1.8.1) (2026-05-09)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+# [1.8.0](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.7.0...graphile-connection-filter@1.8.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+# [1.7.0](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.6.0...graphile-connection-filter@1.7.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+# [1.6.0](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.5.6...graphile-connection-filter@1.6.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.5.6](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.5.5...graphile-connection-filter@1.5.6) (2026-05-05)
+
+**Note:** Version bump only for package graphile-connection-filter
+
+## [1.5.5](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.5.4...graphile-connection-filter@1.5.5) (2026-04-27)
+
+**Note:** Version bump only for package graphile-connection-filter
+
 ## [1.5.4](https://github.com/constructive-io/constructive/compare/graphile-connection-filter@1.5.3...graphile-connection-filter@1.5.4) (2026-04-20)
 
 **Note:** Version bump only for package graphile-connection-filter

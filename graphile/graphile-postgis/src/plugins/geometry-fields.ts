@@ -361,7 +361,7 @@ function addGeometryCollectionFields(
   GraphQLList: typeof GraphQLListType
 ): FieldsMap {
   const dimInterfaceName = build.inflection.gisDimensionInterfaceName(codecName, hasZ, hasM);
-  const Interface = build.getTypeByName(dimInterfaceName);
+  const Interface = build.getTypeByName(dimInterfaceName) as GraphQLOutputType | undefined;
 
   if (!Interface) {
     return fields;

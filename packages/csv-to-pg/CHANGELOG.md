@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.18.0](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.17.2...csv-to-pg@3.18.0) (2026-05-30)
+
+**Note:** Version bump only for package csv-to-pg
+
+## [3.17.2](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.17.1...csv-to-pg@3.17.2) (2026-05-29)
+
+**Note:** Version bump only for package csv-to-pg
+
+## [3.17.1](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.17.0...csv-to-pg@3.17.1) (2026-05-21)
+
+**Note:** Version bump only for package csv-to-pg
+
+# [3.17.0](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.16.1...csv-to-pg@3.17.0) (2026-05-14)
+
+**Note:** Version bump only for package csv-to-pg
+
+## [3.16.1](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.16.0...csv-to-pg@3.16.1) (2026-05-11)
+
+**Note:** Version bump only for package csv-to-pg
+
+# [3.16.0](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.15.1...csv-to-pg@3.16.0) (2026-05-11)
+
+**Note:** Version bump only for package csv-to-pg
+
+## [3.15.1](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.15.0...csv-to-pg@3.15.1) (2026-05-09)
+
+### Bug Fixes
+
+- **csv-to-pg:** add preserveEmptyStrings option for database export ([873d9ba](https://github.com/constructive-io/constructive/commit/873d9ba8d20e086fe9a1db6a75af249e53293ace))
+- **csv-to-pg:** preserve empty strings in text fields instead of converting to NULL ([dfa3fde](https://github.com/constructive-io/constructive/commit/dfa3fdeb33a9dd38f15e6d0184891265fcd95dbc))
+- default preserveEmptyStrings to true ([aaa3f6c](https://github.com/constructive-io/constructive/commit/aaa3f6c484ab828e6084b5228ac4f298ea310401))
+
+# [3.15.0](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.14.0...csv-to-pg@3.15.0) (2026-05-08)
+
+**Note:** Version bump only for package csv-to-pg
+
+# [3.14.0](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.13.0...csv-to-pg@3.14.0) (2026-05-08)
+
+**Note:** Version bump only for package csv-to-pg
+
+# [3.13.0](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.12.1...csv-to-pg@3.13.0) (2026-05-06)
+
+**Note:** Version bump only for package csv-to-pg
+
 ## [3.12.1](https://github.com/constructive-io/constructive/compare/csv-to-pg@3.12.0...csv-to-pg@3.12.1) (2026-04-20)
 
 **Note:** Version bump only for package csv-to-pg

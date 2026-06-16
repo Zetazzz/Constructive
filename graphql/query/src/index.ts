@@ -40,4 +40,4 @@ export * from './client';
 export * from './introspect';
 
 // Utility functions
-export { stripSmartComments } from './utils';
+export { parseSmartTags, stripSmartComments } from './utils';

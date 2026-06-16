@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.19.0](https://github.com/constructive-io/constructive/compare/pg-ast@2.18.2...pg-ast@2.19.0) (2026-05-30)
+
+**Note:** Version bump only for package pg-ast
+
+## [2.18.2](https://github.com/constructive-io/constructive/compare/pg-ast@2.18.1...pg-ast@2.18.2) (2026-05-29)
+
+**Note:** Version bump only for package pg-ast
+
+## [2.18.1](https://github.com/constructive-io/constructive/compare/pg-ast@2.18.0...pg-ast@2.18.1) (2026-05-21)
+
+**Note:** Version bump only for package pg-ast
+
+# [2.18.0](https://github.com/constructive-io/constructive/compare/pg-ast@2.17.1...pg-ast@2.18.0) (2026-05-14)
+
+**Note:** Version bump only for package pg-ast
+
+## [2.17.1](https://github.com/constructive-io/constructive/compare/pg-ast@2.17.0...pg-ast@2.17.1) (2026-05-11)
+
+**Note:** Version bump only for package pg-ast
+
+# [2.17.0](https://github.com/constructive-io/constructive/compare/pg-ast@2.16.2...pg-ast@2.17.0) (2026-05-11)
+
+**Note:** Version bump only for package pg-ast
+
+## [2.16.2](https://github.com/constructive-io/constructive/compare/pg-ast@2.16.1...pg-ast@2.16.2) (2026-05-09)
+
+**Note:** Version bump only for package pg-ast
+
+## [2.16.1](https://github.com/constructive-io/constructive/compare/pg-ast@2.16.0...pg-ast@2.16.1) (2026-05-09)
+
+**Note:** Version bump only for package pg-ast
+
+# [2.16.0](https://github.com/constructive-io/constructive/compare/pg-ast@2.15.0...pg-ast@2.16.0) (2026-05-08)
+
+**Note:** Version bump only for package pg-ast
+
+# [2.15.0](https://github.com/constructive-io/constructive/compare/pg-ast@2.14.0...pg-ast@2.15.0) (2026-05-08)
+
+**Note:** Version bump only for package pg-ast
+
+# [2.14.0](https://github.com/constructive-io/constructive/compare/pg-ast@2.13.0...pg-ast@2.14.0) (2026-05-06)
+
+**Note:** Version bump only for package pg-ast
+
 # [2.13.0](https://github.com/constructive-io/constructive/compare/pg-ast@2.12.2...pg-ast@2.13.0) (2026-04-18)
 
 **Note:** Version bump only for package pg-ast

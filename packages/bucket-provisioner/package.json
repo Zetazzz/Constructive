@@ -1,6 +1,6 @@
 {
   "name": "@constructive-io/bucket-provisioner",
-  "version": "0.3.0",
+  "version": "0.12.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "S3-compatible bucket provisioning library — create buckets, configure privacy policies, CORS, and access controls",
   "main": "index.js",
@@ -29,7 +29,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1009.0"
+    "@aws-sdk/client-s3": "^3.1052.0",
+    "@constructive-io/s3-utils": "workspace:^"
   },
   "devDependencies": {
     "makage": "^0.3.0"

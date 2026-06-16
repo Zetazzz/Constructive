@@ -121,8 +121,9 @@ export interface QuerySelectionOptions {
   [fieldName: string]:
     | boolean
     | {
-        select: Record<string, boolean>;
+        select: Record<string, boolean | QuerySelectionOptions>;
         variables?: GraphQLVariables;
+        args?: Record<string, unknown>;
       };
 }
 

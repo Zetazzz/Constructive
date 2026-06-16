@@ -47,21 +47,26 @@ CREATE TABLE IF NOT EXISTS metaschema_modules_public.storage_module (
   private_schema_id uuid NOT NULL DEFAULT uuid_nil(),
   buckets_table_id uuid NOT NULL DEFAULT uuid_nil(),
   files_table_id uuid NOT NULL DEFAULT uuid_nil(),
-  upload_requests_table_id uuid NOT NULL DEFAULT uuid_nil(),
   buckets_table_name text NOT NULL DEFAULT 'app_buckets',
   files_table_name text NOT NULL DEFAULT 'app_files',
-  upload_requests_table_name text NOT NULL DEFAULT 'app_upload_requests',
+  scope text NOT NULL DEFAULT 'app',
+  prefix text NOT NULL DEFAULT 'app',
   membership_type int DEFAULT NULL,
   entity_table_id uuid NULL,
   endpoint text NULL,
   public_url_prefix text NULL,
   provider text NULL,
   allowed_origins text[] NULL,
+  restrict_reads boolean NOT NULL DEFAULT false,
+  has_path_shares boolean NOT NULL DEFAULT false,
+  path_shares_table_id uuid NULL DEFAULT NULL,
   upload_url_expiry_seconds integer NULL,
   download_url_expiry_seconds integer NULL,
   default_max_file_size bigint NULL,
   max_filename_length integer NULL,
   cache_ttl_seconds integer NULL,
+  max_bulk_files integer NULL,
+  max_bulk_total_size bigint NULL,
   CONSTRAINT sm_db_fkey FOREIGN KEY (database_id) REFERENCES metaschema_public.database (id) ON DELETE CASCADE
 );
 
@@ -69,6 +74,6 @@ CREATE INDEX IF NOT EXISTS storage_module_database_id_idx
   ON metaschema_modules_public.storage_module (database_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS storage_module_unique_scope
-  ON metaschema_modules_public.storage_module (database_id, COALESCE(membership_type, -1));
+  ON metaschema_modules_public.storage_module (database_id, scope);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON metaschema_modules_public.storage_module TO administrator, authenticated, anonymous;

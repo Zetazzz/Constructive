@@ -9,7 +9,7 @@ import { EmailModel } from './models/email';
 import { PhoneNumberModel } from './models/phoneNumber';
 import { CryptoAddressModel } from './models/cryptoAddress';
 import { WebauthnCredentialModel } from './models/webauthnCredential';
-import { AuditLogModel } from './models/auditLog';
+import { AuditLogAuthModel } from './models/auditLogAuth';
 import { IdentityProviderModel } from './models/identityProvider';
 import { RoleTypeModel } from './models/roleType';
 import { UserConnectedAccountModel } from './models/userConnectedAccount';
@@ -17,11 +17,10 @@ import { UserModel } from './models/user';
 import { createQueryOperations } from './query';
 import { createMutationOperations } from './mutation';
 export type { OrmClientConfig, QueryResult, GraphQLError, GraphQLAdapter } from './client';
-export { GraphQLRequestError } from './client';
+export { GraphQLRequestError, FetchAdapter } from './client';
 export { QueryBuilder } from './query-builder';
 export * from './select-types';
 export * from './models';
-export { NodeHttpAdapter } from './node-fetch';
 export { createQueryOperations } from './query';
 export { createMutationOperations } from './mutation';
 /**
@@ -54,7 +53,7 @@ export function createClient(config: OrmClientConfig) {
     phoneNumber: new PhoneNumberModel(client),
     cryptoAddress: new CryptoAddressModel(client),
     webauthnCredential: new WebauthnCredentialModel(client),
-    auditLog: new AuditLogModel(client),
+    auditLogAuth: new AuditLogAuthModel(client),
     identityProvider: new IdentityProviderModel(client),
     roleType: new RoleTypeModel(client),
     userConnectedAccount: new UserConnectedAccountModel(client),

@@ -10,8 +10,9 @@ const ONE_YEAR = ONE_DAY * 366;
 export const SVC_CACHE_TTL_MS = ONE_YEAR;
 
 // --- Service Cache ---
+// Keep max aligned with PG_CACHE_MAX and GRAPHILE_CACHE_MAX (default: 50)
 export const svcCache = new LRUCache<string, any>({
-  max: 25,
+  max: 50,
   ttl: SVC_CACHE_TTL_MS,
   updateAgeOnGet: true,
   dispose: (_, key) => {

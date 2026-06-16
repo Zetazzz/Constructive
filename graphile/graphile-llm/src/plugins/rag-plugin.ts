@@ -23,7 +23,8 @@
 import { context as grafastContext, lambda, object } from 'grafast';
 import type { GraphileConfig } from 'graphile-config';
 import { extendSchema, gql } from 'graphile-utils';
-import type { EmbedderFunction, ChatFunction, ChunkTableInfo, RagDefaults } from '../types';
+
+import type { ChatFunction, ChunkTableInfo, EmbedderFunction, RagDefaults } from '../types';
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ function parseHasChunksTag(raw: any, codec: any): ChunkTableInfo | null {
     parentFkField: parsed.parentFk || 'parent_id',
     parentPkField: parsed.parentPk || 'id',
     embeddingField: parsed.embeddingField || 'embedding',
-    contentField: parsed.contentField || 'content',
+    contentField: parsed.contentField || 'content'
   };
 }
 
@@ -88,18 +89,18 @@ function parseHasChunksTag(raw: any, codec: any): ChunkTableInfo | null {
  */
 function discoverChunkTables(build: any): ChunkTableInfo[] {
   const chunkTables: ChunkTableInfo[] = [];
-  const pgRegistry = build.pgRegistry;
+  const pgRegistry = build.input?.pgRegistry ?? build.pgRegistry;
   if (!pgRegistry) return chunkTables;
 
   // Scan all codecs for @hasChunks smart tag
-  for (const source of Object.values(pgRegistry.pgResources || {})) {
-    const codec = (source as any)?.codec;
-    if (!codec?.attributes) continue;
+  for (const codec of Object.values(pgRegistry.pgCodecs || {})) {
+    const c = codec as any;
+    if (!c?.attributes) continue;
 
-    const tags = codec.extensions?.tags;
+    const tags = c.extensions?.tags;
     if (!tags?.hasChunks) continue;
 
-    const info = parseHasChunksTag(tags.hasChunks, codec);
+    const info = parseHasChunksTag(tags.hasChunks, c);
     if (info) {
       chunkTables.push(info);
     }
@@ -115,7 +116,7 @@ function buildChunkSearchSql(
   table: ChunkTableInfo,
   vectorString: string,
   limit: number,
-  maxDistance: number | null,
+  maxDistance: number | null
 ): { text: string; values: any[] } {
   const schema = table.chunksSchema;
   const qualifiedTable = schema
@@ -151,7 +152,7 @@ function buildChunkSearchSql(
  * Assemble retrieved chunks into a context string for the LLM prompt.
  */
 function assembleContext(
-  chunks: Array<{ content: string; parent_id: string; distance: number; table_name: string }>,
+  chunks: Array<{ content: string; parent_id: string; distance: number; table_name: string }>
 ): string {
   return chunks
     .map((chunk, i) => `[Source ${i + 1}] (similarity: ${(1 - chunk.distance).toFixed(3)})\n${chunk.content}`)
@@ -166,7 +167,7 @@ function assembleContext(
  * @param ragDefaults - Default configuration for RAG queries
  */
 export function createLlmRagPlugin(
-  ragDefaults: RagDefaults = {},
+  ragDefaults: RagDefaults = {}
 ): GraphileConfig.Plugin {
   // Chunk tables discovered during schema build, used by the plan at execution time
   let chunkTables: ChunkTableInfo[] = [];
@@ -174,23 +175,6 @@ export function createLlmRagPlugin(
   let chatCompleter: ChatFunction | null = null;
 
   const schemaExtension = extendSchema((build) => {
-    // Discover chunk-aware tables from pgRegistry
-    chunkTables = discoverChunkTables(build);
-    embedder = (build as any).llmEmbedder || null;
-    chatCompleter = (build as any).llmChatCompleter || null;
-
-    if (chunkTables.length > 0) {
-      console.log(
-        `[graphile-llm] RAG plugin discovered ${chunkTables.length} chunk-aware table(s): ` +
-        chunkTables.map((t) => t.parentCodecName).join(', ')
-      );
-    } else {
-      console.log(
-        '[graphile-llm] RAG plugin found no @hasChunks tables. ' +
-        'ragQuery will still work if chunks tables are queried directly.'
-      );
-    }
-
     return {
       typeDefs: gql`
         """A source chunk retrieved during RAG context assembly."""
@@ -267,7 +251,7 @@ export function createLlmRagPlugin(
               minSimilarity: $minSimilarity,
               systemPrompt: $systemPrompt,
               withPgClient: $withPgClient,
-              pgSettings: $pgSettings,
+              pgSettings: $pgSettings
             });
 
             return lambda($combined, async (input: any) => {
@@ -277,7 +261,7 @@ export function createLlmRagPlugin(
                 minSimilarity: queryMinSimilarity,
                 systemPrompt: querySystemPrompt,
                 withPgClient,
-                pgSettings,
+                pgSettings
               } = input;
 
               if (!prompt || typeof prompt !== 'string') {
@@ -306,7 +290,7 @@ export function createLlmRagPlugin(
 
               // Step 1: Embed the prompt
               const startEmbed = Date.now();
-              const vector = await embedder(prompt);
+              const { embedding: vector } = await embedder(prompt);
               const embedLatency = Date.now() - startEmbed;
               const vectorString = `[${vector.join(',')}]`;
 
@@ -332,7 +316,7 @@ export function createLlmRagPlugin(
                         content: row.content,
                         parent_id: row.parent_id,
                         distance: parseFloat(row.distance),
-                        table_name: table.parentCodecName,
+                        table_name: table.parentCodecName
                       });
                     }
                   }
@@ -348,7 +332,7 @@ export function createLlmRagPlugin(
                   answer: 'No relevant context found for your query. ' +
                     'Try broadening your search or lowering the minimum similarity threshold.',
                   sources: [],
-                  tokensUsed: null,
+                  tokensUsed: null
                 };
               }
 
@@ -357,28 +341,28 @@ export function createLlmRagPlugin(
 
               // Step 4: Call chat completion
               const startChat = Date.now();
-              const answer = await chatCompleter([
+              const chatResult = await chatCompleter([
                 { role: 'system', content: systemPromptTemplate + contextText },
-                { role: 'user', content: prompt },
+                { role: 'user', content: prompt }
               ], {
-                maxTokens: ragDefaults.maxTokens ?? DEFAULT_MAX_TOKENS,
+                maxTokens: ragDefaults.maxTokens ?? DEFAULT_MAX_TOKENS
               });
               const chatLatency = Date.now() - startChat;
 
               console.log(
-                `[graphile-llm] RAG chat: sources=${topChunks.length}, latency=${chatLatency}ms`
+                `[graphile-llm] RAG chat: sources=${topChunks.length}, tokens=${chatResult.usage.totalTokens}, latency=${chatLatency}ms`
               );
 
               // Step 5: Return response
               return {
-                answer,
+                answer: chatResult.content,
                 sources: topChunks.map((chunk) => ({
                   content: chunk.content,
                   similarity: 1 - chunk.distance,
                   tableName: chunk.table_name,
-                  parentId: chunk.parent_id,
+                  parentId: chunk.parent_id
                 })),
-                tokensUsed: null as number | null, // Deferred to metering system
+                tokensUsed: chatResult.usage.totalTokens
               };
             });
           },
@@ -399,7 +383,7 @@ export function createLlmRagPlugin(
               }
 
               const startTime = Date.now();
-              const vector = await embedder(text);
+              const { embedding: vector } = await embedder(text);
               const latencyMs = Date.now() - startTime;
 
               console.log(
@@ -408,16 +392,16 @@ export function createLlmRagPlugin(
 
               return {
                 vector,
-                dimensions: vector.length,
+                dimensions: vector.length
               };
             });
-          },
-        },
-      },
+          }
+        }
+      }
     };
-  });
+  }, 'LlmRagPlugin');
 
-  return {
+  const plugin: GraphileConfig.Plugin = {
     ...schemaExtension,
     name: 'LlmRagPlugin',
     version: '0.1.0',
@@ -427,7 +411,37 @@ export function createLlmRagPlugin(
     after: [
       'LlmModulePlugin',
       'UnifiedSearchPlugin',
-      'VectorCodecPlugin',
-    ],
+      'VectorCodecPlugin'
+    ]
   };
+
+  // Wrap the build hook to also discover chunk tables.
+  // The build hook runs after all init hooks (including smart tag injection),
+  // so @hasChunks tags are guaranteed to be visible.
+  const existingBuildHook = plugin.schema!.hooks!.build as (build: any) => any;
+  (plugin.schema!.hooks!.build as any) = (build: any) => {
+    // Run extendSchema's build hook first (sets up graphql ref)
+    build = existingBuildHook(build) || build;
+
+    // Discover chunk tables — runs during build phase when all smart tags are applied
+    chunkTables = discoverChunkTables(build);
+    embedder = (build as any).llmEmbedder || null;
+    chatCompleter = (build as any).llmChatCompleter || null;
+
+    if (chunkTables.length > 0) {
+      console.log(
+        `[graphile-llm] RAG plugin discovered ${chunkTables.length} chunk-aware table(s): ` +
+        chunkTables.map((t) => t.parentCodecName).join(', ')
+      );
+    } else {
+      console.log(
+        '[graphile-llm] RAG plugin found no @hasChunks tables. ' +
+        'ragQuery will still work if chunks tables are queried directly.'
+      );
+    }
+
+    return build;
+  };
+
+  return plugin;
 }

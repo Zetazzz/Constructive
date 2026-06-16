@@ -3,6 +3,218 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.22.8](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.7...graphile-schema@1.22.8) (2026-06-14)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.22.7](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.6...graphile-schema@1.22.7) (2026-06-14)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.22.6](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.5...graphile-schema@1.22.6) (2026-06-12)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.22.5](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.4...graphile-schema@1.22.5) (2026-06-07)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.22.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.3...graphile-schema@1.22.4) (2026-06-06)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.22.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.2...graphile-schema@1.22.3) (2026-06-06)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.22.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.1...graphile-schema@1.22.2) (2026-06-05)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.22.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.22.0...graphile-schema@1.22.1) (2026-05-31)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.22.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.21.3...graphile-schema@1.22.0) (2026-05-30)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.21.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.21.2...graphile-schema@1.21.3) (2026-05-29)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.21.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.21.1...graphile-schema@1.21.2) (2026-05-29)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.21.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.21.0...graphile-schema@1.21.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.21.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.20.6...graphile-schema@1.21.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.20.6](https://github.com/constructive-io/constructive/compare/graphile-schema@1.20.5...graphile-schema@1.20.6) (2026-05-21)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.20.5](https://github.com/constructive-io/constructive/compare/graphile-schema@1.20.4...graphile-schema@1.20.5) (2026-05-20)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.20.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.20.3...graphile-schema@1.20.4) (2026-05-19)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.20.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.20.2...graphile-schema@1.20.3) (2026-05-17)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.20.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.20.1...graphile-schema@1.20.2) (2026-05-15)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.20.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.20.0...graphile-schema@1.20.1) (2026-05-14)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.20.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.19.6...graphile-schema@1.20.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.19.6](https://github.com/constructive-io/constructive/compare/graphile-schema@1.19.5...graphile-schema@1.19.6) (2026-05-14)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.19.5](https://github.com/constructive-io/constructive/compare/graphile-schema@1.19.4...graphile-schema@1.19.5) (2026-05-14)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.19.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.19.3...graphile-schema@1.19.4) (2026-05-13)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.19.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.19.2...graphile-schema@1.19.3) (2026-05-12)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.19.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.19.1...graphile-schema@1.19.2) (2026-05-11)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.19.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.19.0...graphile-schema@1.19.1) (2026-05-11)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.19.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.6...graphile-schema@1.19.0) (2026-05-11)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.18.6](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.5...graphile-schema@1.18.6) (2026-05-10)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.18.5](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.4...graphile-schema@1.18.5) (2026-05-10)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.18.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.3...graphile-schema@1.18.4) (2026-05-09)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.18.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.2...graphile-schema@1.18.3) (2026-05-09)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.18.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.1...graphile-schema@1.18.2) (2026-05-09)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.18.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.18.0...graphile-schema@1.18.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.18.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.17.2...graphile-schema@1.18.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.17.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.17.1...graphile-schema@1.17.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.17.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.17.0...graphile-schema@1.17.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.17.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.4...graphile-schema@1.17.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.3...graphile-schema@1.16.4) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.2...graphile-schema@1.16.3) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.1...graphile-schema@1.16.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.16.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.16.0...graphile-schema@1.16.1) (2026-05-07)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.16.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.15.4...graphile-schema@1.16.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.15.4](https://github.com/constructive-io/constructive/compare/graphile-schema@1.15.3...graphile-schema@1.15.4) (2026-05-06)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.15.3](https://github.com/constructive-io/constructive/compare/graphile-schema@1.15.2...graphile-schema@1.15.3) (2026-05-05)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.15.2](https://github.com/constructive-io/constructive/compare/graphile-schema@1.15.1...graphile-schema@1.15.2) (2026-05-05)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.15.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.15.0...graphile-schema@1.15.1) (2026-05-05)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.15.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.14.1...graphile-schema@1.15.0) (2026-05-04)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.14.1](https://github.com/constructive-io/constructive/compare/graphile-schema@1.14.0...graphile-schema@1.14.1) (2026-05-03)
+
+**Note:** Version bump only for package graphile-schema
+
+# [1.14.0](https://github.com/constructive-io/constructive/compare/graphile-schema@1.13.12...graphile-schema@1.14.0) (2026-04-30)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.13.12](https://github.com/constructive-io/constructive/compare/graphile-schema@1.13.11...graphile-schema@1.13.12) (2026-04-29)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.13.11](https://github.com/constructive-io/constructive/compare/graphile-schema@1.13.10...graphile-schema@1.13.11) (2026-04-28)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.13.10](https://github.com/constructive-io/constructive/compare/graphile-schema@1.13.9...graphile-schema@1.13.10) (2026-04-27)
+
+**Note:** Version bump only for package graphile-schema
+
+## [1.13.9](https://github.com/constructive-io/constructive/compare/graphile-schema@1.13.8...graphile-schema@1.13.9) (2026-04-27)
+
+**Note:** Version bump only for package graphile-schema
+
 ## [1.13.8](https://github.com/constructive-io/constructive/compare/graphile-schema@1.13.7...graphile-schema@1.13.8) (2026-04-20)
 
 **Note:** Version bump only for package graphile-schema

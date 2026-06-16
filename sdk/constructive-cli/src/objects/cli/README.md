@@ -27,29 +27,13 @@ csdk auth set-token <your-token>
 | `auth` | Manage authentication tokens |
 | `config` | Manage config key-value store (per-context) |
 | `get-all-record` | getAllRecord CRUD operations |
-| `object` | object CRUD operations |
 | `ref` | ref CRUD operations |
 | `store` | store CRUD operations |
+| `object` | object CRUD operations |
 | `commit` | commit CRUD operations |
-| `rev-parse` | revParse |
-| `get-all-objects-from-root` | Reads and enables pagination through a set of `Object`. |
-| `get-path-objects-from-root` | Reads and enables pagination through a set of `Object`. |
-| `get-object-at-path` | getObjectAtPath |
-| `freeze-objects` | freezeObjects |
 | `init-empty-repo` | initEmptyRepo |
-| `remove-node-at-path` | removeNodeAtPath |
 | `set-data-at-path` | setDataAtPath |
-| `set-props-and-commit` | setPropsAndCommit |
 | `insert-node-at-path` | insertNodeAtPath |
-| `update-node-at-path` | updateNodeAtPath |
-| `set-and-commit` | setAndCommit |
-| `request-upload-url` | Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl. |
-| `confirm-upload` | Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'. |
 | `provision-bucket` | Provision an S3 bucket for a logical bucket in the database.
 Reads the bucket config via RLS, then creates and configures
 the S3 bucket with the appropriate privacy policies, CORS rules,
@@ -118,35 +102,6 @@ CRUD operations for GetAllRecord records.
 
 **Required create fields:** `path`, `data`
 
-### `object`
-
-CRUD operations for Object records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all object records |
-| `find-first` | Find first matching object record |
-| `get` | Get a object by id |
-| `create` | Create a new object |
-| `update` | Update an existing object |
-| `delete` | Delete a object |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `hashUuid` | UUID |
-| `id` | UUID |
-| `databaseId` | UUID |
-| `kids` | UUID |
-| `ktree` | String |
-| `data` | JSON |
-| `frzn` | Boolean |
-| `createdAt` | Datetime |
-
-**Required create fields:** `databaseId`
-**Optional create fields (backend defaults):** `kids`, `ktree`, `data`, `frzn`
-
 ### `ref`
 
 CRUD operations for Ref records.
@@ -199,6 +154,33 @@ CRUD operations for Store records.
 **Required create fields:** `name`, `databaseId`
 **Optional create fields (backend defaults):** `hash`
 
+### `object`
+
+CRUD operations for Object records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all object records |
+| `find-first` | Find first matching object record |
+| `get` | Get a object by id |
+| `create` | Create a new object |
+| `update` | Update an existing object |
+| `delete` | Delete a object |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `databaseId` | UUID |
+| `kids` | UUID |
+| `ktree` | String |
+| `data` | JSON |
+| `createdAt` | Datetime |
+
+**Required create fields:** `databaseId`
+**Optional create fields (backend defaults):** `kids`, `ktree`, `data`
+
 ### `commit`
 
 CRUD operations for Commit records.
@@ -231,77 +213,6 @@ CRUD operations for Commit records.
 
 ## Custom Operations
 
-### `rev-parse`
-
-revParse
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--dbId` | UUID |
-  | `--storeId` | UUID |
-  | `--refname` | String |
-
-### `get-all-objects-from-root`
-
-Reads and enables pagination through a set of `Object`.
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--databaseId` | UUID |
-  | `--id` | UUID |
-  | `--first` | Int |
-  | `--offset` | Int |
-  | `--after` | Cursor |
-
-### `get-path-objects-from-root`
-
-Reads and enables pagination through a set of `Object`.
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--databaseId` | UUID |
-  | `--id` | UUID |
-  | `--path` | String |
-  | `--first` | Int |
-  | `--offset` | Int |
-  | `--after` | Cursor |
-
-### `get-object-at-path`
-
-getObjectAtPath
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--dbId` | UUID |
-  | `--storeId` | UUID |
-  | `--path` | String |
-  | `--refname` | String |
-
-### `freeze-objects`
-
-freezeObjects
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.clientMutationId` | String |
-  | `--input.databaseId` | UUID |
-  | `--input.id` | UUID |
-
 ### `init-empty-repo`
 
 initEmptyRepo
@@ -312,22 +223,8 @@ initEmptyRepo
   | Argument | Type |
   |----------|------|
   | `--input.clientMutationId` | String |
-  | `--input.dbId` | UUID |
+  | `--input.sId` | UUID |
   | `--input.storeId` | UUID |
-
-### `remove-node-at-path`
-
-removeNodeAtPath
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.clientMutationId` | String |
-  | `--input.dbId` | UUID |
-  | `--input.root` | UUID |
-  | `--input.path` | String |
 
 ### `set-data-at-path`
 
@@ -339,24 +236,8 @@ setDataAtPath
   | Argument | Type |
   |----------|------|
   | `--input.clientMutationId` | String |
-  | `--input.dbId` | UUID |
+  | `--input.sId` | UUID |
   | `--input.root` | UUID |
-  | `--input.path` | String |
-  | `--input.data` | JSON |
-
-### `set-props-and-commit`
-
-setPropsAndCommit
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.clientMutationId` | String |
-  | `--input.dbId` | UUID |
-  | `--input.storeId` | UUID |
-  | `--input.refname` | String |
   | `--input.path` | String |
   | `--input.data` | JSON |
 
@@ -370,79 +251,12 @@ insertNodeAtPath
   | Argument | Type |
   |----------|------|
   | `--input.clientMutationId` | String |
-  | `--input.dbId` | UUID |
+  | `--input.sId` | UUID |
   | `--input.root` | UUID |
   | `--input.path` | String |
   | `--input.data` | JSON |
   | `--input.kids` | UUID |
   | `--input.ktree` | String |
-
-### `update-node-at-path`
-
-updateNodeAtPath
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.clientMutationId` | String |
-  | `--input.dbId` | UUID |
-  | `--input.root` | UUID |
-  | `--input.path` | String |
-  | `--input.data` | JSON |
-  | `--input.kids` | UUID |
-  | `--input.ktree` | String |
-
-### `set-and-commit`
-
-setAndCommit
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.clientMutationId` | String |
-  | `--input.dbId` | UUID |
-  | `--input.storeId` | UUID |
-  | `--input.refname` | String |
-  | `--input.path` | String |
-  | `--input.data` | JSON |
-  | `--input.kids` | UUID |
-  | `--input.ktree` | String |
-
-### `request-upload-url`
-
-Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.bucketKey` | String (required) |
-  | `--input.ownerId` | UUID |
-  | `--input.contentHash` | String (required) |
-  | `--input.contentType` | String (required) |
-  | `--input.size` | Int (required) |
-  | `--input.filename` | String |
-
-### `confirm-upload`
-
-Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.fileId` | UUID (required) |
 
 ### `provision-bucket`
 

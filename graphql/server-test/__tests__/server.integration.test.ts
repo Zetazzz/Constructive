@@ -12,9 +12,9 @@ import type supertest from 'supertest';
 
 jest.setTimeout(30000);
 
-const seedRoot = path.join(__dirname, '..', '__fixtures__', 'seed');
-const sql = (seedDir: string, file: string) =>
-  path.join(seedRoot, seedDir, file);
+const sharedSeedRoot = path.join(__dirname, '..', '..', '..', '__fixtures__', 'seed');
+const shared = (...segments: string[]) =>
+  path.join(sharedSeedRoot, ...segments);
 const schemas = ['simple-pets-public', 'simple-pets-pets-public'];
 const servicesDatabaseId = '80a2eaaf-f77e-4bfe-8506-df929ef1b8d9';
 const metaSchemas = [
@@ -98,11 +98,22 @@ const scenarios: Scenario[] = [
   },
 ];
 
-const seedFilesFor = (seedDir: Scenario['seedDir']) => [
-  sql(seedDir, 'setup.sql'),
-  sql(seedDir, 'schema.sql'),
-  sql(seedDir, 'test-data.sql'),
-];
+const seedFilesFor = (seedDir: Scenario['seedDir']) => {
+  if (seedDir === 'simple-seed-services') {
+    return [
+      shared('services', 'setup.sql'),
+      shared('app-schemas', 'simple-pets', 'schema.sql'),
+      shared('services', 'test-data.sql'),
+      shared('app-schemas', 'simple-pets', 'test-data.sql'),
+    ];
+  }
+  // simple-seed: base setup + shared app-schemas
+  return [
+    shared('base', 'setup.sql'),
+    shared('app-schemas', 'simple-pets', 'schema.sql'),
+    shared('app-schemas', 'simple-pets', 'test-data.sql'),
+  ];
+};
 
 const buildSeedAdapters = (scenario: Scenario) => [
   seed.sqlfile(seedFilesFor(scenario.seedDir)),

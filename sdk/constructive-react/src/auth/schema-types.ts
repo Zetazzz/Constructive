@@ -5,7 +5,7 @@
  */
 
 import type {
-  AuditLog,
+  AuditLogAuth,
   CryptoAddress,
   Email,
   IdentityProvider,
@@ -134,11 +134,13 @@ export type WebauthnCredentialOrderBy =
   | 'CREATED_AT_DESC'
   | 'UPDATED_AT_ASC'
   | 'UPDATED_AT_DESC';
-/** Methods to use when ordering `AuditLog`. */
-export type AuditLogOrderBy =
+/** Methods to use when ordering `AuditLogAuth`. */
+export type AuditLogAuthOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
   | 'PRIMARY_KEY_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC'
   | 'ID_ASC'
   | 'ID_DESC'
   | 'EVENT_ASC'
@@ -152,9 +154,7 @@ export type AuditLogOrderBy =
   | 'IP_ADDRESS_ASC'
   | 'IP_ADDRESS_DESC'
   | 'SUCCESS_ASC'
-  | 'SUCCESS_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC';
+  | 'SUCCESS_DESC';
 /** Methods to use when ordering `IdentityProvider`. */
 export type IdentityProviderOrderBy =
   | 'NATURAL'
@@ -369,10 +369,10 @@ export interface UserFilter {
   ownedWebauthnCredentials?: UserToManyWebauthnCredentialFilter;
   /** `ownedWebauthnCredentials` exist. */
   ownedWebauthnCredentialsExist?: boolean;
-  /** Filter by the object’s `auditLogsByActorId` relation. */
-  auditLogsByActorId?: UserToManyAuditLogFilter;
-  /** `auditLogsByActorId` exist. */
-  auditLogsByActorIdExist?: boolean;
+  /** Filter by the object’s `auditLogAuthsByActorId` relation. */
+  auditLogAuthsByActorId?: UserToManyAuditLogAuthFilter;
+  /** `auditLogAuthsByActorId` exist. */
+  auditLogAuthsByActorIdExist?: boolean;
   /** TSV search on the `search_tsv` column. */
   tsvSearchTsv?: string;
   /** TRGM search on the `display_name` column. */
@@ -669,17 +669,19 @@ export interface Base64EncodedBinaryFilter {
   /** Not included in the specified list. */
   notIn?: Base64EncodedBinary[];
 }
-/** A filter to be used against many `AuditLog` object types. All fields are combined with a logical ‘and.’ */
-export interface UserToManyAuditLogFilter {
+/** A filter to be used against many `AuditLogAuth` object types. All fields are combined with a logical ‘and.’ */
+export interface UserToManyAuditLogAuthFilter {
   /** Filters to entities where at least one related entity matches. */
-  some?: AuditLogFilter;
+  some?: AuditLogAuthFilter;
   /** Filters to entities where every related entity matches. */
-  every?: AuditLogFilter;
+  every?: AuditLogAuthFilter;
   /** Filters to entities where no related entity matches. */
-  none?: AuditLogFilter;
+  none?: AuditLogAuthFilter;
 }
-/** A filter to be used against `AuditLog` object types. All fields are combined with a logical ‘and.’ */
-export interface AuditLogFilter {
+/** A filter to be used against `AuditLogAuth` object types. All fields are combined with a logical ‘and.’ */
+export interface AuditLogAuthFilter {
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
   /** Filter by the object’s `event` field. */
@@ -694,14 +696,12 @@ export interface AuditLogFilter {
   ipAddress?: InternetAddressFilter;
   /** Filter by the object’s `success` field. */
   success?: BooleanFilter;
-  /** Filter by the object’s `createdAt` field. */
-  createdAt?: DatetimeFilter;
   /** Checks for all expressions in this list. */
-  and?: AuditLogFilter[];
+  and?: AuditLogAuthFilter[];
   /** Checks for any expressions in this list. */
-  or?: AuditLogFilter[];
+  or?: AuditLogAuthFilter[];
   /** Negates the expression. */
-  not?: AuditLogFilter;
+  not?: AuditLogAuthFilter;
   /** Filter by the object’s `actor` relation. */
   actor?: UserFilter;
   /** A related `actor` exists. */
@@ -889,6 +889,22 @@ export interface SignInCrossOriginInput {
   token?: string;
   credentialKind?: string;
 }
+export interface SignInSmsOtpInput {
+  clientMutationId?: string;
+  phone?: string;
+  code?: string;
+  credentialKind?: string;
+  rememberMe?: boolean;
+  deviceToken?: string;
+}
+export interface SignUpSmsInput {
+  clientMutationId?: string;
+  phone?: string;
+  code?: string;
+  credentialKind?: string;
+  rememberMe?: boolean;
+  deviceToken?: string;
+}
 export interface SignUpInput {
   clientMutationId?: string;
   email?: string;
@@ -896,13 +912,7 @@ export interface SignUpInput {
   rememberMe?: boolean;
   credentialKind?: string;
   csrfToken?: string;
-}
-export interface RequestCrossOriginTokenInput {
-  clientMutationId?: string;
-  email?: string;
-  password?: string;
-  origin?: ConstructiveInternalTypeOrigin;
-  rememberMe?: boolean;
+  deviceToken?: string;
 }
 export interface SignInInput {
   clientMutationId?: string;
@@ -912,6 +922,12 @@ export interface SignInInput {
   credentialKind?: string;
   csrfToken?: string;
   deviceToken?: string;
+}
+export interface LinkIdentityInput {
+  clientMutationId?: string;
+  service: string;
+  identifier: string;
+  details?: unknown;
 }
 export interface ExtendTokenExpiresInput {
   clientMutationId?: string;
@@ -943,6 +959,13 @@ export interface CreateApiKeyInput {
   mfaLevel?: string;
   expiresIn?: IntervalInput;
 }
+export interface RequestCrossOriginTokenInput {
+  clientMutationId?: string;
+  email?: string;
+  password?: string;
+  origin?: ConstructiveInternalTypeOrigin;
+  rememberMe?: boolean;
+}
 export interface ForgotPasswordInput {
   clientMutationId?: string;
   email?: ConstructiveInternalTypeEmail;
@@ -973,6 +996,22 @@ export interface CreateRoleTypeInput {
 export interface RoleTypeInput {
   id: number;
   name: string;
+}
+export interface CreateUserConnectedAccountInput {
+  clientMutationId?: string;
+  /** The `UserConnectedAccount` to be created by this mutation. */
+  userConnectedAccount: UserConnectedAccountInput;
+}
+/** An input for mutations affecting `UserConnectedAccount` */
+export interface UserConnectedAccountInput {
+  id?: string;
+  ownerId?: string;
+  service?: string;
+  identifier?: string;
+  details?: unknown;
+  isVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 export interface CreateCryptoAddressInput {
   clientMutationId?: string;
@@ -1016,29 +1055,15 @@ export interface PhoneNumberInput {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface CreateUserConnectedAccountInput {
+export interface CreateAuditLogAuthInput {
   clientMutationId?: string;
-  /** The `UserConnectedAccount` to be created by this mutation. */
-  userConnectedAccount: UserConnectedAccountInput;
+  /** The `AuditLogAuth` to be created by this mutation. */
+  auditLogAuth: AuditLogAuthInput;
 }
-/** An input for mutations affecting `UserConnectedAccount` */
-export interface UserConnectedAccountInput {
-  id?: string;
-  ownerId?: string;
-  service?: string;
-  identifier?: string;
-  details?: unknown;
-  isVerified?: boolean;
+/** An input for mutations affecting `AuditLogAuth` */
+export interface AuditLogAuthInput {
   createdAt?: string;
-  updatedAt?: string;
-}
-export interface CreateAuditLogInput {
-  clientMutationId?: string;
-  /** The `AuditLog` to be created by this mutation. */
-  auditLog: AuditLogInput;
-}
-/** An input for mutations affecting `AuditLog` */
-export interface AuditLogInput {
+  /** Unique identifier for each audit event (uuidv7 provides temporal ordering) */
   id?: string;
   /** Type of authentication event (e.g. sign_in, sign_up, password_change, verify_email) */
   event: string;
@@ -1052,8 +1077,6 @@ export interface AuditLogInput {
   ipAddress?: string;
   /** Whether the authentication attempt succeeded */
   success: boolean;
-  /** Timestamp when the audit event was recorded */
-  createdAt?: string;
 }
 export interface CreateEmailInput {
   clientMutationId?: string;
@@ -1177,14 +1200,18 @@ export interface PhoneNumberPatch {
   createdAt?: string;
   updatedAt?: string;
 }
-export interface UpdateAuditLogInput {
+export interface UpdateAuditLogAuthInput {
   clientMutationId?: string;
+  createdAt: string;
+  /** Unique identifier for each audit event (uuidv7 provides temporal ordering) */
   id: string;
-  /** An object where the defined keys will be set on the `AuditLog` being updated. */
-  auditLogPatch: AuditLogPatch;
+  /** An object where the defined keys will be set on the `AuditLogAuth` being updated. */
+  auditLogAuthPatch: AuditLogAuthPatch;
 }
-/** Represents an update to a `AuditLog`. Fields that are set will be updated. */
-export interface AuditLogPatch {
+/** Represents an update to a `AuditLogAuth`. Fields that are set will be updated. */
+export interface AuditLogAuthPatch {
+  createdAt?: string;
+  /** Unique identifier for each audit event (uuidv7 provides temporal ordering) */
   id?: string;
   /** Type of authentication event (e.g. sign_in, sign_up, password_change, verify_email) */
   event?: string;
@@ -1198,8 +1225,6 @@ export interface AuditLogPatch {
   ipAddress?: string;
   /** Whether the authentication attempt succeeded */
   success?: boolean;
-  /** Timestamp when the audit event was recorded */
-  createdAt?: string;
 }
 export interface UpdateEmailInput {
   clientMutationId?: string;
@@ -1285,8 +1310,10 @@ export interface DeletePhoneNumberInput {
   clientMutationId?: string;
   id: string;
 }
-export interface DeleteAuditLogInput {
+export interface DeleteAuditLogAuthInput {
   clientMutationId?: string;
+  createdAt: string;
+  /** Unique identifier for each audit event (uuidv7 provides temporal ordering) */
   id: string;
 }
 export interface DeleteEmailInput {
@@ -1300,29 +1327,6 @@ export interface DeleteUserInput {
 export interface DeleteWebauthnCredentialInput {
   clientMutationId?: string;
   id: string;
-}
-export interface RequestUploadUrlInput {
-  /** Bucket key (e.g., "public", "private") */
-  bucketKey: string;
-  /**
-   * Owner entity ID for entity-scoped uploads.
-   * Omit for app-level (database-wide) storage.
-   * When provided, resolves the storage module for the entity type
-   * that owns this entity instance (e.g., a data room ID, team ID).
-   */
-  ownerId?: string;
-  /** SHA-256 content hash computed by the client (hex-encoded, 64 chars) */
-  contentHash: string;
-  /** MIME type of the file (e.g., "image/png") */
-  contentType: string;
-  /** File size in bytes */
-  size: number;
-  /** Original filename (optional, for display and Content-Disposition) */
-  filename?: string;
-}
-export interface ConfirmUploadInput {
-  /** The file ID returned by requestUploadUrl */
-  fileId: string;
 }
 export interface ProvisionBucketInput {
   /** The logical bucket key (e.g., "public", "private") */
@@ -1347,6 +1351,13 @@ export interface RoleTypeConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
+/** A connection to a list of `UserConnectedAccount` values. */
+export interface UserConnectedAccountConnection {
+  nodes: UserConnectedAccount[];
+  edges: UserConnectedAccountEdge[];
+  pageInfo: PageInfo;
+  totalCount: number;
+}
 /** A connection to a list of `CryptoAddress` values. */
 export interface CryptoAddressConnection {
   nodes: CryptoAddress[];
@@ -1361,17 +1372,10 @@ export interface PhoneNumberConnection {
   pageInfo: PageInfo;
   totalCount: number;
 }
-/** A connection to a list of `UserConnectedAccount` values. */
-export interface UserConnectedAccountConnection {
-  nodes: UserConnectedAccount[];
-  edges: UserConnectedAccountEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-/** A connection to a list of `AuditLog` values. */
-export interface AuditLogConnection {
-  nodes: AuditLog[];
-  edges: AuditLogEdge[];
+/** A connection to a list of `AuditLogAuth` values. */
+export interface AuditLogAuthConnection {
+  nodes: AuditLogAuth[];
+  edges: AuditLogAuthEdge[];
   pageInfo: PageInfo;
   totalCount: number;
 }
@@ -1454,17 +1458,25 @@ export interface SignInCrossOriginPayload {
   clientMutationId?: string | null;
   result?: SignInCrossOriginRecord | null;
 }
+export interface SignInSmsOtpPayload {
+  clientMutationId?: string | null;
+  result?: SignInSmsOtpRecord | null;
+}
+export interface SignUpSmsPayload {
+  clientMutationId?: string | null;
+  result?: SignUpSmsRecord | null;
+}
 export interface SignUpPayload {
   clientMutationId?: string | null;
   result?: SignUpRecord | null;
 }
-export interface RequestCrossOriginTokenPayload {
-  clientMutationId?: string | null;
-  result?: string | null;
-}
 export interface SignInPayload {
   clientMutationId?: string | null;
   result?: SignInRecord | null;
+}
+export interface LinkIdentityPayload {
+  clientMutationId?: string | null;
+  result?: boolean | null;
 }
 export interface ExtendTokenExpiresPayload {
   clientMutationId?: string | null;
@@ -1473,6 +1485,10 @@ export interface ExtendTokenExpiresPayload {
 export interface CreateApiKeyPayload {
   clientMutationId?: string | null;
   result?: CreateApiKeyRecord | null;
+}
+export interface RequestCrossOriginTokenPayload {
+  clientMutationId?: string | null;
+  result?: string | null;
 }
 export interface ForgotPasswordPayload {
   clientMutationId?: string | null;
@@ -1492,6 +1508,11 @@ export interface CreateRoleTypePayload {
   roleType?: RoleType | null;
   roleTypeEdge?: RoleTypeEdge | null;
 }
+export interface CreateUserConnectedAccountPayload {
+  clientMutationId?: string | null;
+  /** The `UserConnectedAccount` that was created by this mutation. */
+  userConnectedAccount?: UserConnectedAccount | null;
+}
 export interface CreateCryptoAddressPayload {
   clientMutationId?: string | null;
   /** The `CryptoAddress` that was created by this mutation. */
@@ -1504,16 +1525,11 @@ export interface CreatePhoneNumberPayload {
   phoneNumber?: PhoneNumber | null;
   phoneNumberEdge?: PhoneNumberEdge | null;
 }
-export interface CreateUserConnectedAccountPayload {
+export interface CreateAuditLogAuthPayload {
   clientMutationId?: string | null;
-  /** The `UserConnectedAccount` that was created by this mutation. */
-  userConnectedAccount?: UserConnectedAccount | null;
-}
-export interface CreateAuditLogPayload {
-  clientMutationId?: string | null;
-  /** The `AuditLog` that was created by this mutation. */
-  auditLog?: AuditLog | null;
-  auditLogEdge?: AuditLogEdge | null;
+  /** The `AuditLogAuth` that was created by this mutation. */
+  auditLogAuth?: AuditLogAuth | null;
+  auditLogAuthEdge?: AuditLogAuthEdge | null;
 }
 export interface CreateEmailPayload {
   clientMutationId?: string | null;
@@ -1551,11 +1567,11 @@ export interface UpdatePhoneNumberPayload {
   phoneNumber?: PhoneNumber | null;
   phoneNumberEdge?: PhoneNumberEdge | null;
 }
-export interface UpdateAuditLogPayload {
+export interface UpdateAuditLogAuthPayload {
   clientMutationId?: string | null;
-  /** The `AuditLog` that was updated by this mutation. */
-  auditLog?: AuditLog | null;
-  auditLogEdge?: AuditLogEdge | null;
+  /** The `AuditLogAuth` that was updated by this mutation. */
+  auditLogAuth?: AuditLogAuth | null;
+  auditLogAuthEdge?: AuditLogAuthEdge | null;
 }
 export interface UpdateEmailPayload {
   clientMutationId?: string | null;
@@ -1593,11 +1609,11 @@ export interface DeletePhoneNumberPayload {
   phoneNumber?: PhoneNumber | null;
   phoneNumberEdge?: PhoneNumberEdge | null;
 }
-export interface DeleteAuditLogPayload {
+export interface DeleteAuditLogAuthPayload {
   clientMutationId?: string | null;
-  /** The `AuditLog` that was deleted by this mutation. */
-  auditLog?: AuditLog | null;
-  auditLogEdge?: AuditLogEdge | null;
+  /** The `AuditLogAuth` that was deleted by this mutation. */
+  auditLogAuth?: AuditLogAuth | null;
+  auditLogAuthEdge?: AuditLogAuthEdge | null;
 }
 export interface DeleteEmailPayload {
   clientMutationId?: string | null;
@@ -1616,26 +1632,6 @@ export interface DeleteWebauthnCredentialPayload {
   /** The `WebauthnCredential` that was deleted by this mutation. */
   webauthnCredential?: WebauthnCredential | null;
   webauthnCredentialEdge?: WebauthnCredentialEdge | null;
-}
-export interface RequestUploadUrlPayload {
-  /** Presigned PUT URL (null if file was deduplicated) */
-  uploadUrl?: string | null;
-  /** The file ID (existing if deduplicated, new if fresh upload) */
-  fileId: string;
-  /** The S3 object key */
-  key: string;
-  /** Whether this file was deduplicated (already exists with same hash) */
-  deduplicated: boolean;
-  /** Presigned URL expiry time (null if deduplicated) */
-  expiresAt?: string | null;
-}
-export interface ConfirmUploadPayload {
-  /** The confirmed file ID */
-  fileId: string;
-  /** New file status */
-  status: string;
-  /** Whether confirmation succeeded */
-  success: boolean;
 }
 export interface ProvisionBucketPayload {
   /** Whether provisioning succeeded */
@@ -1674,6 +1670,12 @@ export interface RoleTypeEdge {
   /** The `RoleType` at the end of the edge. */
   node?: RoleType | null;
 }
+/** A `UserConnectedAccount` edge in the connection. */
+export interface UserConnectedAccountEdge {
+  cursor?: string | null;
+  /** The `UserConnectedAccount` at the end of the edge. */
+  node?: UserConnectedAccount | null;
+}
 /** A `CryptoAddress` edge in the connection. */
 export interface CryptoAddressEdge {
   cursor?: string | null;
@@ -1686,17 +1688,11 @@ export interface PhoneNumberEdge {
   /** The `PhoneNumber` at the end of the edge. */
   node?: PhoneNumber | null;
 }
-/** A `UserConnectedAccount` edge in the connection. */
-export interface UserConnectedAccountEdge {
+/** A `AuditLogAuth` edge in the connection. */
+export interface AuditLogAuthEdge {
   cursor?: string | null;
-  /** The `UserConnectedAccount` at the end of the edge. */
-  node?: UserConnectedAccount | null;
-}
-/** A `AuditLog` edge in the connection. */
-export interface AuditLogEdge {
-  cursor?: string | null;
-  /** The `AuditLog` at the end of the edge. */
-  node?: AuditLog | null;
+  /** The `AuditLogAuth` at the end of the edge. */
+  node?: AuditLogAuth | null;
 }
 /** A `Email` edge in the connection. */
 export interface EmailEdge {
@@ -1737,6 +1733,16 @@ export interface SignInCrossOriginRecord {
   accessTokenExpiresAt?: string | null;
   isVerified?: boolean | null;
   totpEnabled?: boolean | null;
+}
+export interface SignInSmsOtpRecord {
+  userId?: string | null;
+  accessToken?: string | null;
+  accessTokenExpiresAt?: string | null;
+}
+export interface SignUpSmsRecord {
+  userId?: string | null;
+  accessToken?: string | null;
+  accessTokenExpiresAt?: string | null;
 }
 export interface SignUpRecord {
   id?: string | null;

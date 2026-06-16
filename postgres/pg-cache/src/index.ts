@@ -1,14 +1,16 @@
 // Main exports from pg-cache package
 export { 
   close,
+  getPgCacheConfig,
   pgCache, 
   PgPoolCacheManager, 
   teardownPgPools
 } from './lru';
 export {
   buildConnectionString,
-  getPgPool
+  getPgPool,
+  getPgPoolConfig
 } from './pg';
 
 // Re-export types
-export type { PoolCleanupCallback } from './lru';
+export type { PgCacheConfig, PoolCleanupCallback } from './lru';

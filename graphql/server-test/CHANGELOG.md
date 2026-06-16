@@ -3,6 +3,314 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.25.14](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.13...graphql-server-test@2.25.14) (2026-06-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.13](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.12...graphql-server-test@2.25.13) (2026-06-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.12](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.11...graphql-server-test@2.25.12) (2026-06-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.11](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.10...graphql-server-test@2.25.11) (2026-06-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.10](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.9...graphql-server-test@2.25.10) (2026-06-12)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.9](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.8...graphql-server-test@2.25.9) (2026-06-11)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.8](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.7...graphql-server-test@2.25.8) (2026-06-07)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.7](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.6...graphql-server-test@2.25.7) (2026-06-06)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.6](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.5...graphql-server-test@2.25.6) (2026-06-06)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.5](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.4...graphql-server-test@2.25.5) (2026-06-05)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.3...graphql-server-test@2.25.4) (2026-06-01)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.2...graphql-server-test@2.25.3) (2026-06-01)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.1...graphql-server-test@2.25.2) (2026-05-31)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.25.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.25.0...graphql-server-test@2.25.1) (2026-05-31)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.25.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.24.4...graphql-server-test@2.25.0) (2026-05-30)
+
+### Bug Fixes
+
+- add scope/prefix columns to storage_module test fixture ([5afb93f](https://github.com/constructive-io/constructive/commit/5afb93f6756a9dd181c4945b37697dd463f64f66))
+
+## [2.24.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.24.3...graphql-server-test@2.24.4) (2026-05-29)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.24.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.24.2...graphql-server-test@2.24.3) (2026-05-29)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.24.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.24.1...graphql-server-test@2.24.2) (2026-05-24)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.24.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.24.0...graphql-server-test@2.24.1) (2026-05-23)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.24.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.23.0...graphql-server-test@2.24.0) (2026-05-23)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.23.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.6...graphql-server-test@2.23.0) (2026-05-21)
+
+### Features
+
+- use real embedding token counts from @agentic-kit/ollama@2.0.0 ([1e84f7f](https://github.com/constructive-io/constructive/commit/1e84f7f8d5ea4440174aefb565ddc385e0f7285f))
+
+## [2.22.6](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.5...graphql-server-test@2.22.6) (2026-05-21)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.22.5](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.4...graphql-server-test@2.22.5) (2026-05-20)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.22.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.3...graphql-server-test@2.22.4) (2026-05-19)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.22.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.2...graphql-server-test@2.22.3) (2026-05-17)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.22.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.1...graphql-server-test@2.22.2) (2026-05-15)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.22.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.22.0...graphql-server-test@2.22.1) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.22.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.10...graphql-server-test@2.22.0) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.10](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.9...graphql-server-test@2.21.10) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.9](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.8...graphql-server-test@2.21.9) (2026-05-14)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.8](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.7...graphql-server-test@2.21.8) (2026-05-13)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.7](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.6...graphql-server-test@2.21.7) (2026-05-13)
+
+### Bug Fixes
+
+- **codegen:** findFirst/findOne return single object ([#752](https://github.com/constructive-io/constructive/issues/752)) ([006b869](https://github.com/constructive-io/constructive/commit/006b869ef305dffc568a463789f428c8b0733958))
+
+## [2.21.6](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.5...graphql-server-test@2.21.6) (2026-05-13)
+
+### Bug Fixes
+
+- add enable_bulk column to server-test seed fixture ([c4f0f2c](https://github.com/constructive-io/constructive/commit/c4f0f2c1476003768ad57bb8e4f3196077de6859))
+
+## [2.21.5](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.4...graphql-server-test@2.21.5) (2026-05-12)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.3...graphql-server-test@2.21.4) (2026-05-12)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.2...graphql-server-test@2.21.3) (2026-05-11)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.1...graphql-server-test@2.21.2) (2026-05-11)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.21.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.21.0...graphql-server-test@2.21.1) (2026-05-11)
+
+### Bug Fixes
+
+- add enable_realtime column to test seed database_settings and api_settings ([def6aa9](https://github.com/constructive-io/constructive/commit/def6aa906ee9022d4cbc74ce60d3f6ec0a3b2b67))
+- move async hashContent calls into beforeAll blocks ([2e11ee3](https://github.com/constructive-io/constructive/commit/2e11ee32bb88d20fb00410c712a176c13279e9cf))
+
+# [2.21.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.20.1...graphql-server-test@2.21.0) (2026-05-11)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.20.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.20.0...graphql-server-test@2.20.1) (2026-05-10)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.20.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.5...graphql-server-test@2.20.0) (2026-05-10)
+
+### Bug Fixes
+
+- correct Alice API is_public, rename allAppFiles to appFiles, pre-seed private file for RLS test ([f93dc1d](https://github.com/constructive-io/constructive/commit/f93dc1de75ed95b02f8b782f1f82e9ca5ba38b67))
+- correct mutation variable shapes and expand expectRlsDenied patterns ([3c71d06](https://github.com/constructive-io/constructive/commit/3c71d060665ce5a70715bed3acfed65e5808d433))
+- handle masked errors and nested null in expectRlsDenied ([8c0d743](https://github.com/constructive-io/constructive/commit/8c0d743ba3e1ecea8c0817421fcb903eec41c086))
+- replace invalid Mallory UUIDs (m is not hex) with valid fa-prefix UUIDs ([13e6b48](https://github.com/constructive-io/constructive/commit/13e6b4843e3bd582dee89c5c580d571434486cbc))
+- revert superuser verification to use same HTTP path (addresses connection isolation concern) ([36ad127](https://github.com/constructive-io/constructive/commit/36ad127f85a8dec71db150d1e4274d5afb06740b))
+
+### Features
+
+- add Alice/Bob RLS + feature flag integration tests ([455ed81](https://github.com/constructive-io/constructive/commit/455ed816baf287a005f33c843bfb65e2aecc046a))
+- expand integration tests with Mallory (3rd actor) and comprehensive RLS/attack scenarios ([e10c1cc](https://github.com/constructive-io/constructive/commit/e10c1cc87e490804307afd458c5ec6e0d801bc3c))
+
+## [2.19.5](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.4...graphql-server-test@2.19.5) (2026-05-10)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.19.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.3...graphql-server-test@2.19.4) (2026-05-09)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.19.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.2...graphql-server-test@2.19.3) (2026-05-09)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.19.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.1...graphql-server-test@2.19.2) (2026-05-09)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.19.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.19.0...graphql-server-test@2.19.1) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.19.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.18.2...graphql-server-test@2.19.0) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.18.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.18.1...graphql-server-test@2.18.2) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.18.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.18.0...graphql-server-test@2.18.1) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.18.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.17.3...graphql-server-test@2.18.0) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.17.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.17.2...graphql-server-test@2.17.3) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.17.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.17.1...graphql-server-test@2.17.2) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.17.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.17.0...graphql-server-test@2.17.1) (2026-05-08)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.17.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.16.0...graphql-server-test@2.17.0) (2026-05-07)
+
+### Bug Fixes
+
+- use collection query in upload test, regenerate snapshots ([9d5b071](https://github.com/constructive-io/constructive/commit/9d5b07174e59d8caa0b11992bfaefdbdc18b05e1))
+- use where filter in upload test, regenerate snapshots ([ab4a772](https://github.com/constructive-io/constructive/commit/ab4a772a1c7d8b9141a53fdc084c24d9cf28b7b9))
+
+### Features
+
+- per-table storage middleware — upload fields on bucket types, delete middleware on file tables ([5003dc5](https://github.com/constructive-io/constructive/commit/5003dc5d85d21d5042572071b22fad1654f36881))
+
+# [2.16.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.4...graphql-server-test@2.16.0) (2026-05-06)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.15.4](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.3...graphql-server-test@2.15.4) (2026-05-06)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.15.3](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.2...graphql-server-test@2.15.3) (2026-05-05)
+
+### Bug Fixes
+
+- update snapshots and test seeds for allow_custom_keys + content_hash columns ([87385a9](https://github.com/constructive-io/constructive/commit/87385a9be4510e836157c5d8bc7e3b9a096fc192))
+
+## [2.15.2](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.1...graphql-server-test@2.15.2) (2026-05-05)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.15.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.15.0...graphql-server-test@2.15.1) (2026-05-05)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.15.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.14.1...graphql-server-test@2.15.0) (2026-05-04)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.14.1](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.14.0...graphql-server-test@2.14.1) (2026-05-03)
+
+### Bug Fixes
+
+- update snapshots, tests, and seeds for storage simplification ([9b1a48a](https://github.com/constructive-io/constructive/commit/9b1a48ae65add780c0d005f8912cf70a4d7af078))
+
+# [2.14.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.13.0...graphql-server-test@2.14.0) (2026-04-30)
+
+**Note:** Version bump only for package graphql-server-test
+
+# [2.13.0](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.12.12...graphql-server-test@2.13.0) (2026-04-29)
+
+### Bug Fixes
+
+- update server-test schema snapshot with status field ([47cc9b8](https://github.com/constructive-io/constructive/commit/47cc9b8ab7e45294212fc52b061ac6bc124194be))
+
+### Features
+
+- add status field to RequestUploadUrlPayload ([c61b5e9](https://github.com/constructive-io/constructive/commit/c61b5e9eef9a4e2f86ab859bd7f599f4abf8264d))
+
+## [2.12.12](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.12.11...graphql-server-test@2.12.12) (2026-04-28)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.12.11](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.12.10...graphql-server-test@2.12.11) (2026-04-27)
+
+**Note:** Version bump only for package graphql-server-test
+
+## [2.12.10](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.12.9...graphql-server-test@2.12.10) (2026-04-27)
+
+### Bug Fixes
+
+- add ./cli sub-path export to graphql-codegen and update imports ([0973c54](https://github.com/constructive-io/constructive/commit/0973c54331809ff848372f50b1210791e799906e))
+- add graphql-query as devDependency of server-test for runtime sub-path resolution ([7993fb7](https://github.com/constructive-io/constructive/commit/7993fb758d4a5856f3fb41948ee867ef34c0ce00))
+- add graphql-query to cli-e2e NODE_PATH for runtime sub-path resolution ([d4e917d](https://github.com/constructive-io/constructive/commit/d4e917d6777f18deba6c15eed9977ff3ab30dd82))
+- remove exports map anti-pattern, use deep path imports per Constructive standard ([8b62982](https://github.com/constructive-io/constructive/commit/8b629820d641f20c5c90a2ad79f77ff84c3c15b1))
+
 ## [2.12.9](https://github.com/constructive-io/constructive/compare/graphql-server-test@2.12.8...graphql-server-test@2.12.9) (2026-04-20)
 
 **Note:** Version bump only for package graphql-server-test

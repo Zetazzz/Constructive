@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.11.0](https://github.com/constructive-io/constructive/compare/gql-ast@3.10.1...gql-ast@3.11.0) (2026-05-30)
+
+**Note:** Version bump only for package gql-ast
+
+## [3.10.1](https://github.com/constructive-io/constructive/compare/gql-ast@3.10.0...gql-ast@3.10.1) (2026-05-29)
+
+**Note:** Version bump only for package gql-ast
+
+# [3.10.0](https://github.com/constructive-io/constructive/compare/gql-ast@3.9.1...gql-ast@3.10.0) (2026-05-14)
+
+**Note:** Version bump only for package gql-ast
+
+## [3.9.1](https://github.com/constructive-io/constructive/compare/gql-ast@3.9.0...gql-ast@3.9.1) (2026-05-11)
+
+**Note:** Version bump only for package gql-ast
+
+# [3.9.0](https://github.com/constructive-io/constructive/compare/gql-ast@3.8.0...gql-ast@3.9.0) (2026-05-11)
+
+**Note:** Version bump only for package gql-ast
+
+# [3.8.0](https://github.com/constructive-io/constructive/compare/gql-ast@3.7.0...gql-ast@3.8.0) (2026-05-08)
+
+**Note:** Version bump only for package gql-ast
+
+# [3.7.0](https://github.com/constructive-io/constructive/compare/gql-ast@3.6.0...gql-ast@3.7.0) (2026-05-08)
+
+**Note:** Version bump only for package gql-ast
+
+# [3.6.0](https://github.com/constructive-io/constructive/compare/gql-ast@3.5.0...gql-ast@3.6.0) (2026-05-06)
+
+**Note:** Version bump only for package gql-ast
+
 # [3.5.0](https://github.com/constructive-io/constructive/compare/gql-ast@3.4.2...gql-ast@3.5.0) (2026-04-18)
 
 **Note:** Version bump only for package gql-ast

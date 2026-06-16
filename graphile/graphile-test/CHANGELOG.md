@@ -3,6 +3,96 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.17.4](https://github.com/constructive-io/constructive/compare/graphile-test@4.17.3...graphile-test@4.17.4) (2026-06-07)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.17.3](https://github.com/constructive-io/constructive/compare/graphile-test@4.17.2...graphile-test@4.17.3) (2026-06-06)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.17.2](https://github.com/constructive-io/constructive/compare/graphile-test@4.17.1...graphile-test@4.17.2) (2026-06-06)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.17.1](https://github.com/constructive-io/constructive/compare/graphile-test@4.17.0...graphile-test@4.17.1) (2026-06-05)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.17.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.16.2...graphile-test@4.17.0) (2026-05-30)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.16.2](https://github.com/constructive-io/constructive/compare/graphile-test@4.16.1...graphile-test@4.16.2) (2026-05-29)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.16.1](https://github.com/constructive-io/constructive/compare/graphile-test@4.16.0...graphile-test@4.16.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.16.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.15.3...graphile-test@4.16.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.15.3](https://github.com/constructive-io/constructive/compare/graphile-test@4.15.2...graphile-test@4.15.3) (2026-05-21)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.15.2](https://github.com/constructive-io/constructive/compare/graphile-test@4.15.1...graphile-test@4.15.2) (2026-05-20)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.15.1](https://github.com/constructive-io/constructive/compare/graphile-test@4.15.0...graphile-test@4.15.1) (2026-05-17)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.15.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.14.2...graphile-test@4.15.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.14.2](https://github.com/constructive-io/constructive/compare/graphile-test@4.14.1...graphile-test@4.14.2) (2026-05-12)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.14.1](https://github.com/constructive-io/constructive/compare/graphile-test@4.14.0...graphile-test@4.14.1) (2026-05-11)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.14.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.13.0...graphile-test@4.14.0) (2026-05-11)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.13.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.12.1...graphile-test@4.13.0) (2026-05-10)
+
+### Features
+
+- **graphile-test:** add withTransaction to pgClient in test context ([df8938a](https://github.com/constructive-io/constructive/commit/df8938a16f8efdeddeaf937ad50a2643d8de36ba))
+
+## [4.12.1](https://github.com/constructive-io/constructive/compare/graphile-test@4.12.0...graphile-test@4.12.1) (2026-05-09)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.12.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.11.0...graphile-test@4.12.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.11.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.10.0...graphile-test@4.11.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-test
+
+# [4.10.0](https://github.com/constructive-io/constructive/compare/graphile-test@4.9.5...graphile-test@4.10.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.9.5](https://github.com/constructive-io/constructive/compare/graphile-test@4.9.4...graphile-test@4.9.5) (2026-05-05)
+
+**Note:** Version bump only for package graphile-test
+
+## [4.9.4](https://github.com/constructive-io/constructive/compare/graphile-test@4.9.3...graphile-test@4.9.4) (2026-04-27)
+
+**Note:** Version bump only for package graphile-test
+
 ## [4.9.3](https://github.com/constructive-io/constructive/compare/graphile-test@4.9.2...graphile-test@4.9.3) (2026-04-20)
 
 **Note:** Version bump only for package graphile-test

@@ -1,6 +1,6 @@
 {
   "name": "drizzle-orm-test",
-  "version": "2.9.3",
+  "version": "2.16.4",
   "author": "Constructive <developers@constructive.io>",
   "description": "Drop-in replacement for pgsql-test that enables Drizzle ORM to work seamlessly with context management and RLS testing",
   "main": "index.js",
@@ -46,8 +46,8 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "@types/pg": "^8.18.0",
-    "drizzle-orm": "^0.45.1",
+    "@types/pg": "^8.20.0",
+    "drizzle-orm": "^0.45.2",
     "makage": "^0.3.0"
   },
   "dependencies": {

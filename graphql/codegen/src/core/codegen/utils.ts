@@ -138,6 +138,32 @@ export function getDeleteMutationFileName(table: Table): string {
   return `${getDeleteMutationHookName(table)}.ts`;
 }
 
+/**
+ * Generate hook function name for subscription
+ * e.g., "useContactSubscription"
+ */
+export function getSubscriptionHookName(table: Table): string {
+  const { singularName } = getTableNames(table);
+  return `use${ucFirst(singularName)}Subscription`;
+}
+
+/**
+ * Generate file name for subscription hook
+ * e.g., "useContactSubscription.ts"
+ */
+export function getSubscriptionFileName(table: Table): string {
+  return `${getSubscriptionHookName(table)}.ts`;
+}
+
+/**
+ * Generate the GraphQL subscription field name
+ * e.g., "onContactChanged"
+ */
+export function getSubscriptionFieldName(table: Table): string {
+  const { singularName } = getTableNames(table);
+  return `on${ucFirst(singularName)}Changed`;
+}
+
 // ============================================================================
 // GraphQL operation names
 // ============================================================================
@@ -182,6 +208,46 @@ export function getUpdateMutationName(table: Table): string {
  */
 export function getDeleteMutationName(table: Table): string {
   return table.query?.delete || `delete${table.name}`;
+}
+
+// ============================================================================
+// Bulk mutation naming helpers
+// ============================================================================
+
+export function getBulkCreateMutationHookName(table: Table): string {
+  const { typeName } = getTableNames(table);
+  return `useBulkCreate${typeName}Mutation`;
+}
+
+export function getBulkUpsertMutationHookName(table: Table): string {
+  const { typeName } = getTableNames(table);
+  return `useBulkUpsert${typeName}Mutation`;
+}
+
+export function getBulkUpdateMutationHookName(table: Table): string {
+  const { typeName } = getTableNames(table);
+  return `useBulkUpdate${typeName}Mutation`;
+}
+
+export function getBulkDeleteMutationHookName(table: Table): string {
+  const { typeName } = getTableNames(table);
+  return `useBulkDelete${typeName}Mutation`;
+}
+
+export function getBulkCreateMutationFileName(table: Table): string {
+  return `${getBulkCreateMutationHookName(table)}.ts`;
+}
+
+export function getBulkUpsertMutationFileName(table: Table): string {
+  return `${getBulkUpsertMutationHookName(table)}.ts`;
+}
+
+export function getBulkUpdateMutationFileName(table: Table): string {
+  return `${getBulkUpdateMutationHookName(table)}.ts`;
+}
+
+export function getBulkDeleteMutationFileName(table: Table): string {
+  return `${getBulkDeleteMutationHookName(table)}.ts`;
 }
 
 // ============================================================================
@@ -246,6 +312,48 @@ export function getUpdateInputTypeName(table: Table): string {
 export function getDeleteInputTypeName(table: Table): string {
   const mutationName = table.query?.delete;
   return mutationName ? ucFirst(mutationName) + 'Input' : `Delete${table.name}Input`;
+}
+
+// ============================================================================
+// Extra input keys (partition keys for update/delete mutations)
+// ============================================================================
+
+export interface ExtraInputKey {
+  name: string;
+  gqlType: string;
+  tsType: string;
+}
+
+/**
+ * Discover extra required fields on a mutation input type beyond the standard
+ * ones (clientMutationId, PK fields, patch field). PostGraphile adds these for
+ * partitioned tables (e.g. databaseId as the partition key).
+ */
+export function getExtraInputKeys(
+  inputTypeName: string,
+  pkFieldNames: Set<string>,
+  patchFieldName: string | null,
+  typeRegistry?: TypeRegistry,
+): ExtraInputKey[] {
+  if (!typeRegistry) return [];
+  const inputType = typeRegistry.get(inputTypeName);
+  if (!inputType || inputType.kind !== 'INPUT_OBJECT' || !inputType.inputFields) return [];
+
+  const skip = new Set<string>(['clientMutationId', ...(patchFieldName ? [patchFieldName] : [])]);
+  for (const pk of pkFieldNames) skip.add(pk);
+
+  const extras: ExtraInputKey[] = [];
+  for (const field of inputType.inputFields) {
+    if (skip.has(field.name)) continue;
+    if (field.type.kind !== 'NON_NULL') continue;
+    const innerName = field.type.ofType?.name;
+    if (!innerName) continue;
+    let tsType = 'string';
+    if (innerName === 'Int' || innerName === 'Float' || innerName === 'BigFloat') tsType = 'number';
+    else if (innerName === 'Boolean') tsType = 'boolean';
+    extras.push({ name: field.name, gqlType: innerName, tsType });
+  }
+  return extras;
 }
 
 // ============================================================================

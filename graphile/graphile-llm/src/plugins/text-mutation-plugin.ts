@@ -9,6 +9,10 @@
  * Example:
  *   mutation { createArticle(input: { embeddingText: "Machine learning concepts" }) }
  *
+ * If the embedder returns null (e.g. quota exceeded when the metering plugin
+ * is loaded), the mutation throws an error — unlike search, mutations cannot
+ * silently skip writing a vector the user asked for.
+ *
  * This is the mutation counterpart to LlmTextSearchPlugin (which handles
  * filter/query-side text-to-vector). Together they let clients work entirely
  * with text/prompts instead of raw float vectors.
@@ -24,8 +28,9 @@
 
 import 'graphile-build';
 import 'graphile-build-pg';
+
 import type { GraphileConfig } from 'graphile-config';
-import type { EmbedderFunction } from '../types';
+
 
 // ─── TypeScript Augmentation ────────────────────────────────────────────────
 
@@ -50,7 +55,7 @@ function isVectorCodec(codec: any): boolean {
  */
 function getTextToVectorMapping(
   pgCodec: any,
-  build: any,
+  build: any
 ): Record<string, string> {
   const mapping: Record<string, string> = {};
   if (!pgCodec?.attributes) return mapping;
@@ -61,7 +66,7 @@ function getTextToVectorMapping(
     if (isVectorCodec(attribute.codec)) {
       const fieldName = build.inflection.attribute({
         codec: pgCodec,
-        attributeName,
+        attributeName
       });
       mapping[`${fieldName}Text`] = fieldName;
     }
@@ -82,7 +87,7 @@ function getTextToVectorMapping(
 export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
   return {
     name: 'LlmTextMutationPlugin',
-    version: '0.1.0',
+    version: '0.2.0',
     description:
       'Adds text companion fields on mutation inputs for vector columns — ' +
       'text is embedded server-side before storing',
@@ -91,7 +96,7 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
       'PgAttributesPlugin',
       'PgMutationCreatePlugin',
       'PgMutationUpdateDeletePlugin',
-      'VectorCodecPlugin',
+      'VectorCodecPlugin'
     ],
 
     schema: {
@@ -106,17 +111,31 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
               isPgPatch,
               isPgBaseInput,
               isMutationInput,
-              pgCodec,
-            },
+              pgCodec
+            }
           } = context as any;
 
-          // Only intercept create/update input types for table rows
-          if (!pgCodec?.attributes || (!isPgPatch && !isPgBaseInput && !isMutationInput)) {
+          // Only intercept mutation-related input types for table rows.
+          // PostGraphile v5 sets isPgPatch on update types, isPgBaseInput on
+          // create base types. For tables with `serial PRIMARY KEY`, the create
+          // input type (e.g. ArticleInput) has pgCodec set but none of the
+          // explicit mutation scope flags — detect via type name convention.
+          if (!pgCodec?.attributes) return fields;
+
+          const typeName = context.Self.name;
+          const hasExplicitMutationScope = isPgPatch || isPgBaseInput || isMutationInput;
+          const looksLikeMutationInput = typeName.endsWith('Input') || typeName.endsWith('Patch');
+          const isFilterOrCondition = typeName.endsWith('FilterInput')
+            || typeName.endsWith('Filter')
+            || typeName.endsWith('Condition')
+            || typeName === 'VectorNearbyInput';
+
+          if (!hasExplicitMutationScope && (!looksLikeMutationInput || isFilterOrCondition)) {
             return fields;
           }
 
           const {
-            graphql: { GraphQLString },
+            graphql: { GraphQLString }
           } = build;
 
           // Find vector columns on this table
@@ -139,7 +158,7 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
             // Convert snake_case column name to camelCase field name
             const fieldName = build.inflection.attribute({
               codec: pgCodec,
-              attributeName: columnName,
+              attributeName: columnName
             });
             const textFieldName = `${fieldName}Text`;
 
@@ -151,8 +170,8 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
                   description:
                     `Natural language text to embed server-side into the \`${fieldName}\` vector column. ` +
                     `Mutually exclusive with \`${fieldName}\` — provide one or the other. ` +
-                    'Requires the LLM plugin to be configured with an embedding provider.',
-                },
+                    'Requires the LLM plugin to be configured with an embedding provider.'
+                }
               },
               `LlmTextMutationPlugin adding ${textFieldName} companion field for vector column '${columnName}'`
             );
@@ -169,10 +188,12 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
          * Uses the same v4-style resolver wrapping pattern as graphile-upload-plugin
          * and graphile-bucket-provisioner-plugin. grafserv v5 supports this through
          * its backwards-compatibility layer.
+         *
+         * If the embedder returns null (e.g. quota exceeded), throws an error.
          */
         GraphQLObjectType_fields_field(field, build, context) {
           const {
-            scope: { isRootMutation, fieldName, pgCodec },
+            scope: { isRootMutation, fieldName, pgCodec }
           } = context as any;
 
           // Only wrap root mutation fields on tables with attributes
@@ -193,7 +214,10 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
             return field;
           }
 
-          const embedder: EmbedderFunction | null = (build as any).llmEmbedder;
+          const embedder = (build as any).llmEmbedder as
+            | ((text: string) => Promise<number[] | null>)
+            | null;
+
           const defaultResolver = (obj: any) => obj[fieldName];
           const { resolve: oldResolve = defaultResolver, ...rest } = field;
 
@@ -225,6 +249,13 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
                       const vector = await embedder(value);
                       const latencyMs = Date.now() - startTime;
 
+                      if (vector === null) {
+                        throw new Error(
+                          `EMBED_QUOTA_EXCEEDED: Cannot embed ${key} — embedding quota exceeded. ` +
+                          'Upgrade your plan or wait for the next billing period.'
+                        );
+                      }
+
                       console.log(
                         `[graphile-llm] Mutation embed: field=${key}, dims=${vector.length}, latency=${latencyMs}ms`
                       );
@@ -250,10 +281,10 @@ export function createLlmTextMutationPlugin(): GraphileConfig.Plugin {
 
               await embedTextFields(args);
               return oldResolve(source, args, graphqlContext, info);
-            },
+            }
           };
-        },
-      },
-    },
+        }
+      }
+    }
   };
 }

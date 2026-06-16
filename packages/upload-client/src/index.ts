@@ -4,15 +4,19 @@
  * Client-side presigned URL upload utilities for Constructive.
  *
  * Provides atomic functions for the presigned URL upload pipeline:
- * - `hashFile` — SHA-256 hash via Web Crypto API
- * - `hashFileChunked` — chunked SHA-256 for large files
- * - `uploadFile` — full upload orchestrator (hash → request → PUT → confirm)
+ * - `hashFile` — SHA-256 hash (File/Blob, one-shot)
+ * - `hashFileChunked` — true incremental SHA-256 for large files (GB+)
+ * - `hashContent` — SHA-256 hash for plain strings
+ * - `putToPresignedUrl` — PUT bytes to a presigned S3 URL
+ * - `fetchFromUrl` — GET from a presigned or CDN URL
+ * - `uploadFile` — full upload orchestrator (hash → request → PUT)
  *
  * Framework-agnostic, works in any browser or Node.js 18+ environment.
+ * Uses @constructive-io/fetch for isomorphic HTTP (handles *.localhost DNS in Node.js).
  *
  * @example
  * ```typescript
- * import { uploadFile, hashFile } from '@constructive-io/upload-client';
+ * import { uploadFile, hashFile, hashContent, putToPresignedUrl } from '@constructive-io/upload-client';
  *
  * // Full orchestrated upload
  * const result = await uploadFile({
@@ -21,19 +25,25 @@
  *   execute: myGraphQLExecutor,
  * });
  *
- * // Or use atomic functions individually
+ * // Atomic functions for custom flows
  * const hash = await hashFile(myFile);
+ * const contentHash = await hashContent('file contents');
+ * await putToPresignedUrl(presignedUrl, content, 'image/png');
  * ```
  */
 
-// Atomic functions
+// Hashing
 export { hashFile, hashFileChunked } from './hash';
+export { hashContent } from './hash-content';
+
+// Presigned URL helpers
+export { putToPresignedUrl, fetchFromUrl } from './put';
 
 // Orchestrator
 export { uploadFile } from './upload';
 
-// GraphQL query strings (for custom integrations)
-export { REQUEST_UPLOAD_URL_MUTATION, CONFIRM_UPLOAD_MUTATION } from './queries';
+// GraphQL query builders (for custom integrations)
+export { buildRequestUploadUrlQuery, REQUEST_UPLOAD_URL_QUERY, REQUEST_UPLOAD_URL_MUTATION, DEFAULT_BUCKET_QUERY_FIELD } from './queries';
 
 // Types
 export type {
@@ -43,8 +53,6 @@ export type {
   UploadResult,
   RequestUploadUrlInput,
   RequestUploadUrlPayload,
-  ConfirmUploadInput,
-  ConfirmUploadPayload,
   UploadErrorCode,
 } from './types';
 

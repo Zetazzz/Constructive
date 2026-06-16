@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.16.0](https://github.com/constructive-io/constructive/compare/pg-env@1.15.1...pg-env@1.16.0) (2026-05-30)
+
+**Note:** Version bump only for package pg-env
+
+## [1.15.1](https://github.com/constructive-io/constructive/compare/pg-env@1.15.0...pg-env@1.15.1) (2026-05-29)
+
+**Note:** Version bump only for package pg-env
+
+# [1.15.0](https://github.com/constructive-io/constructive/compare/pg-env@1.14.0...pg-env@1.15.0) (2026-05-23)
+
+### Features
+
+- **pg-cache:** make pool cache configurable via env vars + align cache limits ([c6326d7](https://github.com/constructive-io/constructive/commit/c6326d7913030554a12170cba4d4d5521d807d22))
+
+# [1.14.0](https://github.com/constructive-io/constructive/compare/pg-env@1.13.1...pg-env@1.14.0) (2026-05-14)
+
+**Note:** Version bump only for package pg-env
+
+## [1.13.1](https://github.com/constructive-io/constructive/compare/pg-env@1.13.0...pg-env@1.13.1) (2026-05-11)
+
+**Note:** Version bump only for package pg-env
+
+# [1.13.0](https://github.com/constructive-io/constructive/compare/pg-env@1.12.0...pg-env@1.13.0) (2026-05-11)
+
+**Note:** Version bump only for package pg-env
+
+# [1.12.0](https://github.com/constructive-io/constructive/compare/pg-env@1.11.0...pg-env@1.12.0) (2026-05-08)
+
+**Note:** Version bump only for package pg-env
+
+# [1.11.0](https://github.com/constructive-io/constructive/compare/pg-env@1.10.0...pg-env@1.11.0) (2026-05-08)
+
+**Note:** Version bump only for package pg-env
+
+# [1.10.0](https://github.com/constructive-io/constructive/compare/pg-env@1.9.0...pg-env@1.10.0) (2026-05-06)
+
+**Note:** Version bump only for package pg-env
+
 # [1.9.0](https://github.com/constructive-io/constructive/compare/pg-env@1.8.2...pg-env@1.9.0) (2026-04-18)
 
 **Note:** Version bump only for package pg-env

@@ -29,23 +29,20 @@ csdk auth set-token <your-token>
 | `org-get-managers-record` | orgGetManagersRecord CRUD operations |
 | `org-get-subordinates-record` | orgGetSubordinatesRecord CRUD operations |
 | `app-permission` | appPermission CRUD operations |
+| `app-permission-default-grant` | appPermissionDefaultGrant CRUD operations |
 | `org-permission` | orgPermission CRUD operations |
-| `app-level-requirement` | appLevelRequirement CRUD operations |
+| `org-permission-default-permission` | orgPermissionDefaultPermission CRUD operations |
+| `org-permission-default-grant` | orgPermissionDefaultGrant CRUD operations |
 | `org-member` | orgMember CRUD operations |
 | `app-permission-default` | appPermissionDefault CRUD operations |
 | `org-permission-default` | orgPermissionDefault CRUD operations |
+| `app-permission-default-permission` | appPermissionDefaultPermission CRUD operations |
 | `app-admin-grant` | appAdminGrant CRUD operations |
 | `app-owner-grant` | appOwnerGrant CRUD operations |
-| `app-limit-default` | appLimitDefault CRUD operations |
-| `org-limit-default` | orgLimitDefault CRUD operations |
 | `org-admin-grant` | orgAdminGrant CRUD operations |
 | `org-owner-grant` | orgOwnerGrant CRUD operations |
-| `app-limit` | appLimit CRUD operations |
-| `app-achievement` | appAchievement CRUD operations |
-| `app-step` | appStep CRUD operations |
-| `app-claimed-invite` | appClaimedInvite CRUD operations |
 | `org-chart-edge-grant` | orgChartEdgeGrant CRUD operations |
-| `org-limit` | orgLimit CRUD operations |
+| `app-claimed-invite` | appClaimedInvite CRUD operations |
 | `membership-type` | membershipType CRUD operations |
 | `app-grant` | appGrant CRUD operations |
 | `app-membership-default` | appMembershipDefault CRUD operations |
@@ -53,33 +50,23 @@ csdk auth set-token <your-token>
 | `org-claimed-invite` | orgClaimedInvite CRUD operations |
 | `org-grant` | orgGrant CRUD operations |
 | `org-chart-edge` | orgChartEdge CRUD operations |
-| `org-member-profile` | orgMemberProfile CRUD operations |
 | `org-membership-setting` | orgMembershipSetting CRUD operations |
-| `app-level` | appLevel CRUD operations |
-| `app-invite` | appInvite CRUD operations |
-| `org-invite` | orgInvite CRUD operations |
 | `app-membership` | appMembership CRUD operations |
 | `org-membership` | orgMembership CRUD operations |
+| `org-member-profile` | orgMemberProfile CRUD operations |
+| `app-invite` | appInvite CRUD operations |
+| `org-invite` | orgInvite CRUD operations |
 | `app-permissions-get-padded-mask` | appPermissionsGetPaddedMask |
 | `org-permissions-get-padded-mask` | orgPermissionsGetPaddedMask |
 | `org-is-manager-of` | orgIsManagerOf |
 | `app-permissions-get-mask` | appPermissionsGetMask |
 | `org-permissions-get-mask` | orgPermissionsGetMask |
-| `steps-achieved` | stepsAchieved |
 | `app-permissions-get-mask-by-names` | appPermissionsGetMaskByNames |
 | `org-permissions-get-mask-by-names` | orgPermissionsGetMaskByNames |
 | `app-permissions-get-by-mask` | Reads and enables pagination through a set of `AppPermission`. |
 | `org-permissions-get-by-mask` | Reads and enables pagination through a set of `OrgPermission`. |
-| `steps-required` | Reads and enables pagination through a set of `AppLevelRequirement`. |
 | `submit-app-invite-code` | submitAppInviteCode |
 | `submit-org-invite-code` | submitOrgInviteCode |
-| `request-upload-url` | Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl. |
-| `confirm-upload` | Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'. |
 | `provision-bucket` | Provision an S3 bucket for a logical bucket in the database.
 Reads the bucket config via RLS, then creates and configures
 the S3 bucket with the appropriate privacy policies, CORS rules,
@@ -195,6 +182,33 @@ CRUD operations for AppPermission records.
 
 **Optional create fields (backend defaults):** `name`, `bitnum`, `bitstr`, `description`
 
+### `app-permission-default-grant`
+
+CRUD operations for AppPermissionDefaultGrant records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all appPermissionDefaultGrant records |
+| `find-first` | Find first matching appPermissionDefaultGrant record |
+| `get` | Get a appPermissionDefaultGrant by id |
+| `create` | Create a new appPermissionDefaultGrant |
+| `update` | Update an existing appPermissionDefaultGrant |
+| `delete` | Delete a appPermissionDefaultGrant |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `permissionId` | UUID |
+| `isGrant` | Boolean |
+| `grantorId` | UUID |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+
+**Required create fields:** `permissionId`
+**Optional create fields (backend defaults):** `isGrant`, `grantorId`
+
 ### `org-permission`
 
 CRUD operations for OrgPermission records.
@@ -220,34 +234,58 @@ CRUD operations for OrgPermission records.
 
 **Optional create fields (backend defaults):** `name`, `bitnum`, `bitstr`, `description`
 
-### `app-level-requirement`
+### `org-permission-default-permission`
 
-CRUD operations for AppLevelRequirement records.
+CRUD operations for OrgPermissionDefaultPermission records.
 
 | Subcommand | Description |
 |------------|-------------|
-| `list` | List all appLevelRequirement records |
-| `find-first` | Find first matching appLevelRequirement record |
-| `get` | Get a appLevelRequirement by id |
-| `create` | Create a new appLevelRequirement |
-| `update` | Update an existing appLevelRequirement |
-| `delete` | Delete a appLevelRequirement |
+| `list` | List all orgPermissionDefaultPermission records |
+| `find-first` | Find first matching orgPermissionDefaultPermission record |
+| `get` | Get a orgPermissionDefaultPermission by id |
+| `create` | Create a new orgPermissionDefaultPermission |
+| `update` | Update an existing orgPermissionDefaultPermission |
+| `delete` | Delete a orgPermissionDefaultPermission |
 
 **Fields:**
 
 | Field | Type |
 |-------|------|
 | `id` | UUID |
-| `name` | String |
-| `level` | String |
-| `description` | String |
-| `requiredCount` | Int |
-| `priority` | Int |
+| `permissionId` | UUID |
+| `entityId` | UUID |
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
-**Required create fields:** `name`, `level`
-**Optional create fields (backend defaults):** `description`, `requiredCount`, `priority`
+**Required create fields:** `permissionId`, `entityId`
+
+### `org-permission-default-grant`
+
+CRUD operations for OrgPermissionDefaultGrant records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all orgPermissionDefaultGrant records |
+| `find-first` | Find first matching orgPermissionDefaultGrant record |
+| `get` | Get a orgPermissionDefaultGrant by id |
+| `create` | Create a new orgPermissionDefaultGrant |
+| `update` | Update an existing orgPermissionDefaultGrant |
+| `delete` | Delete a orgPermissionDefaultGrant |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `permissionId` | UUID |
+| `isGrant` | Boolean |
+| `grantorId` | UUID |
+| `entityId` | UUID |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+
+**Required create fields:** `permissionId`, `entityId`
+**Optional create fields (backend defaults):** `isGrant`, `grantorId`
 
 ### `org-member`
 
@@ -320,6 +358,30 @@ CRUD operations for OrgPermissionDefault records.
 **Required create fields:** `entityId`
 **Optional create fields (backend defaults):** `permissions`
 
+### `app-permission-default-permission`
+
+CRUD operations for AppPermissionDefaultPermission records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all appPermissionDefaultPermission records |
+| `find-first` | Find first matching appPermissionDefaultPermission record |
+| `get` | Get a appPermissionDefaultPermission by id |
+| `create` | Create a new appPermissionDefaultPermission |
+| `update` | Update an existing appPermissionDefaultPermission |
+| `delete` | Delete a appPermissionDefaultPermission |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `permissionId` | UUID |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+
+**Required create fields:** `permissionId`
+
 ### `app-admin-grant`
 
 CRUD operations for AppAdminGrant records.
@@ -344,8 +406,7 @@ CRUD operations for AppAdminGrant records.
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
-**Required create fields:** `actorId`
-**Optional create fields (backend defaults):** `isGrant`, `grantorId`
+**Optional create fields (backend defaults):** `isGrant`, `actorId`, `grantorId`
 
 ### `app-owner-grant`
 
@@ -371,56 +432,7 @@ CRUD operations for AppOwnerGrant records.
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
-**Required create fields:** `actorId`
-**Optional create fields (backend defaults):** `isGrant`, `grantorId`
-
-### `app-limit-default`
-
-CRUD operations for AppLimitDefault records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all appLimitDefault records |
-| `find-first` | Find first matching appLimitDefault record |
-| `get` | Get a appLimitDefault by id |
-| `create` | Create a new appLimitDefault |
-| `update` | Update an existing appLimitDefault |
-| `delete` | Delete a appLimitDefault |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `name` | String |
-| `max` | Int |
-
-**Required create fields:** `name`
-**Optional create fields (backend defaults):** `max`
-
-### `org-limit-default`
-
-CRUD operations for OrgLimitDefault records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all orgLimitDefault records |
-| `find-first` | Find first matching orgLimitDefault record |
-| `get` | Get a orgLimitDefault by id |
-| `create` | Create a new orgLimitDefault |
-| `update` | Update an existing orgLimitDefault |
-| `delete` | Delete a orgLimitDefault |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `name` | String |
-| `max` | Int |
-
-**Required create fields:** `name`
-**Optional create fields (backend defaults):** `max`
+**Optional create fields (backend defaults):** `isGrant`, `actorId`, `grantorId`
 
 ### `org-admin-grant`
 
@@ -447,8 +459,8 @@ CRUD operations for OrgAdminGrant records.
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
-**Required create fields:** `actorId`, `entityId`
-**Optional create fields (backend defaults):** `isGrant`, `grantorId`
+**Required create fields:** `entityId`
+**Optional create fields (backend defaults):** `isGrant`, `actorId`, `grantorId`
 
 ### `org-owner-grant`
 
@@ -475,114 +487,8 @@ CRUD operations for OrgOwnerGrant records.
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
-**Required create fields:** `actorId`, `entityId`
-**Optional create fields (backend defaults):** `isGrant`, `grantorId`
-
-### `app-limit`
-
-CRUD operations for AppLimit records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all appLimit records |
-| `find-first` | Find first matching appLimit record |
-| `get` | Get a appLimit by id |
-| `create` | Create a new appLimit |
-| `update` | Update an existing appLimit |
-| `delete` | Delete a appLimit |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `name` | String |
-| `actorId` | UUID |
-| `num` | Int |
-| `max` | Int |
-
-**Required create fields:** `actorId`
-**Optional create fields (backend defaults):** `name`, `num`, `max`
-
-### `app-achievement`
-
-CRUD operations for AppAchievement records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all appAchievement records |
-| `find-first` | Find first matching appAchievement record |
-| `get` | Get a appAchievement by id |
-| `create` | Create a new appAchievement |
-| `update` | Update an existing appAchievement |
-| `delete` | Delete a appAchievement |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `actorId` | UUID |
-| `name` | String |
-| `count` | Int |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-
-**Required create fields:** `name`
-**Optional create fields (backend defaults):** `actorId`, `count`
-
-### `app-step`
-
-CRUD operations for AppStep records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all appStep records |
-| `find-first` | Find first matching appStep record |
-| `get` | Get a appStep by id |
-| `create` | Create a new appStep |
-| `update` | Update an existing appStep |
-| `delete` | Delete a appStep |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `actorId` | UUID |
-| `name` | String |
-| `count` | Int |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-
-**Required create fields:** `name`
-**Optional create fields (backend defaults):** `actorId`, `count`
-
-### `app-claimed-invite`
-
-CRUD operations for AppClaimedInvite records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all appClaimedInvite records |
-| `find-first` | Find first matching appClaimedInvite record |
-| `get` | Get a appClaimedInvite by id |
-| `create` | Create a new appClaimedInvite |
-| `update` | Update an existing appClaimedInvite |
-| `delete` | Delete a appClaimedInvite |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `data` | JSON |
-| `senderId` | UUID |
-| `receiverId` | UUID |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-
-**Optional create fields (backend defaults):** `data`, `senderId`, `receiverId`
+**Required create fields:** `entityId`
+**Optional create fields (backend defaults):** `isGrant`, `actorId`, `grantorId`
 
 ### `org-chart-edge-grant`
 
@@ -614,32 +520,31 @@ CRUD operations for OrgChartEdgeGrant records.
 **Required create fields:** `entityId`, `childId`
 **Optional create fields (backend defaults):** `parentId`, `grantorId`, `isGrant`, `positionTitle`, `positionLevel`
 
-### `org-limit`
+### `app-claimed-invite`
 
-CRUD operations for OrgLimit records.
+CRUD operations for AppClaimedInvite records.
 
 | Subcommand | Description |
 |------------|-------------|
-| `list` | List all orgLimit records |
-| `find-first` | Find first matching orgLimit record |
-| `get` | Get a orgLimit by id |
-| `create` | Create a new orgLimit |
-| `update` | Update an existing orgLimit |
-| `delete` | Delete a orgLimit |
+| `list` | List all appClaimedInvite records |
+| `find-first` | Find first matching appClaimedInvite record |
+| `get` | Get a appClaimedInvite by id |
+| `create` | Create a new appClaimedInvite |
+| `update` | Update an existing appClaimedInvite |
+| `delete` | Delete a appClaimedInvite |
 
 **Fields:**
 
 | Field | Type |
 |-------|------|
 | `id` | UUID |
-| `name` | String |
-| `actorId` | UUID |
-| `num` | Int |
-| `max` | Int |
-| `entityId` | UUID |
+| `data` | JSON |
+| `senderId` | UUID |
+| `receiverId` | UUID |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
 
-**Required create fields:** `actorId`, `entityId`
-**Optional create fields (backend defaults):** `name`, `num`, `max`
+**Optional create fields (backend defaults):** `data`, `senderId`, `receiverId`
 
 ### `membership-type`
 
@@ -661,11 +566,11 @@ CRUD operations for MembershipType records.
 | `id` | Int |
 | `name` | String |
 | `description` | String |
-| `prefix` | String |
+| `scope` | String |
 | `parentMembershipType` | Int |
 | `hasUsersTableEntry` | Boolean |
 
-**Required create fields:** `name`, `description`, `prefix`
+**Required create fields:** `name`, `description`, `scope`
 **Optional create fields (backend defaults):** `parentMembershipType`, `hasUsersTableEntry`
 
 ### `app-grant`
@@ -693,8 +598,7 @@ CRUD operations for AppGrant records.
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
-**Required create fields:** `actorId`
-**Optional create fields (backend defaults):** `permissions`, `isGrant`, `grantorId`
+**Optional create fields (backend defaults):** `permissions`, `isGrant`, `actorId`, `grantorId`
 
 ### `app-membership-default`
 
@@ -805,8 +709,8 @@ CRUD operations for OrgGrant records.
 | `createdAt` | Datetime |
 | `updatedAt` | Datetime |
 
-**Required create fields:** `actorId`, `entityId`
-**Optional create fields (backend defaults):** `permissions`, `isGrant`, `grantorId`
+**Required create fields:** `entityId`
+**Optional create fields (backend defaults):** `permissions`, `isGrant`, `actorId`, `grantorId`
 
 ### `org-chart-edge`
 
@@ -837,38 +741,6 @@ CRUD operations for OrgChartEdge records.
 **Required create fields:** `entityId`, `childId`
 **Optional create fields (backend defaults):** `parentId`, `positionTitle`, `positionLevel`
 
-### `org-member-profile`
-
-CRUD operations for OrgMemberProfile records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all orgMemberProfile records |
-| `find-first` | Find first matching orgMemberProfile record |
-| `get` | Get a orgMemberProfile by id |
-| `create` | Create a new orgMemberProfile |
-| `update` | Update an existing orgMemberProfile |
-| `delete` | Delete a orgMemberProfile |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-| `membershipId` | UUID |
-| `entityId` | UUID |
-| `actorId` | UUID |
-| `displayName` | String |
-| `email` | String |
-| `title` | String |
-| `bio` | String |
-| `profilePicture` | Image |
-
-**Required create fields:** `membershipId`, `entityId`, `actorId`
-**Optional create fields (backend defaults):** `displayName`, `email`, `title`, `bio`, `profilePicture`
-
 ### `org-membership-setting`
 
 CRUD operations for OrgMembershipSetting records.
@@ -897,105 +769,12 @@ CRUD operations for OrgMembershipSetting records.
 | `createChildCascadeAdmins` | Boolean |
 | `createChildCascadeMembers` | Boolean |
 | `allowExternalMembers` | Boolean |
+| `inviteProfileAssignmentMode` | String |
 | `populateMemberEmail` | Boolean |
+| `limitAllocationMode` | String |
 
 **Required create fields:** `entityId`
-**Optional create fields (backend defaults):** `createdBy`, `updatedBy`, `deleteMemberCascadeChildren`, `createChildCascadeOwners`, `createChildCascadeAdmins`, `createChildCascadeMembers`, `allowExternalMembers`, `populateMemberEmail`
-
-### `app-level`
-
-CRUD operations for AppLevel records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all appLevel records |
-| `find-first` | Find first matching appLevel record |
-| `get` | Get a appLevel by id |
-| `create` | Create a new appLevel |
-| `update` | Update an existing appLevel |
-| `delete` | Delete a appLevel |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `name` | String |
-| `description` | String |
-| `image` | Image |
-| `ownerId` | UUID |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-
-**Required create fields:** `name`
-**Optional create fields (backend defaults):** `description`, `image`, `ownerId`
-
-### `app-invite`
-
-CRUD operations for AppInvite records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all appInvite records |
-| `find-first` | Find first matching appInvite record |
-| `get` | Get a appInvite by id |
-| `create` | Create a new appInvite |
-| `update` | Update an existing appInvite |
-| `delete` | Delete a appInvite |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `email` | Email |
-| `senderId` | UUID |
-| `inviteToken` | String |
-| `inviteValid` | Boolean |
-| `inviteLimit` | Int |
-| `inviteCount` | Int |
-| `multiple` | Boolean |
-| `data` | JSON |
-| `expiresAt` | Datetime |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-
-**Optional create fields (backend defaults):** `email`, `senderId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `expiresAt`
-
-### `org-invite`
-
-CRUD operations for OrgInvite records.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all orgInvite records |
-| `find-first` | Find first matching orgInvite record |
-| `get` | Get a orgInvite by id |
-| `create` | Create a new orgInvite |
-| `update` | Update an existing orgInvite |
-| `delete` | Delete a orgInvite |
-
-**Fields:**
-
-| Field | Type |
-|-------|------|
-| `id` | UUID |
-| `email` | Email |
-| `senderId` | UUID |
-| `receiverId` | UUID |
-| `inviteToken` | String |
-| `inviteValid` | Boolean |
-| `inviteLimit` | Int |
-| `inviteCount` | Int |
-| `multiple` | Boolean |
-| `data` | JSON |
-| `expiresAt` | Datetime |
-| `createdAt` | Datetime |
-| `updatedAt` | Datetime |
-| `entityId` | UUID |
-
-**Required create fields:** `entityId`
-**Optional create fields (backend defaults):** `email`, `senderId`, `receiverId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `expiresAt`
+**Optional create fields (backend defaults):** `createdBy`, `updatedBy`, `deleteMemberCascadeChildren`, `createChildCascadeOwners`, `createChildCascadeAdmins`, `createChildCascadeMembers`, `allowExternalMembers`, `inviteProfileAssignmentMode`, `populateMemberEmail`, `limitAllocationMode`
 
 ### `app-membership`
 
@@ -1024,7 +803,6 @@ CRUD operations for AppMembership records.
 | `isDisabled` | Boolean |
 | `isVerified` | Boolean |
 | `isActive` | Boolean |
-| `isExternal` | Boolean |
 | `isOwner` | Boolean |
 | `isAdmin` | Boolean |
 | `permissions` | BitString |
@@ -1033,7 +811,7 @@ CRUD operations for AppMembership records.
 | `profileId` | UUID |
 
 **Required create fields:** `actorId`
-**Optional create fields (backend defaults):** `createdBy`, `updatedBy`, `isApproved`, `isBanned`, `isDisabled`, `isVerified`, `isActive`, `isExternal`, `isOwner`, `isAdmin`, `permissions`, `granted`, `profileId`
+**Optional create fields (backend defaults):** `createdBy`, `updatedBy`, `isApproved`, `isBanned`, `isDisabled`, `isVerified`, `isActive`, `isOwner`, `isAdmin`, `permissions`, `granted`, `profileId`
 
 ### `org-membership`
 
@@ -1073,6 +851,112 @@ CRUD operations for OrgMembership records.
 
 **Required create fields:** `actorId`, `entityId`
 **Optional create fields (backend defaults):** `createdBy`, `updatedBy`, `isApproved`, `isBanned`, `isDisabled`, `isActive`, `isExternal`, `isOwner`, `isAdmin`, `permissions`, `granted`, `isReadOnly`, `profileId`
+
+### `org-member-profile`
+
+CRUD operations for OrgMemberProfile records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all orgMemberProfile records |
+| `find-first` | Find first matching orgMemberProfile record |
+| `get` | Get a orgMemberProfile by id |
+| `create` | Create a new orgMemberProfile |
+| `update` | Update an existing orgMemberProfile |
+| `delete` | Delete a orgMemberProfile |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+| `membershipId` | UUID |
+| `entityId` | UUID |
+| `actorId` | UUID |
+| `displayName` | String |
+| `email` | String |
+| `title` | String |
+| `bio` | String |
+| `profilePicture` | Image |
+
+**Required create fields:** `membershipId`, `entityId`, `actorId`
+**Optional create fields (backend defaults):** `displayName`, `email`, `title`, `bio`, `profilePicture`
+
+### `app-invite`
+
+CRUD operations for AppInvite records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all appInvite records |
+| `find-first` | Find first matching appInvite record |
+| `get` | Get a appInvite by id |
+| `create` | Create a new appInvite |
+| `update` | Update an existing appInvite |
+| `delete` | Delete a appInvite |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `channel` | String |
+| `email` | Email |
+| `phone` | String |
+| `senderId` | UUID |
+| `inviteToken` | String |
+| `inviteValid` | Boolean |
+| `inviteLimit` | Int |
+| `inviteCount` | Int |
+| `multiple` | Boolean |
+| `data` | JSON |
+| `profileId` | UUID |
+| `expiresAt` | Datetime |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+
+**Optional create fields (backend defaults):** `channel`, `email`, `phone`, `senderId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `profileId`, `expiresAt`
+
+### `org-invite`
+
+CRUD operations for OrgInvite records.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all orgInvite records |
+| `find-first` | Find first matching orgInvite record |
+| `get` | Get a orgInvite by id |
+| `create` | Create a new orgInvite |
+| `update` | Update an existing orgInvite |
+| `delete` | Delete a orgInvite |
+
+**Fields:**
+
+| Field | Type |
+|-------|------|
+| `id` | UUID |
+| `channel` | String |
+| `email` | Email |
+| `phone` | String |
+| `senderId` | UUID |
+| `receiverId` | UUID |
+| `inviteToken` | String |
+| `inviteValid` | Boolean |
+| `inviteLimit` | Int |
+| `inviteCount` | Int |
+| `multiple` | Boolean |
+| `data` | JSON |
+| `profileId` | UUID |
+| `isReadOnly` | Boolean |
+| `expiresAt` | Datetime |
+| `createdAt` | Datetime |
+| `updatedAt` | Datetime |
+| `entityId` | UUID |
+
+**Required create fields:** `entityId`
+**Optional create fields (backend defaults):** `channel`, `email`, `phone`, `senderId`, `receiverId`, `inviteToken`, `inviteValid`, `inviteLimit`, `inviteCount`, `multiple`, `data`, `profileId`, `isReadOnly`, `expiresAt`
 
 ## Custom Operations
 
@@ -1134,18 +1018,6 @@ orgPermissionsGetMask
   |----------|------|
   | `--ids` | UUID |
 
-### `steps-achieved`
-
-stepsAchieved
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--level` | String |
-  | `--roleId` | UUID |
-
 ### `app-permissions-get-mask-by-names`
 
 appPermissionsGetMaskByNames
@@ -1196,21 +1068,6 @@ Reads and enables pagination through a set of `OrgPermission`.
   | `--offset` | Int |
   | `--after` | Cursor |
 
-### `steps-required`
-
-Reads and enables pagination through a set of `AppLevelRequirement`.
-
-- **Type:** query
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--level` | String |
-  | `--roleId` | UUID |
-  | `--first` | Int |
-  | `--offset` | Int |
-  | `--after` | Cursor |
-
 ### `submit-app-invite-code`
 
 submitAppInviteCode
@@ -1234,38 +1091,6 @@ submitOrgInviteCode
   |----------|------|
   | `--input.clientMutationId` | String |
   | `--input.token` | String |
-
-### `request-upload-url`
-
-Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.bucketKey` | String (required) |
-  | `--input.ownerId` | UUID |
-  | `--input.contentHash` | String (required) |
-  | `--input.contentType` | String (required) |
-  | `--input.size` | Int (required) |
-  | `--input.filename` | String |
-
-### `confirm-upload`
-
-Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.fileId` | UUID (required) |
 
 ### `provision-bucket`
 

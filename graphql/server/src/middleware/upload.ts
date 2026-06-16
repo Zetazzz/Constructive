@@ -81,6 +81,53 @@ const RLS_MODULE_BY_DBNAME_SQL = `
   LIMIT 1
 `;
 
+const RLS_SETTINGS_BY_DATABASE_ID_SQL = `
+  SELECT
+    auth_schema.schema_name AS authenticate_schema,
+    role_schema.schema_name AS role_schema,
+    auth_fn.name AS authenticate,
+    auth_strict_fn.name AS authenticate_strict,
+    role_fn.name AS current_role,
+    role_id_fn.name AS current_role_id,
+    ua_fn.name AS current_user_agent,
+    ip_fn.name AS current_ip_address
+  FROM services_public.rls_settings rs
+  LEFT JOIN metaschema_public.schema auth_schema ON rs.authenticate_schema_id = auth_schema.id
+  LEFT JOIN metaschema_public.schema role_schema ON rs.role_schema_id = role_schema.id
+  LEFT JOIN metaschema_public.function auth_fn ON rs.authenticate_function_id = auth_fn.id
+  LEFT JOIN metaschema_public.function auth_strict_fn ON rs.authenticate_strict_function_id = auth_strict_fn.id
+  LEFT JOIN metaschema_public.function role_fn ON rs.current_role_function_id = role_fn.id
+  LEFT JOIN metaschema_public.function role_id_fn ON rs.current_role_id_function_id = role_id_fn.id
+  LEFT JOIN metaschema_public.function ua_fn ON rs.current_user_agent_function_id = ua_fn.id
+  LEFT JOIN metaschema_public.function ip_fn ON rs.current_ip_address_function_id = ip_fn.id
+  WHERE rs.database_id = $1
+  LIMIT 1
+`;
+
+const RLS_SETTINGS_BY_DBNAME_SQL = `
+  SELECT
+    auth_schema.schema_name AS authenticate_schema,
+    role_schema.schema_name AS role_schema,
+    auth_fn.name AS authenticate,
+    auth_strict_fn.name AS authenticate_strict,
+    role_fn.name AS current_role,
+    role_id_fn.name AS current_role_id,
+    ua_fn.name AS current_user_agent,
+    ip_fn.name AS current_ip_address
+  FROM services_public.rls_settings rs
+  JOIN services_public.apis a ON rs.database_id = a.database_id
+  LEFT JOIN metaschema_public.schema auth_schema ON rs.authenticate_schema_id = auth_schema.id
+  LEFT JOIN metaschema_public.schema role_schema ON rs.role_schema_id = role_schema.id
+  LEFT JOIN metaschema_public.function auth_fn ON rs.authenticate_function_id = auth_fn.id
+  LEFT JOIN metaschema_public.function auth_strict_fn ON rs.authenticate_strict_function_id = auth_strict_fn.id
+  LEFT JOIN metaschema_public.function role_fn ON rs.current_role_function_id = role_fn.id
+  LEFT JOIN metaschema_public.function role_id_fn ON rs.current_role_id_function_id = role_id_fn.id
+  LEFT JOIN metaschema_public.function ua_fn ON rs.current_user_agent_function_id = ua_fn.id
+  LEFT JOIN metaschema_public.function ip_fn ON rs.current_ip_address_function_id = ip_fn.id
+  WHERE a.dbname = $1
+  LIMIT 1
+`;
+
 interface RlsModuleData {
   authenticate: string;
   authenticate_strict: string;
@@ -111,6 +158,20 @@ const toRlsModule = (row: RlsModuleRow | null): RlsModule | undefined => {
   };
 };
 
+const toRlsModuleFromSettings = (row: RlsModuleData | null): RlsModule | undefined => {
+  if (!row) return undefined;
+  return {
+    authenticate: row.authenticate,
+    authenticateStrict: row.authenticate_strict,
+    privateSchema: { schemaName: row.authenticate_schema },
+    publicSchema: { schemaName: row.role_schema },
+    currentRole: row.current_role,
+    currentRoleId: row.current_role_id,
+    currentIpAddress: row.current_ip_address,
+    currentUserAgent: row.current_user_agent,
+  };
+};
+
 const getBearerToken = (authorization?: string): string | null => {
   if (!authorization) return null;
   const [authType, authToken] = authorization.split(' ');
@@ -120,7 +181,27 @@ const getBearerToken = (authorization?: string): string | null => {
   return authToken;
 };
 
+const queryRlsSettingsByDatabaseId = async (pool: Pool, databaseId: string): Promise<RlsModule | undefined> => {
+  try {
+    const result = await pool.query<RlsModuleData>(RLS_SETTINGS_BY_DATABASE_ID_SQL, [databaseId]);
+    return toRlsModuleFromSettings(result.rows[0] ?? null);
+  } catch {
+    return undefined;
+  }
+};
+
+const queryRlsSettingsByDbname = async (pool: Pool, dbname: string): Promise<RlsModule | undefined> => {
+  try {
+    const result = await pool.query<RlsModuleData>(RLS_SETTINGS_BY_DBNAME_SQL, [dbname]);
+    return toRlsModuleFromSettings(result.rows[0] ?? null);
+  } catch {
+    return undefined;
+  }
+};
+
 const queryRlsModuleByDatabaseId = async (pool: Pool, databaseId: string): Promise<RlsModule | undefined> => {
+  const fromSettings = await queryRlsSettingsByDatabaseId(pool, databaseId);
+  if (fromSettings) return fromSettings;
   const result = await pool.query<RlsModuleRow>(RLS_MODULE_BY_DATABASE_ID_SQL, [databaseId]);
   return toRlsModule(result.rows[0] ?? null);
 };
@@ -131,6 +212,8 @@ const queryRlsModuleByApiId = async (pool: Pool, apiId: string): Promise<RlsModu
 };
 
 const queryRlsModuleByDbname = async (pool: Pool, dbname: string): Promise<RlsModule | undefined> => {
+  const fromSettings = await queryRlsSettingsByDbname(pool, dbname);
+  if (fromSettings) return fromSettings;
   const result = await pool.query<RlsModuleRow>(RLS_MODULE_BY_DBNAME_SQL, [dbname]);
   return toRlsModule(result.rows[0] ?? null);
 };

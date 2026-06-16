@@ -249,6 +249,7 @@ export interface SqlAction {
   revert?: string | null;
   verify?: string | null;
   createdAt?: string | null;
+  category?: string | null;
   action?: string | null;
   actionId?: string | null;
   actorId?: string | null;
@@ -288,6 +289,7 @@ export type SqlActionSelect = {
   revert?: boolean;
   verify?: boolean;
   createdAt?: boolean;
+  category?: boolean;
   action?: boolean;
   actionId?: boolean;
   actorId?: boolean;
@@ -326,6 +328,8 @@ export interface SqlActionFilter {
   verify?: StringFilter;
   /** Filter by the object’s `createdAt` field. */
   createdAt?: DatetimeFilter;
+  /** Filter by the object’s `category` field. */
+  category?: StringFilter;
   /** Filter by the object’s `action` field. */
   action?: StringFilter;
   /** Filter by the object’s `actionId` field. */
@@ -374,6 +378,8 @@ export type SqlActionOrderBy =
   | 'VERIFY_DESC'
   | 'CREATED_AT_ASC'
   | 'CREATED_AT_DESC'
+  | 'CATEGORY_ASC'
+  | 'CATEGORY_DESC'
   | 'ACTION_ASC'
   | 'ACTION_DESC'
   | 'ACTION_ID_ASC'
@@ -413,6 +419,7 @@ export interface CreateSqlActionInput {
     content?: string;
     revert?: string;
     verify?: string;
+    category?: string;
     action?: string;
     actionId?: string;
     actorId?: string;
@@ -427,6 +434,7 @@ export interface SqlActionPatch {
   content?: string | null;
   revert?: string | null;
   verify?: string | null;
+  category?: string | null;
   action?: string | null;
   actionId?: string | null;
   actorId?: string | null;
@@ -452,29 +460,6 @@ export interface RunMigrationInput {
   databaseId?: string;
   migration?: number;
   kind?: string;
-}
-export interface RequestUploadUrlInput {
-  /** Bucket key (e.g., "public", "private") */
-  bucketKey: string;
-  /**
-   * Owner entity ID for entity-scoped uploads.
-   * Omit for app-level (database-wide) storage.
-   * When provided, resolves the storage module for the entity type
-   * that owns this entity instance (e.g., a data room ID, team ID).
-   */
-  ownerId?: string;
-  /** SHA-256 content hash computed by the client (hex-encoded, 64 chars) */
-  contentHash: string;
-  /** MIME type of the file (e.g., "image/png") */
-  contentType: string;
-  /** File size in bytes */
-  size: number;
-  /** Original filename (optional, for display and Content-Disposition) */
-  filename?: string;
-}
-export interface ConfirmUploadInput {
-  /** The file ID returned by requestUploadUrl */
-  fileId: string;
 }
 export interface ProvisionBucketInput {
   /** The logical bucket key (e.g., "public", "private") */
@@ -520,6 +505,29 @@ export interface ConstructiveInternalTypeUploadFilter {
   /** Contained by the specified JSON. */
   containedBy?: ConstructiveInternalTypeUpload;
 }
+/** An input for mutations affecting `MigrateFile` */
+export interface MigrateFileInput {
+  id?: string;
+  databaseId?: string;
+  upload?: ConstructiveInternalTypeUpload;
+}
+/** An input for mutations affecting `SqlAction` */
+export interface SqlActionInput {
+  id?: number;
+  name?: string;
+  databaseId?: string;
+  deploy?: string;
+  deps?: string[];
+  payload?: Record<string, unknown>;
+  content?: string;
+  revert?: string;
+  verify?: string;
+  createdAt?: string;
+  category?: string;
+  action?: string;
+  actionId?: string;
+  actorId?: string;
+}
 // ============ Payload/Return Types (for custom operations) ============
 export interface ExecuteSqlPayload {
   clientMutationId?: string | null;
@@ -532,38 +540,6 @@ export interface RunMigrationPayload {
 }
 export type RunMigrationPayloadSelect = {
   clientMutationId?: boolean;
-};
-export interface RequestUploadUrlPayload {
-  /** Presigned PUT URL (null if file was deduplicated) */
-  uploadUrl?: string | null;
-  /** The file ID (existing if deduplicated, new if fresh upload) */
-  fileId: string;
-  /** The S3 object key */
-  key: string;
-  /** Whether this file was deduplicated (already exists with same hash) */
-  deduplicated: boolean;
-  /** Presigned URL expiry time (null if deduplicated) */
-  expiresAt?: string | null;
-}
-export type RequestUploadUrlPayloadSelect = {
-  uploadUrl?: boolean;
-  fileId?: boolean;
-  key?: boolean;
-  deduplicated?: boolean;
-  expiresAt?: boolean;
-};
-export interface ConfirmUploadPayload {
-  /** The confirmed file ID */
-  fileId: string;
-  /** New file status */
-  status: string;
-  /** Whether confirmation succeeded */
-  success: boolean;
-}
-export type ConfirmUploadPayloadSelect = {
-  fileId?: boolean;
-  status?: boolean;
-  success?: boolean;
 };
 export interface ProvisionBucketPayload {
   /** Whether provisioning succeeded */

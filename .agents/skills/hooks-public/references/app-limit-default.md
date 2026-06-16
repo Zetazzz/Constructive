@@ -7,8 +7,8 @@ Default maximum values for each named limit, applied when no per-actor override 
 ## Usage
 
 ```typescript
-useAppLimitDefaultsQuery({ selection: { fields: { id: true, name: true, max: true } } })
-useAppLimitDefaultQuery({ id: '<UUID>', selection: { fields: { id: true, name: true, max: true } } })
+useAppLimitDefaultsQuery({ selection: { fields: { id: true, name: true, max: true, softMax: true } } })
+useAppLimitDefaultQuery({ id: '<UUID>', selection: { fields: { id: true, name: true, max: true, softMax: true } } })
 useCreateAppLimitDefaultMutation({ selection: { fields: { id: true } } })
 useUpdateAppLimitDefaultMutation({ selection: { fields: { id: true } } })
 useDeleteAppLimitDefaultMutation({})
@@ -20,7 +20,7 @@ useDeleteAppLimitDefaultMutation({})
 
 ```typescript
 const { data, isLoading } = useAppLimitDefaultsQuery({
-  selection: { fields: { id: true, name: true, max: true } },
+  selection: { fields: { id: true, name: true, max: true, softMax: true } },
 });
 ```
 
@@ -30,5 +30,5 @@ const { data, isLoading } = useAppLimitDefaultsQuery({
 const { mutate } = useCreateAppLimitDefaultMutation({
   selection: { fields: { id: true } },
 });
-mutate({ name: '<String>', max: '<Int>' });
+mutate({ name: '<String>', max: '<BigInt>', softMax: '<BigInt>' });
 ```

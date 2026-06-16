@@ -3,6 +3,141 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.19.2...graphile-presigned-url-plugin@0.20.0) (2026-05-30)
+
+### Bug Fixes
+
+- rename membershipType to scope in storage plugin interfaces ([f7ffb26](https://github.com/constructive-io/constructive/commit/f7ffb26dc1924514a59f7f41a4f56d64556d0dd6))
+- update storage plugins to use scope instead of membership_type ([5c4cd30](https://github.com/constructive-io/constructive/commit/5c4cd30c08d541f3e9b0c22d31cf39a977599615))
+
+## [0.19.2](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.19.1...graphile-presigned-url-plugin@0.19.2) (2026-05-29)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+## [0.19.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.19.0...graphile-presigned-url-plugin@0.19.1) (2026-05-21)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+# [0.19.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.18.0...graphile-presigned-url-plugin@0.19.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+# [0.18.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.17.1...graphile-presigned-url-plugin@0.18.0) (2026-05-13)
+
+### Bug Fixes
+
+- scope BucketNameResolver to (databaseId, bucketKey) ([304d201](https://github.com/constructive-io/constructive/commit/304d201a03bd5fcc059566c373ccf6465b134489))
+
+### BREAKING CHANGES
+
+- custom resolveBucketName callbacks must now accept
+  (databaseId: string, bucketKey: string) instead of (databaseId: string).
+
+## [0.17.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.17.0...graphile-presigned-url-plugin@0.17.1) (2026-05-11)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+# [0.17.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.16.1...graphile-presigned-url-plugin@0.17.0) (2026-05-11)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+## [0.16.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.16.0...graphile-presigned-url-plugin@0.16.1) (2026-05-09)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+# [0.16.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.15.1...graphile-presigned-url-plugin@0.16.0) (2026-05-09)
+
+### Features
+
+- **presigned-url:** enforce bulk upload limits (maxBulkFiles + maxBulkTotalSize) ([8c0be4a](https://github.com/constructive-io/constructive/commit/8c0be4a0651793eb119e7770fc5942a3bdd00dc9))
+
+## [0.15.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.15.0...graphile-presigned-url-plugin@0.15.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+# [0.15.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.14.1...graphile-presigned-url-plugin@0.15.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+## [0.14.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.14.0...graphile-presigned-url-plugin@0.14.1) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** match files→buckets by table name prefix instead of schema name ([7fd3cca](https://github.com/constructive-io/constructive/commit/7fd3ccac49f313a98e9fbe98850426888f658869))
+
+# [0.14.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.13.0...graphile-presigned-url-plugin@0.14.0) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** rename createFile -> uploadFile to avoid CRUD naming conflict ([9b8fb0a](https://github.com/constructive-io/constructive/commit/9b8fb0ad3c9971c2a71527f4e9f78a8bf232fdee))
+
+### Features
+
+- **presigned-url:** add createFile mutations alongside bucket entry points ([b22fc31](https://github.com/constructive-io/constructive/commit/b22fc3138b5dbb01b737adf319fafa8535364763))
+
+# [0.13.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.2...graphile-presigned-url-plugin@0.13.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+## [0.12.2](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.1...graphile-presigned-url-plugin@0.12.2) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** use correct GraphQL type for ownerId argument ([22e5252](https://github.com/constructive-io/constructive/commit/22e52529a7c8d19d84f6b72866cafa09b7288fa5))
+- **presigned-url:** use extensions.pg.name for codec table name matching ([b60a855](https://github.com/constructive-io/constructive/commit/b60a855c784809c564c62bc26823767cbeb792d2))
+
+## [0.12.1](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.12.0...graphile-presigned-url-plugin@0.12.1) (2026-05-08)
+
+### Bug Fixes
+
+- **presigned-url:** return PgSelectSingleStep from mutation entry points ([c924768](https://github.com/constructive-io/constructive/commit/c924768d99fc413e8fcfbe9ae1a43a9aac60c4ff))
+
+# [0.12.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.11.0...graphile-presigned-url-plugin@0.12.0) (2026-05-08)
+
+### Features
+
+- **presigned-url:** add per-bucket mutation entry points on root Mutation type ([a8811be](https://github.com/constructive-io/constructive/commit/a8811be6c48ba7008d78d2e3724df5000226db35))
+
+# [0.11.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.10.0...graphile-presigned-url-plugin@0.11.0) (2026-05-07)
+
+### Features
+
+- per-table storage middleware — upload fields on bucket types, delete middleware on file tables ([5003dc5](https://github.com/constructive-io/constructive/commit/5003dc5d85d21d5042572071b22fad1654f36881))
+
+# [0.10.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.9.0...graphile-presigned-url-plugin@0.10.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+# [0.9.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.8.0...graphile-presigned-url-plugin@0.9.0) (2026-05-05)
+
+### Features
+
+- add allow_custom_keys support, requestBulkUploadUrls mutation, auto-path derivation ([3f2554e](https://github.com/constructive-io/constructive/commit/3f2554edccb12aee16eb7952a5928d1e7afac1cd))
+
+# [0.8.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.7.0...graphile-presigned-url-plugin@0.8.0) (2026-05-03)
+
+### Bug Fixes
+
+- update snapshots, tests, and seeds for storage simplification ([9b1a48a](https://github.com/constructive-io/constructive/commit/9b1a48ae65add780c0d005f8912cf70a4d7af078))
+
+### Features
+
+- remove confirmUpload, upload_requests, files.status — simplify storage ([e3c516d](https://github.com/constructive-io/constructive/commit/e3c516d35fe05a35b5117c2756bd1363872eafe1))
+
+# [0.7.0](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.6.5...graphile-presigned-url-plugin@0.7.0) (2026-04-29)
+
+### Features
+
+- add status field to RequestUploadUrlPayload ([c61b5e9](https://github.com/constructive-io/constructive/commit/c61b5e9eef9a4e2f86ab859bd7f599f4abf8264d))
+
+## [0.6.5](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.6.4...graphile-presigned-url-plugin@0.6.5) (2026-04-28)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
+## [0.6.4](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.6.3...graphile-presigned-url-plugin@0.6.4) (2026-04-27)
+
+**Note:** Version bump only for package graphile-presigned-url-plugin
+
 ## [0.6.3](https://github.com/constructive-io/constructive/compare/graphile-presigned-url-plugin@0.6.2...graphile-presigned-url-plugin@0.6.3) (2026-04-20)
 
 ### Bug Fixes

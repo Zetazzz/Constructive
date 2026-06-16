@@ -73,3 +73,34 @@ export function stripSmartComments(
 
   return result;
 }
+
+/**
+ * Parse PostGraphile smart tags from a description string.
+ *
+ * Smart tags are lines starting with `@` in PostgreSQL COMMENTs.
+ * Each line is parsed as `@tagName` (boolean true) or `@tagName value`.
+ *
+ * Returns undefined if no smart tags are found.
+ */
+export function parseSmartTags(
+  description: string | null | undefined,
+): Record<string, string | true> | undefined {
+  if (!description) return undefined;
+
+  const lines = description.split('\n');
+  let tags: Record<string, string | true> | undefined;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('@')) continue;
+
+    const spaceIdx = trimmed.indexOf(' ');
+    const tagName = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
+    const tagValue = spaceIdx === -1 ? true : trimmed.slice(spaceIdx + 1).trim();
+
+    if (!tags) tags = {};
+    tags[tagName] = tagValue || true;
+  }
+
+  return tags;
+}

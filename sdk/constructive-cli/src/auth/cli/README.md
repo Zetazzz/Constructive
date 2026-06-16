@@ -30,7 +30,7 @@ csdk auth set-token <your-token>
 | `phone-number` | phoneNumber CRUD operations |
 | `crypto-address` | cryptoAddress CRUD operations |
 | `webauthn-credential` | webauthnCredential CRUD operations |
-| `audit-log` | auditLog CRUD operations |
+| `audit-log-auth` | auditLogAuth CRUD operations |
 | `identity-provider` | identityProvider CRUD operations |
 | `role-type` | roleType CRUD operations |
 | `user-connected-account` | userConnectedAccount CRUD operations |
@@ -54,20 +54,16 @@ csdk auth set-token <your-token>
 | `provision-new-user` | provisionNewUser |
 | `reset-password` | resetPassword |
 | `sign-in-cross-origin` | signInCrossOrigin |
+| `sign-in-sms-otp` | signInSmsOtp |
+| `sign-up-sms` | signUpSms |
 | `sign-up` | signUp |
-| `request-cross-origin-token` | requestCrossOriginToken |
 | `sign-in` | signIn |
+| `link-identity` | linkIdentity |
 | `extend-token-expires` | extendTokenExpires |
 | `create-api-key` | createApiKey |
+| `request-cross-origin-token` | requestCrossOriginToken |
 | `forgot-password` | forgotPassword |
 | `send-verification-email` | sendVerificationEmail |
-| `request-upload-url` | Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl. |
-| `confirm-upload` | Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'. |
 | `provision-bucket` | Provision an S3 bucket for a logical bucket in the database.
 Reads the bucket config via RLS, then creates and configures
 the S3 bucket with the appropriate privacy policies, CORS rules,
@@ -237,23 +233,24 @@ CRUD operations for WebauthnCredential records.
 **Required create fields:** `credentialId`, `publicKey`, `webauthnUserId`, `credentialDeviceType`
 **Optional create fields (backend defaults):** `ownerId`, `signCount`, `transports`, `backupEligible`, `backupState`, `name`, `lastUsedAt`
 
-### `audit-log`
+### `audit-log-auth`
 
-CRUD operations for AuditLog records.
+CRUD operations for AuditLogAuth records.
 
 | Subcommand | Description |
 |------------|-------------|
-| `list` | List all auditLog records |
-| `find-first` | Find first matching auditLog record |
-| `get` | Get a auditLog by id |
-| `create` | Create a new auditLog |
-| `update` | Update an existing auditLog |
-| `delete` | Delete a auditLog |
+| `list` | List all auditLogAuth records |
+| `find-first` | Find first matching auditLogAuth record |
+| `get` | Get a auditLogAuth by id |
+| `create` | Create a new auditLogAuth |
+| `update` | Update an existing auditLogAuth |
+| `delete` | Delete a auditLogAuth |
 
 **Fields:**
 
 | Field | Type |
 |-------|------|
+| `createdAt` | Datetime |
 | `id` | UUID |
 | `event` | String |
 | `actorId` | UUID |
@@ -261,7 +258,6 @@ CRUD operations for AuditLog records.
 | `userAgent` | String |
 | `ipAddress` | InternetAddress |
 | `success` | Boolean |
-| `createdAt` | Datetime |
 
 **Required create fields:** `event`, `success`
 **Optional create fields (backend defaults):** `actorId`, `origin`, `userAgent`, `ipAddress`
@@ -613,6 +609,38 @@ signInCrossOrigin
   | `--input.token` | String |
   | `--input.credentialKind` | String |
 
+### `sign-in-sms-otp`
+
+signInSmsOtp
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `--input.clientMutationId` | String |
+  | `--input.phone` | String |
+  | `--input.code` | String |
+  | `--input.credentialKind` | String |
+  | `--input.rememberMe` | Boolean |
+  | `--input.deviceToken` | String |
+
+### `sign-up-sms`
+
+signUpSms
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `--input.clientMutationId` | String |
+  | `--input.phone` | String |
+  | `--input.code` | String |
+  | `--input.credentialKind` | String |
+  | `--input.rememberMe` | Boolean |
+  | `--input.deviceToken` | String |
+
 ### `sign-up`
 
 signUp
@@ -628,21 +656,7 @@ signUp
   | `--input.rememberMe` | Boolean |
   | `--input.credentialKind` | String |
   | `--input.csrfToken` | String |
-
-### `request-cross-origin-token`
-
-requestCrossOriginToken
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.clientMutationId` | String |
-  | `--input.email` | String |
-  | `--input.password` | String |
-  | `--input.origin` | Origin |
-  | `--input.rememberMe` | Boolean |
+  | `--input.deviceToken` | String |
 
 ### `sign-in`
 
@@ -660,6 +674,20 @@ signIn
   | `--input.credentialKind` | String |
   | `--input.csrfToken` | String |
   | `--input.deviceToken` | String |
+
+### `link-identity`
+
+linkIdentity
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `--input.clientMutationId` | String |
+  | `--input.service` | String (required) |
+  | `--input.identifier` | String (required) |
+  | `--input.details` | JSON |
 
 ### `extend-token-expires`
 
@@ -688,6 +716,21 @@ createApiKey
   | `--input.mfaLevel` | String |
   | `--input.expiresIn` | IntervalInput |
 
+### `request-cross-origin-token`
+
+requestCrossOriginToken
+
+- **Type:** mutation
+- **Arguments:**
+
+  | Argument | Type |
+  |----------|------|
+  | `--input.clientMutationId` | String |
+  | `--input.email` | String |
+  | `--input.password` | String |
+  | `--input.origin` | Origin |
+  | `--input.rememberMe` | Boolean |
+
 ### `forgot-password`
 
 forgotPassword
@@ -711,38 +754,6 @@ sendVerificationEmail
   |----------|------|
   | `--input.clientMutationId` | String |
   | `--input.email` | Email |
-
-### `request-upload-url`
-
-Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.bucketKey` | String (required) |
-  | `--input.ownerId` | UUID |
-  | `--input.contentHash` | String (required) |
-  | `--input.contentType` | String (required) |
-  | `--input.size` | Int (required) |
-  | `--input.filename` | String |
-
-### `confirm-upload`
-
-Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
-
-- **Type:** mutation
-- **Arguments:**
-
-  | Argument | Type |
-  |----------|------|
-  | `--input.fileId` | UUID (required) |
 
 ### `provision-bucket`
 

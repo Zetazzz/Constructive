@@ -50,13 +50,7 @@ describe('META_TABLE_CONFIG and META_TABLE_ORDER consistency', () => {
       }
     }
 
-    // database_extension is in config but intentionally not in META_TABLE_ORDER
-    // (it's queried but not included in the meta package output)
-    // If there are other exceptions, document them here.
-    const knownExceptions = ['database_extension'];
-    const unexpectedMissing = missingFromOrder.filter(k => !knownExceptions.includes(k));
-
-    expect(unexpectedMissing).toEqual([]);
+    expect(missingFromOrder).toEqual([]);
   });
 
   it('META_TABLE_ORDER should not have duplicates', () => {
@@ -79,22 +73,23 @@ describe('META_TABLE_CONFIG and META_TABLE_ORDER consistency', () => {
     for (const [key, config] of Object.entries(META_TABLE_CONFIG)) {
       expect(validSchemas).toContain(config.schema);
       expect(config.table).toBeTruthy();
-      expect(Object.keys(config.fields).length).toBeGreaterThan(0);
     }
   });
 
-  it('every config entry should have an id field of type uuid', () => {
+  it('config entries should not carry hardcoded `fields` (fully dynamic discovery)', () => {
     for (const [key, config] of Object.entries(META_TABLE_CONFIG)) {
-      expect(config.fields).toHaveProperty('id');
-      expect(config.fields.id).toBe('uuid');
+      expect((config as { fields?: unknown }).fields).toBeUndefined();
     }
   });
 
-  it('every config entry (except database) should have a database_id field', () => {
+  it('typeOverrides should only contain valid FieldType values', () => {
+    const validFieldTypes: string[] = ['uuid', 'uuid[]', 'text', 'text[]', 'boolean', 'image', 'upload', 'url', 'jsonb', 'jsonb[]', 'int', 'interval', 'timestamptz'];
     for (const [key, config] of Object.entries(META_TABLE_CONFIG)) {
-      if (key === 'database') continue;
-      expect(config.fields).toHaveProperty('database_id');
-      expect(config.fields.database_id).toBe('uuid');
+      if (config.typeOverrides) {
+        for (const [fieldName, fieldType] of Object.entries(config.typeOverrides)) {
+          expect(validFieldTypes).toContain(fieldType);
+        }
+      }
     }
   });
 });

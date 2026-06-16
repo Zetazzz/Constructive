@@ -14,10 +14,12 @@
 
 Client-side presigned URL upload utilities for Constructive.
 
+No Node.js-only dependencies — all APIs use Web standards (fetch, Web Crypto).
+
 ## Usage
 
 ```typescript
-import { uploadFile, hashFile } from '@constructive-io/upload-client';
+import { uploadFile, hashFile, hashContent, putToPresignedUrl, fetchFromUrl } from '@constructive-io/upload-client';
 
 // Full orchestrated upload
 const result = await uploadFile({
@@ -27,20 +29,35 @@ const result = await uploadFile({
   onProgress: (pct) => console.log(`${pct}%`),
 });
 
-// Or use atomic functions individually
+// Atomic functions for custom flows
 const hash = await hashFile(myFile);
+const contentHash = await hashContent('file contents');
+await putToPresignedUrl(presignedUrl, content, 'image/png');
+const response = await fetchFromUrl(downloadUrl);
 ```
 
 ## API
 
 ### `uploadFile(options)`
 
-Orchestrates the full presigned URL upload flow: hash → requestUploadUrl → PUT → confirmUpload.
+Orchestrates the full presigned URL upload flow: hash → requestUploadUrl → PUT to S3.
 
 ### `hashFile(file)`
 
-Computes SHA-256 hash using the Web Crypto API.
+Computes SHA-256 hash of a File/Blob using the Web Crypto API.
 
 ### `hashFileChunked(file, chunkSize?, onProgress?)`
 
 Computes SHA-256 hash in chunks for large files.
+
+### `hashContent(content)`
+
+Computes SHA-256 hex digest of a plain string using the Web Crypto API.
+
+### `putToPresignedUrl(url, body, contentType, signal?)`
+
+PUT content to a presigned S3 URL. Throws `UploadError` on failure.
+
+### `fetchFromUrl(url, signal?)`
+
+Fetch content from a presigned GET or CDN URL. Throws `UploadError` on failure.

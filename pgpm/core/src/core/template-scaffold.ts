@@ -1,6 +1,9 @@
 import os from 'os';
 import path from 'path';
 import { TemplateScaffolder, BoilerplateConfig as GenomicBoilerplateConfig } from 'genomic';
+export type { BoilerplateSkill } from 'genomic';
+export { SkillInstaller } from 'genomic';
+export type { SkillInstallOptions, SkillInstallResult, SkillInstallFailure } from 'genomic';
 import type { Inquirerer, Question } from 'inquirerer';
 
 /**
@@ -13,10 +16,6 @@ import type { Inquirerer, Question } from 'inquirerer';
  */
 export type WorkspaceType = 'pgpm' | 'pnpm' | 'lerna' | 'npm' | false;
 
-/**
- * Extended BoilerplateConfig that adds workspace requirement field.
- * This field controls both workspace detection and whether pgpm-specific files are created.
- */
 export interface BoilerplateConfig extends GenomicBoilerplateConfig {
   /**
    * Specifies what type of workspace this template requires.

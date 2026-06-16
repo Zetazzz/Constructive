@@ -11,6 +11,8 @@ const DEFAULT_DOWNLOAD_URL_EXPIRY_SECONDS = 3600; // 1 hour
 const DEFAULT_MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 const DEFAULT_MAX_FILENAME_LENGTH = 1024;
 const DEFAULT_CACHE_TTL_SECONDS = process.env.NODE_ENV === 'development' ? 300 : 3600;
+const DEFAULT_MAX_BULK_FILES = 100;
+const DEFAULT_MAX_BULK_TOTAL_SIZE = 1073741824; // 1GB
 
 const FIVE_MINUTES_MS = 1000 * 60 * 5;
 const ONE_HOUR_MS = 1000 * 60 * 60;
@@ -19,8 +21,8 @@ const ONE_HOUR_MS = 1000 * 60 * 60;
  * LRU cache for per-database StorageModuleConfig.
  *
  * Each PostGraphile instance serves a single database, but the presigned URL
- * plugin needs to know the generated table names (buckets, files,
- * upload_requests) and their schemas. This cache avoids re-querying metaschema
+ * plugin needs to know the generated table names (buckets, files)
+ * and their schemas. This cache avoids re-querying metaschema
  * on every request.
  *
  * Pattern: same as graphile-cache's LRU with TTL-based eviction.
@@ -35,21 +37,19 @@ const storageModuleCache = new LRUCache<string, StorageModuleConfig>({
  * SQL query to resolve the app-level storage module config for a database.
  *
  * Joins storage_module → table → schema to get fully-qualified table names.
- * Filters to app-level (membership_type IS NULL) by default.
+ * Filters to app-level (scope = 'app') by default.
  *
- * Requires the multi-scope schema (membership_type column on storage_module).
+ * Requires the multi-scope schema (scope column on storage_module).
  */
 const APP_STORAGE_MODULE_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
     fs.schema_name AS files_schema,
     ft.name AS files_table,
-    urs.schema_name AS upload_requests_schema,
-    urt.name AS upload_requests_table,
     sm.endpoint,
     sm.public_url_prefix,
     sm.provider,
@@ -59,6 +59,9 @@ const APP_STORAGE_MODULE_QUERY = `
     sm.default_max_file_size,
     sm.max_filename_length,
     sm.cache_ttl_seconds,
+    sm.max_bulk_files,
+    sm.max_bulk_total_size,
+    sm.has_path_shares,
     NULL AS entity_schema,
     NULL AS entity_table
   FROM metaschema_modules_public.storage_module sm
@@ -66,10 +69,8 @@ const APP_STORAGE_MODULE_QUERY = `
   JOIN metaschema_public.schema bs ON bs.id = bt.schema_id
   JOIN metaschema_public.table ft ON ft.id = sm.files_table_id
   JOIN metaschema_public.schema fs ON fs.id = ft.schema_id
-  JOIN metaschema_public.table urt ON urt.id = sm.upload_requests_table_id
-  JOIN metaschema_public.schema urs ON urs.id = urt.schema_id
   WHERE sm.database_id = $1
-    AND sm.membership_type IS NULL
+    AND sm.scope = 'app'
   LIMIT 1
 `;
 
@@ -82,14 +83,12 @@ const APP_STORAGE_MODULE_QUERY = `
 const ALL_STORAGE_MODULES_QUERY = `
   SELECT
     sm.id,
-    sm.membership_type,
+    sm.scope,
     sm.entity_table_id,
     bs.schema_name AS buckets_schema,
     bt.name AS buckets_table,
     fs.schema_name AS files_schema,
     ft.name AS files_table,
-    urs.schema_name AS upload_requests_schema,
-    urt.name AS upload_requests_table,
     sm.endpoint,
     sm.public_url_prefix,
     sm.provider,
@@ -99,6 +98,9 @@ const ALL_STORAGE_MODULES_QUERY = `
     sm.default_max_file_size,
     sm.max_filename_length,
     sm.cache_ttl_seconds,
+    sm.max_bulk_files,
+    sm.max_bulk_total_size,
+    sm.has_path_shares,
     es.schema_name AS entity_schema,
     et.name AS entity_table
   FROM metaschema_modules_public.storage_module sm
@@ -106,8 +108,6 @@ const ALL_STORAGE_MODULES_QUERY = `
   JOIN metaschema_public.schema bs ON bs.id = bt.schema_id
   JOIN metaschema_public.table ft ON ft.id = sm.files_table_id
   JOIN metaschema_public.schema fs ON fs.id = ft.schema_id
-  JOIN metaschema_public.table urt ON urt.id = sm.upload_requests_table_id
-  JOIN metaschema_public.schema urs ON urs.id = urt.schema_id
   LEFT JOIN metaschema_public.table et ON et.id = sm.entity_table_id
   LEFT JOIN metaschema_public.schema es ON es.id = et.schema_id
   WHERE sm.database_id = $1
@@ -115,14 +115,12 @@ const ALL_STORAGE_MODULES_QUERY = `
 
 interface StorageModuleRow {
   id: string;
-  membership_type: number | null;
+  scope: string;
   entity_table_id: string | null;
   buckets_schema: string;
   buckets_table: string;
   files_schema: string;
   files_table: string;
-  upload_requests_schema: string;
-  upload_requests_table: string;
   endpoint: string | null;
   public_url_prefix: string | null;
   provider: string | null;
@@ -132,6 +130,9 @@ interface StorageModuleRow {
   default_max_file_size: number | null;
   max_filename_length: number | null;
   cache_ttl_seconds: number | null;
+  max_bulk_files: number | null;
+  max_bulk_total_size: number | null;
+  has_path_shares: boolean;
   entity_schema: string | null;
   entity_table: string | null;
 }
@@ -145,12 +146,10 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
     id: row.id,
     bucketsQualifiedName: QuoteUtils.quoteQualifiedIdentifier(row.buckets_schema, row.buckets_table),
     filesQualifiedName: QuoteUtils.quoteQualifiedIdentifier(row.files_schema, row.files_table),
-    uploadRequestsQualifiedName: QuoteUtils.quoteQualifiedIdentifier(row.upload_requests_schema, row.upload_requests_table),
     schemaName: row.buckets_schema,
     bucketsTableName: row.buckets_table,
     filesTableName: row.files_table,
-    uploadRequestsTableName: row.upload_requests_table,
-    membershipType: row.membership_type,
+    scope: row.scope,
     entityTableId: row.entity_table_id,
     entityQualifiedName: row.entity_schema && row.entity_table
       ? QuoteUtils.quoteQualifiedIdentifier(row.entity_schema, row.entity_table)
@@ -164,6 +163,9 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
     defaultMaxFileSize: row.default_max_file_size ?? DEFAULT_MAX_FILE_SIZE,
     maxFilenameLength: row.max_filename_length ?? DEFAULT_MAX_FILENAME_LENGTH,
     cacheTtlSeconds,
+    hasPathShares: row.has_path_shares ?? false,
+    maxBulkFiles: row.max_bulk_files ?? DEFAULT_MAX_BULK_FILES,
+    maxBulkTotalSize: row.max_bulk_total_size ?? DEFAULT_MAX_BULK_TOTAL_SIZE,
   };
 }
 
@@ -171,7 +173,7 @@ function buildConfig(row: StorageModuleRow): StorageModuleConfig {
  * Resolve the app-level storage module config for a database, using the LRU cache.
  *
  * This is the default path when no ownerId is provided. It returns the
- * storage module with membership_type IS NULL (app-level / database-wide).
+ * storage module with scope = 'app' (app-level / database-wide).
  *
  * @param pgClient - A pg client from the Graphile context (withPgClient or pgClient)
  * @param databaseId - The metaschema database UUID
@@ -247,11 +249,9 @@ export async function getStorageModuleConfigForOwner(
     const result = await pgClient.query({ text: ALL_STORAGE_MODULES_QUERY, values: [databaseId] });
     allConfigs = (result.rows as StorageModuleRow[]).map(buildConfig);
 
-    // Cache each individual config by its membership type
+    // Cache each individual config by its scope
     for (const config of allConfigs) {
-      const key = config.membershipType === null
-        ? `storage:${databaseId}:app`
-        : `storage:${databaseId}:mt:${config.membershipType}`;
+      const key = `storage:${databaseId}:scope:${config.scope}`;
       storageModuleCache.set(key, config);
     }
   }
@@ -269,7 +269,7 @@ export async function getStorageModuleConfigForOwner(
       storageModuleCache.set(ownerCacheKey, mod);
       log.debug(
         `Resolved ownerId ${ownerId} to storage module ${mod.id} ` +
-        `(membershipType=${mod.membershipType}, table=${mod.bucketsQualifiedName})`,
+        `(scope=${mod.scope}, table=${mod.bucketsQualifiedName})`,
       );
       return mod;
     }
@@ -282,7 +282,6 @@ export async function getStorageModuleConfigForOwner(
 /**
  * Resolve the storage module that owns a specific file by probing all file tables.
  *
- * Used by confirmUpload when only a fileId (UUID) is available.
  * Since UUIDs are globally unique, exactly one table will contain the file.
  *
  * @param pgClient - A pg client from the Graphile context
@@ -294,7 +293,7 @@ export async function resolveStorageModuleByFileId(
   pgClient: { query: (opts: { text: string; values?: unknown[] }) => Promise<{ rows: unknown[] }> },
   databaseId: string,
   fileId: string,
-): Promise<{ storageConfig: StorageModuleConfig; file: { id: string; key: string; mime_type: string; status: string; bucket_id: string } } | null> {
+): Promise<{ storageConfig: StorageModuleConfig; file: { id: string; key: string; mime_type: string; bucket_id: string } } | null> {
   // Load all storage modules for this database
   log.debug(`Resolving file ${fileId} across all storage modules for database ${databaseId}`);
 
@@ -305,19 +304,77 @@ export async function resolveStorageModuleByFileId(
   // Probe each module's files table for the fileId
   for (const config of allConfigs) {
     const fileResult = await pgClient.query({
-      text: `SELECT id, key, mime_type, status, bucket_id
+      text: `SELECT id, key, mime_type, bucket_id
        FROM ${config.filesQualifiedName}
        WHERE id = $1
        LIMIT 1`,
       values: [fileId],
     });
     if (fileResult.rows.length > 0) {
-      const file = fileResult.rows[0] as { id: string; key: string; mime_type: string; status: string; bucket_id: string };
+      const file = fileResult.rows[0] as { id: string; key: string; mime_type: string; bucket_id: string };
       return { storageConfig: config, file };
     }
   }
 
   return null;
+}
+
+/**
+ * Load all storage modules for a database, using the LRU cache.
+ *
+ * Returns an array of all StorageModuleConfig entries (app-level + entity-scoped).
+ * The result is cached per-database so subsequent calls avoid the DB query.
+ */
+export async function loadAllStorageModules(
+  pgClient: { query: (opts: { text: string; values?: unknown[] }) => Promise<{ rows: unknown[] }> },
+  databaseId: string,
+): Promise<StorageModuleConfig[]> {
+  const cacheKey = `storage:${databaseId}:all-list`;
+  const cached = storageModuleCache.get(cacheKey);
+  if (cached) {
+    return (cached as any)._allConfigs as StorageModuleConfig[];
+  }
+
+  log.debug(`Loading all storage modules for database ${databaseId}`);
+  const result = await pgClient.query({ text: ALL_STORAGE_MODULES_QUERY, values: [databaseId] });
+  const configs = (result.rows as StorageModuleRow[]).map(buildConfig);
+
+  // Cache each individual config by its scope
+  for (const config of configs) {
+    const key = `storage:${databaseId}:scope:${config.scope}`;
+    storageModuleCache.set(key, config);
+  }
+
+  // Store the full list under a sentinel key
+  const sentinel = { ...configs[0] || {}, _allConfigs: configs } as any;
+  storageModuleCache.set(cacheKey, sentinel);
+
+  return configs;
+}
+
+/**
+ * Resolve the storage module config from a PostGraphile pgCodec.
+ *
+ * Matches the codec's schema + table name against cached storage modules.
+ * Works for both files codecs (@storageFiles) and buckets codecs (@storageBuckets).
+ *
+ * @param pgCodec - The PostGraphile codec (has extensions.pg.schemaName, name)
+ * @param allConfigs - All storage module configs for this database
+ * @returns The matching StorageModuleConfig or null
+ */
+export function resolveStorageConfigFromCodec(
+  pgCodec: { name: string; extensions?: { pg?: { schemaName?: string; name?: string } }; sqlType?: string },
+  allConfigs: StorageModuleConfig[],
+): StorageModuleConfig | null {
+  const schemaName = pgCodec.extensions?.pg?.schemaName;
+  const tableName = pgCodec.extensions?.pg?.name ?? pgCodec.name;
+
+  if (!schemaName || !tableName) return null;
+
+  return allConfigs.find((c) =>
+    (c.filesTableName === tableName && c.schemaName === schemaName) ||
+    (c.bucketsTableName === tableName && c.schemaName === schemaName),
+  ) || null;
 }
 
 // --- Bucket metadata cache ---
@@ -372,14 +429,15 @@ export async function getBucketConfig(
 
   // Entity-scoped buckets use (owner_id, key) composite lookup;
   // app-level buckets just use key.
-  const hasOwner = ownerId && storageConfig.membershipType !== null;
+  const isEntityScoped = storageConfig.scope !== 'app';
+  const hasOwner = ownerId && isEntityScoped;
   const result = await pgClient.query({
     text: hasOwner
-      ? `SELECT id, key, type, is_public, owner_id, allowed_mime_types, max_file_size
+      ? `SELECT id, key, type, is_public, owner_id, allowed_mime_types, max_file_size, allow_custom_keys
          FROM ${storageConfig.bucketsQualifiedName}
          WHERE key = $1 AND owner_id = $2
          LIMIT 1`
-      : `SELECT id, key, type, is_public, ${storageConfig.membershipType !== null ? 'owner_id,' : ''} allowed_mime_types, max_file_size
+      : `SELECT id, key, type, is_public, ${isEntityScoped ? 'owner_id,' : ''} allowed_mime_types, max_file_size, allow_custom_keys
          FROM ${storageConfig.bucketsQualifiedName}
          WHERE key = $1
          LIMIT 1`,
@@ -398,6 +456,7 @@ export async function getBucketConfig(
     owner_id: string | null;
     allowed_mime_types: string[] | null;
     max_file_size: number | null;
+    allow_custom_keys: boolean;
   };
 
   const config: BucketConfig = {
@@ -408,10 +467,11 @@ export async function getBucketConfig(
     owner_id: row.owner_id ?? null,
     allowed_mime_types: row.allowed_mime_types,
     max_file_size: row.max_file_size,
+    allow_custom_keys: row.allow_custom_keys ?? false,
   };
 
   bucketCache.set(cacheKey, config);
-  log.debug(`Cached bucket config for ${databaseId}:${bucketKey} (id=${config.id}, scope=${storageConfig.membershipType ?? 'app'})`);
+  log.debug(`Cached bucket config for ${databaseId}:${bucketKey} (id=${config.id}, scope=${storageConfig.scope})`);
 
   return config;
 }

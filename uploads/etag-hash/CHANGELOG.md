@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.18.0](https://github.com/constructive-io/constructive/compare/etag-hash@2.17.1...etag-hash@2.18.0) (2026-05-30)
+
+**Note:** Version bump only for package etag-hash
+
+## [2.17.1](https://github.com/constructive-io/constructive/compare/etag-hash@2.17.0...etag-hash@2.17.1) (2026-05-29)
+
+**Note:** Version bump only for package etag-hash
+
+# [2.17.0](https://github.com/constructive-io/constructive/compare/etag-hash@2.16.1...etag-hash@2.17.0) (2026-05-14)
+
+**Note:** Version bump only for package etag-hash
+
+## [2.16.1](https://github.com/constructive-io/constructive/compare/etag-hash@2.16.0...etag-hash@2.16.1) (2026-05-11)
+
+**Note:** Version bump only for package etag-hash
+
+# [2.16.0](https://github.com/constructive-io/constructive/compare/etag-hash@2.15.0...etag-hash@2.16.0) (2026-05-11)
+
+**Note:** Version bump only for package etag-hash
+
+# [2.15.0](https://github.com/constructive-io/constructive/compare/etag-hash@2.14.0...etag-hash@2.15.0) (2026-05-08)
+
+**Note:** Version bump only for package etag-hash
+
+# [2.14.0](https://github.com/constructive-io/constructive/compare/etag-hash@2.13.0...etag-hash@2.14.0) (2026-05-08)
+
+**Note:** Version bump only for package etag-hash
+
+# [2.13.0](https://github.com/constructive-io/constructive/compare/etag-hash@2.12.0...etag-hash@2.13.0) (2026-05-06)
+
+**Note:** Version bump only for package etag-hash
+
 # [2.12.0](https://github.com/constructive-io/constructive/compare/etag-hash@2.11.2...etag-hash@2.12.0) (2026-04-18)
 
 **Note:** Version bump only for package etag-hash

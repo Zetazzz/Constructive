@@ -3,6 +3,104 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [6.24.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.23.0...@pgpmjs/core@6.24.0) (2026-06-07)
+
+### Features
+
+- **pgpm:** use built-in SkillInstaller for fast skill installation ([e3b5819](https://github.com/constructive-io/constructive/commit/e3b5819ef620825f3c33745e4c5a9ed4afe71bb4))
+
+# [6.23.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.22.1...@pgpmjs/core@6.23.0) (2026-06-06)
+
+### Features
+
+- **pgpm:** install skills from .boilerplate.json after scaffold ([835c827](https://github.com/constructive-io/constructive/commit/835c8277393d8e00fe87a5f019fcac46d746b68d))
+
+## [6.22.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.22.0...@pgpmjs/core@6.22.1) (2026-06-06)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.22.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.21.0...@pgpmjs/core@6.22.0) (2026-06-05)
+
+### Features
+
+- add inflection-db to PGPM module map and export required extensions ([9b2931e](https://github.com/constructive-io/constructive/commit/9b2931e2d44ec8aab7a5dcdc7096d5a3bb96c4cc))
+
+# [6.21.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.20.2...@pgpmjs/core@6.21.0) (2026-05-30)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+## [6.20.2](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.20.1...@pgpmjs/core@6.20.2) (2026-05-29)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+## [6.20.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.20.0...@pgpmjs/core@6.20.1) (2026-05-24)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.20.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.19.1...@pgpmjs/core@6.20.0) (2026-05-23)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+## [6.19.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.19.0...@pgpmjs/core@6.19.1) (2026-05-21)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.19.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.18.1...@pgpmjs/core@6.19.0) (2026-05-20)
+
+### Bug Fixes
+
+- remove pgpm-uuid from required extensions and module map ([e84ef56](https://github.com/constructive-io/constructive/commit/e84ef5682aa3210838a5b5bec151a33da69c7a12))
+
+### Features
+
+- add missing modules to export flow ([827dc87](https://github.com/constructive-io/constructive/commit/827dc8727dc4a47c8b41bea0ace4dca4fc2def49))
+
+## [6.18.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.18.0...@pgpmjs/core@6.18.1) (2026-05-17)
+
+### Bug Fixes
+
+- handle nested node_modules in installModules ([9e2d9cf](https://github.com/constructive-io/constructive/commit/9e2d9cfd0c677846d402ec199368ec1cc3156220))
+
+# [6.18.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.17.1...@pgpmjs/core@6.18.0) (2026-05-14)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+## [6.17.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.17.0...@pgpmjs/core@6.17.1) (2026-05-11)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.17.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.16.1...@pgpmjs/core@6.17.0) (2026-05-11)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+## [6.16.1](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.16.0...@pgpmjs/core@6.16.1) (2026-05-09)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.16.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.15.0...@pgpmjs/core@6.16.0) (2026-05-08)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.15.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.14.0...@pgpmjs/core@6.15.0) (2026-05-08)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.14.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.13.0...@pgpmjs/core@6.14.0) (2026-05-06)
+
+**Note:** Version bump only for package @pgpmjs/core
+
+# [6.13.0](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.12.4...@pgpmjs/core@6.13.0) (2026-05-05)
+
+### Features
+
+- add pgpm-ltree-helpers to system modules + PGPM_MODULE_MAP ([e4514b3](https://github.com/constructive-io/constructive/commit/e4514b325121c2b9b72acbeda47cfe47ea62b49e))
+
+## [6.12.4](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.12.3...@pgpmjs/core@6.12.4) (2026-04-27)
+
+### Bug Fixes
+
+- remove phantom cyclic deps (@pgpmjs/core -> migrate-client, graphile-settings -> pgsql-test) ([0683ba6](https://github.com/constructive-io/constructive/commit/0683ba622edb984b7594f4062367b58910458636))
+
 ## [6.12.3](https://github.com/constructive-io/constructive/compare/@pgpmjs/core@6.12.2...@pgpmjs/core@6.12.3) (2026-04-20)
 
 **Note:** Version bump only for package @pgpmjs/core

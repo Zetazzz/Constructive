@@ -19,12 +19,12 @@ const fieldSchema: FieldSchema = {
   id: 'int',
   name: 'string',
   description: 'string',
-  prefix: 'string',
+  scope: 'string',
   parentMembershipType: 'int',
   hasUsersTableEntry: 'boolean',
 };
 const usage =
-  '\nmembership-type <command>\n\nCommands:\n  list                  List membershipType records\n  find-first            Find first matching membershipType record\n  get                   Get a membershipType by ID\n  create                Create a new membershipType\n  update                Update an existing membershipType\n  delete                Delete a membershipType\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\nmembership-type <command>\n\nCommands:\n  list                  List membershipType records\n  find-first            Find first matching membershipType record\n  get                   Get a membershipType by ID\n  create                Create a new membershipType\n  update                Update an existing membershipType\n  delete                Delete a membershipType\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -77,7 +77,7 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       id: true,
       name: true,
       description: true,
-      prefix: true,
+      scope: true,
       parentMembershipType: true,
       hasUsersTableEntry: true,
     };
@@ -103,12 +103,12 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       id: true,
       name: true,
       description: true,
-      prefix: true,
+      scope: true,
       parentMembershipType: true,
       hasUsersTableEntry: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<MembershipTypeSelect, MembershipTypeFilter> & {
+      FindFirstArgs<MembershipTypeSelect, MembershipTypeFilter, MembershipTypeOrderBy> & {
         select: MembershipTypeSelect;
       }
     >(argv, defaultSelect);
@@ -141,7 +141,7 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           id: true,
           name: true,
           description: true,
-          prefix: true,
+          scope: true,
           parentMembershipType: true,
           hasUsersTableEntry: true,
         },
@@ -173,8 +173,8 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
-        name: 'prefix',
-        message: 'prefix',
+        name: 'scope',
+        message: 'scope',
         required: true,
       },
       {
@@ -203,7 +203,7 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         data: {
           name: cleanedData.name,
           description: cleanedData.description,
-          prefix: cleanedData.prefix,
+          scope: cleanedData.scope,
           parentMembershipType: cleanedData.parentMembershipType,
           hasUsersTableEntry: cleanedData.hasUsersTableEntry,
         },
@@ -211,7 +211,7 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           id: true,
           name: true,
           description: true,
-          prefix: true,
+          scope: true,
           parentMembershipType: true,
           hasUsersTableEntry: true,
         },
@@ -249,8 +249,8 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'text',
-        name: 'prefix',
-        message: 'prefix',
+        name: 'scope',
+        message: 'scope',
         required: false,
       },
       {
@@ -279,7 +279,7 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         data: {
           name: cleanedData.name,
           description: cleanedData.description,
-          prefix: cleanedData.prefix,
+          scope: cleanedData.scope,
           parentMembershipType: cleanedData.parentMembershipType,
           hasUsersTableEntry: cleanedData.hasUsersTableEntry,
         },
@@ -287,7 +287,7 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           id: true,
           name: true,
           description: true,
-          prefix: true,
+          scope: true,
           parentMembershipType: true,
           hasUsersTableEntry: true,
         },

@@ -235,55 +235,66 @@ export interface GetAllRecord {
   path?: string[] | null;
   data?: Record<string, unknown> | null;
 }
-export interface Object {
-  hashUuid?: string | null;
-  id: string;
-  databaseId?: string | null;
-  kids?: string[] | null;
-  ktree?: string[] | null;
-  data?: Record<string, unknown> | null;
-  frzn?: boolean | null;
-  createdAt?: string | null;
-}
-/** A ref is a data structure for pointing to a commit. */
+/** Branch heads — mutable pointers into the commit chain */
 export interface Ref {
-  /** The primary unique identifier for the ref. */
+  /** Unique ref identifier */
   id: string;
-  /** The name of the ref or branch */
+  /** Ref name (e.g. HEAD, main) */
   name?: string | null;
+  /** Database scope for multi-tenant isolation */
   databaseId?: string | null;
+  /** Store this ref belongs to */
   storeId?: string | null;
+  /** Commit this ref points to */
   commitId?: string | null;
 }
-/** A store represents an isolated object repository within a database. */
+/** Named stores — one per version-controlled tree (e.g. one graph, one definition set) */
 export interface Store {
-  /** The primary unique identifier for the store. */
+  /** Unique store identifier */
   id: string;
-  /** The name of the store (e.g., metaschema, migrations). */
+  /** Human-readable store name */
   name?: string | null;
-  /** The database this store belongs to. */
+  /** Database scope for multi-tenant isolation */
   databaseId?: string | null;
-  /** The current head tree_id for this store. */
+  /** Current root object hash of this store */
   hash?: string | null;
+  /** Timestamp of store creation */
   createdAt?: string | null;
 }
-/** A commit records changes to the repository. */
-export interface Commit {
-  /** The primary unique identifier for the commit. */
+/** Content-addressed Merkle tree objects keyed by UUID v5 hash of data + children */
+export interface Object {
+  /** Content-addressed UUID v5 — deterministic hash of (data, kids, ktree) */
   id: string;
-  /** The commit message */
-  message?: string | null;
-  /** The repository identifier */
+  /** Database scope for multi-tenant isolation */
   databaseId?: string | null;
+  /** Ordered array of child object IDs */
+  kids?: string[] | null;
+  /** Ordered array of child path names (parallel to kids) */
+  ktree?: string[] | null;
+  /** Payload data for this object node */
+  data?: Record<string, unknown> | null;
+  /** Timestamp of object creation */
+  createdAt?: string | null;
+}
+/** Commit history — each commit snapshots a tree root for a store */
+export interface Commit {
+  /** Unique commit identifier */
+  id: string;
+  /** Optional commit message */
+  message?: string | null;
+  /** Database scope for multi-tenant isolation */
+  databaseId?: string | null;
+  /** Store this commit belongs to */
   storeId?: string | null;
-  /** Parent commits */
+  /** Parent commit IDs (supports merge commits) */
   parentIds?: string[] | null;
-  /** The author of the commit */
+  /** User who authored the changes */
   authorId?: string | null;
-  /** The committer of the commit */
+  /** User who committed (may differ from author) */
   committerId?: string | null;
-  /** The root of the tree */
+  /** Root object ID of the tree snapshot at this commit */
   treeId?: string | null;
+  /** Commit timestamp */
   date?: string | null;
 }
 // ============ Relation Helper Types ============
@@ -300,30 +311,20 @@ export interface PageInfo {
 }
 // ============ Entity Relation Types ============
 export interface GetAllRecordRelations {}
-export interface ObjectRelations {}
 export interface RefRelations {}
 export interface StoreRelations {}
+export interface ObjectRelations {}
 export interface CommitRelations {}
 // ============ Entity Types With Relations ============
 export type GetAllRecordWithRelations = GetAllRecord & GetAllRecordRelations;
-export type ObjectWithRelations = Object & ObjectRelations;
 export type RefWithRelations = Ref & RefRelations;
 export type StoreWithRelations = Store & StoreRelations;
+export type ObjectWithRelations = Object & ObjectRelations;
 export type CommitWithRelations = Commit & CommitRelations;
 // ============ Entity Select Types ============
 export type GetAllRecordSelect = {
   path?: boolean;
   data?: boolean;
-};
-export type ObjectSelect = {
-  hashUuid?: boolean;
-  id?: boolean;
-  databaseId?: boolean;
-  kids?: boolean;
-  ktree?: boolean;
-  data?: boolean;
-  frzn?: boolean;
-  createdAt?: boolean;
 };
 export type RefSelect = {
   id?: boolean;
@@ -337,6 +338,14 @@ export type StoreSelect = {
   name?: boolean;
   databaseId?: boolean;
   hash?: boolean;
+  createdAt?: boolean;
+};
+export type ObjectSelect = {
+  id?: boolean;
+  databaseId?: boolean;
+  kids?: boolean;
+  ktree?: boolean;
+  data?: boolean;
   createdAt?: boolean;
 };
 export type CommitSelect = {
@@ -357,28 +366,6 @@ export interface GetAllRecordFilter {
   and?: GetAllRecordFilter[];
   or?: GetAllRecordFilter[];
   not?: GetAllRecordFilter;
-}
-export interface ObjectFilter {
-  /** Filter by the object’s `id` field. */
-  id?: UUIDFilter;
-  /** Filter by the object’s `databaseId` field. */
-  databaseId?: UUIDFilter;
-  /** Filter by the object’s `kids` field. */
-  kids?: UUIDListFilter;
-  /** Filter by the object’s `ktree` field. */
-  ktree?: StringListFilter;
-  /** Filter by the object’s `data` field. */
-  data?: JSONFilter;
-  /** Filter by the object’s `frzn` field. */
-  frzn?: BooleanFilter;
-  /** Filter by the object’s `createdAt` field. */
-  createdAt?: DatetimeFilter;
-  /** Checks for all expressions in this list. */
-  and?: ObjectFilter[];
-  /** Checks for any expressions in this list. */
-  or?: ObjectFilter[];
-  /** Negates the expression. */
-  not?: ObjectFilter;
 }
 export interface RefFilter {
   /** Filter by the object’s `id` field. */
@@ -416,6 +403,26 @@ export interface StoreFilter {
   /** Negates the expression. */
   not?: StoreFilter;
 }
+export interface ObjectFilter {
+  /** Filter by the object’s `id` field. */
+  id?: UUIDFilter;
+  /** Filter by the object’s `databaseId` field. */
+  databaseId?: UUIDFilter;
+  /** Filter by the object’s `kids` field. */
+  kids?: UUIDListFilter;
+  /** Filter by the object’s `ktree` field. */
+  ktree?: StringListFilter;
+  /** Filter by the object’s `data` field. */
+  data?: JSONFilter;
+  /** Filter by the object’s `createdAt` field. */
+  createdAt?: DatetimeFilter;
+  /** Checks for all expressions in this list. */
+  and?: ObjectFilter[];
+  /** Checks for any expressions in this list. */
+  or?: ObjectFilter[];
+  /** Negates the expression. */
+  not?: ObjectFilter;
+}
 export interface CommitFilter {
   /** Filter by the object’s `id` field. */
   id?: UUIDFilter;
@@ -451,24 +458,6 @@ export type GetAllRecordsOrderBy =
   | 'PATH_DESC'
   | 'DATA_ASC'
   | 'DATA_DESC';
-export type ObjectOrderBy =
-  | 'NATURAL'
-  | 'PRIMARY_KEY_ASC'
-  | 'PRIMARY_KEY_DESC'
-  | 'ID_ASC'
-  | 'ID_DESC'
-  | 'DATABASE_ID_ASC'
-  | 'DATABASE_ID_DESC'
-  | 'KIDS_ASC'
-  | 'KIDS_DESC'
-  | 'KTREE_ASC'
-  | 'KTREE_DESC'
-  | 'DATA_ASC'
-  | 'DATA_DESC'
-  | 'FRZN_ASC'
-  | 'FRZN_DESC'
-  | 'CREATED_AT_ASC'
-  | 'CREATED_AT_DESC';
 export type RefOrderBy =
   | 'NATURAL'
   | 'PRIMARY_KEY_ASC'
@@ -495,6 +484,22 @@ export type StoreOrderBy =
   | 'DATABASE_ID_DESC'
   | 'HASH_ASC'
   | 'HASH_DESC'
+  | 'CREATED_AT_ASC'
+  | 'CREATED_AT_DESC';
+export type ObjectOrderBy =
+  | 'NATURAL'
+  | 'PRIMARY_KEY_ASC'
+  | 'PRIMARY_KEY_DESC'
+  | 'ID_ASC'
+  | 'ID_DESC'
+  | 'DATABASE_ID_ASC'
+  | 'DATABASE_ID_DESC'
+  | 'KIDS_ASC'
+  | 'KIDS_DESC'
+  | 'KTREE_ASC'
+  | 'KTREE_DESC'
+  | 'DATA_ASC'
+  | 'DATA_DESC'
   | 'CREATED_AT_ASC'
   | 'CREATED_AT_DESC';
 export type CommitOrderBy =
@@ -537,32 +542,6 @@ export interface UpdateGetAllRecordInput {
   getAllRecordPatch: GetAllRecordPatch;
 }
 export interface DeleteGetAllRecordInput {
-  clientMutationId?: string;
-  id: string;
-}
-export interface CreateObjectInput {
-  clientMutationId?: string;
-  object: {
-    databaseId: string;
-    kids?: string[];
-    ktree?: string[];
-    data?: Record<string, unknown>;
-    frzn?: boolean;
-  };
-}
-export interface ObjectPatch {
-  databaseId?: string | null;
-  kids?: string[] | null;
-  ktree?: string[] | null;
-  data?: Record<string, unknown> | null;
-  frzn?: boolean | null;
-}
-export interface UpdateObjectInput {
-  clientMutationId?: string;
-  id: string;
-  objectPatch: ObjectPatch;
-}
-export interface DeleteObjectInput {
   clientMutationId?: string;
   id: string;
 }
@@ -612,6 +591,30 @@ export interface DeleteStoreInput {
   clientMutationId?: string;
   id: string;
 }
+export interface CreateObjectInput {
+  clientMutationId?: string;
+  object: {
+    databaseId: string;
+    kids?: string[];
+    ktree?: string[];
+    data?: Record<string, unknown>;
+  };
+}
+export interface ObjectPatch {
+  databaseId?: string | null;
+  kids?: string[] | null;
+  ktree?: string[] | null;
+  data?: Record<string, unknown> | null;
+}
+export interface UpdateObjectInput {
+  clientMutationId?: string;
+  id: string;
+  objectPatch: ObjectPatch;
+}
+export interface DeleteObjectInput {
+  clientMutationId?: string;
+  id: string;
+}
 export interface CreateCommitInput {
   clientMutationId?: string;
   commit: {
@@ -647,87 +650,26 @@ export interface DeleteCommitInput {
 // ============ Connection Fields Map ============
 export const connectionFieldsMap = {} as Record<string, Record<string, string>>;
 // ============ Custom Input Types (from schema) ============
-export interface FreezeObjectsInput {
-  clientMutationId?: string;
-  databaseId?: string;
-  id?: string;
-}
 export interface InitEmptyRepoInput {
   clientMutationId?: string;
-  dbId?: string;
+  sId?: string;
   storeId?: string;
-}
-export interface RemoveNodeAtPathInput {
-  clientMutationId?: string;
-  dbId?: string;
-  root?: string;
-  path?: string[];
 }
 export interface SetDataAtPathInput {
   clientMutationId?: string;
-  dbId?: string;
+  sId?: string;
   root?: string;
-  path?: string[];
-  data?: Record<string, unknown>;
-}
-export interface SetPropsAndCommitInput {
-  clientMutationId?: string;
-  dbId?: string;
-  storeId?: string;
-  refname?: string;
   path?: string[];
   data?: Record<string, unknown>;
 }
 export interface InsertNodeAtPathInput {
   clientMutationId?: string;
-  dbId?: string;
+  sId?: string;
   root?: string;
   path?: string[];
   data?: Record<string, unknown>;
   kids?: string[];
   ktree?: string[];
-}
-export interface UpdateNodeAtPathInput {
-  clientMutationId?: string;
-  dbId?: string;
-  root?: string;
-  path?: string[];
-  data?: Record<string, unknown>;
-  kids?: string[];
-  ktree?: string[];
-}
-export interface SetAndCommitInput {
-  clientMutationId?: string;
-  dbId?: string;
-  storeId?: string;
-  refname?: string;
-  path?: string[];
-  data?: Record<string, unknown>;
-  kids?: string[];
-  ktree?: string[];
-}
-export interface RequestUploadUrlInput {
-  /** Bucket key (e.g., "public", "private") */
-  bucketKey: string;
-  /**
-   * Owner entity ID for entity-scoped uploads.
-   * Omit for app-level (database-wide) storage.
-   * When provided, resolves the storage module for the entity type
-   * that owns this entity instance (e.g., a data room ID, team ID).
-   */
-  ownerId?: string;
-  /** SHA-256 content hash computed by the client (hex-encoded, 64 chars) */
-  contentHash: string;
-  /** MIME type of the file (e.g., "image/png") */
-  contentType: string;
-  /** File size in bytes */
-  size: number;
-  /** Original filename (optional, for display and Content-Disposition) */
-  filename?: string;
-}
-export interface ConfirmUploadInput {
-  /** The file ID returned by requestUploadUrl */
-  fileId: string;
 }
 export interface ProvisionBucketInput {
   /** The logical bucket key (e.g., "public", "private") */
@@ -738,59 +680,80 @@ export interface ProvisionBucketInput {
    */
   ownerId?: string;
 }
-/** A connection to a list of `Object` values. */
+/** An input for mutations affecting `Ref` */
+export interface RefInput {
+  /** Unique ref identifier */
+  id?: string;
+  /** Ref name (e.g. HEAD, main) */
+  name: string;
+  /** Database scope for multi-tenant isolation */
+  databaseId: string;
+  /** Store this ref belongs to */
+  storeId: string;
+  /** Commit this ref points to */
+  commitId?: string;
+}
+/** An input for mutations affecting `Store` */
+export interface StoreInput {
+  /** Unique store identifier */
+  id?: string;
+  /** Human-readable store name */
+  name: string;
+  /** Database scope for multi-tenant isolation */
+  databaseId: string;
+  /** Current root object hash of this store */
+  hash?: string;
+  /** Timestamp of store creation */
+  createdAt?: string;
+}
+/** An input for mutations affecting `Object` */
+export interface ObjectInput {
+  /** Content-addressed UUID v5 — deterministic hash of (data, kids, ktree) */
+  id: string;
+  /** Database scope for multi-tenant isolation */
+  databaseId: string;
+  /** Ordered array of child object IDs */
+  kids?: string[];
+  /** Ordered array of child path names (parallel to kids) */
+  ktree?: string[];
+  /** Payload data for this object node */
+  data?: Record<string, unknown>;
+  /** Timestamp of object creation */
+  createdAt?: string;
+}
+/** An input for mutations affecting `Commit` */
+export interface CommitInput {
+  /** Unique commit identifier */
+  id?: string;
+  /** Optional commit message */
+  message?: string;
+  /** Database scope for multi-tenant isolation */
+  databaseId: string;
+  /** Store this commit belongs to */
+  storeId: string;
+  /** Parent commit IDs (supports merge commits) */
+  parentIds?: string[];
+  /** User who authored the changes */
+  authorId?: string;
+  /** User who committed (may differ from author) */
+  committerId?: string;
+  /** Root object ID of the tree snapshot at this commit */
+  treeId?: string;
+  /** Commit timestamp */
+  date?: string;
+}
 // ============ Payload/Return Types (for custom operations) ============
-export interface ObjectConnection {
-  nodes: Object[];
-  edges: ObjectEdge[];
-  pageInfo: PageInfo;
-  totalCount: number;
-}
-export type ObjectConnectionSelect = {
-  nodes?: {
-    select: ObjectSelect;
-  };
-  edges?: {
-    select: ObjectEdgeSelect;
-  };
-  pageInfo?: {
-    select: PageInfoSelect;
-  };
-  totalCount?: boolean;
-};
-export interface FreezeObjectsPayload {
-  clientMutationId?: string | null;
-}
-export type FreezeObjectsPayloadSelect = {
-  clientMutationId?: boolean;
-};
 export interface InitEmptyRepoPayload {
   clientMutationId?: string | null;
 }
 export type InitEmptyRepoPayloadSelect = {
   clientMutationId?: boolean;
 };
-export interface RemoveNodeAtPathPayload {
-  clientMutationId?: string | null;
-  result?: string | null;
-}
-export type RemoveNodeAtPathPayloadSelect = {
-  clientMutationId?: boolean;
-  result?: boolean;
-};
 export interface SetDataAtPathPayload {
   clientMutationId?: string | null;
   result?: string | null;
 }
 export type SetDataAtPathPayloadSelect = {
-  clientMutationId?: boolean;
-  result?: boolean;
-};
-export interface SetPropsAndCommitPayload {
-  clientMutationId?: string | null;
-  result?: string | null;
-}
-export type SetPropsAndCommitPayloadSelect = {
   clientMutationId?: boolean;
   result?: boolean;
 };
@@ -801,54 +764,6 @@ export interface InsertNodeAtPathPayload {
 export type InsertNodeAtPathPayloadSelect = {
   clientMutationId?: boolean;
   result?: boolean;
-};
-export interface UpdateNodeAtPathPayload {
-  clientMutationId?: string | null;
-  result?: string | null;
-}
-export type UpdateNodeAtPathPayloadSelect = {
-  clientMutationId?: boolean;
-  result?: boolean;
-};
-export interface SetAndCommitPayload {
-  clientMutationId?: string | null;
-  result?: string | null;
-}
-export type SetAndCommitPayloadSelect = {
-  clientMutationId?: boolean;
-  result?: boolean;
-};
-export interface RequestUploadUrlPayload {
-  /** Presigned PUT URL (null if file was deduplicated) */
-  uploadUrl?: string | null;
-  /** The file ID (existing if deduplicated, new if fresh upload) */
-  fileId: string;
-  /** The S3 object key */
-  key: string;
-  /** Whether this file was deduplicated (already exists with same hash) */
-  deduplicated: boolean;
-  /** Presigned URL expiry time (null if deduplicated) */
-  expiresAt?: string | null;
-}
-export type RequestUploadUrlPayloadSelect = {
-  uploadUrl?: boolean;
-  fileId?: boolean;
-  key?: boolean;
-  deduplicated?: boolean;
-  expiresAt?: boolean;
-};
-export interface ConfirmUploadPayload {
-  /** The confirmed file ID */
-  fileId: string;
-  /** New file status */
-  status: string;
-  /** Whether confirmation succeeded */
-  success: boolean;
-}
-export type ConfirmUploadPayloadSelect = {
-  fileId?: boolean;
-  status?: boolean;
-  success?: boolean;
 };
 export interface ProvisionBucketPayload {
   /** Whether provisioning succeeded */
@@ -871,51 +786,6 @@ export type ProvisionBucketPayloadSelect = {
   provider?: boolean;
   endpoint?: boolean;
   error?: boolean;
-};
-export interface CreateObjectPayload {
-  clientMutationId?: string | null;
-  /** The `Object` that was created by this mutation. */
-  object?: Object | null;
-  objectEdge?: ObjectEdge | null;
-}
-export type CreateObjectPayloadSelect = {
-  clientMutationId?: boolean;
-  object?: {
-    select: ObjectSelect;
-  };
-  objectEdge?: {
-    select: ObjectEdgeSelect;
-  };
-};
-export interface UpdateObjectPayload {
-  clientMutationId?: string | null;
-  /** The `Object` that was updated by this mutation. */
-  object?: Object | null;
-  objectEdge?: ObjectEdge | null;
-}
-export type UpdateObjectPayloadSelect = {
-  clientMutationId?: boolean;
-  object?: {
-    select: ObjectSelect;
-  };
-  objectEdge?: {
-    select: ObjectEdgeSelect;
-  };
-};
-export interface DeleteObjectPayload {
-  clientMutationId?: string | null;
-  /** The `Object` that was deleted by this mutation. */
-  object?: Object | null;
-  objectEdge?: ObjectEdge | null;
-}
-export type DeleteObjectPayloadSelect = {
-  clientMutationId?: boolean;
-  object?: {
-    select: ObjectSelect;
-  };
-  objectEdge?: {
-    select: ObjectEdgeSelect;
-  };
 };
 export interface CreateRefPayload {
   clientMutationId?: string | null;
@@ -1007,6 +877,51 @@ export type DeleteStorePayloadSelect = {
     select: StoreEdgeSelect;
   };
 };
+export interface CreateObjectPayload {
+  clientMutationId?: string | null;
+  /** The `Object` that was created by this mutation. */
+  object?: Object | null;
+  objectEdge?: ObjectEdge | null;
+}
+export type CreateObjectPayloadSelect = {
+  clientMutationId?: boolean;
+  object?: {
+    select: ObjectSelect;
+  };
+  objectEdge?: {
+    select: ObjectEdgeSelect;
+  };
+};
+export interface UpdateObjectPayload {
+  clientMutationId?: string | null;
+  /** The `Object` that was updated by this mutation. */
+  object?: Object | null;
+  objectEdge?: ObjectEdge | null;
+}
+export type UpdateObjectPayloadSelect = {
+  clientMutationId?: boolean;
+  object?: {
+    select: ObjectSelect;
+  };
+  objectEdge?: {
+    select: ObjectEdgeSelect;
+  };
+};
+export interface DeleteObjectPayload {
+  clientMutationId?: string | null;
+  /** The `Object` that was deleted by this mutation. */
+  object?: Object | null;
+  objectEdge?: ObjectEdge | null;
+}
+export type DeleteObjectPayloadSelect = {
+  clientMutationId?: boolean;
+  object?: {
+    select: ObjectSelect;
+  };
+  objectEdge?: {
+    select: ObjectEdgeSelect;
+  };
+};
 export interface CreateCommitPayload {
   clientMutationId?: string | null;
   /** The `Commit` that was created by this mutation. */
@@ -1052,35 +967,6 @@ export type DeleteCommitPayloadSelect = {
     select: CommitEdgeSelect;
   };
 };
-/** A `Object` edge in the connection. */
-export interface ObjectEdge {
-  cursor?: string | null;
-  /** The `Object` at the end of the edge. */
-  node?: Object | null;
-}
-export type ObjectEdgeSelect = {
-  cursor?: boolean;
-  node?: {
-    select: ObjectSelect;
-  };
-};
-/** Information about pagination in a connection. */
-export interface PageInfo {
-  /** When paginating forwards, are there more items? */
-  hasNextPage: boolean;
-  /** When paginating backwards, are there more items? */
-  hasPreviousPage: boolean;
-  /** When paginating backwards, the cursor to continue. */
-  startCursor?: string | null;
-  /** When paginating forwards, the cursor to continue. */
-  endCursor?: string | null;
-}
-export type PageInfoSelect = {
-  hasNextPage?: boolean;
-  hasPreviousPage?: boolean;
-  startCursor?: boolean;
-  endCursor?: boolean;
-};
 /** A `Ref` edge in the connection. */
 export interface RefEdge {
   cursor?: string | null;
@@ -1103,6 +989,18 @@ export type StoreEdgeSelect = {
   cursor?: boolean;
   node?: {
     select: StoreSelect;
+  };
+};
+/** A `Object` edge in the connection. */
+export interface ObjectEdge {
+  cursor?: string | null;
+  /** The `Object` at the end of the edge. */
+  node?: Object | null;
+}
+export type ObjectEdgeSelect = {
+  cursor?: boolean;
+  node?: {
+    select: ObjectSelect;
   };
 };
 /** A `Commit` edge in the connection. */

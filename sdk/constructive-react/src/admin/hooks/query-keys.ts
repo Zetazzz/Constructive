@@ -46,6 +46,15 @@ export const appPermissionKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...appPermissionKeys.details(), id] as const,
 } as const;
+export const appPermissionDefaultGrantKeys = {
+  /** All appPermissionDefaultGrant queries */ all: ['apppermissiondefaultgrant'] as const,
+  /** List query keys */ lists: () => [...appPermissionDefaultGrantKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...appPermissionDefaultGrantKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...appPermissionDefaultGrantKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...appPermissionDefaultGrantKeys.details(), id] as const,
+} as const;
 export const orgPermissionKeys = {
   /** All orgPermission queries */ all: ['orgpermission'] as const,
   /** List query keys */ lists: () => [...orgPermissionKeys.all, 'list'] as const,
@@ -55,14 +64,26 @@ export const orgPermissionKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...orgPermissionKeys.details(), id] as const,
 } as const;
-export const appLevelRequirementKeys = {
-  /** All appLevelRequirement queries */ all: ['applevelrequirement'] as const,
-  /** List query keys */ lists: () => [...appLevelRequirementKeys.all, 'list'] as const,
+export const orgPermissionDefaultPermissionKeys = {
+  /** All orgPermissionDefaultPermission queries */ all: [
+    'orgpermissiondefaultpermission',
+  ] as const,
+  /** List query keys */ lists: () => [...orgPermissionDefaultPermissionKeys.all, 'list'] as const,
   /** List query key with variables */ list: (variables?: object) =>
-    [...appLevelRequirementKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appLevelRequirementKeys.all, 'detail'] as const,
+    [...orgPermissionDefaultPermissionKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () =>
+    [...orgPermissionDefaultPermissionKeys.all, 'detail'] as const,
   /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appLevelRequirementKeys.details(), id] as const,
+    [...orgPermissionDefaultPermissionKeys.details(), id] as const,
+} as const;
+export const orgPermissionDefaultGrantKeys = {
+  /** All orgPermissionDefaultGrant queries */ all: ['orgpermissiondefaultgrant'] as const,
+  /** List query keys */ lists: () => [...orgPermissionDefaultGrantKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...orgPermissionDefaultGrantKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...orgPermissionDefaultGrantKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...orgPermissionDefaultGrantKeys.details(), id] as const,
 } as const;
 export const orgMemberKeys = {
   /** All orgMember queries */ all: ['orgmember'] as const,
@@ -91,6 +112,18 @@ export const orgPermissionDefaultKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...orgPermissionDefaultKeys.details(), id] as const,
 } as const;
+export const appPermissionDefaultPermissionKeys = {
+  /** All appPermissionDefaultPermission queries */ all: [
+    'apppermissiondefaultpermission',
+  ] as const,
+  /** List query keys */ lists: () => [...appPermissionDefaultPermissionKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...appPermissionDefaultPermissionKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () =>
+    [...appPermissionDefaultPermissionKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...appPermissionDefaultPermissionKeys.details(), id] as const,
+} as const;
 export const appAdminGrantKeys = {
   /** All appAdminGrant queries */ all: ['appadmingrant'] as const,
   /** List query keys */ lists: () => [...appAdminGrantKeys.all, 'list'] as const,
@@ -108,24 +141,6 @@ export const appOwnerGrantKeys = {
   /** Detail query keys */ details: () => [...appOwnerGrantKeys.all, 'detail'] as const,
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...appOwnerGrantKeys.details(), id] as const,
-} as const;
-export const appLimitDefaultKeys = {
-  /** All appLimitDefault queries */ all: ['applimitdefault'] as const,
-  /** List query keys */ lists: () => [...appLimitDefaultKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...appLimitDefaultKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appLimitDefaultKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appLimitDefaultKeys.details(), id] as const,
-} as const;
-export const orgLimitDefaultKeys = {
-  /** All orgLimitDefault queries */ all: ['orglimitdefault'] as const,
-  /** List query keys */ lists: () => [...orgLimitDefaultKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...orgLimitDefaultKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...orgLimitDefaultKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...orgLimitDefaultKeys.details(), id] as const,
 } as const;
 export const orgAdminGrantKeys = {
   /** All orgAdminGrant queries */ all: ['orgadmingrant'] as const,
@@ -145,42 +160,6 @@ export const orgOwnerGrantKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...orgOwnerGrantKeys.details(), id] as const,
 } as const;
-export const appLimitKeys = {
-  /** All appLimit queries */ all: ['applimit'] as const,
-  /** List query keys */ lists: () => [...appLimitKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...appLimitKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appLimitKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appLimitKeys.details(), id] as const,
-} as const;
-export const appAchievementKeys = {
-  /** All appAchievement queries */ all: ['appachievement'] as const,
-  /** List query keys */ lists: () => [...appAchievementKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...appAchievementKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appAchievementKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appAchievementKeys.details(), id] as const,
-} as const;
-export const appStepKeys = {
-  /** All appStep queries */ all: ['appstep'] as const,
-  /** List query keys */ lists: () => [...appStepKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...appStepKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appStepKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appStepKeys.details(), id] as const,
-} as const;
-export const appClaimedInviteKeys = {
-  /** All appClaimedInvite queries */ all: ['appclaimedinvite'] as const,
-  /** List query keys */ lists: () => [...appClaimedInviteKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...appClaimedInviteKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appClaimedInviteKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appClaimedInviteKeys.details(), id] as const,
-} as const;
 export const orgChartEdgeGrantKeys = {
   /** All orgChartEdgeGrant queries */ all: ['orgchartedgegrant'] as const,
   /** List query keys */ lists: () => [...orgChartEdgeGrantKeys.all, 'list'] as const,
@@ -190,14 +169,14 @@ export const orgChartEdgeGrantKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...orgChartEdgeGrantKeys.details(), id] as const,
 } as const;
-export const orgLimitKeys = {
-  /** All orgLimit queries */ all: ['orglimit'] as const,
-  /** List query keys */ lists: () => [...orgLimitKeys.all, 'list'] as const,
+export const appClaimedInviteKeys = {
+  /** All appClaimedInvite queries */ all: ['appclaimedinvite'] as const,
+  /** List query keys */ lists: () => [...appClaimedInviteKeys.all, 'list'] as const,
   /** List query key with variables */ list: (variables?: object) =>
-    [...orgLimitKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...orgLimitKeys.all, 'detail'] as const,
+    [...appClaimedInviteKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...appClaimedInviteKeys.all, 'detail'] as const,
   /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...orgLimitKeys.details(), id] as const,
+    [...appClaimedInviteKeys.details(), id] as const,
 } as const;
 export const membershipTypeKeys = {
   /** All membershipType queries */ all: ['membershiptype'] as const,
@@ -262,15 +241,6 @@ export const orgChartEdgeKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...orgChartEdgeKeys.details(), id] as const,
 } as const;
-export const orgMemberProfileKeys = {
-  /** All orgMemberProfile queries */ all: ['orgmemberprofile'] as const,
-  /** List query keys */ lists: () => [...orgMemberProfileKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...orgMemberProfileKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...orgMemberProfileKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...orgMemberProfileKeys.details(), id] as const,
-} as const;
 export const orgMembershipSettingKeys = {
   /** All orgMembershipSetting queries */ all: ['orgmembershipsetting'] as const,
   /** List query keys */ lists: () => [...orgMembershipSettingKeys.all, 'list'] as const,
@@ -279,33 +249,6 @@ export const orgMembershipSettingKeys = {
   /** Detail query keys */ details: () => [...orgMembershipSettingKeys.all, 'detail'] as const,
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...orgMembershipSettingKeys.details(), id] as const,
-} as const;
-export const appLevelKeys = {
-  /** All appLevel queries */ all: ['applevel'] as const,
-  /** List query keys */ lists: () => [...appLevelKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...appLevelKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appLevelKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appLevelKeys.details(), id] as const,
-} as const;
-export const appInviteKeys = {
-  /** All appInvite queries */ all: ['appinvite'] as const,
-  /** List query keys */ lists: () => [...appInviteKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...appInviteKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...appInviteKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...appInviteKeys.details(), id] as const,
-} as const;
-export const orgInviteKeys = {
-  /** All orgInvite queries */ all: ['orginvite'] as const,
-  /** List query keys */ lists: () => [...orgInviteKeys.all, 'list'] as const,
-  /** List query key with variables */ list: (variables?: object) =>
-    [...orgInviteKeys.lists(), variables] as const,
-  /** Detail query keys */ details: () => [...orgInviteKeys.all, 'detail'] as const,
-  /** Detail query key for specific item */ detail: (id: string | number) =>
-    [...orgInviteKeys.details(), id] as const,
 } as const;
 export const appMembershipKeys = {
   /** All appMembership queries */ all: ['appmembership'] as const,
@@ -325,6 +268,33 @@ export const orgMembershipKeys = {
   /** Detail query key for specific item */ detail: (id: string | number) =>
     [...orgMembershipKeys.details(), id] as const,
 } as const;
+export const orgMemberProfileKeys = {
+  /** All orgMemberProfile queries */ all: ['orgmemberprofile'] as const,
+  /** List query keys */ lists: () => [...orgMemberProfileKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...orgMemberProfileKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...orgMemberProfileKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...orgMemberProfileKeys.details(), id] as const,
+} as const;
+export const appInviteKeys = {
+  /** All appInvite queries */ all: ['appinvite'] as const,
+  /** List query keys */ lists: () => [...appInviteKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...appInviteKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...appInviteKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...appInviteKeys.details(), id] as const,
+} as const;
+export const orgInviteKeys = {
+  /** All orgInvite queries */ all: ['orginvite'] as const,
+  /** List query keys */ lists: () => [...orgInviteKeys.all, 'list'] as const,
+  /** List query key with variables */ list: (variables?: object) =>
+    [...orgInviteKeys.lists(), variables] as const,
+  /** Detail query keys */ details: () => [...orgInviteKeys.all, 'detail'] as const,
+  /** Detail query key for specific item */ detail: (id: string | number) =>
+    [...orgInviteKeys.details(), id] as const,
+} as const;
 
 // ============================================================================
 // Custom Query Keys
@@ -343,8 +313,6 @@ export const customQueryKeys = {
     ['appPermissionsGetMask', variables] as const,
   /** Query key for orgPermissionsGetMask */ orgPermissionsGetMask: (variables?: object) =>
     ['orgPermissionsGetMask', variables] as const,
-  /** Query key for stepsAchieved */ stepsAchieved: (variables?: object) =>
-    ['stepsAchieved', variables] as const,
   /** Query key for appPermissionsGetMaskByNames */ appPermissionsGetMaskByNames: (
     variables?: object
   ) => ['appPermissionsGetMaskByNames', variables] as const,
@@ -355,8 +323,6 @@ export const customQueryKeys = {
     ['appPermissionsGetByMask', variables] as const,
   /** Query key for orgPermissionsGetByMask */ orgPermissionsGetByMask: (variables?: object) =>
     ['orgPermissionsGetByMask', variables] as const,
-  /** Query key for stepsRequired */ stepsRequired: (variables?: object) =>
-    ['stepsRequired', variables] as const,
 } as const;
 /**
 
@@ -384,23 +350,20 @@ export const queryKeys = {
   orgGetManagersRecord: orgGetManagersRecordKeys,
   orgGetSubordinatesRecord: orgGetSubordinatesRecordKeys,
   appPermission: appPermissionKeys,
+  appPermissionDefaultGrant: appPermissionDefaultGrantKeys,
   orgPermission: orgPermissionKeys,
-  appLevelRequirement: appLevelRequirementKeys,
+  orgPermissionDefaultPermission: orgPermissionDefaultPermissionKeys,
+  orgPermissionDefaultGrant: orgPermissionDefaultGrantKeys,
   orgMember: orgMemberKeys,
   appPermissionDefault: appPermissionDefaultKeys,
   orgPermissionDefault: orgPermissionDefaultKeys,
+  appPermissionDefaultPermission: appPermissionDefaultPermissionKeys,
   appAdminGrant: appAdminGrantKeys,
   appOwnerGrant: appOwnerGrantKeys,
-  appLimitDefault: appLimitDefaultKeys,
-  orgLimitDefault: orgLimitDefaultKeys,
   orgAdminGrant: orgAdminGrantKeys,
   orgOwnerGrant: orgOwnerGrantKeys,
-  appLimit: appLimitKeys,
-  appAchievement: appAchievementKeys,
-  appStep: appStepKeys,
-  appClaimedInvite: appClaimedInviteKeys,
   orgChartEdgeGrant: orgChartEdgeGrantKeys,
-  orgLimit: orgLimitKeys,
+  appClaimedInvite: appClaimedInviteKeys,
   membershipType: membershipTypeKeys,
   appGrant: appGrantKeys,
   appMembershipDefault: appMembershipDefaultKeys,
@@ -408,13 +371,12 @@ export const queryKeys = {
   orgClaimedInvite: orgClaimedInviteKeys,
   orgGrant: orgGrantKeys,
   orgChartEdge: orgChartEdgeKeys,
-  orgMemberProfile: orgMemberProfileKeys,
   orgMembershipSetting: orgMembershipSettingKeys,
-  appLevel: appLevelKeys,
-  appInvite: appInviteKeys,
-  orgInvite: orgInviteKeys,
   appMembership: appMembershipKeys,
   orgMembership: orgMembershipKeys,
+  orgMemberProfile: orgMemberProfileKeys,
+  appInvite: appInviteKeys,
+  orgInvite: orgInviteKeys,
   custom: customQueryKeys,
 } as const;
 /** Type representing all available query key scopes */

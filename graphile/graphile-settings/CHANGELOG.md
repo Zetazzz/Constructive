@@ -3,6 +3,262 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.7.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.7.0...graphile-settings@5.7.1) (2026-06-14)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.7.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.5...graphile-settings@5.7.0) (2026-06-14)
+
+### Features
+
+- **graphile-settings:** wire GraphileLlmPreset into createConstructivePreset ([517ce84](https://github.com/constructive-io/constructive/commit/517ce845b2363bbdd3b3c8a18792d58117ab2c7c))
+
+## [5.6.5](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.4...graphile-settings@5.6.5) (2026-06-12)
+
+### Bug Fixes
+
+- correct BM25 SQL comments — use pg_textsearch <@> operator, not paradedb.score/parse ([6180c18](https://github.com/constructive-io/constructive/commit/6180c18bf600d449d7067ebc6f8bf4e4d26cc87b))
+
+## [5.6.4](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.3...graphile-settings@5.6.4) (2026-06-07)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.6.3](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.2...graphile-settings@5.6.3) (2026-06-06)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.6.2](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.1...graphile-settings@5.6.2) (2026-06-06)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.6.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.6.0...graphile-settings@5.6.1) (2026-06-05)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.6.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.5.0...graphile-settings@5.6.0) (2026-05-31)
+
+### Features
+
+- wire enableI18n through DatabaseSettings, loader, and ConstructivePreset ([7b709b9](https://github.com/constructive-io/constructive/commit/7b709b9069e462da77e5d1cda9e7c1df9d8569ea))
+
+# [5.5.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.4.1...graphile-settings@5.5.0) (2026-05-30)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.4.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.4.0...graphile-settings@5.4.1) (2026-05-29)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.4.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.3.1...graphile-settings@5.4.0) (2026-05-29)
+
+### Features
+
+- add FieldType/FieldDefault TS interfaces, remove SqlExpressionValidatorPreset from constructive-preset ([b79342c](https://github.com/constructive-io/constructive/commit/b79342cb1224fb74971abfa97c54cf2823d08d46))
+
+## [5.3.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.3.0...graphile-settings@5.3.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.3.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.4...graphile-settings@5.3.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.2.4](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.3...graphile-settings@5.2.4) (2026-05-21)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.2.3](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.2...graphile-settings@5.2.3) (2026-05-20)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.2.2](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.1...graphile-settings@5.2.2) (2026-05-19)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.2.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.2.0...graphile-settings@5.2.1) (2026-05-17)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.2.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.1.1...graphile-settings@5.2.0) (2026-05-15)
+
+### Features
+
+- **inflekt:** add [@list](https://github.com/list)Suffix, composite FK naming, and inflection helpers ([826fb9a](https://github.com/constructive-io/constructive/commit/826fb9a2cec6f390a48c60f675b9ca5b99ba9f5b))
+
+## [5.1.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.1.0...graphile-settings@5.1.1) (2026-05-14)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.1.0](https://github.com/constructive-io/constructive/compare/graphile-settings@5.0.2...graphile-settings@5.1.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.0.2](https://github.com/constructive-io/constructive/compare/graphile-settings@5.0.1...graphile-settings@5.0.2) (2026-05-14)
+
+**Note:** Version bump only for package graphile-settings
+
+## [5.0.1](https://github.com/constructive-io/constructive/compare/graphile-settings@5.0.0...graphile-settings@5.0.1) (2026-05-14)
+
+**Note:** Version bump only for package graphile-settings
+
+# [5.0.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.33.2...graphile-settings@5.0.0) (2026-05-13)
+
+### Bug Fixes
+
+- scope BucketNameResolver to (databaseId, bucketKey) ([304d201](https://github.com/constructive-io/constructive/commit/304d201a03bd5fcc059566c373ccf6465b134489))
+
+### Features
+
+- wire enable_bulk database setting into GraphQL server and graphile-settings ([d5ab604](https://github.com/constructive-io/constructive/commit/d5ab604955912f8c70a88bd9b9fe32b8f24c7981))
+
+### BREAKING CHANGES
+
+- custom resolveBucketName callbacks must now accept
+  (databaseId: string, bucketKey: string) instead of (databaseId: string).
+
+## [4.33.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.33.1...graphile-settings@4.33.2) (2026-05-12)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.33.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.33.0...graphile-settings@4.33.1) (2026-05-11)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.33.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.32.0...graphile-settings@4.33.0) (2026-05-11)
+
+### Features
+
+- integrate RealtimeManager into constructive preset and cache lifecycle ([a4dd5b9](https://github.com/constructive-io/constructive/commit/a4dd5b9e8b0440ed49749f0eac1b3d2f3841f4a5))
+
+# [4.32.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.31.1...graphile-settings@4.32.0) (2026-05-11)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.31.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.31.0...graphile-settings@4.31.1) (2026-05-10)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.31.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.30.2...graphile-settings@4.31.0) (2026-05-10)
+
+### Features
+
+- refactor ConstructivePreset into createConstructivePreset() factory ([b06968c](https://github.com/constructive-io/constructive/commit/b06968c25baef2d08d1a7fcadf07bfc5fbff5462))
+- typed table reads for CORS, pubkey, webauthn, database_settings + Graphile feature flag wiring ([b4ee8ba](https://github.com/constructive-io/constructive/commit/b4ee8bab5dc216e0bca8d8ede2890e669508cd0f))
+
+## [4.30.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.30.1...graphile-settings@4.30.2) (2026-05-09)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.30.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.30.0...graphile-settings@4.30.1) (2026-05-09)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.30.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.29.1...graphile-settings@4.30.0) (2026-05-09)
+
+### Features
+
+- adapt pg-aggregates for Constructive conventions ([c0fd7f7](https://github.com/constructive-io/constructive/commit/c0fd7f7578f3ecfeceec3c6a15e1df1507dedffe))
+- disable PgAggregatesPreset by default in ConstructivePreset ([d007344](https://github.com/constructive-io/constructive/commit/d00734453f93622eb807c16a7265fc69be2c40ef))
+
+## [4.29.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.29.0...graphile-settings@4.29.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.29.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.28.2...graphile-settings@4.29.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.28.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.28.1...graphile-settings@4.28.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.28.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.28.0...graphile-settings@4.28.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.28.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.27.3...graphile-settings@4.28.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.27.3](https://github.com/constructive-io/constructive/compare/graphile-settings@4.27.2...graphile-settings@4.27.3) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.27.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.27.1...graphile-settings@4.27.2) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.27.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.27.0...graphile-settings@4.27.1) (2026-05-08)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.27.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.26.0...graphile-settings@4.27.0) (2026-05-07)
+
+### Features
+
+- unified file-path syntax for ltree — codec auto-converts between slash paths and ltree ([c00202b](https://github.com/constructive-io/constructive/commit/c00202bbf524f37a2fb7d4a71122d07feed14768))
+
+# [4.26.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.25.2...graphile-settings@4.26.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.25.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.25.1...graphile-settings@4.25.2) (2026-05-06)
+
+### Bug Fixes
+
+- **pg-many-to-many:** auto-disambiguate type name collisions instead of crashing ([d64e3b1](https://github.com/constructive-io/constructive/commit/d64e3b16ef808b4ad880c77e9420a30d980825f6)), closes [constructive-io/constructive-planning#797](https://github.com/constructive-io/constructive-planning/issues/797)
+- **test:** check m2m edge type names instead of field names ([5b82ae5](https://github.com/constructive-io/constructive/commit/5b82ae5d4d7072aac12a73912f086008f84b23e4))
+- **test:** make m2m test more diagnostic for CI debugging ([5e55732](https://github.com/constructive-io/constructive/commit/5e557325835ad0c55dc387da09e9e1c8136a82f5))
+
+## [4.25.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.25.0...graphile-settings@4.25.1) (2026-05-05)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.25.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.24.1...graphile-settings@4.25.0) (2026-05-05)
+
+### Features
+
+- add folder preset — path (slash) + pathTree (ltree) + folder operators ([1ba92d4](https://github.com/constructive-io/constructive/commit/1ba92d4727e0eec21285fd43f44cca792230c840))
+- add graphile-ltree plugin — auto-detect ltree columns, folder fields, containment/glob filters ([1733b5b](https://github.com/constructive-io/constructive/commit/1733b5be8ed9caacf0ac50f941063db9310a1c32))
+
+## [4.24.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.24.0...graphile-settings@4.24.1) (2026-05-05)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.24.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.23.1...graphile-settings@4.24.0) (2026-05-04)
+
+### Features
+
+- remove confirmUpload from upload-client, simplify to 3-step flow ([9a9ffb1](https://github.com/constructive-io/constructive/commit/9a9ffb1bbab0060af8faf02fc5940830885c558c)), closes [constructive-db#996](https://github.com/constructive-db/issues/996)
+
+## [4.23.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.23.0...graphile-settings@4.23.1) (2026-05-03)
+
+**Note:** Version bump only for package graphile-settings
+
+# [4.23.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.22.3...graphile-settings@4.23.0) (2026-04-30)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.22.3](https://github.com/constructive-io/constructive/compare/graphile-settings@4.22.2...graphile-settings@4.22.3) (2026-04-29)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.22.2](https://github.com/constructive-io/constructive/compare/graphile-settings@4.22.1...graphile-settings@4.22.2) (2026-04-28)
+
+**Note:** Version bump only for package graphile-settings
+
+## [4.22.1](https://github.com/constructive-io/constructive/compare/graphile-settings@4.22.0...graphile-settings@4.22.1) (2026-04-27)
+
+### Bug Fixes
+
+- remove phantom cyclic deps (@pgpmjs/core -> migrate-client, graphile-settings -> pgsql-test) ([0683ba6](https://github.com/constructive-io/constructive/commit/0683ba622edb984b7594f4062367b58910458636))
+
+# [4.22.0](https://github.com/constructive-io/constructive/compare/graphile-settings@4.21.8...graphile-settings@4.22.0) (2026-04-27)
+
+### Features
+
+- consolidate S3 client factory + presigned URL helpers into s3-utils ([cf436df](https://github.com/constructive-io/constructive/commit/cf436df711fb239c640a99655e0e1a572480feb7))
+
 ## [4.21.8](https://github.com/constructive-io/constructive/compare/graphile-settings@4.21.7...graphile-settings@4.21.8) (2026-04-20)
 
 **Note:** Version bump only for package graphile-settings

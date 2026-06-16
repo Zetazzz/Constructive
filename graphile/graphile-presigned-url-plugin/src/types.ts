@@ -11,6 +11,7 @@ export interface BucketConfig {
   owner_id: string | null;
   allowed_mime_types: string[] | null;
   max_file_size: number | null;
+  allow_custom_keys: boolean;
 }
 
 /**
@@ -23,21 +24,17 @@ export interface StorageModuleConfig {
   bucketsQualifiedName: string;
   /** Resolved schema.table for files */
   filesQualifiedName: string;
-  /** Resolved schema.table for upload_requests */
-  uploadRequestsQualifiedName: string;
   /** Schema name (e.g., "app_public") */
   schemaName: string;
   /** Buckets table name */
   bucketsTableName: string;
   /** Files table name */
   filesTableName: string;
-  /** Upload requests table name */
-  uploadRequestsTableName: string;
 
   // --- Scope identity ---
 
-  /** Membership type (NULL for app-level, non-NULL for entity-scoped) */
-  membershipType: number | null;
+  /** Scope name (e.g., 'app', 'org', 'team') */
+  scope: string;
   /** Entity table ID for entity-scoped storage (NULL for app-level) */
   entityTableId: string | null;
   /** Qualified entity table name for ownerId lookups (NULL for app-level) */
@@ -66,6 +63,15 @@ export interface StorageModuleConfig {
   maxFilenameLength: number;
   /** Cache TTL in seconds for this config entry (default: 300 dev / 3600 prod) */
   cacheTtlSeconds: number;
+  /** Whether this storage module uses ltree path + path shares (determines if path column exists on files) */
+  hasPathShares: boolean;
+
+  // --- Bulk upload limits ---
+
+  /** Max files per requestBulkUploadUrls batch (default: 100) */
+  maxBulkFiles: number;
+  /** Max total size per bulk upload batch in bytes (default: 1GB) */
+  maxBulkTotalSize: number;
 }
 
 /**
@@ -89,6 +95,13 @@ export interface RequestUploadUrlInput {
   size: number;
   /** Original filename (optional, for display/Content-Disposition) */
   filename?: string;
+  /**
+   * Custom S3 key for the file (only allowed when bucket has allow_custom_keys=true).
+   * When omitted, key defaults to contentHash (content-addressed dedup).
+   * When provided, the file is stored at this key; dedup is bypassed.
+   * Max 1024 chars. Must not contain path traversal (.. or leading /).
+   */
+  key?: string;
 }
 
 /**
@@ -105,26 +118,8 @@ export interface RequestUploadUrlPayload {
   deduplicated: boolean;
   /** Presigned URL expiry time (null if deduplicated) */
   expiresAt: string | null;
-}
-
-/**
- * Input for the confirmUpload mutation.
- */
-export interface ConfirmUploadInput {
-  /** The file ID returned by requestUploadUrl */
-  fileId: string;
-}
-
-/**
- * Result of the confirmUpload mutation.
- */
-export interface ConfirmUploadPayload {
-  /** The confirmed file ID */
-  fileId: string;
-  /** New file status (should be 'ready') */
-  status: string;
-  /** Whether confirmation succeeded */
-  success: boolean;
+  /** ID of the previous version (set when re-uploading to an existing custom key) */
+  previousVersionId: string | null;
 }
 
 /**
@@ -154,16 +149,17 @@ export interface S3Config {
 export type S3ConfigOrGetter = S3Config | (() => S3Config);
 
 /**
- * Function to derive the actual S3 bucket name for a given database.
+ * Function to derive the actual S3 bucket name for a given database and bucket key.
  *
  * When provided, the presigned URL plugin calls this on every request
- * to determine which S3 bucket to use — enabling per-database bucket
+ * to determine which S3 bucket to use — enabling per-(database, bucketKey)
  * isolation. If not provided, falls back to `s3Config.bucket` (global).
  *
  * @param databaseId - The metaschema database UUID
- * @returns The S3 bucket name for this database
+ * @param bucketKey - The logical bucket key (e.g., "public", "private")
+ * @returns The S3 bucket name for this database + bucket key
  */
-export type BucketNameResolver = (databaseId: string) => string;
+export type BucketNameResolver = (databaseId: string, bucketKey: string) => string;
 
 /**
  * Callback to lazily provision an S3 bucket on first use.

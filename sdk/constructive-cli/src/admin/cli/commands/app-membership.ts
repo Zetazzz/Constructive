@@ -26,7 +26,6 @@ const fieldSchema: FieldSchema = {
   isDisabled: 'boolean',
   isVerified: 'boolean',
   isActive: 'boolean',
-  isExternal: 'boolean',
   isOwner: 'boolean',
   isAdmin: 'boolean',
   permissions: 'string',
@@ -35,7 +34,7 @@ const fieldSchema: FieldSchema = {
   profileId: 'uuid',
 };
 const usage =
-  '\napp-membership <command>\n\nCommands:\n  list                  List appMembership records\n  find-first            Find first matching appMembership record\n  get                   Get a appMembership by ID\n  create                Create a new appMembership\n  update                Update an existing appMembership\n  delete                Delete a appMembership\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\napp-membership <command>\n\nCommands:\n  list                  List appMembership records\n  find-first            Find first matching appMembership record\n  get                   Get a appMembership by ID\n  create                Create a new appMembership\n  update                Update an existing appMembership\n  delete                Delete a appMembership\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -95,7 +94,6 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       isDisabled: true,
       isVerified: true,
       isActive: true,
-      isExternal: true,
       isOwner: true,
       isAdmin: true,
       permissions: true,
@@ -132,7 +130,6 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       isDisabled: true,
       isVerified: true,
       isActive: true,
-      isExternal: true,
       isOwner: true,
       isAdmin: true,
       permissions: true,
@@ -141,7 +138,7 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       profileId: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<AppMembershipSelect, AppMembershipFilter> & {
+      FindFirstArgs<AppMembershipSelect, AppMembershipFilter, AppMembershipOrderBy> & {
         select: AppMembershipSelect;
       }
     >(argv, defaultSelect);
@@ -181,7 +178,6 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           isDisabled: true,
           isVerified: true,
           isActive: true,
-          isExternal: true,
           isOwner: true,
           isAdmin: true,
           permissions: true,
@@ -254,13 +250,6 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'boolean',
-        name: 'isExternal',
-        message: 'isExternal',
-        required: false,
-        skipPrompt: true,
-      },
-      {
-        type: 'boolean',
         name: 'isOwner',
         message: 'isOwner',
         required: false,
@@ -317,7 +306,6 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           isDisabled: cleanedData.isDisabled,
           isVerified: cleanedData.isVerified,
           isActive: cleanedData.isActive,
-          isExternal: cleanedData.isExternal,
           isOwner: cleanedData.isOwner,
           isAdmin: cleanedData.isAdmin,
           permissions: cleanedData.permissions,
@@ -336,7 +324,6 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           isDisabled: true,
           isVerified: true,
           isActive: true,
-          isExternal: true,
           isOwner: true,
           isAdmin: true,
           permissions: true,
@@ -415,13 +402,6 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
       },
       {
         type: 'boolean',
-        name: 'isExternal',
-        message: 'isExternal',
-        required: false,
-        skipPrompt: true,
-      },
-      {
-        type: 'boolean',
         name: 'isOwner',
         message: 'isOwner',
         required: false,
@@ -478,7 +458,6 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           isDisabled: cleanedData.isDisabled,
           isVerified: cleanedData.isVerified,
           isActive: cleanedData.isActive,
-          isExternal: cleanedData.isExternal,
           isOwner: cleanedData.isOwner,
           isAdmin: cleanedData.isAdmin,
           permissions: cleanedData.permissions,
@@ -497,7 +476,6 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           isDisabled: true,
           isVerified: true,
           isActive: true,
-          isExternal: true,
           isOwner: true,
           isAdmin: true,
           permissions: true,

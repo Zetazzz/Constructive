@@ -8,23 +8,20 @@ import type { OrmClientConfig } from './client';
 import { OrgGetManagersRecordModel } from './models/orgGetManagersRecord';
 import { OrgGetSubordinatesRecordModel } from './models/orgGetSubordinatesRecord';
 import { AppPermissionModel } from './models/appPermission';
+import { AppPermissionDefaultGrantModel } from './models/appPermissionDefaultGrant';
 import { OrgPermissionModel } from './models/orgPermission';
-import { AppLevelRequirementModel } from './models/appLevelRequirement';
+import { OrgPermissionDefaultPermissionModel } from './models/orgPermissionDefaultPermission';
+import { OrgPermissionDefaultGrantModel } from './models/orgPermissionDefaultGrant';
 import { OrgMemberModel } from './models/orgMember';
 import { AppPermissionDefaultModel } from './models/appPermissionDefault';
 import { OrgPermissionDefaultModel } from './models/orgPermissionDefault';
+import { AppPermissionDefaultPermissionModel } from './models/appPermissionDefaultPermission';
 import { AppAdminGrantModel } from './models/appAdminGrant';
 import { AppOwnerGrantModel } from './models/appOwnerGrant';
-import { AppLimitDefaultModel } from './models/appLimitDefault';
-import { OrgLimitDefaultModel } from './models/orgLimitDefault';
 import { OrgAdminGrantModel } from './models/orgAdminGrant';
 import { OrgOwnerGrantModel } from './models/orgOwnerGrant';
-import { AppLimitModel } from './models/appLimit';
-import { AppAchievementModel } from './models/appAchievement';
-import { AppStepModel } from './models/appStep';
-import { AppClaimedInviteModel } from './models/appClaimedInvite';
 import { OrgChartEdgeGrantModel } from './models/orgChartEdgeGrant';
-import { OrgLimitModel } from './models/orgLimit';
+import { AppClaimedInviteModel } from './models/appClaimedInvite';
 import { MembershipTypeModel } from './models/membershipType';
 import { AppGrantModel } from './models/appGrant';
 import { AppMembershipDefaultModel } from './models/appMembershipDefault';
@@ -32,17 +29,16 @@ import { OrgMembershipDefaultModel } from './models/orgMembershipDefault';
 import { OrgClaimedInviteModel } from './models/orgClaimedInvite';
 import { OrgGrantModel } from './models/orgGrant';
 import { OrgChartEdgeModel } from './models/orgChartEdge';
-import { OrgMemberProfileModel } from './models/orgMemberProfile';
 import { OrgMembershipSettingModel } from './models/orgMembershipSetting';
-import { AppLevelModel } from './models/appLevel';
-import { AppInviteModel } from './models/appInvite';
-import { OrgInviteModel } from './models/orgInvite';
 import { AppMembershipModel } from './models/appMembership';
 import { OrgMembershipModel } from './models/orgMembership';
+import { OrgMemberProfileModel } from './models/orgMemberProfile';
+import { AppInviteModel } from './models/appInvite';
+import { OrgInviteModel } from './models/orgInvite';
 import { createQueryOperations } from './query';
 import { createMutationOperations } from './mutation';
 export type { OrmClientConfig, QueryResult, GraphQLError, GraphQLAdapter } from './client';
-export { GraphQLRequestError } from './client';
+export { GraphQLRequestError, FetchAdapter } from './client';
 export { QueryBuilder } from './query-builder';
 export * from './select-types';
 export * from './models';
@@ -77,23 +73,20 @@ export function createClient(config: OrmClientConfig) {
     orgGetManagersRecord: new OrgGetManagersRecordModel(client),
     orgGetSubordinatesRecord: new OrgGetSubordinatesRecordModel(client),
     appPermission: new AppPermissionModel(client),
+    appPermissionDefaultGrant: new AppPermissionDefaultGrantModel(client),
     orgPermission: new OrgPermissionModel(client),
-    appLevelRequirement: new AppLevelRequirementModel(client),
+    orgPermissionDefaultPermission: new OrgPermissionDefaultPermissionModel(client),
+    orgPermissionDefaultGrant: new OrgPermissionDefaultGrantModel(client),
     orgMember: new OrgMemberModel(client),
     appPermissionDefault: new AppPermissionDefaultModel(client),
     orgPermissionDefault: new OrgPermissionDefaultModel(client),
+    appPermissionDefaultPermission: new AppPermissionDefaultPermissionModel(client),
     appAdminGrant: new AppAdminGrantModel(client),
     appOwnerGrant: new AppOwnerGrantModel(client),
-    appLimitDefault: new AppLimitDefaultModel(client),
-    orgLimitDefault: new OrgLimitDefaultModel(client),
     orgAdminGrant: new OrgAdminGrantModel(client),
     orgOwnerGrant: new OrgOwnerGrantModel(client),
-    appLimit: new AppLimitModel(client),
-    appAchievement: new AppAchievementModel(client),
-    appStep: new AppStepModel(client),
-    appClaimedInvite: new AppClaimedInviteModel(client),
     orgChartEdgeGrant: new OrgChartEdgeGrantModel(client),
-    orgLimit: new OrgLimitModel(client),
+    appClaimedInvite: new AppClaimedInviteModel(client),
     membershipType: new MembershipTypeModel(client),
     appGrant: new AppGrantModel(client),
     appMembershipDefault: new AppMembershipDefaultModel(client),
@@ -101,13 +94,12 @@ export function createClient(config: OrmClientConfig) {
     orgClaimedInvite: new OrgClaimedInviteModel(client),
     orgGrant: new OrgGrantModel(client),
     orgChartEdge: new OrgChartEdgeModel(client),
-    orgMemberProfile: new OrgMemberProfileModel(client),
     orgMembershipSetting: new OrgMembershipSettingModel(client),
-    appLevel: new AppLevelModel(client),
-    appInvite: new AppInviteModel(client),
-    orgInvite: new OrgInviteModel(client),
     appMembership: new AppMembershipModel(client),
     orgMembership: new OrgMembershipModel(client),
+    orgMemberProfile: new OrgMemberProfileModel(client),
+    appInvite: new AppInviteModel(client),
+    orgInvite: new OrgInviteModel(client),
     query: createQueryOperations(client),
     mutation: createMutationOperations(client),
   };

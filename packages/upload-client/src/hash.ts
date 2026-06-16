@@ -1,13 +1,17 @@
 /**
- * File hashing utilities using Web Crypto API.
+ * File hashing utilities using @constructive-io/noble-hashes.
  *
  * Two strategies:
  * - `hashFile` — reads entire file into memory, fast for files up to ~200MB
- * - `hashFileChunked` — reads file in chunks via FileReader/Blob.slice,
- *   suitable for very large files where loading the full ArrayBuffer
- *   would exceed available memory
+ * - `hashFileChunked` — true incremental hashing via Blob.slice, suitable
+ *   for arbitrarily large files (GB+). Only one chunk is in memory at a time.
+ *
+ * Both use @constructive-io/noble-hashes (pure JS, audited, 0 dependencies)
+ * which supports incremental .update() — unlike Web Crypto API's one-shot digest().
  */
 
+import { sha256 } from '@constructive-io/noble-hashes/sha2';
+import { bytesToHex } from '@constructive-io/noble-hashes/utils';
 import { UploadError } from './types';
 import type { FileInput } from './types';
 
@@ -15,19 +19,7 @@ import type { FileInput } from './types';
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
 
 /**
- * Convert an ArrayBuffer to a lowercase hex string.
- */
-function bufferToHex(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const hex = new Array<string>(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    hex[i] = bytes[i].toString(16).padStart(2, '0');
-  }
-  return hex.join('');
-}
-
-/**
- * Hash a file using SHA-256 (Web Crypto API).
+ * Hash a file using SHA-256.
  *
  * Reads the entire file into an ArrayBuffer, then computes the hash
  * in a single call. Fast and simple for files up to ~200MB.
@@ -48,29 +40,19 @@ export async function hashFile(file: FileInput): Promise<string> {
 
   try {
     const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    return bufferToHex(hashBuffer);
+    return bytesToHex(sha256(new Uint8Array(buffer)));
   } catch (err) {
+    if (err instanceof UploadError) throw err;
     throw new UploadError('HASH_FAILED', 'Failed to compute SHA-256 hash', err);
   }
 }
 
 /**
- * Hash a file using SHA-256 in chunks.
+ * Hash a file using SHA-256 in chunks (true incremental).
  *
  * Reads the file in fixed-size slices using `Blob.slice()`, feeding each
- * chunk into an incremental digest. This avoids loading the entire file
- * into memory at once, making it suitable for very large files (>200MB).
- *
- * Uses the Web Crypto API's digest on each chunk via a streaming approach:
- * we manually accumulate chunks and hash the concatenated result.
- *
- * NOTE: Web Crypto API does not support incremental/streaming digest natively.
- * For true streaming on very large files (multi-GB), a WASM-based SHA-256
- * would be needed. This implementation reads chunks sequentially but still
- * needs to hold the full file data in memory for the final digest call.
- * The benefit is reduced *peak* memory by processing chunks incrementally
- * and giving the GC a chance to reclaim between reads.
+ * chunk into an incremental SHA-256 hasher. Only one chunk is held in
+ * memory at a time — O(chunkSize) memory for any file size.
  *
  * @param file - File to hash
  * @param chunkSize - Size of each chunk in bytes (default: 2MB)
@@ -97,15 +79,15 @@ export async function hashFileChunked(
   }
 
   try {
+    const hasher = sha256.create();
     const totalSize = file.size;
-    const chunks: Uint8Array[] = [];
     let bytesRead = 0;
 
     while (bytesRead < totalSize) {
       const end = Math.min(bytesRead + chunkSize, totalSize);
       const slice = file.slice(bytesRead, end);
       const buffer = await slice.arrayBuffer();
-      chunks.push(new Uint8Array(buffer));
+      hasher.update(new Uint8Array(buffer));
       bytesRead = end;
 
       if (onProgress) {
@@ -113,17 +95,7 @@ export async function hashFileChunked(
       }
     }
 
-    // Concatenate all chunks for final digest
-    const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    const hashBuffer = await crypto.subtle.digest('SHA-256', combined);
-    return bufferToHex(hashBuffer);
+    return bytesToHex(hasher.digest());
   } catch (err) {
     if (err instanceof UploadError) throw err;
     throw new UploadError('HASH_FAILED', 'Failed to compute chunked SHA-256 hash', err);

@@ -27,10 +27,12 @@ const fieldSchema: FieldSchema = {
   createChildCascadeAdmins: 'boolean',
   createChildCascadeMembers: 'boolean',
   allowExternalMembers: 'boolean',
+  inviteProfileAssignmentMode: 'string',
   populateMemberEmail: 'boolean',
+  limitAllocationMode: 'string',
 };
 const usage =
-  '\norg-membership-setting <command>\n\nCommands:\n  list                  List orgMembershipSetting records\n  find-first            Find first matching orgMembershipSetting record\n  get                   Get a orgMembershipSetting by ID\n  create                Create a new orgMembershipSetting\n  update                Update an existing orgMembershipSetting\n  delete                Delete a orgMembershipSetting\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\norg-membership-setting <command>\n\nCommands:\n  list                  List orgMembershipSetting records\n  find-first            Find first matching orgMembershipSetting record\n  get                   Get a orgMembershipSetting by ID\n  create                Create a new orgMembershipSetting\n  update                Update an existing orgMembershipSetting\n  delete                Delete a orgMembershipSetting\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -91,7 +93,9 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       createChildCascadeAdmins: true,
       createChildCascadeMembers: true,
       allowExternalMembers: true,
+      inviteProfileAssignmentMode: true,
       populateMemberEmail: true,
+      limitAllocationMode: true,
     };
     const findManyArgs = parseFindManyArgs<
       FindManyArgs<
@@ -127,10 +131,16 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       createChildCascadeAdmins: true,
       createChildCascadeMembers: true,
       allowExternalMembers: true,
+      inviteProfileAssignmentMode: true,
       populateMemberEmail: true,
+      limitAllocationMode: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<OrgMembershipSettingSelect, OrgMembershipSettingFilter> & {
+      FindFirstArgs<
+        OrgMembershipSettingSelect,
+        OrgMembershipSettingFilter,
+        OrgMembershipSettingOrderBy
+      > & {
         select: OrgMembershipSettingSelect;
       }
     >(argv, defaultSelect);
@@ -171,7 +181,9 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           createChildCascadeAdmins: true,
           createChildCascadeMembers: true,
           allowExternalMembers: true,
+          inviteProfileAssignmentMode: true,
           populateMemberEmail: true,
+          limitAllocationMode: true,
         },
       })
       .execute();
@@ -243,9 +255,23 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'text',
+        name: 'inviteProfileAssignmentMode',
+        message: 'inviteProfileAssignmentMode',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'boolean',
         name: 'populateMemberEmail',
         message: 'populateMemberEmail',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'limitAllocationMode',
+        message: 'limitAllocationMode',
         required: false,
         skipPrompt: true,
       },
@@ -267,7 +293,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           createChildCascadeAdmins: cleanedData.createChildCascadeAdmins,
           createChildCascadeMembers: cleanedData.createChildCascadeMembers,
           allowExternalMembers: cleanedData.allowExternalMembers,
+          inviteProfileAssignmentMode: cleanedData.inviteProfileAssignmentMode,
           populateMemberEmail: cleanedData.populateMemberEmail,
+          limitAllocationMode: cleanedData.limitAllocationMode,
         },
         select: {
           id: true,
@@ -281,7 +309,9 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           createChildCascadeAdmins: true,
           createChildCascadeMembers: true,
           allowExternalMembers: true,
+          inviteProfileAssignmentMode: true,
           populateMemberEmail: true,
+          limitAllocationMode: true,
         },
       })
       .execute();
@@ -359,9 +389,23 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         skipPrompt: true,
       },
       {
+        type: 'text',
+        name: 'inviteProfileAssignmentMode',
+        message: 'inviteProfileAssignmentMode',
+        required: false,
+        skipPrompt: true,
+      },
+      {
         type: 'boolean',
         name: 'populateMemberEmail',
         message: 'populateMemberEmail',
+        required: false,
+        skipPrompt: true,
+      },
+      {
+        type: 'text',
+        name: 'limitAllocationMode',
+        message: 'limitAllocationMode',
         required: false,
         skipPrompt: true,
       },
@@ -383,7 +427,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           createChildCascadeAdmins: cleanedData.createChildCascadeAdmins,
           createChildCascadeMembers: cleanedData.createChildCascadeMembers,
           allowExternalMembers: cleanedData.allowExternalMembers,
+          inviteProfileAssignmentMode: cleanedData.inviteProfileAssignmentMode,
           populateMemberEmail: cleanedData.populateMemberEmail,
+          limitAllocationMode: cleanedData.limitAllocationMode,
         },
         select: {
           id: true,
@@ -397,7 +443,9 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           createChildCascadeAdmins: true,
           createChildCascadeMembers: true,
           allowExternalMembers: true,
+          inviteProfileAssignmentMode: true,
           populateMemberEmail: true,
+          limitAllocationMode: true,
         },
       })
       .execute();

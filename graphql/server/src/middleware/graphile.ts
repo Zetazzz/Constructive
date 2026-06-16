@@ -6,7 +6,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { GraphQLError, GraphQLFormattedError } from 'grafast/graphql';
 import { createGraphileInstance, type GraphileCacheEntry, graphileCache } from 'graphile-cache';
 import type { GraphileConfig } from 'graphile-config';
-import { ConstructivePreset, makePgService } from 'graphile-settings';
+import { createConstructivePreset, makePgService } from 'graphile-settings';
 import { getPgPool } from 'pg-cache';
 import { getPgEnvOptions } from 'pg-env';
 import {
@@ -20,6 +20,8 @@ import './types'; // for Request type
 import { isGraphqlObservabilityEnabled } from '../diagnostics/observability';
 import { HandlerCreationError } from '../errors/api-errors';
 import { observeGraphileBuild } from './observability/graphile-build-stats';
+import type { DatabaseSettings } from '../types';
+import { AuthCookiePlugin } from '../plugins/auth-cookie-plugin';
 
 const maskErrorLog = new Logger('graphile:maskError');
 
@@ -52,6 +54,12 @@ const SAFE_ERROR_CODES = new Set([
   'INVITE_NOT_FOUND',
   'INVITE_LIMIT',
   'INVITE_EMAIL_NOT_FOUND',
+  'EMAIL_NOT_VERIFIED',
+  'PROFILE_ASSIGNMENT_REQUIRES_EMAIL_INVITE',
+  'ASSIGN_PROFILES_PERMISSION_REQUIRED',
+  'PROFILE_NOT_FOUND',
+  'PROFILE_EXCEEDS_PERMISSIONS',
+  'MEMBERSHIP_NOT_FOUND',
   'INVALID_CREDENTIALS',
   // Auth method toggles (app-level allow_* settings)
   'SIGN_UP_DISABLED',
@@ -195,15 +203,22 @@ const reqLabel = (req: Request): string => (req.requestId ? `[${req.requestId}]`
 
 /**
  * Build a PostGraphile v5 preset for a tenant.
+ *
+ * When `databaseSettings` are available the flags are forwarded to
+ * `createConstructivePreset()` which conditionally includes each
+ * plugin preset.  Without settings the default preset is used
+ * (everything on except aggregates).
  */
 const buildPreset = (
   pool: import('pg').Pool,
   schemas: string[],
   anonRole: string,
   roleName: string,
+  databaseSettings?: DatabaseSettings,
 ): GraphileConfig.Preset => {
   return {
-  extends: [ConstructivePreset],
+  extends: [createConstructivePreset(databaseSettings)],
+  plugins: [AuthCookiePlugin],
   pgServices: [
     makePgService({
       pool,
@@ -237,6 +252,9 @@ const buildPreset = (
         if (req.get('User-Agent')) {
           context['jwt.claims.user_agent'] = req.get('User-Agent') as string;
         }
+        if (req.deviceToken) {
+          context['jwt.claims.device_token'] = req.deviceToken;
+        }
 
         if (req.token?.user_id) {
           const pgSettings: Record<string, string> = {
@@ -264,15 +282,24 @@ const buildPreset = (
             pgSettings['default_transaction_read_only'] = 'on';
           }
 
+          if (req.requestId) {
+            pgSettings['request.id'] = req.requestId;
+          }
+
           return { pgSettings };
         }
       }
 
+      const anonSettings: Record<string, string> = {
+        role: anonRole,
+        ...context,
+      };
+      if (req?.requestId) {
+        anonSettings['request.id'] = req.requestId;
+      }
+
       return {
-        pgSettings: {
-          role: anonRole,
-          ...context,
-        },
+        pgSettings: anonSettings,
       };
     },
   },
@@ -357,14 +384,18 @@ export const graphile = (opts: ConstructiveOptions): RequestHandler => {
       const pool = getPgPool(pgConfig);
 
       // Create promise and store in in-flight map BEFORE try block
-      const preset = buildPreset(pool, schema || [], anonRole, roleName);
+      const preset = buildPreset(pool, schema || [], anonRole, roleName, api.databaseSettings);
       const creationPromise = observeGraphileBuild(
         {
           cacheKey: key,
           serviceKey: key,
           databaseId: api.databaseId ?? null,
         },
-        () => createGraphileInstance({ preset, cacheKey: key }),
+        () => createGraphileInstance({
+          preset,
+          cacheKey: key,
+          enableRealtime: api.databaseSettings?.enableRealtime,
+        }),
         { enabled: observabilityEnabled },
       );
       creating.set(key, creationPromise);

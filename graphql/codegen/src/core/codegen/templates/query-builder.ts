@@ -8,7 +8,7 @@
  * Any changes here will affect all generated ORM clients.
  */
 
-import { parseType, print } from '@0no-co/graphql.web';
+import { parseType, print } from '@constructive-io/graphql-query/runtime';
 import * as t from 'gql-ast';
 import type {
   ArgumentNode,
@@ -138,11 +138,43 @@ export function buildSelections(
     if (typeof value === 'object' && value !== null) {
       const nested = value as {
         select?: Record<string, unknown>;
+        args?: Record<string, unknown>;
         first?: number;
         filter?: Record<string, unknown>;
         orderBy?: string[];
         connection?: boolean;
       };
+
+      // Field with arguments (e.g. requestUploadUrl on bucket types)
+      if (nested.args && typeof nested.args === 'object') {
+        const fieldArgs = Object.entries(nested.args).map(
+          ([argName, argValue]) =>
+            t.argument({ name: argName, value: buildValueAst(argValue) }),
+        );
+        const nestedSelect = nested.select;
+        if (nestedSelect && typeof nestedSelect === 'object') {
+          const subSelections = Object.entries(nestedSelect)
+            .filter(([, v]) => v)
+            .map(([name]) => t.field({ name }));
+          fields.push(
+            t.field({
+              name: key,
+              args: fieldArgs.length ? fieldArgs : undefined,
+              selectionSet: subSelections.length
+                ? t.selectionSet({ selections: subSelections })
+                : undefined,
+            }),
+          );
+        } else {
+          fields.push(
+            t.field({
+              name: key,
+              args: fieldArgs.length ? fieldArgs : undefined,
+            }),
+          );
+        }
+        continue;
+      }
 
       if (!nested.select || typeof nested.select !== 'object') {
         throw new Error(
@@ -311,8 +343,9 @@ export function buildFindFirstDocument<TSelect, TWhere>(
   operationName: string,
   queryField: string,
   select: TSelect,
-  args: { where?: TWhere },
+  args: { where?: TWhere; orderBy?: string[] },
   filterTypeName: string,
+  orderByTypeName: string,
   connectionFieldsMap?: Record<string, Record<string, string>>,
 ): { document: string; variables: Record<string, unknown> } {
   const selections = select
@@ -339,6 +372,16 @@ export function buildFindFirstDocument<TSelect, TWhere>(
       varName: 'where',
       typeName: filterTypeName,
       value: args.where,
+    },
+    variableDefinitions,
+    queryArgs,
+    variables,
+  );
+  addVariable(
+    {
+      varName: 'orderBy',
+      typeName: '[' + orderByTypeName + '!]',
+      value: args.orderBy?.length ? args.orderBy : undefined,
     },
     variableDefinitions,
     queryArgs,
@@ -466,6 +509,7 @@ export function buildUpdateByPkDocument<TSelect, TData>(
   idFieldName: string,
   patchFieldName: string,
   connectionFieldsMap?: Record<string, Record<string, string>>,
+  extraKeys?: Record<string, unknown>,
 ): { document: string; variables: Record<string, unknown> } {
   const selections = select
     ? buildSelections(
@@ -490,6 +534,7 @@ export function buildUpdateByPkDocument<TSelect, TData>(
     variables: {
       input: {
         [idFieldName]: id,
+        ...extraKeys,
         [patchFieldName]: data,
       },
     },
@@ -929,4 +974,162 @@ function buildValueAst(
   }
 
   throw new Error('Unsupported value type: ' + typeof value);
+}
+
+// ============================================================================
+// Bulk Mutation Document Builders
+// ============================================================================
+
+export function buildBulkInsertDocument<TSelect, TData>(
+  operationName: string,
+  mutationField: string,
+  select: TSelect,
+  data: TData[],
+  inputTypeName: string,
+  onConflict?: unknown,
+  connectionFieldsMap?: Record<string, Record<string, string>>,
+): { document: string; variables: Record<string, unknown> } {
+  const selections = select
+    ? buildSelections(
+        select as Record<string, unknown>,
+        connectionFieldsMap,
+        operationName,
+      )
+    : [t.field({ name: 'id' })];
+
+  return {
+    document: buildInputMutationDocument({
+      operationName,
+      mutationField,
+      inputTypeName,
+      resultSelections: [
+        t.field({ name: 'affectedCount' }),
+        t.field({
+          name: 'returning',
+          selectionSet: t.selectionSet({ selections }),
+        }),
+      ],
+    }),
+    variables: {
+      input: {
+        values: data,
+        ...(onConflict ? { onConflict } : {}),
+      },
+    },
+  };
+}
+
+export function buildBulkUpsertDocument<TSelect, TData>(
+  operationName: string,
+  mutationField: string,
+  select: TSelect,
+  data: TData[],
+  inputTypeName: string,
+  onConflict: unknown,
+  connectionFieldsMap?: Record<string, Record<string, string>>,
+): { document: string; variables: Record<string, unknown> } {
+  const selections = select
+    ? buildSelections(
+        select as Record<string, unknown>,
+        connectionFieldsMap,
+        operationName,
+      )
+    : [t.field({ name: 'id' })];
+
+  return {
+    document: buildInputMutationDocument({
+      operationName,
+      mutationField,
+      inputTypeName,
+      resultSelections: [
+        t.field({ name: 'affectedCount' }),
+        t.field({
+          name: 'returning',
+          selectionSet: t.selectionSet({ selections }),
+        }),
+      ],
+    }),
+    variables: {
+      input: {
+        values: data,
+        onConflict,
+      },
+    },
+  };
+}
+
+export function buildBulkUpdateDocument<TSelect, TWhere, TData>(
+  operationName: string,
+  mutationField: string,
+  select: TSelect,
+  where: TWhere,
+  data: TData,
+  inputTypeName: string,
+  connectionFieldsMap?: Record<string, Record<string, string>>,
+): { document: string; variables: Record<string, unknown> } {
+  const selections = select
+    ? buildSelections(
+        select as Record<string, unknown>,
+        connectionFieldsMap,
+        operationName,
+      )
+    : [t.field({ name: 'id' })];
+
+  return {
+    document: buildInputMutationDocument({
+      operationName,
+      mutationField,
+      inputTypeName,
+      resultSelections: [
+        t.field({ name: 'affectedCount' }),
+        t.field({
+          name: 'returning',
+          selectionSet: t.selectionSet({ selections }),
+        }),
+      ],
+    }),
+    variables: {
+      input: {
+        where,
+        patch: data,
+      },
+    },
+  };
+}
+
+export function buildBulkDeleteDocument<TSelect, TWhere>(
+  operationName: string,
+  mutationField: string,
+  select: TSelect,
+  where: TWhere,
+  inputTypeName: string,
+  connectionFieldsMap?: Record<string, Record<string, string>>,
+): { document: string; variables: Record<string, unknown> } {
+  const selections = select
+    ? buildSelections(
+        select as Record<string, unknown>,
+        connectionFieldsMap,
+        operationName,
+      )
+    : [t.field({ name: 'id' })];
+
+  return {
+    document: buildInputMutationDocument({
+      operationName,
+      mutationField,
+      inputTypeName,
+      resultSelections: [
+        t.field({ name: 'affectedCount' }),
+        t.field({
+          name: 'returning',
+          selectionSet: t.selectionSet({ selections }),
+        }),
+      ],
+    }),
+    variables: {
+      input: {
+        where,
+      },
+    },
+  };
 }

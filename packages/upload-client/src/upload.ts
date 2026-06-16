@@ -2,19 +2,19 @@
  * Core upload orchestrator.
  *
  * Coordinates the full presigned URL upload flow:
- *   hashFile → requestUploadUrl → PUT to S3 → confirmUpload
+ *   hashFile → requestUploadUrl → PUT to S3
  *
  * Each step is a pure function — this module just wires them together.
  */
 
 import { hashFile } from './hash';
-import { REQUEST_UPLOAD_URL_MUTATION, CONFIRM_UPLOAD_MUTATION } from './queries';
+import { putToPresignedUrl } from './put';
+import { buildRequestUploadUrlQuery, DEFAULT_BUCKET_QUERY_FIELD } from './queries';
 import { UploadError } from './types';
 import type {
   UploadFileOptions,
   UploadResult,
   RequestUploadUrlPayload,
-  ConfirmUploadPayload,
 } from './types';
 
 /**
@@ -23,7 +23,6 @@ import type {
  * 1. Computes SHA-256 hash of the file content
  * 2. Calls `requestUploadUrl` mutation to get a presigned PUT URL
  * 3. If not deduplicated, PUTs the file bytes directly to S3
- * 4. Calls `confirmUpload` mutation to verify and transition status
  *
  * @param options - Upload options (file, bucket, executor, etc.)
  * @returns Upload result with fileId, key, and status
@@ -42,7 +41,7 @@ import type {
  * ```
  */
 export async function uploadFile(options: UploadFileOptions): Promise<UploadResult> {
-  const { file, bucketKey, execute, onProgress, signal } = options;
+  const { file, bucketKey, execute, onProgress, signal, bucketQueryField } = options;
 
   // --- Validate input ---
   if (!file) {
@@ -62,8 +61,9 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
 
   checkAborted(signal);
 
-  // --- Step 2: Request presigned URL ---
-  const requestPayload = await requestUploadUrl(execute, {
+  // --- Step 2: Request presigned URL via per-table bucket field ---
+  const queryField = bucketQueryField || DEFAULT_BUCKET_QUERY_FIELD;
+  const requestPayload = await requestUploadUrl(execute, queryField, {
     bucketKey,
     contentHash,
     contentType: file.type || 'application/octet-stream',
@@ -79,7 +79,6 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
       fileId: requestPayload.fileId,
       key: requestPayload.key,
       deduplicated: true,
-      status: 'ready',
     };
   }
 
@@ -90,34 +89,23 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
     );
   }
 
-  await putToS3(
-    requestPayload.uploadUrl,
-    file,
-    file.type || 'application/octet-stream',
-    onProgress,
-    signal,
-  );
-
-  checkAborted(signal);
-
-  // --- Step 4: Confirm ---
-  const confirmPayload = await confirmUpload(execute, requestPayload.fileId);
+  await putToS3(requestPayload.uploadUrl, file, file.type || 'application/octet-stream', onProgress, signal);
 
   return {
-    fileId: confirmPayload.fileId,
+    fileId: requestPayload.fileId,
     key: requestPayload.key,
     deduplicated: false,
-    status: confirmPayload.status,
   };
 }
 
 // --- Internal helpers ---
 
 /**
- * Call the requestUploadUrl GraphQL mutation.
+ * Query the bucket by key and call requestUploadUrl on it.
  */
 async function requestUploadUrl(
   execute: UploadFileOptions['execute'],
+  bucketQueryField: string,
   input: {
     bucketKey: string;
     contentHash: string;
@@ -126,9 +114,23 @@ async function requestUploadUrl(
     filename?: string;
   },
 ): Promise<RequestUploadUrlPayload> {
+  const query = buildRequestUploadUrlQuery(bucketQueryField);
+
   try {
-    const data = await execute(REQUEST_UPLOAD_URL_MUTATION, { input });
-    const payload = data.requestUploadUrl as RequestUploadUrlPayload | undefined;
+    const data = await execute(query, {
+      key: input.bucketKey,
+      contentHash: input.contentHash,
+      contentType: input.contentType,
+      size: input.size,
+      filename: input.filename,
+    });
+
+    // Extract from the nested bucket response: { bucketByKey: { requestUploadUrl: { ... } } }
+    const bucketData = data[bucketQueryField] as Record<string, unknown> | undefined;
+    if (!bucketData) {
+      throw new UploadError('REQUEST_UPLOAD_URL_FAILED', `Bucket not found for query field "${bucketQueryField}"`);
+    }
+    const payload = bucketData.requestUploadUrl as RequestUploadUrlPayload | undefined;
     if (!payload) {
       throw new UploadError('REQUEST_UPLOAD_URL_FAILED', 'No data returned from requestUploadUrl');
     }
@@ -137,7 +139,7 @@ async function requestUploadUrl(
     if (err instanceof UploadError) throw err;
     throw new UploadError(
       'REQUEST_UPLOAD_URL_FAILED',
-      `requestUploadUrl mutation failed: ${err instanceof Error ? err.message : String(err)}`,
+      `requestUploadUrl query failed: ${err instanceof Error ? err.message : String(err)}`,
       err,
     );
   }
@@ -147,7 +149,7 @@ async function requestUploadUrl(
  * PUT file bytes to the presigned S3 URL.
  *
  * Uses XMLHttpRequest when available (for progress tracking),
- * falls back to fetch otherwise.
+ * falls back to putToPresignedUrl (fetch) otherwise.
  */
 async function putToS3(
   url: string,
@@ -161,46 +163,8 @@ async function putToS3(
     return putWithXHR(url, file, contentType, onProgress, signal);
   }
 
-  // Fallback to fetch
-  return putWithFetch(url, file, contentType, signal);
-}
-
-/**
- * PUT using fetch API.
- */
-async function putWithFetch(
-  url: string,
-  file: UploadFileOptions['file'],
-  contentType: string,
-  signal?: AbortSignal,
-): Promise<void> {
-  try {
-    const body = await file.arrayBuffer();
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': contentType },
-      body,
-      signal,
-    });
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new UploadError(
-        'PUT_UPLOAD_FAILED',
-        `S3 PUT failed with status ${response.status}: ${text}`,
-      );
-    }
-  } catch (err) {
-    if (err instanceof UploadError) throw err;
-    if (signal?.aborted) {
-      throw new UploadError('ABORTED', 'Upload was cancelled');
-    }
-    throw new UploadError(
-      'PUT_UPLOAD_FAILED',
-      `S3 PUT failed: ${err instanceof Error ? err.message : String(err)}`,
-      err,
-    );
-  }
+  const body = await file.arrayBuffer();
+  await putToPresignedUrl(url, body, contentType, signal);
 }
 
 /**
@@ -256,33 +220,6 @@ function putWithXHR(
       (err) => reject(new UploadError('PUT_UPLOAD_FAILED', 'Failed to read file', err)),
     );
   });
-}
-
-/**
- * Call the confirmUpload GraphQL mutation.
- */
-async function confirmUpload(
-  execute: UploadFileOptions['execute'],
-  fileId: string,
-): Promise<ConfirmUploadPayload> {
-  try {
-    const data = await execute(CONFIRM_UPLOAD_MUTATION, { input: { fileId } });
-    const payload = data.confirmUpload as ConfirmUploadPayload | undefined;
-    if (!payload) {
-      throw new UploadError('CONFIRM_UPLOAD_FAILED', 'No data returned from confirmUpload');
-    }
-    if (!payload.success) {
-      throw new UploadError('CONFIRM_UPLOAD_FAILED', `confirmUpload returned success=false`);
-    }
-    return payload;
-  } catch (err) {
-    if (err instanceof UploadError) throw err;
-    throw new UploadError(
-      'CONFIRM_UPLOAD_FAILED',
-      `confirmUpload mutation failed: ${err instanceof Error ? err.message : String(err)}`,
-      err,
-    );
-  }
 }
 
 /**

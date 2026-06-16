@@ -1,7 +1,160 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`Schema Snapshot should generate consistent GraphQL SDL from the test schema 1`] = `
-""""A connection to a list of \`PostTag\` values."""
+""""The root query type which gives access points into the data universe."""
+type Query {
+  """Reads and enables pagination through a set of \`PostTag\`."""
+  postTags(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: PostTagFilter
+
+    """The method to use when ordering \`PostTag\`."""
+    orderBy: [PostTagOrderBy!] = [PRIMARY_KEY_ASC]
+  ): PostTagConnection
+
+  """Reads and enables pagination through a set of \`Tag\`."""
+  tags(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: TagFilter
+
+    """The method to use when ordering \`Tag\`."""
+    orderBy: [TagOrderBy!] = [PRIMARY_KEY_ASC]
+  ): TagConnection
+
+  """Reads and enables pagination through a set of \`User\`."""
+  users(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: UserFilter
+
+    """The method to use when ordering \`User\`."""
+    orderBy: [UserOrderBy!] = [PRIMARY_KEY_ASC]
+  ): UserConnection
+
+  """Reads and enables pagination through a set of \`Comment\`."""
+  comments(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: CommentFilter
+
+    """The method to use when ordering \`Comment\`."""
+    orderBy: [CommentOrderBy!] = [PRIMARY_KEY_ASC]
+  ): CommentConnection
+
+  """Reads and enables pagination through a set of \`Post\`."""
+  posts(
+    """Only read the first \`n\` values of the set."""
+    first: Int
+
+    """Only read the last \`n\` values of the set."""
+    last: Int
+
+    """
+    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+    based pagination. May not be used with \`last\`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    where: PostFilter
+
+    """The method to use when ordering \`Post\`."""
+    orderBy: [PostOrderBy!] = [PRIMARY_KEY_ASC]
+  ): PostConnection
+
+  """
+  Metadata about the database schema, including tables, fields, indexes, and constraints. Useful for code generation tools.
+  """
+  _meta: MetaSchema
+}
+
+"""A connection to a list of \`PostTag\` values."""
 type PostTagConnection {
   """A list of \`PostTag\` objects."""
   nodes: [PostTag]!
@@ -1282,6 +1435,18 @@ type MetaTable {
   relations: MetaRelations!
   inflection: MetaInflection!
   query: MetaQuery!
+
+  """Storage metadata (null if not a storage table)"""
+  storage: MetaStorage
+
+  """Search metadata (null if no search configured)"""
+  search: MetaSearch
+
+  """i18n metadata (null if no @i18n tag)"""
+  i18n: MetaI18n
+
+  """Realtime metadata (null if no @realtime tag)"""
+  realtime: MetaRealtime
 }
 
 """Information about a table field/column"""
@@ -1293,6 +1458,9 @@ type MetaField {
   isPrimaryKey: Boolean!
   isForeignKey: Boolean!
   description: String
+
+  """Enum metadata if this field has an enum type"""
+  enumValues: MetaEnum
 }
 
 """Information about a PostgreSQL type"""
@@ -1303,6 +1471,15 @@ type MetaType {
   isNotNull: Boolean
   hasDefault: Boolean
   subtype: String
+}
+
+"""Information about a PostgreSQL enum type"""
+type MetaEnum {
+  """The PostgreSQL enum type name"""
+  name: String!
+
+  """Allowed values for this enum"""
+  values: [String!]!
 }
 
 """Information about a database index"""
@@ -1412,6 +1589,216 @@ type MetaQuery {
   create: String
   update: String
   delete: String
+}
+
+"""Storage metadata for a table"""
+type MetaStorage {
+  """Whether this table is a storage files table"""
+  isFilesTable: Boolean!
+
+  """Whether this table is a storage buckets table"""
+  isBucketsTable: Boolean!
+}
+
+"""Search metadata for a table"""
+type MetaSearch {
+  """Active search algorithms on this table"""
+  algorithms: [String!]!
+
+  """Searchable columns with their algorithm"""
+  columns: [MetaSearchColumn!]!
+
+  """Whether unifiedSearch composite filter is available"""
+  hasUnifiedSearch: Boolean!
+
+  """Per-table search configuration"""
+  config: MetaSearchConfig
+}
+
+"""A searchable column with its algorithm"""
+type MetaSearchColumn {
+  """Column name (camelCase)"""
+  name: String!
+
+  """Search algorithm: tsvector, bm25, trgm, or vector"""
+  algorithm: String!
+}
+
+"""Per-table search configuration from @searchConfig smart tag"""
+type MetaSearchConfig {
+  """JSON-encoded per-adapter score weights"""
+  weights: String
+
+  """Whether recency boosting is enabled"""
+  boostRecent: Boolean!
+
+  """Field used for recency decay"""
+  boostRecencyField: String
+
+  """Exponential decay factor per day"""
+  boostRecencyDecay: Float
+}
+
+"""i18n metadata for a table with @i18n tag"""
+type MetaI18n {
+  """Name of the translation table"""
+  translationTable: String!
+
+  """Fields that are translatable"""
+  translatableFields: [MetaI18nField!]!
+}
+
+"""A translatable field"""
+type MetaI18nField {
+  """GraphQL field name"""
+  name: String!
+
+  """PostgreSQL column type (text, citext)"""
+  type: String!
+}
+
+"""Realtime metadata for a table with @realtime tag"""
+type MetaRealtime {
+  """The generated subscription field name (e.g. onPostChanged)"""
+  subscriptionFieldName: String!
+}
+
+"""
+The root mutation type which contains root level fields which mutate data.
+"""
+type Mutation {
+  """Creates a single \`PostTag\`."""
+  createPostTag(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreatePostTagInput!
+  ): CreatePostTagPayload
+
+  """Creates a single \`Tag\`."""
+  createTag(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateTagInput!
+  ): CreateTagPayload
+
+  """Creates a single \`User\`."""
+  createUser(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateUserInput!
+  ): CreateUserPayload
+
+  """Creates a single \`Comment\`."""
+  createComment(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateCommentInput!
+  ): CreateCommentPayload
+
+  """Creates a single \`Post\`."""
+  createPost(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreatePostInput!
+  ): CreatePostPayload
+
+  """Updates a single \`PostTag\` using a unique key and a patch."""
+  updatePostTag(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdatePostTagInput!
+  ): UpdatePostTagPayload
+
+  """Updates a single \`Tag\` using a unique key and a patch."""
+  updateTag(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateTagInput!
+  ): UpdateTagPayload
+
+  """Updates a single \`User\` using a unique key and a patch."""
+  updateUser(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateUserInput!
+  ): UpdateUserPayload
+
+  """Updates a single \`Comment\` using a unique key and a patch."""
+  updateComment(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateCommentInput!
+  ): UpdateCommentPayload
+
+  """Updates a single \`Post\` using a unique key and a patch."""
+  updatePost(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdatePostInput!
+  ): UpdatePostPayload
+
+  """Deletes a single \`PostTag\` using a unique key."""
+  deletePostTag(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeletePostTagInput!
+  ): DeletePostTagPayload
+
+  """Deletes a single \`Tag\` using a unique key."""
+  deleteTag(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteTagInput!
+  ): DeleteTagPayload
+
+  """Deletes a single \`User\` using a unique key."""
+  deleteUser(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteUserInput!
+  ): DeleteUserPayload
+
+  """Deletes a single \`Comment\` using a unique key."""
+  deleteComment(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteCommentInput!
+  ): DeleteCommentPayload
+
+  """Deletes a single \`Post\` using a unique key."""
+  deletePost(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeletePostInput!
+  ): DeletePostPayload
+
+  """
+  Provision an S3 bucket for a logical bucket in the database.
+  Reads the bucket config via RLS, then creates and configures
+  the S3 bucket with the appropriate privacy policies, CORS rules,
+  and lifecycle settings.
+  """
+  provisionBucket(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: ProvisionBucketInput!
+  ): ProvisionBucketPayload
 }
 
 """The output of our create \`PostTag\` mutation."""
@@ -2064,380 +2451,6 @@ input DeletePostInput {
   """
   clientMutationId: String
   id: UUID!
-}
-
-input RequestUploadUrlInput {
-  """Bucket key (e.g., "public", "private")"""
-  bucketKey: String!
-
-  """
-  Owner entity ID for entity-scoped uploads.
-  Omit for app-level (database-wide) storage.
-  When provided, resolves the storage module for the entity type
-  that owns this entity instance (e.g., a data room ID, team ID).
-  """
-  ownerId: UUID
-
-  """SHA-256 content hash computed by the client (hex-encoded, 64 chars)"""
-  contentHash: String!
-
-  """MIME type of the file (e.g., "image/png")"""
-  contentType: String!
-
-  """File size in bytes"""
-  size: Int!
-
-  """Original filename (optional, for display and Content-Disposition)"""
-  filename: String
-}
-
-type RequestUploadUrlPayload {
-  """Presigned PUT URL (null if file was deduplicated)"""
-  uploadUrl: String
-
-  """The file ID (existing if deduplicated, new if fresh upload)"""
-  fileId: UUID!
-
-  """The S3 object key"""
-  key: String!
-
-  """Whether this file was deduplicated (already exists with same hash)"""
-  deduplicated: Boolean!
-
-  """Presigned URL expiry time (null if deduplicated)"""
-  expiresAt: Datetime
-}
-
-input ConfirmUploadInput {
-  """The file ID returned by requestUploadUrl"""
-  fileId: UUID!
-}
-
-type ConfirmUploadPayload {
-  """The confirmed file ID"""
-  fileId: UUID!
-
-  """New file status"""
-  status: String!
-
-  """Whether confirmation succeeded"""
-  success: Boolean!
-}
-
-"""The root query type which gives access points into the data universe."""
-type Query {
-  """Reads and enables pagination through a set of \`PostTag\`."""
-  postTags(
-    """Only read the first \`n\` values of the set."""
-    first: Int
-
-    """Only read the last \`n\` values of the set."""
-    last: Int
-
-    """
-    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
-    based pagination. May not be used with \`last\`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: PostTagFilter
-
-    """The method to use when ordering \`PostTag\`."""
-    orderBy: [PostTagOrderBy!] = [PRIMARY_KEY_ASC]
-  ): PostTagConnection
-
-  """Reads and enables pagination through a set of \`Tag\`."""
-  tags(
-    """Only read the first \`n\` values of the set."""
-    first: Int
-
-    """Only read the last \`n\` values of the set."""
-    last: Int
-
-    """
-    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
-    based pagination. May not be used with \`last\`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: TagFilter
-
-    """The method to use when ordering \`Tag\`."""
-    orderBy: [TagOrderBy!] = [PRIMARY_KEY_ASC]
-  ): TagConnection
-
-  """Reads and enables pagination through a set of \`User\`."""
-  users(
-    """Only read the first \`n\` values of the set."""
-    first: Int
-
-    """Only read the last \`n\` values of the set."""
-    last: Int
-
-    """
-    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
-    based pagination. May not be used with \`last\`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: UserFilter
-
-    """The method to use when ordering \`User\`."""
-    orderBy: [UserOrderBy!] = [PRIMARY_KEY_ASC]
-  ): UserConnection
-
-  """Reads and enables pagination through a set of \`Comment\`."""
-  comments(
-    """Only read the first \`n\` values of the set."""
-    first: Int
-
-    """Only read the last \`n\` values of the set."""
-    last: Int
-
-    """
-    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
-    based pagination. May not be used with \`last\`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: CommentFilter
-
-    """The method to use when ordering \`Comment\`."""
-    orderBy: [CommentOrderBy!] = [PRIMARY_KEY_ASC]
-  ): CommentConnection
-
-  """Reads and enables pagination through a set of \`Post\`."""
-  posts(
-    """Only read the first \`n\` values of the set."""
-    first: Int
-
-    """Only read the last \`n\` values of the set."""
-    last: Int
-
-    """
-    Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
-    based pagination. May not be used with \`last\`.
-    """
-    offset: Int
-
-    """Read all values in the set before (above) this cursor."""
-    before: Cursor
-
-    """Read all values in the set after (below) this cursor."""
-    after: Cursor
-
-    """
-    A filter to be used in determining which values should be returned by the collection.
-    """
-    where: PostFilter
-
-    """The method to use when ordering \`Post\`."""
-    orderBy: [PostOrderBy!] = [PRIMARY_KEY_ASC]
-  ): PostConnection
-
-  """
-  Metadata about the database schema, including tables, fields, indexes, and constraints. Useful for code generation tools.
-  """
-  _meta: MetaSchema
-}
-
-"""
-The root mutation type which contains root level fields which mutate data.
-"""
-type Mutation {
-  """Creates a single \`PostTag\`."""
-  createPostTag(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreatePostTagInput!
-  ): CreatePostTagPayload
-
-  """Creates a single \`Tag\`."""
-  createTag(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateTagInput!
-  ): CreateTagPayload
-
-  """Creates a single \`User\`."""
-  createUser(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateUserInput!
-  ): CreateUserPayload
-
-  """Creates a single \`Comment\`."""
-  createComment(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreateCommentInput!
-  ): CreateCommentPayload
-
-  """Creates a single \`Post\`."""
-  createPost(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: CreatePostInput!
-  ): CreatePostPayload
-
-  """Updates a single \`PostTag\` using a unique key and a patch."""
-  updatePostTag(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdatePostTagInput!
-  ): UpdatePostTagPayload
-
-  """Updates a single \`Tag\` using a unique key and a patch."""
-  updateTag(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateTagInput!
-  ): UpdateTagPayload
-
-  """Updates a single \`User\` using a unique key and a patch."""
-  updateUser(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateUserInput!
-  ): UpdateUserPayload
-
-  """Updates a single \`Comment\` using a unique key and a patch."""
-  updateComment(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdateCommentInput!
-  ): UpdateCommentPayload
-
-  """Updates a single \`Post\` using a unique key and a patch."""
-  updatePost(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: UpdatePostInput!
-  ): UpdatePostPayload
-
-  """Deletes a single \`PostTag\` using a unique key."""
-  deletePostTag(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeletePostTagInput!
-  ): DeletePostTagPayload
-
-  """Deletes a single \`Tag\` using a unique key."""
-  deleteTag(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteTagInput!
-  ): DeleteTagPayload
-
-  """Deletes a single \`User\` using a unique key."""
-  deleteUser(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteUserInput!
-  ): DeleteUserPayload
-
-  """Deletes a single \`Comment\` using a unique key."""
-  deleteComment(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeleteCommentInput!
-  ): DeleteCommentPayload
-
-  """Deletes a single \`Post\` using a unique key."""
-  deletePost(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: DeletePostInput!
-  ): DeletePostPayload
-
-  """
-  Request a presigned URL for uploading a file directly to S3.
-  Client computes SHA-256 of the file content and provides it here.
-  If a file with the same hash already exists (dedup), returns the
-  existing file ID and deduplicated=true with no uploadUrl.
-  """
-  requestUploadUrl(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: RequestUploadUrlInput!
-  ): RequestUploadUrlPayload
-
-  """
-  Confirm that a file has been uploaded to S3.
-  Verifies the object exists in S3, checks content-type,
-  and transitions the file status from 'pending' to 'ready'.
-  """
-  confirmUpload(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: ConfirmUploadInput!
-  ): ConfirmUploadPayload
-
-  """
-  Provision an S3 bucket for a logical bucket in the database.
-  Reads the bucket config via RLS, then creates and configures
-  the S3 bucket with the appropriate privacy policies, CORS rules,
-  and lifecycle settings.
-  """
-  provisionBucket(
-    """
-    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
-    """
-    input: ProvisionBucketInput!
-  ): ProvisionBucketPayload
 }
 
 input ProvisionBucketInput {

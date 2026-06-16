@@ -30,39 +30,68 @@
  * ```
  */
 
+// Environment configuration (re-exported from @constructive-io/llm-env)
+export type { LlmEnvOptions, LlmProviderConfig, ResolvedLlmEnvOptions } from './env';
+export { getEnvVars, getEnvOptions, getLlmEnvOptions, llmDefaults } from './env';
+
 // Preset (recommended entry point)
 export { GraphileLlmPreset } from './preset';
 
-// Individual plugins
+// Individual plugins (pure — no billing dependency)
 export { createLlmModulePlugin } from './plugins/llm-module-plugin';
-export { createLlmTextSearchPlugin } from './plugins/text-search-plugin';
-export { createLlmTextMutationPlugin } from './plugins/text-mutation-plugin';
 export { createLlmRagPlugin } from './plugins/rag-plugin';
+export { createLlmTextMutationPlugin } from './plugins/text-mutation-plugin';
+export { createLlmTextSearchPlugin, embedTextInWhere } from './plugins/text-search-plugin';
+
+// Metering plugin (opt-in billing integration)
+export { createLlmMeteringPlugin } from './plugins/metering-plugin';
+
+// Agent discovery (queries agent_chat_module config table at runtime)
+export type { AgentDiscovery,AgentTableInfo } from './plugins/agent-discovery-plugin';
+export { clearAgentDiscoveryCache,getAgentDiscovery } from './plugins/agent-discovery-plugin';
 
 // Embedder utilities
+export type { LlmConfigOverrides } from './embedder';
 export {
   buildEmbedder,
-  buildEmbedderFromModule,
   buildEmbedderFromEnv,
+  buildEmbedderFromModule,
+  llmConfigStore
 } from './embedder';
 
 // Chat completion utilities
 export {
   buildChatCompleter,
-  buildChatCompleterFromModule,
   buildChatCompleterFromEnv,
+  buildChatCompleterFromModule
 } from './chat';
+
+// Metering utilities (for custom integration)
+export type { InferenceLogEntry,MeteringContext, MeteringOptions, MeterResult, WithPgClient } from './metering';
+export { logInferenceUsage, meteredChat, meteredEmbed, QuotaExceededError } from './metering';
+
+// Config cache (for custom integration)
+export type { BillingConfig, InferenceLogConfig, LlmBillingCacheEntry, PgClient } from './config-cache';
+export {
+  getLlmBillingCacheStats,
+  getLlmBillingConfig,
+  invalidateLlmBillingConfig
+} from './config-cache';
 
 // Types
 export type {
-  EmbedderFunction,
-  EmbedderConfig,
-  ChatFunction,
   ChatConfig,
+  ChatFunction,
   ChatMessage,
   ChatOptions,
-  LlmModuleData,
-  GraphileLlmOptions,
-  RagDefaults,
+  ChatResult,
   ChunkTableInfo,
+  EmbedderConfig,
+  EmbedderFunction,
+  EmbeddingResult,
+  GraphileLlmOptions,
+  LlmModuleData,
+  LlmUsage,
+  MeteringConfig,
+  RagDefaults
 } from './types';

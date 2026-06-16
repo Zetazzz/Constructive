@@ -47,17 +47,20 @@ export interface CacheConfig {
  * Get cache configuration from environment variables
  *
  * Supports:
- * - GRAPHILE_CACHE_MAX: Maximum number of entries (default: 15)
+ * - GRAPHILE_CACHE_MAX: Maximum number of entries (default: 50)
  * - GRAPHILE_CACHE_TTL_MS: TTL in milliseconds
  *   - Production default: ONE_YEAR
  *   - Development default: FIVE_MINUTES_MS
+ *
+ * NOTE: This value should be <= PG_CACHE_MAX (also default: 50) so that
+ * every cached PostGraphile instance has a live pool backing it.
  */
 export function getCacheConfig(): CacheConfig {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   const max = process.env.GRAPHILE_CACHE_MAX
     ? parseInt(process.env.GRAPHILE_CACHE_MAX, 10)
-    : 15;
+    : 50;
 
   const ttl = process.env.GRAPHILE_CACHE_TTL_MS
     ? parseInt(process.env.GRAPHILE_CACHE_TTL_MS, 10)
@@ -86,6 +89,8 @@ export interface GraphileCacheEntry {
   httpServer: HttpServer;
   cacheKey: string;
   createdAt: number;
+  /** Optional RealtimeManager for cursor-tracked subscription delivery */
+  realtimeManager?: { stop(): Promise<void> } | null;
 }
 
 // Track disposed entries to prevent double-disposal
@@ -118,6 +123,14 @@ const disposeEntry = async (entry: GraphileCacheEntry, key: string): Promise<voi
       await new Promise<void>((resolve) => {
         entry.httpServer.close(() => resolve());
       });
+    }
+    // Stop RealtimeManager if present (before releasing PostGraphile)
+    if (entry.realtimeManager) {
+      try {
+        await entry.realtimeManager.stop();
+      } catch (err) {
+        log.error(`Error stopping RealtimeManager for PostGraphile[${key}]:`, err);
+      }
     }
     // Release PostGraphile instance (this also releases grafserv internally)
     if (entry.pgl) {

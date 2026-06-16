@@ -70,6 +70,21 @@ export function generateOrmClientFile(): GeneratedClientFile {
 }
 
 /**
+ * Generate the realtime.ts file (RealtimeManager + subscription types)
+ *
+ * Reads from the templates directory for proper type checking.
+ */
+export function generateRealtimeFile(): GeneratedClientFile {
+  return {
+    fileName: 'realtime.ts',
+    content: readTemplateFile(
+      'orm-realtime.ts',
+      'Realtime Manager - WebSocket subscription support',
+    ),
+  };
+}
+
+/**
  * Generate the query-builder.ts file (runtime query builder)
  *
  * Reads from the templates directory for proper type checking and testability.
@@ -122,7 +137,6 @@ export function generateCreateClientFile(
   tables: Table[],
   hasCustomQueries: boolean,
   hasCustomMutations: boolean,
-  options?: { nodeHttpAdapter?: boolean },
 ): GeneratedClientFile {
   const statements: t.Statement[] = [];
 
@@ -182,7 +196,7 @@ export function generateCreateClientFile(
   typeExportDecl.exportKind = 'type';
   statements.push(typeExportDecl);
 
-  // export { GraphQLRequestError } from './client';
+  // export { GraphQLRequestError, FetchAdapter } from './client';
   statements.push(
     t.exportNamedDeclaration(
       null,
@@ -190,6 +204,10 @@ export function generateCreateClientFile(
         t.exportSpecifier(
           t.identifier('GraphQLRequestError'),
           t.identifier('GraphQLRequestError'),
+        ),
+        t.exportSpecifier(
+          t.identifier('FetchAdapter'),
+          t.identifier('FetchAdapter'),
         ),
       ],
       t.stringLiteral('./client'),
@@ -215,22 +233,6 @@ export function generateCreateClientFile(
 
   // Re-export all models
   statements.push(t.exportAllDeclaration(t.stringLiteral('./models')));
-
-  // Re-export NodeHttpAdapter when enabled (for use in any Node.js application)
-  if (options?.nodeHttpAdapter) {
-    statements.push(
-      t.exportNamedDeclaration(
-        null,
-        [
-          t.exportSpecifier(
-            t.identifier('NodeHttpAdapter'),
-            t.identifier('NodeHttpAdapter'),
-          ),
-        ],
-        t.stringLiteral('./node-fetch'),
-      ),
-    );
-  }
 
   // Re-export custom operations
   if (hasCustomQueries) {

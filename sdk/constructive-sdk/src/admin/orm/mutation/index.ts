@@ -9,18 +9,12 @@ import type { InferSelectResult, StrictSelect } from '../select-types';
 import type {
   SubmitAppInviteCodeInput,
   SubmitOrgInviteCodeInput,
-  RequestUploadUrlInput,
-  ConfirmUploadInput,
   ProvisionBucketInput,
   SubmitAppInviteCodePayload,
   SubmitOrgInviteCodePayload,
-  RequestUploadUrlPayload,
-  ConfirmUploadPayload,
   ProvisionBucketPayload,
   SubmitAppInviteCodePayloadSelect,
   SubmitOrgInviteCodePayloadSelect,
-  RequestUploadUrlPayloadSelect,
-  ConfirmUploadPayloadSelect,
   ProvisionBucketPayloadSelect,
 } from '../input-types';
 import { connectionFieldsMap } from '../input-types';
@@ -29,25 +23,6 @@ export interface SubmitAppInviteCodeVariables {
 }
 export interface SubmitOrgInviteCodeVariables {
   input: SubmitOrgInviteCodeInput;
-}
-/**
- * Variables for requestUploadUrl
- * Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.
- */
-export interface RequestUploadUrlVariables {
-  input: RequestUploadUrlInput;
-}
-/**
- * Variables for confirmUpload
- * Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.
- */
-export interface ConfirmUploadVariables {
-  input: ConfirmUploadInput;
 }
 /**
  * Variables for provisionBucket
@@ -117,64 +92,6 @@ export function createMutationOperations(client: OrmClient) {
           ],
           connectionFieldsMap,
           'SubmitOrgInviteCodePayload'
-        ),
-      }),
-    requestUploadUrl: <S extends RequestUploadUrlPayloadSelect>(
-      args: RequestUploadUrlVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, RequestUploadUrlPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        requestUploadUrl: InferSelectResult<RequestUploadUrlPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'RequestUploadUrl',
-        fieldName: 'requestUploadUrl',
-        ...buildCustomDocument(
-          'mutation',
-          'RequestUploadUrl',
-          'requestUploadUrl',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'RequestUploadUrlInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'RequestUploadUrlPayload'
-        ),
-      }),
-    confirmUpload: <S extends ConfirmUploadPayloadSelect>(
-      args: ConfirmUploadVariables,
-      options: {
-        select: S;
-      } & StrictSelect<S, ConfirmUploadPayloadSelect>
-    ) =>
-      new QueryBuilder<{
-        confirmUpload: InferSelectResult<ConfirmUploadPayload, S> | null;
-      }>({
-        client,
-        operation: 'mutation',
-        operationName: 'ConfirmUpload',
-        fieldName: 'confirmUpload',
-        ...buildCustomDocument(
-          'mutation',
-          'ConfirmUpload',
-          'confirmUpload',
-          options.select,
-          args,
-          [
-            {
-              name: 'input',
-              type: 'ConfirmUploadInput!',
-            },
-          ],
-          connectionFieldsMap,
-          'ConfirmUploadPayload'
         ),
       }),
     provisionBucket: <S extends ProvisionBucketPayloadSelect>(

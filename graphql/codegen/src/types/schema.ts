@@ -18,6 +18,8 @@ export interface Table {
   query?: TableQueryNames;
   /** Constraint information */
   constraints?: TableConstraints;
+  /** Smart tags parsed from PostGraphile @-prefixed comment directives */
+  smartTags?: Record<string, string | true>;
 }
 
 /**
@@ -86,6 +88,14 @@ export interface TableQueryNames {
   delete: string | null;
   /** Patch field name in update mutation input (e.g., "userPatch" for UpdateUserInput) */
   patchFieldName?: string;
+  /** Bulk insert mutation name (e.g., "bulkCreateUsers") */
+  bulkInsert?: string | null;
+  /** Bulk upsert mutation name (e.g., "bulkUpsertUsers") */
+  bulkUpsert?: string | null;
+  /** Bulk update mutation name (e.g., "bulkUpdateUsers") */
+  bulkUpdate?: string | null;
+  /** Bulk delete mutation name (e.g., "bulkDeleteUsers") */
+  bulkDelete?: string | null;
 }
 
 /**
@@ -119,6 +129,23 @@ export interface Field {
   isNotNull?: boolean | null;
   /** Whether the column has a DEFAULT value (inferred by comparing entity vs CreateInput field nullability) */
   hasDefault?: boolean | null;
+  /** Arguments for computed fields (e.g. requestUploadUrl on bucket types) */
+  args?: FieldArgument[];
+}
+
+/**
+ * Argument on a computed field (not a root operation)
+ */
+export interface FieldArgument {
+  name: string;
+  /** GraphQL type reference */
+  type: TypeRef;
+  /** Whether this argument is required (NON_NULL) */
+  isRequired: boolean;
+  /** Description from schema */
+  description?: string;
+  /** Default value (as string) */
+  defaultValue?: string;
 }
 
 /**

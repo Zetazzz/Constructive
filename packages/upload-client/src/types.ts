@@ -32,20 +32,8 @@ export interface RequestUploadUrlPayload {
   deduplicated: boolean;
   /** Presigned URL expiry time (ISO string, null if deduplicated) */
   expiresAt: string | null;
-}
-
-export interface ConfirmUploadInput {
-  /** The file ID returned by requestUploadUrl */
-  fileId: string;
-}
-
-export interface ConfirmUploadPayload {
-  /** The confirmed file ID */
-  fileId: string;
-  /** New file status (e.g., "ready") */
-  status: string;
-  /** Whether confirmation succeeded */
-  success: boolean;
+  /** ID of the previous version (when uploading a new version of a custom-keyed file) */
+  previousVersionId: string | null;
 }
 
 // --- Client options ---
@@ -81,6 +69,12 @@ export interface UploadFileOptions {
   bucketKey: string;
   /** GraphQL executor function */
   execute: GraphQLExecutor;
+  /**
+   * PostGraphile query field for the bucket type (e.g., "bucketByKey", "appBucketByKey").
+   * Defaults to "bucketByKey". Override for entity-scoped storage modules where the
+   * bucket table has a different PostGraphile-inflected name.
+   */
+  bucketQueryField?: string;
   /** Progress callback (0-100) — only fires during the S3 PUT */
   onProgress?: (percent: number) => void;
   /** AbortSignal for cancellation */
@@ -94,8 +88,6 @@ export interface UploadResult {
   key: string;
   /** Whether this file was deduplicated (no bytes uploaded) */
   deduplicated: boolean;
-  /** File status after upload ("ready" for fresh uploads, existing status for dedup) */
-  status: string;
 }
 
 // --- File input abstraction ---
@@ -125,7 +117,6 @@ export type UploadErrorCode =
   | 'GRAPHQL_ERROR'
   | 'REQUEST_UPLOAD_URL_FAILED'
   | 'PUT_UPLOAD_FAILED'
-  | 'CONFIRM_UPLOAD_FAILED'
   | 'ABORTED';
 
 export class UploadError extends Error {

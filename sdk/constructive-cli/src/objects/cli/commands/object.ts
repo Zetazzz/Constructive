@@ -16,17 +16,15 @@ import type {
 } from '../../orm/input-types';
 import type { FindManyArgs, FindFirstArgs } from '../../orm/select-types';
 const fieldSchema: FieldSchema = {
-  hashUuid: 'uuid',
   id: 'uuid',
   databaseId: 'uuid',
   kids: 'uuid',
   ktree: 'string',
   data: 'json',
-  frzn: 'boolean',
   createdAt: 'string',
 };
 const usage =
-  '\nobject <command>\n\nCommands:\n  list                  List object records\n  find-first            Find first matching object record\n  get                   Get a object by ID\n  create                Create a new object\n  update                Update an existing object\n  delete                Delete a object\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n\n  --help, -h            Show this help message\n';
+  '\nobject <command>\n\nCommands:\n  list                  List object records\n  find-first            Find first matching object record\n  get                   Get a object by ID\n  create                Create a new object\n  update                Update an existing object\n  delete                Delete a object\n\nList Options:\n  --limit <n>           Max number of records to return (forward pagination)\n  --last <n>            Number of records from the end (backward pagination)\n  --after <cursor>      Cursor for forward pagination\n  --before <cursor>     Cursor for backward pagination\n  --offset <n>          Number of records to skip\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.name.equalTo foo)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\nFind-First Options:\n  --select <fields>     Comma-separated list of fields to return\n  --where.<field>.<op>  Filter (dot-notation, e.g. --where.status.equalTo active)\n  --condition.<f>.<op>  Condition filter (dot-notation)\n  --orderBy <values>    Comma-separated ordering values (e.g. NAME_ASC,CREATED_AT_DESC)\n\n  --help, -h            Show this help message\n';
 export default async (
   argv: Partial<Record<string, unknown>>,
   prompter: Inquirerer,
@@ -81,7 +79,6 @@ async function handleList(argv: Partial<Record<string, unknown>>, _prompter: Inq
       kids: true,
       ktree: true,
       data: true,
-      frzn: true,
       createdAt: true,
     };
     const findManyArgs = parseFindManyArgs<
@@ -108,11 +105,10 @@ async function handleFindFirst(argv: Partial<Record<string, unknown>>, _prompter
       kids: true,
       ktree: true,
       data: true,
-      frzn: true,
       createdAt: true,
     };
     const findFirstArgs = parseFindFirstArgs<
-      FindFirstArgs<ObjectSelect, ObjectFilter> & {
+      FindFirstArgs<ObjectSelect, ObjectFilter, ObjectOrderBy> & {
         select: ObjectSelect;
       }
     >(argv, defaultSelect);
@@ -147,7 +143,6 @@ async function handleGet(argv: Partial<Record<string, unknown>>, prompter: Inqui
           kids: true,
           ktree: true,
           data: true,
-          frzn: true,
           createdAt: true,
         },
       })
@@ -191,13 +186,6 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
         required: false,
         skipPrompt: true,
       },
-      {
-        type: 'boolean',
-        name: 'frzn',
-        message: 'frzn',
-        required: false,
-        skipPrompt: true,
-      },
     ]);
     const answers = coerceAnswers(rawAnswers, fieldSchema);
     const cleanedData = stripUndefined(answers, fieldSchema) as CreateObjectInput['object'];
@@ -209,7 +197,6 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           kids: cleanedData.kids,
           ktree: cleanedData.ktree,
           data: cleanedData.data,
-          frzn: cleanedData.frzn,
         },
         select: {
           id: true,
@@ -217,7 +204,6 @@ async function handleCreate(argv: Partial<Record<string, unknown>>, prompter: In
           kids: true,
           ktree: true,
           data: true,
-          frzn: true,
           createdAt: true,
         },
       })
@@ -267,13 +253,6 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
         required: false,
         skipPrompt: true,
       },
-      {
-        type: 'boolean',
-        name: 'frzn',
-        message: 'frzn',
-        required: false,
-        skipPrompt: true,
-      },
     ]);
     const answers = coerceAnswers(rawAnswers, fieldSchema);
     const cleanedData = stripUndefined(answers, fieldSchema) as ObjectPatch;
@@ -288,7 +267,6 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           kids: cleanedData.kids,
           ktree: cleanedData.ktree,
           data: cleanedData.data,
-          frzn: cleanedData.frzn,
         },
         select: {
           id: true,
@@ -296,7 +274,6 @@ async function handleUpdate(argv: Partial<Record<string, unknown>>, prompter: In
           kids: true,
           ktree: true,
           data: true,
-          frzn: true,
           createdAt: true,
         },
       })

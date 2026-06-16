@@ -118,6 +118,121 @@ exports[`introspection query snapshot: introspection 1`] = `
       "subscriptionType": null,
       "types": [
         {
+          "description": "The root query type which gives access points into the data universe.",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [
+                {
+                  "defaultValue": null,
+                  "description": "Only read the first \`n\` values of the set.",
+                  "name": "first",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null,
+                  },
+                },
+                {
+                  "defaultValue": null,
+                  "description": "Only read the last \`n\` values of the set.",
+                  "name": "last",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null,
+                  },
+                },
+                {
+                  "defaultValue": null,
+                  "description": "Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
+based pagination. May not be used with \`last\`.",
+                  "name": "offset",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null,
+                  },
+                },
+                {
+                  "defaultValue": null,
+                  "description": "Read all values in the set before (above) this cursor.",
+                  "name": "before",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Cursor",
+                    "ofType": null,
+                  },
+                },
+                {
+                  "defaultValue": null,
+                  "description": "Read all values in the set after (below) this cursor.",
+                  "name": "after",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Cursor",
+                    "ofType": null,
+                  },
+                },
+                {
+                  "defaultValue": null,
+                  "description": "A filter to be used in determining which values should be returned by the collection.",
+                  "name": "where",
+                  "type": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "UserFilter",
+                    "ofType": null,
+                  },
+                },
+                {
+                  "defaultValue": "[PRIMARY_KEY_ASC]",
+                  "description": "The method to use when ordering \`User\`.",
+                  "name": "orderBy",
+                  "type": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "NON_NULL",
+                      "name": null,
+                      "ofType": {
+                        "kind": "ENUM",
+                        "name": "UserOrderBy",
+                        "ofType": null,
+                      },
+                    },
+                  },
+                },
+              ],
+              "deprecationReason": null,
+              "description": "Reads and enables pagination through a set of \`User\`.",
+              "isDeprecated": false,
+              "name": "users",
+              "type": {
+                "kind": "OBJECT",
+                "name": "UserConnection",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Metadata about the database schema, including tables, fields, indexes, and constraints. Useful for code generation tools.",
+              "isDeprecated": false,
+              "name": "_meta",
+              "type": {
+                "kind": "OBJECT",
+                "name": "MetaSchema",
+                "ofType": null,
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "Query",
+          "possibleTypes": null,
+        },
+        {
           "description": "A connection to a list of \`User\` values.",
           "enumValues": null,
           "fields": [
@@ -1320,6 +1435,54 @@ exports[`introspection query snapshot: introspection 1`] = `
                 },
               },
             },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Storage metadata (null if not a storage table)",
+              "isDeprecated": false,
+              "name": "storage",
+              "type": {
+                "kind": "OBJECT",
+                "name": "MetaStorage",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Search metadata (null if no search configured)",
+              "isDeprecated": false,
+              "name": "search",
+              "type": {
+                "kind": "OBJECT",
+                "name": "MetaSearch",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "i18n metadata (null if no @i18n tag)",
+              "isDeprecated": false,
+              "name": "i18n",
+              "type": {
+                "kind": "OBJECT",
+                "name": "MetaI18n",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Realtime metadata (null if no @realtime tag)",
+              "isDeprecated": false,
+              "name": "realtime",
+              "type": {
+                "kind": "OBJECT",
+                "name": "MetaRealtime",
+                "ofType": null,
+              },
+            },
           ],
           "inputFields": null,
           "interfaces": [],
@@ -1439,6 +1602,18 @@ exports[`introspection query snapshot: introspection 1`] = `
                 "ofType": null,
               },
             },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Enum metadata if this field has an enum type",
+              "isDeprecated": false,
+              "name": "enumValues",
+              "type": {
+                "kind": "OBJECT",
+                "name": "MetaEnum",
+                "ofType": null,
+              },
+            },
           ],
           "inputFields": null,
           "interfaces": [],
@@ -1539,6 +1714,57 @@ exports[`introspection query snapshot: introspection 1`] = `
           "interfaces": [],
           "kind": "OBJECT",
           "name": "MetaType",
+          "possibleTypes": null,
+        },
+        {
+          "description": "Information about a PostgreSQL enum type",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "The PostgreSQL enum type name",
+              "isDeprecated": false,
+              "name": "name",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Allowed values for this enum",
+              "isDeprecated": false,
+              "name": "values",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "String",
+                      "ofType": null,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaEnum",
           "possibleTypes": null,
         },
         {
@@ -2742,6 +2968,495 @@ exports[`introspection query snapshot: introspection 1`] = `
           "possibleTypes": null,
         },
         {
+          "description": "Storage metadata for a table",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Whether this table is a storage files table",
+              "isDeprecated": false,
+              "name": "isFilesTable",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Whether this table is a storage buckets table",
+              "isDeprecated": false,
+              "name": "isBucketsTable",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null,
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaStorage",
+          "possibleTypes": null,
+        },
+        {
+          "description": "Search metadata for a table",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Active search algorithms on this table",
+              "isDeprecated": false,
+              "name": "algorithms",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "String",
+                      "ofType": null,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Searchable columns with their algorithm",
+              "isDeprecated": false,
+              "name": "columns",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "OBJECT",
+                      "name": "MetaSearchColumn",
+                      "ofType": null,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Whether unifiedSearch composite filter is available",
+              "isDeprecated": false,
+              "name": "hasUnifiedSearch",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Per-table search configuration",
+              "isDeprecated": false,
+              "name": "config",
+              "type": {
+                "kind": "OBJECT",
+                "name": "MetaSearchConfig",
+                "ofType": null,
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaSearch",
+          "possibleTypes": null,
+        },
+        {
+          "description": "A searchable column with its algorithm",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Column name (camelCase)",
+              "isDeprecated": false,
+              "name": "name",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Search algorithm: tsvector, bm25, trgm, or vector",
+              "isDeprecated": false,
+              "name": "algorithm",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaSearchColumn",
+          "possibleTypes": null,
+        },
+        {
+          "description": "Per-table search configuration from @searchConfig smart tag",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "JSON-encoded per-adapter score weights",
+              "isDeprecated": false,
+              "name": "weights",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Whether recency boosting is enabled",
+              "isDeprecated": false,
+              "name": "boostRecent",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Field used for recency decay",
+              "isDeprecated": false,
+              "name": "boostRecencyField",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Exponential decay factor per day",
+              "isDeprecated": false,
+              "name": "boostRecencyDecay",
+              "type": {
+                "kind": "SCALAR",
+                "name": "Float",
+                "ofType": null,
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaSearchConfig",
+          "possibleTypes": null,
+        },
+        {
+          "description": "The \`Float\` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).",
+          "enumValues": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "kind": "SCALAR",
+          "name": "Float",
+          "possibleTypes": null,
+        },
+        {
+          "description": "i18n metadata for a table with @i18n tag",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Name of the translation table",
+              "isDeprecated": false,
+              "name": "translationTable",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Fields that are translatable",
+              "isDeprecated": false,
+              "name": "translatableFields",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "OBJECT",
+                      "name": "MetaI18nField",
+                      "ofType": null,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaI18n",
+          "possibleTypes": null,
+        },
+        {
+          "description": "A translatable field",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "GraphQL field name",
+              "isDeprecated": false,
+              "name": "name",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "PostgreSQL column type (text, citext)",
+              "isDeprecated": false,
+              "name": "type",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaI18nField",
+          "possibleTypes": null,
+        },
+        {
+          "description": "Realtime metadata for a table with @realtime tag",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "The generated subscription field name (e.g. onPostChanged)",
+              "isDeprecated": false,
+              "name": "subscriptionFieldName",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null,
+                },
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "MetaRealtime",
+          "possibleTypes": null,
+        },
+        {
+          "description": "The root mutation type which contains root level fields which mutate data.",
+          "enumValues": null,
+          "fields": [
+            {
+              "args": [
+                {
+                  "defaultValue": null,
+                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
+                  "name": "input",
+                  "type": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "CreateUserInput",
+                      "ofType": null,
+                    },
+                  },
+                },
+              ],
+              "deprecationReason": null,
+              "description": "Creates a single \`User\`.",
+              "isDeprecated": false,
+              "name": "createUser",
+              "type": {
+                "kind": "OBJECT",
+                "name": "CreateUserPayload",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [
+                {
+                  "defaultValue": null,
+                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
+                  "name": "input",
+                  "type": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "UpdateUserInput",
+                      "ofType": null,
+                    },
+                  },
+                },
+              ],
+              "deprecationReason": null,
+              "description": "Updates a single \`User\` using a unique key and a patch.",
+              "isDeprecated": false,
+              "name": "updateUser",
+              "type": {
+                "kind": "OBJECT",
+                "name": "UpdateUserPayload",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [
+                {
+                  "defaultValue": null,
+                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
+                  "name": "input",
+                  "type": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "DeleteUserInput",
+                      "ofType": null,
+                    },
+                  },
+                },
+              ],
+              "deprecationReason": null,
+              "description": "Deletes a single \`User\` using a unique key.",
+              "isDeprecated": false,
+              "name": "deleteUser",
+              "type": {
+                "kind": "OBJECT",
+                "name": "DeleteUserPayload",
+                "ofType": null,
+              },
+            },
+            {
+              "args": [
+                {
+                  "defaultValue": null,
+                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
+                  "name": "input",
+                  "type": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "ProvisionBucketInput",
+                      "ofType": null,
+                    },
+                  },
+                },
+              ],
+              "deprecationReason": null,
+              "description": "Provision an S3 bucket for a logical bucket in the database.
+Reads the bucket config via RLS, then creates and configures
+the S3 bucket with the appropriate privacy policies, CORS rules,
+and lifecycle settings.",
+              "isDeprecated": false,
+              "name": "provisionBucket",
+              "type": {
+                "kind": "OBJECT",
+                "name": "ProvisionBucketPayload",
+                "ofType": null,
+              },
+            },
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "Mutation",
+          "possibleTypes": null,
+        },
+        {
           "description": "The output of our create \`User\` mutation.",
           "enumValues": null,
           "fields": [
@@ -3185,583 +3900,6 @@ payload verbatim. May be used to track mutations by the client.",
           "inputFields": [
             {
               "defaultValue": null,
-              "description": "Bucket key (e.g., "public", "private")",
-              "name": "bucketKey",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "defaultValue": null,
-              "description": "Owner entity ID for entity-scoped uploads.
-Omit for app-level (database-wide) storage.
-When provided, resolves the storage module for the entity type
-that owns this entity instance (e.g., a data room ID, team ID).",
-              "name": "ownerId",
-              "type": {
-                "kind": "SCALAR",
-                "name": "UUID",
-                "ofType": null,
-              },
-            },
-            {
-              "defaultValue": null,
-              "description": "SHA-256 content hash computed by the client (hex-encoded, 64 chars)",
-              "name": "contentHash",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "defaultValue": null,
-              "description": "MIME type of the file (e.g., "image/png")",
-              "name": "contentType",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "defaultValue": null,
-              "description": "File size in bytes",
-              "name": "size",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Int",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "defaultValue": null,
-              "description": "Original filename (optional, for display and Content-Disposition)",
-              "name": "filename",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null,
-              },
-            },
-          ],
-          "interfaces": null,
-          "kind": "INPUT_OBJECT",
-          "name": "RequestUploadUrlInput",
-          "possibleTypes": null,
-        },
-        {
-          "description": "A universally unique identifier as defined by [RFC 4122](https://tools.ietf.org/html/rfc4122).",
-          "enumValues": null,
-          "fields": null,
-          "inputFields": null,
-          "interfaces": null,
-          "kind": "SCALAR",
-          "name": "UUID",
-          "possibleTypes": null,
-        },
-        {
-          "description": null,
-          "enumValues": null,
-          "fields": [
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Presigned PUT URL (null if file was deduplicated)",
-              "isDeprecated": false,
-              "name": "uploadUrl",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null,
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "The file ID (existing if deduplicated, new if fresh upload)",
-              "isDeprecated": false,
-              "name": "fileId",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "UUID",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "The S3 object key",
-              "isDeprecated": false,
-              "name": "key",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Whether this file was deduplicated (already exists with same hash)",
-              "isDeprecated": false,
-              "name": "deduplicated",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Boolean",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Presigned URL expiry time (null if deduplicated)",
-              "isDeprecated": false,
-              "name": "expiresAt",
-              "type": {
-                "kind": "SCALAR",
-                "name": "Datetime",
-                "ofType": null,
-              },
-            },
-          ],
-          "inputFields": null,
-          "interfaces": [],
-          "kind": "OBJECT",
-          "name": "RequestUploadUrlPayload",
-          "possibleTypes": null,
-        },
-        {
-          "description": "A point in time as described by the [ISO
-8601](https://en.wikipedia.org/wiki/ISO_8601) and, if it has a timezone, [RFC
-3339](https://datatracker.ietf.org/doc/html/rfc3339) standards. Input values
-that do not conform to both ISO 8601 and RFC 3339 may be coerced, which may lead
-to unexpected results.",
-          "enumValues": null,
-          "fields": null,
-          "inputFields": null,
-          "interfaces": null,
-          "kind": "SCALAR",
-          "name": "Datetime",
-          "possibleTypes": null,
-        },
-        {
-          "description": null,
-          "enumValues": null,
-          "fields": null,
-          "inputFields": [
-            {
-              "defaultValue": null,
-              "description": "The file ID returned by requestUploadUrl",
-              "name": "fileId",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "UUID",
-                  "ofType": null,
-                },
-              },
-            },
-          ],
-          "interfaces": null,
-          "kind": "INPUT_OBJECT",
-          "name": "ConfirmUploadInput",
-          "possibleTypes": null,
-        },
-        {
-          "description": null,
-          "enumValues": null,
-          "fields": [
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "The confirmed file ID",
-              "isDeprecated": false,
-              "name": "fileId",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "UUID",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "New file status",
-              "isDeprecated": false,
-              "name": "status",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null,
-                },
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Whether confirmation succeeded",
-              "isDeprecated": false,
-              "name": "success",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Boolean",
-                  "ofType": null,
-                },
-              },
-            },
-          ],
-          "inputFields": null,
-          "interfaces": [],
-          "kind": "OBJECT",
-          "name": "ConfirmUploadPayload",
-          "possibleTypes": null,
-        },
-        {
-          "description": "The root query type which gives access points into the data universe.",
-          "enumValues": null,
-          "fields": [
-            {
-              "args": [
-                {
-                  "defaultValue": null,
-                  "description": "Only read the first \`n\` values of the set.",
-                  "name": "first",
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null,
-                  },
-                },
-                {
-                  "defaultValue": null,
-                  "description": "Only read the last \`n\` values of the set.",
-                  "name": "last",
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null,
-                  },
-                },
-                {
-                  "defaultValue": null,
-                  "description": "Skip the first \`n\` values from our \`after\` cursor, an alternative to cursor
-based pagination. May not be used with \`last\`.",
-                  "name": "offset",
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null,
-                  },
-                },
-                {
-                  "defaultValue": null,
-                  "description": "Read all values in the set before (above) this cursor.",
-                  "name": "before",
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "Cursor",
-                    "ofType": null,
-                  },
-                },
-                {
-                  "defaultValue": null,
-                  "description": "Read all values in the set after (below) this cursor.",
-                  "name": "after",
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "Cursor",
-                    "ofType": null,
-                  },
-                },
-                {
-                  "defaultValue": null,
-                  "description": "A filter to be used in determining which values should be returned by the collection.",
-                  "name": "where",
-                  "type": {
-                    "kind": "INPUT_OBJECT",
-                    "name": "UserFilter",
-                    "ofType": null,
-                  },
-                },
-                {
-                  "defaultValue": "[PRIMARY_KEY_ASC]",
-                  "description": "The method to use when ordering \`User\`.",
-                  "name": "orderBy",
-                  "type": {
-                    "kind": "LIST",
-                    "name": null,
-                    "ofType": {
-                      "kind": "NON_NULL",
-                      "name": null,
-                      "ofType": {
-                        "kind": "ENUM",
-                        "name": "UserOrderBy",
-                        "ofType": null,
-                      },
-                    },
-                  },
-                },
-              ],
-              "deprecationReason": null,
-              "description": "Reads and enables pagination through a set of \`User\`.",
-              "isDeprecated": false,
-              "name": "users",
-              "type": {
-                "kind": "OBJECT",
-                "name": "UserConnection",
-                "ofType": null,
-              },
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Metadata about the database schema, including tables, fields, indexes, and constraints. Useful for code generation tools.",
-              "isDeprecated": false,
-              "name": "_meta",
-              "type": {
-                "kind": "OBJECT",
-                "name": "MetaSchema",
-                "ofType": null,
-              },
-            },
-          ],
-          "inputFields": null,
-          "interfaces": [],
-          "kind": "OBJECT",
-          "name": "Query",
-          "possibleTypes": null,
-        },
-        {
-          "description": "The root mutation type which contains root level fields which mutate data.",
-          "enumValues": null,
-          "fields": [
-            {
-              "args": [
-                {
-                  "defaultValue": null,
-                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
-                  "name": "input",
-                  "type": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "CreateUserInput",
-                      "ofType": null,
-                    },
-                  },
-                },
-              ],
-              "deprecationReason": null,
-              "description": "Creates a single \`User\`.",
-              "isDeprecated": false,
-              "name": "createUser",
-              "type": {
-                "kind": "OBJECT",
-                "name": "CreateUserPayload",
-                "ofType": null,
-              },
-            },
-            {
-              "args": [
-                {
-                  "defaultValue": null,
-                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
-                  "name": "input",
-                  "type": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "UpdateUserInput",
-                      "ofType": null,
-                    },
-                  },
-                },
-              ],
-              "deprecationReason": null,
-              "description": "Updates a single \`User\` using a unique key and a patch.",
-              "isDeprecated": false,
-              "name": "updateUser",
-              "type": {
-                "kind": "OBJECT",
-                "name": "UpdateUserPayload",
-                "ofType": null,
-              },
-            },
-            {
-              "args": [
-                {
-                  "defaultValue": null,
-                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
-                  "name": "input",
-                  "type": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "DeleteUserInput",
-                      "ofType": null,
-                    },
-                  },
-                },
-              ],
-              "deprecationReason": null,
-              "description": "Deletes a single \`User\` using a unique key.",
-              "isDeprecated": false,
-              "name": "deleteUser",
-              "type": {
-                "kind": "OBJECT",
-                "name": "DeleteUserPayload",
-                "ofType": null,
-              },
-            },
-            {
-              "args": [
-                {
-                  "defaultValue": null,
-                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
-                  "name": "input",
-                  "type": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "RequestUploadUrlInput",
-                      "ofType": null,
-                    },
-                  },
-                },
-              ],
-              "deprecationReason": null,
-              "description": "Request a presigned URL for uploading a file directly to S3.
-Client computes SHA-256 of the file content and provides it here.
-If a file with the same hash already exists (dedup), returns the
-existing file ID and deduplicated=true with no uploadUrl.",
-              "isDeprecated": false,
-              "name": "requestUploadUrl",
-              "type": {
-                "kind": "OBJECT",
-                "name": "RequestUploadUrlPayload",
-                "ofType": null,
-              },
-            },
-            {
-              "args": [
-                {
-                  "defaultValue": null,
-                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
-                  "name": "input",
-                  "type": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "ConfirmUploadInput",
-                      "ofType": null,
-                    },
-                  },
-                },
-              ],
-              "deprecationReason": null,
-              "description": "Confirm that a file has been uploaded to S3.
-Verifies the object exists in S3, checks content-type,
-and transitions the file status from 'pending' to 'ready'.",
-              "isDeprecated": false,
-              "name": "confirmUpload",
-              "type": {
-                "kind": "OBJECT",
-                "name": "ConfirmUploadPayload",
-                "ofType": null,
-              },
-            },
-            {
-              "args": [
-                {
-                  "defaultValue": null,
-                  "description": "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.",
-                  "name": "input",
-                  "type": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "ProvisionBucketInput",
-                      "ofType": null,
-                    },
-                  },
-                },
-              ],
-              "deprecationReason": null,
-              "description": "Provision an S3 bucket for a logical bucket in the database.
-Reads the bucket config via RLS, then creates and configures
-the S3 bucket with the appropriate privacy policies, CORS rules,
-and lifecycle settings.",
-              "isDeprecated": false,
-              "name": "provisionBucket",
-              "type": {
-                "kind": "OBJECT",
-                "name": "ProvisionBucketPayload",
-                "ofType": null,
-              },
-            },
-          ],
-          "inputFields": null,
-          "interfaces": [],
-          "kind": "OBJECT",
-          "name": "Mutation",
-          "possibleTypes": null,
-        },
-        {
-          "description": null,
-          "enumValues": null,
-          "fields": null,
-          "inputFields": [
-            {
-              "defaultValue": null,
               "description": "The logical bucket key (e.g., "public", "private")",
               "name": "bucketKey",
               "type": {
@@ -3789,6 +3927,16 @@ Omit for app-level (database-wide) storage.",
           "interfaces": null,
           "kind": "INPUT_OBJECT",
           "name": "ProvisionBucketInput",
+          "possibleTypes": null,
+        },
+        {
+          "description": "A universally unique identifier as defined by [RFC 4122](https://tools.ietf.org/html/rfc4122).",
+          "enumValues": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "kind": "SCALAR",
+          "name": "UUID",
           "possibleTypes": null,
         },
         {

@@ -3,6 +3,126 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.17.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.16.0...graphile-search@1.17.0) (2026-06-14)
+
+### Bug Fixes
+
+- **graphile-llm:** fix all failing tests — RAG chunk discovery, mutation input detection, text-search scope ([49ead07](https://github.com/constructive-io/constructive/commit/49ead07fe1d863ea1c18bf4cb9446b031bd63188))
+- **graphile-search:** replace mock LLM plugin tests with Grafast-compatible integration tests ([53f2199](https://github.com/constructive-io/constructive/commit/53f21998fa854da19b031315846f4c9d4633ea71))
+
+### Features
+
+- **graphile-llm:** auto-embed unifiedSearch text for hybrid vector+keyword search ([dc4a5c1](https://github.com/constructive-io/constructive/commit/dc4a5c1befec668f93586fb94d02303b219e427c)), closes [#1054](https://github.com/constructive-io/constructive/issues/1054)
+
+# [1.16.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.4...graphile-search@1.16.0) (2026-06-12)
+
+### Bug Fixes
+
+- remove unnecessary ROW_NUMBER() from per-adapter individual filter path ([a3909a8](https://github.com/constructive-io/constructive/commit/a3909a834891e8709ab2b3c4c7d69c7ca40c0d80))
+- restore ROW_NUMBER() for per-adapter RRF + VACUUM BM25 index in seed ([589ec10](https://github.com/constructive-io/constructive/commit/589ec10cb2d7ae281ab011eb99eb38548dd069c6))
+
+### Features
+
+- **graphile-search:** replace sigmoid weighted-average with Reciprocal Rank Fusion (RRF) ([2c61257](https://github.com/constructive-io/constructive/commit/2c6125749d6b5f37a17ddbdefc3c0475bdfecdcf)), closes [constructive-io/constructive-planning#1047](https://github.com/constructive-io/constructive-planning/issues/1047)
+
+## [1.15.4](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.3...graphile-search@1.15.4) (2026-06-07)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.15.3](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.2...graphile-search@1.15.3) (2026-06-06)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.15.2](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.1...graphile-search@1.15.2) (2026-06-06)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.15.1](https://github.com/constructive-io/constructive/compare/graphile-search@1.15.0...graphile-search@1.15.1) (2026-06-05)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.15.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.14.2...graphile-search@1.15.0) (2026-05-30)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.14.2](https://github.com/constructive-io/constructive/compare/graphile-search@1.14.1...graphile-search@1.14.2) (2026-05-29)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.14.1](https://github.com/constructive-io/constructive/compare/graphile-search@1.14.0...graphile-search@1.14.1) (2026-05-24)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.14.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.13.2...graphile-search@1.14.0) (2026-05-23)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.13.2](https://github.com/constructive-io/constructive/compare/graphile-search@1.13.1...graphile-search@1.13.2) (2026-05-21)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.13.1](https://github.com/constructive-io/constructive/compare/graphile-search@1.13.0...graphile-search@1.13.1) (2026-05-20)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.13.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.12.1...graphile-search@1.13.0) (2026-05-19)
+
+### Bug Fixes
+
+- update unit tests for expanded ChunksInfo type ([a38b3ed](https://github.com/constructive-io/constructive/commit/a38b3ed2dd7d8706adb6d9051bbde9898749a411))
+
+### Features
+
+- chunk-aware text search in tsvector, BM25, and trgm adapters ([#854](https://github.com/constructive-io/constructive/issues/854)) ([0118610](https://github.com/constructive-io/constructive/commit/0118610e7bdc38287522e99bf38c46e48123e69c))
+
+## [1.12.1](https://github.com/constructive-io/constructive/compare/graphile-search@1.12.0...graphile-search@1.12.1) (2026-05-17)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.12.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.11.2...graphile-search@1.12.0) (2026-05-14)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.11.2](https://github.com/constructive-io/constructive/compare/graphile-search@1.11.1...graphile-search@1.11.2) (2026-05-12)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.11.1](https://github.com/constructive-io/constructive/compare/graphile-search@1.11.0...graphile-search@1.11.1) (2026-05-11)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.11.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.10.2...graphile-search@1.11.0) (2026-05-11)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.10.2](https://github.com/constructive-io/constructive/compare/graphile-search@1.10.1...graphile-search@1.10.2) (2026-05-10)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.10.1](https://github.com/constructive-io/constructive/compare/graphile-search@1.10.0...graphile-search@1.10.1) (2026-05-09)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.10.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.9.0...graphile-search@1.10.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.9.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.8.0...graphile-search@1.9.0) (2026-05-08)
+
+**Note:** Version bump only for package graphile-search
+
+# [1.8.0](https://github.com/constructive-io/constructive/compare/graphile-search@1.7.6...graphile-search@1.8.0) (2026-05-06)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.7.6](https://github.com/constructive-io/constructive/compare/graphile-search@1.7.5...graphile-search@1.7.6) (2026-05-05)
+
+**Note:** Version bump only for package graphile-search
+
+## [1.7.5](https://github.com/constructive-io/constructive/compare/graphile-search@1.7.4...graphile-search@1.7.5) (2026-04-27)
+
+**Note:** Version bump only for package graphile-search
+
 ## [1.7.4](https://github.com/constructive-io/constructive/compare/graphile-search@1.7.3...graphile-search@1.7.4) (2026-04-20)
 
 **Note:** Version bump only for package graphile-search

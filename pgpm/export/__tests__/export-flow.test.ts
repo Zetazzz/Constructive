@@ -206,7 +206,7 @@ const SCHEMA_SHIMS_SQL = `
     sign_in_function text,
     sign_up_function text,
     sign_out_function text,
-    sign_in_one_time_token_function text,
+    sign_in_cross_origin_function text,
     one_time_token_function text,
     extend_token_expires text,
     send_account_deletion_email_function text,
@@ -218,12 +218,6 @@ const SCHEMA_SHIMS_SQL = `
     verify_email_function text
   );
 
-  -- Additional metaschema_public table required by exportMeta
-  CREATE TABLE IF NOT EXISTS metaschema_public.database_extension (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    database_id uuid,
-    name text
-  );
 `;
 
 describe('Export Flow E2E', () => {
@@ -735,6 +729,34 @@ relocatable = false
       const svcDeployDir = join(exportWorkspaceDir, 'packages', META_EXTENSION_NAME, 'deploy');
       const structure = getDirectoryStructure(svcDeployDir);
       expect(structure).toMatchSnapshot('pets-export-svc deploy folder');
+    });
+
+    // Behavioral test: columnDefaults columns must be absent from the generated SQL.
+    // The apis and sites tables have dbname DEFAULT current_database(), which
+    // captures an environment-specific literal during export. columnDefaults
+    // strips the column from the INSERT so the DDL default supplies the correct
+    // value at deploy time (constructive-db commit 348a5b402e).
+    it('should exclude dbname from apis and sites INSERTs (columnDefaults)', () => {
+      const apisSqlPath = join(exportWorkspaceDir, 'packages', META_EXTENSION_NAME, 'deploy', 'migrate', 'apis.sql');
+      const sitesSqlPath = join(exportWorkspaceDir, 'packages', META_EXTENSION_NAME, 'deploy', 'migrate', 'sites.sql');
+
+      if (existsSync(apisSqlPath)) {
+        const apisContent = readFileSync(apisSqlPath, 'utf-8');
+        // dbname must NOT appear — it's stripped by columnDefaults
+        expect(apisContent).not.toContain('dbname');
+        // But other columns should still be present
+        expect(apisContent).toContain('name');
+        expect(apisContent).toContain('is_public');
+      }
+
+      if (existsSync(sitesSqlPath)) {
+        const sitesContent = readFileSync(sitesSqlPath, 'utf-8');
+        // dbname must NOT appear — it's stripped by columnDefaults
+        expect(sitesContent).not.toContain('dbname');
+        // But other columns should still be present
+        expect(sitesContent).toContain('title');
+        expect(sitesContent).toContain('description');
+      }
     });
   });
 });
