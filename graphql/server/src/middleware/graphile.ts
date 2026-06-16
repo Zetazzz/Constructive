@@ -305,7 +305,7 @@ const buildPreset = (
 };
 };
 
-export const graphile = (opts: ConstructiveOptions): RequestHandler => {
+const routeKeyGraphile = (opts: ConstructiveOptions): RequestHandler => {
   const observabilityEnabled = isGraphqlObservabilityEnabled(opts.server?.host);
 
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -546,4 +546,18 @@ export const multiTenancyHandler = (opts: ConstructiveOptions): RequestHandler =
       next(e);
     }
   };
+};
+
+/**
+ * Graphile middleware facade.
+ *
+ * `server.ts` mounts this once; this module owns the choice between the
+ * legacy route-key cache and the buildKey-based multi-tenancy cache.
+ */
+export const graphile = (opts: ConstructiveOptions): RequestHandler => {
+  if (isMultiTenancyCacheEnabled(opts)) {
+    log.info('Multi-tenancy cache ENABLED');
+    return multiTenancyHandler(opts);
+  }
+  return routeKeyGraphile(opts);
 };
