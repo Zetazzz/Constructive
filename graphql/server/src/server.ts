@@ -6,7 +6,13 @@ import { healthz, poweredBy, svcCache, trustProxy } from '@pgpmjs/server-utils';
 import { PgpmOptions } from '@pgpmjs/types';
 import { middleware as parseDomains } from '@constructive-io/url-domains';
 import cookieParser from 'cookie-parser';
-import express, { Express, NextFunction, Request, RequestHandler, Response } from 'express';
+import express, {
+  Express,
+  NextFunction,
+  Request,
+  RequestHandler,
+  Response,
+} from 'express';
 import type { Server as HttpServer } from 'http';
 import graphqlUpload from 'graphql-upload';
 import { Pool, PoolClient } from 'pg';
@@ -28,7 +34,12 @@ import { cors } from './middleware/cors';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { favicon } from './middleware/favicon';
 import { flush, createFlushMiddleware, flushService } from './middleware/flush';
-import { graphile, multiTenancyHandler, isMultiTenancyCacheEnabled, shutdownMultiTenancy } from './middleware/graphile';
+import {
+  graphile,
+  multiTenancyHandler,
+  isMultiTenancyCacheEnabled,
+  shutdownMultiTenancy,
+} from './middleware/graphile';
 import { multipartBridge } from './middleware/multipart-bridge';
 import { createDebugDatabaseMiddleware } from './middleware/observability/debug-db';
 import { debugMemory } from './middleware/observability/debug-memory';
@@ -37,9 +48,15 @@ import { createRequestLogger } from './middleware/observability/request-logger';
 // Auth cookie handling is done via AuthCookiePlugin in grafserv
 import { createCaptchaMiddleware } from './middleware/captcha';
 import { parseCookieValue, SESSION_COOKIE_NAME } from './middleware/cookie';
-import { createUploadAuthenticateMiddleware, uploadRoute } from './middleware/upload';
+import {
+  createUploadAuthenticateMiddleware,
+  uploadRoute,
+} from './middleware/upload';
 import { createLlmApiRouter } from './middleware/llm-api';
-import { createContextMiddleware, requestIdMiddleware } from '@constructive-io/express-context';
+import {
+  createContextMiddleware,
+  requestIdMiddleware,
+} from '@constructive-io/express-context';
 import { startDebugSampler } from './diagnostics/debug-sampler';
 
 const log = new Logger('server');
@@ -65,7 +82,9 @@ const log = new Logger('server');
  * GraphQLServer(pgpmOptions);
  * ```
  */
-export const GraphQLServer = (rawOpts: ConstructiveOptions | PgpmOptions = {}) => {
+export const GraphQLServer = (
+  rawOpts: ConstructiveOptions | PgpmOptions = {}
+) => {
   const opts = getEnvOptions(rawOpts);
   const app = new Server(opts);
   app.addEventListener();
@@ -86,12 +105,15 @@ class Server {
     this.opts = getEnvOptions(opts);
     const effectiveOpts = this.opts;
     const observabilityRequested = isGraphqlObservabilityRequested();
-    const observabilityEnabled = isGraphqlObservabilityEnabled(effectiveOpts.server?.host);
+    const observabilityEnabled = isGraphqlObservabilityEnabled(
+      effectiveOpts.server?.host
+    );
 
     const app = express();
     const api = createApiMiddleware(effectiveOpts);
     const authenticate = createAuthenticateMiddleware(effectiveOpts);
-    const uploadAuthenticate = createUploadAuthenticateMiddleware(effectiveOpts);
+    const uploadAuthenticate =
+      createUploadAuthenticateMiddleware(effectiveOpts);
     const requestLogger = createRequestLogger({ observabilityEnabled });
 
     // Log startup configuration (non-sensitive values only)
@@ -124,14 +146,18 @@ class Server {
       log.warn(
         `GRAPHQL_OBSERVABILITY_ENABLED was requested but observability remains disabled${
           reasons.length > 0 ? `: ${reasons.join('; ')}` : ''
-        }`,
+        }`
       );
     }
 
     healthz(app);
     if (observabilityEnabled) {
       app.get('/debug/memory', localObservabilityOnly, debugMemory);
-      app.get('/debug/db', localObservabilityOnly, createDebugDatabaseMiddleware(effectiveOpts));
+      app.get(
+        '/debug/db',
+        localObservabilityOnly,
+        createDebugDatabaseMiddleware(effectiveOpts)
+      );
     } else {
       app.use('/debug', (_req, res) => {
         res.status(404).send('Not found');
@@ -144,20 +170,25 @@ class Server {
     if (fallbackOrigin && process.env.NODE_ENV === 'production') {
       if (fallbackOrigin === '*') {
         log.warn(
-          'CORS wildcard ("*") is enabled in production; this effectively disables CORS and is not recommended. Prefer per-API CORS via meta schema.',
+          'CORS wildcard ("*") is enabled in production; this effectively disables CORS and is not recommended. Prefer per-API CORS via meta schema.'
         );
       } else {
-        log.warn(`CORS override origin set to ${fallbackOrigin} in production. Prefer per-API CORS via meta schema.`);
+        log.warn(
+          `CORS override origin set to ${fallbackOrigin} in production. Prefer per-API CORS via meta schema.`
+        );
       }
     }
 
     app.use(poweredBy('constructive'));
     app.use(cookieParser());
     app.use(cors(fallbackOrigin));
-    app.use('/graphql', graphqlUpload.graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024, // 10 MB
-      maxFiles: 10,
-    }));
+    app.use(
+      '/graphql',
+      graphqlUpload.graphqlUploadExpress({
+        maxFileSize: 10 * 1024 * 1024, // 10 MB
+        maxFiles: 10,
+      })
+    );
 
     // Rewrite Content-Type after graphql-upload so grafserv accepts the request
     app.use('/graphql', multipartBridge);
@@ -170,12 +201,6 @@ class Server {
     app.use(authenticate);
     app.use(createContextMiddleware({ pg: effectiveOpts.pg }));
     app.use(createCaptchaMiddleware());
-    // Select handler based on multi-tenancy cache mode
-    if (isMultiTenancyCacheEnabled(effectiveOpts)) {
-      log.info('[server] Multi-tenancy cache ENABLED');
-      app.use(multiTenancyHandler(effectiveOpts));
-      app.use(createFlushMiddleware(effectiveOpts));
-    } else {
 
     // CSRF protection for cookie-authenticated requests
     // Skip CSRF for Bearer token auth (not vulnerable to CSRF) and anonymous requests
@@ -186,7 +211,11 @@ class Server {
         sameSite: 'lax',
       },
     });
-    const csrfProtect: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+    const csrfProtect: RequestHandler = (
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ) => {
       // Skip CSRF for Bearer token auth
       const auth = req.headers.authorization;
       if (auth?.toLowerCase().startsWith('bearer ')) {
@@ -200,7 +229,11 @@ class Server {
       // Apply CSRF protection for cookie-authenticated requests
       csrf.protect(req as any, res as any, next);
     };
-    const csrfSetToken: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+    const csrfSetToken: RequestHandler = (
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ) => {
       csrf.setToken(req as any, res as any, next);
     };
     app.use(csrfSetToken); // Set CSRF token cookie on all requests
@@ -210,7 +243,13 @@ class Server {
     // routes are handled without going through PostGraphile
     app.use(createLlmApiRouter());
 
-    app.use(graphile(effectiveOpts));
+    // Select handler based on multi-tenancy cache mode
+    if (isMultiTenancyCacheEnabled(effectiveOpts)) {
+      log.info('[server] Multi-tenancy cache ENABLED');
+      app.use(multiTenancyHandler(effectiveOpts));
+      app.use(createFlushMiddleware(effectiveOpts));
+    } else {
+      app.use(graphile(effectiveOpts));
       app.use(flush);
     }
 
@@ -219,13 +258,15 @@ class Server {
     app.use(errorHandler); // Catches all thrown errors
 
     this.app = app;
-    this.debugSampler = observabilityEnabled ? startDebugSampler(effectiveOpts) : null;
+    this.debugSampler = observabilityEnabled
+      ? startDebugSampler(effectiveOpts)
+      : null;
   }
 
   listen(): HttpServer {
     const { server } = this.opts;
     const httpServer = this.app.listen(server?.port, server?.host, () =>
-      log.info(`listening at http://${server?.host}:${server?.port}`),
+      log.info(`listening at http://${server?.host}:${server?.port}`)
     );
 
     httpServer.on('error', (err: NodeJS.ErrnoException) => {
@@ -255,7 +296,11 @@ class Server {
     pgPool.connect(this.listenForChanges.bind(this));
   }
 
-  listenForChanges(err: Error | null, client: PoolClient, release: () => void): void {
+  listenForChanges(
+    err: Error | null,
+    client: PoolClient,
+    release: () => void
+  ): void {
     if (err) {
       this.error('Error connecting with notify listener', err);
       if (!this.shuttingDown) {
@@ -332,7 +377,9 @@ class Server {
       this.debugSampler = null;
     }
     if (this.httpServer?.listening) {
-      await new Promise<void>((resolve) => this.httpServer!.close(() => resolve()));
+      await new Promise<void>((resolve) =>
+        this.httpServer!.close(() => resolve())
+      );
     }
     await closeDebugDatabasePools();
     if (closeCaches) {
