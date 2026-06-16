@@ -9,6 +9,7 @@ import type { GraphileConfig } from 'graphile-config';
 import { createConstructivePreset, makePgService } from 'graphile-settings';
 import { getPgPool } from 'pg-cache';
 import { getPgEnvOptions } from 'pg-env';
+import type { Pool } from 'pg';
 import {
   configureMultiTenancyCache,
   getTenantInstance,
@@ -209,7 +210,7 @@ const reqLabel = (req: Request): string => (req.requestId ? `[${req.requestId}]`
  * (everything on except aggregates).
  */
 const buildPreset = (
-  pool: import('pg').Pool,
+  pool: Pool,
   schemas: string[],
   anonRole: string,
   roleName: string,
@@ -305,6 +306,46 @@ const buildPreset = (
 };
 };
 
+interface CreateTenantGraphileResourcesOptions {
+  pool: Pool;
+  schemas: string[];
+  anonRole: string;
+  roleName: string;
+  databaseSettings?: DatabaseSettings;
+  cacheKey: string;
+  serviceKey: string;
+  databaseId?: string | null;
+  observabilityEnabled: boolean;
+}
+
+const createTenantGraphileResources = ({
+  pool,
+  schemas,
+  anonRole,
+  roleName,
+  databaseSettings,
+  cacheKey,
+  serviceKey,
+  databaseId,
+  observabilityEnabled,
+}: CreateTenantGraphileResourcesOptions): Promise<GraphileCacheEntry> => {
+  const preset = buildPreset(pool, schemas, anonRole, roleName, databaseSettings);
+  return observeGraphileBuild(
+    {
+      cacheKey,
+      serviceKey,
+      databaseId: databaseId ?? null,
+    },
+    () =>
+      createGraphileInstance({
+        preset,
+        cacheKey,
+        enableRealtime: databaseSettings?.enableRealtime,
+      }),
+    { enabled: observabilityEnabled },
+  );
+};
+
 const routeKeyGraphile = (opts: ConstructiveOptions): RequestHandler => {
   const observabilityEnabled = isGraphqlObservabilityEnabled(opts.server?.host);
 
@@ -383,20 +424,17 @@ const routeKeyGraphile = (opts: ConstructiveOptions): RequestHandler => {
       const pool = getPgPool(pgConfig);
 
       // Create promise and store in in-flight map BEFORE try block
-      const preset = buildPreset(pool, schema || [], anonRole, roleName, api.databaseSettings);
-      const creationPromise = observeGraphileBuild(
-        {
-          cacheKey: key,
-          serviceKey: key,
-          databaseId: api.databaseId ?? null,
-        },
-        () => createGraphileInstance({
-          preset,
-          cacheKey: key,
-          enableRealtime: api.databaseSettings?.enableRealtime,
-        }),
-        { enabled: observabilityEnabled },
-      );
+      const creationPromise = createTenantGraphileResources({
+        pool,
+        schemas: schema || [],
+        anonRole,
+        roleName,
+        databaseSettings: api.databaseSettings,
+        cacheKey: key,
+        serviceKey: key,
+        databaseId: api.databaseId,
+        observabilityEnabled,
+      });
       creating.set(key, creationPromise);
 
       try {
@@ -473,21 +511,17 @@ export const multiTenancyHandler = (opts: ConstructiveOptions): RequestHandler =
       presetOptions,
     }) => {
       const databaseSettings = presetOptions as DatabaseSettings | undefined;
-      const preset = buildPreset(pool, schemas, anonRole, roleName, databaseSettings);
-      return observeGraphileBuild(
-        {
-          cacheKey: buildKey,
-          serviceKey: svcKey,
-          databaseId: databaseId ?? null,
-        },
-        () =>
-          createGraphileInstance({
-            preset,
-            cacheKey: buildKey,
-            enableRealtime: databaseSettings?.enableRealtime,
-          }),
-        { enabled: observabilityEnabled },
-      );
+      return createTenantGraphileResources({
+        pool,
+        schemas,
+        anonRole,
+        roleName,
+        databaseSettings,
+        cacheKey: buildKey,
+        serviceKey: svcKey,
+        databaseId,
+        observabilityEnabled,
+      });
     },
   });
 
