@@ -1,6 +1,6 @@
 {
   "name": "@constructive-io/graphql-server",
-  "version": "4.36.1",
+  "version": "4.36.2",
   "author": "Constructive <developers@constructive.io>",
   "description": "Constructive GraphQL Server",
   "main": "index.js",
@@ -52,6 +52,7 @@
     "@pgpmjs/logger": "workspace:^",
     "@pgpmjs/server-utils": "workspace:^",
     "@pgpmjs/types": "workspace:^",
+    "agentic-server": "workspace:*",
     "cors": "^2.8.6",
     "deepmerge": "^4.3.1",
     "express": "^5.2.1",
@@ -60,7 +61,6 @@
     "grafserv": "1.0.0",
     "graphile-build": "5.0.2",
     "graphile-build-pg": "5.0.2",
-    "agentic-server": "workspace:*",
     "graphile-cache": "workspace:^",
     "graphile-config": "1.0.1",
     "graphile-settings": "workspace:^",
