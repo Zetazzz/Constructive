@@ -57,8 +57,13 @@ export class PgpmMigrate {
 
   constructor(config: PgConfig, options: PgpmMigrateOptions = {}) {
     this.pgConfig = config;
-    // Use environment variable DEPLOYMENT_HASH_METHOD if available, otherwise use options or default to 'content'
-    const envHashMethod = process.env.DEPLOYMENT_HASH_METHOD as HashMethod;
+    // Direct migrator consumers retain the environment fallback, but only the
+    // two supported values are accepted. PGPM composition roots pass their
+    // already-resolved option explicitly.
+    const rawEnvHashMethod = process.env.DEPLOYMENT_HASH_METHOD;
+    const envHashMethod = rawEnvHashMethod === 'content' || rawEnvHashMethod === 'ast'
+      ? rawEnvHashMethod
+      : undefined;
     this.hashMethod = options.hashMethod || envHashMethod || 'content';
     this.pool = getPgPool(this.pgConfig);
     this.eventLogger = new EventLogger(this.pgConfig);

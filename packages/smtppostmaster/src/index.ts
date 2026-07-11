@@ -1,7 +1,7 @@
 import nodemailer, { SendMailOptions } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { getEnvOptions } from '@pgpmjs/env';
-import { SmtpOptions } from '@pgpmjs/types';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
+import type { SmtpOptions } from '@constructive-io/graphql-types';
 
 type SendInput = {
   to: string | string[];
@@ -25,7 +25,21 @@ type TransportConfig = SMTPTransport.Options & {
 };
 
 const buildTransportOptions = (smtpOpts: SmtpOptions): TransportConfig => {
-  const { host, port, secure, user, pass, requireTLS, tlsRejectUnauthorized, pool, maxConnections, maxMessages, name, logger, debug } = smtpOpts;
+  const {
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    requireTLS,
+    tlsRejectUnauthorized,
+    pool,
+    maxConnections,
+    maxMessages,
+    name,
+    logger,
+    debug,
+  } = smtpOpts;
 
   if (!host) {
     throw new Error('Missing SMTP_HOST');
@@ -37,14 +51,14 @@ const buildTransportOptions = (smtpOpts: SmtpOptions): TransportConfig => {
   const auth = user
     ? {
         user,
-        pass: pass ?? ''
+        pass: pass ?? '',
       }
     : undefined;
 
   const options: TransportConfig = {
     host,
     port: resolvedPort,
-    secure: resolvedSecure
+    secure: resolvedSecure,
   };
 
   if (auth) {
@@ -57,7 +71,7 @@ const buildTransportOptions = (smtpOpts: SmtpOptions): TransportConfig => {
 
   if (tlsRejectUnauthorized !== undefined) {
     options.tls = {
-      rejectUnauthorized: tlsRejectUnauthorized
+      rejectUnauthorized: tlsRejectUnauthorized,
     };
   }
 
@@ -88,12 +102,14 @@ const buildTransportOptions = (smtpOpts: SmtpOptions): TransportConfig => {
   return options;
 };
 
-let transport: nodemailer.Transporter<SMTPTransport.SentMessageInfo> | undefined;
+let transport:
+  | nodemailer.Transporter<SMTPTransport.SentMessageInfo>
+  | undefined;
 let cachedSmtpOpts: SmtpOptions | undefined;
 
 const getTransport = (overrides?: SmtpOptions) => {
-  const opts = getEnvOptions(overrides ? { smtp: overrides } : {});
-  const smtpOpts = opts.smtp ?? {};
+  const smtpOpts =
+    getConstructiveEnvOptions(overrides ? { smtp: overrides } : {}).smtp ?? {};
 
   if (!transport || overrides) {
     transport = nodemailer.createTransport(buildTransportOptions(smtpOpts));
@@ -106,7 +122,9 @@ const getTransport = (overrides?: SmtpOptions) => {
 const resolveFrom = (from: string | undefined, smtpOpts: SmtpOptions) => {
   const resolved = from ?? smtpOpts.from;
   if (!resolved) {
-    throw new Error('Missing from address. Set SMTP_FROM or pass from in send().');
+    throw new Error(
+      'Missing from address. Set SMTP_FROM or pass from in send().'
+    );
   }
   return resolved;
 };
@@ -136,7 +154,7 @@ export const send = async (options: SendInput, smtpOverrides?: SmtpOptions) => {
     bcc: options.bcc,
     replyTo: options.replyTo ?? smtpOpts.replyTo,
     headers: options.headers,
-    attachments: options.attachments
+    attachments: options.attachments,
   };
 
   return mailer.sendMail(mailOptions);

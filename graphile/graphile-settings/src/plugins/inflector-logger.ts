@@ -1,4 +1,5 @@
 import type { GraphileConfig } from 'graphile-config';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
 
 /**
  * InflectorLoggerPlugin - Logs inflector calls during schema build for debugging.
@@ -35,10 +36,15 @@ import type { GraphileConfig } from 'graphile-config';
  * Set INFLECTOR_LOG=1 environment variable to enable logging.
  */
 
-const LOG_ENABLED = process.env.INFLECTOR_LOG === '1';
+let logEnabled =
+  getConstructiveEnvOptions().graphileRuntime?.inflectorLog ?? false;
+
+export const setInflectorLogEnabled = (enabled: boolean): void => {
+  logEnabled = enabled;
+};
 
 function log(category: string, message: string, details?: Record<string, unknown>) {
-  if (!LOG_ENABLED) return;
+  if (!logEnabled) return;
   const detailsStr = details ? ` ${JSON.stringify(details)}` : '';
   console.log(`[Inflector:${category}]${detailsStr} => ${message}`);
 }

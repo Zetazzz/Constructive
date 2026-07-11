@@ -29,7 +29,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "12factor-env": "workspace:^",
+    "@constructive-io/graphql-env": "workspace:^",
+    "@constructive-io/graphql-types": "workspace:^",
     "form-data": "^4.0.0",
     "mailgun.js": "^10.2.3"
   },

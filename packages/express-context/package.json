@@ -30,7 +30,6 @@
   },
   "dependencies": {
     "@constructive-io/url-domains": "workspace:^",
-    "@pgpmjs/env": "workspace:^",
     "@pgpmjs/logger": "workspace:^",
     "@pgpmjs/server-utils": "workspace:^",
     "@pgpmjs/types": "workspace:^",

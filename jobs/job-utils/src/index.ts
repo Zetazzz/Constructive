@@ -5,8 +5,8 @@ import type {
   GetScheduledJobParams,
   RunScheduledJobParams,
   ReleaseScheduledJobsParams,
-  ReleaseJobsParams
-} from '@pgpmjs/types';
+  ReleaseJobsParams,
+} from '@constructive-io/graphql-types';
 
 import {
   getJobSchema,
@@ -21,7 +21,7 @@ import {
   getJobGatewayDevMap,
   getJobsCallbackPort,
   getCallbackBaseUrl,
-  getNodeEnvironment
+  getNodeEnvironment,
 } from './runtime';
 
 import { Logger } from '@pgpmjs/logger';
@@ -45,7 +45,7 @@ export {
   getJobGatewayDevMap,
   getJobsCallbackPort,
   getCallbackBaseUrl,
-  getNodeEnvironment
+  getNodeEnvironment,
 };
 
 const JOBS_SCHEMA = getJobSchema();
@@ -55,10 +55,11 @@ export const failJob = async (
   { workerId, jobId, message }: FailJobParams
 ) => {
   log.warn(`failJob worker[${workerId}] job[${jobId}] ${message}`);
-  await client.query(
-    `SELECT * FROM "${JOBS_SCHEMA}".fail_job($1, $2, $3);`,
-    [workerId, jobId, message]
-  );
+  await client.query(`SELECT * FROM "${JOBS_SCHEMA}".fail_job($1, $2, $3);`, [
+    workerId,
+    jobId,
+    message,
+  ]);
 };
 
 export const completeJob = async (
@@ -66,10 +67,10 @@ export const completeJob = async (
   { workerId, jobId }: CompleteJobParams
 ) => {
   log.info(`completeJob worker[${workerId}] job[${jobId}]`);
-  await client.query(
-    `SELECT * FROM "${JOBS_SCHEMA}".complete_job($1, $2);`,
-    [workerId, jobId]
-  );
+  await client.query(`SELECT * FROM "${JOBS_SCHEMA}".complete_job($1, $2);`, [
+    workerId,
+    jobId,
+  ]);
 };
 
 export const getJob = async <T = any>(
@@ -78,7 +79,7 @@ export const getJob = async <T = any>(
 ): Promise<T | null> => {
   log.debug(`getJob worker[${workerId}]`);
   const {
-    rows: [job]
+    rows: [job],
   } = await client.query(
     `SELECT * FROM "${JOBS_SCHEMA}".get_job($1, $2::text[]);`,
     [workerId, supportedTaskNames]
@@ -92,7 +93,7 @@ export const getScheduledJob = async <T = any>(
 ): Promise<T | null> => {
   log.debug(`getScheduledJob worker[${workerId}]`);
   const {
-    rows: [job]
+    rows: [job],
   } = await client.query(
     `SELECT * FROM "${JOBS_SCHEMA}".get_scheduled_job($1, $2::text[]);`,
     [workerId, supportedTaskNames]
@@ -107,7 +108,7 @@ export const runScheduledJob = async (
   log.info(`runScheduledJob job[${jobId}]`);
   try {
     const {
-      rows: [job]
+      rows: [job],
     } = await client.query(
       `SELECT * FROM "${JOBS_SCHEMA}".run_scheduled_job($1);`,
       [jobId]
@@ -137,8 +138,5 @@ export const releaseJobs = async (
   { workerId }: ReleaseJobsParams
 ) => {
   log.info(`releaseJobs worker[${workerId}]`);
-  return client.query(
-    `SELECT "${JOBS_SCHEMA}".release_jobs($1);`,
-    [workerId]
-  );
+  return client.query(`SELECT "${JOBS_SCHEMA}".release_jobs($1);`, [workerId]);
 };

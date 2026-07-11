@@ -1,12 +1,11 @@
 import crypto from 'node:crypto';
-import { getNodeEnv } from '@pgpmjs/env';
-import type { ConstructiveOptions } from '@constructive-io/graphql-types';
+import type { ConstructiveNodeEnv, ConstructiveOptions } from '@constructive-io/graphql-types';
 import { Logger } from '@pgpmjs/logger';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { GraphQLError, GraphQLFormattedError } from 'grafast/graphql';
 import { createGraphileInstance, type GraphileCacheEntry, graphileCache } from 'graphile-cache';
 import type { GraphileConfig } from 'graphile-config';
-import { createConstructivePreset, makePgService } from 'graphile-settings';
+import { createConstructivePreset, makePgService, setInflectorLogEnabled } from 'graphile-settings';
 import { getPgPool } from 'pg-cache';
 import { getPgEnvOptions } from 'pg-env';
 import './types'; // for Request type
@@ -14,7 +13,7 @@ import { isGraphqlObservabilityEnabled } from '../diagnostics/observability';
 import { HandlerCreationError } from '../errors/api-errors';
 import { observeGraphileBuild } from './observability/graphile-build-stats';
 import type { DatabaseSettings } from '../types';
-import { AuthCookiePlugin } from '../plugins/auth-cookie-plugin';
+import { createAuthCookiePlugin } from '../plugins/auth-cookie-plugin';
 
 const maskErrorLog = new Logger('graphile:maskError');
 
@@ -132,8 +131,11 @@ const SAFE_ERROR_CODES = new Set([
  * allowlist as-is, but masks unexpected/database errors with a reference ID
  * and logs the original.
  */
-const maskError = (error: GraphQLError): GraphQLError | GraphQLFormattedError => {
-  if (getNodeEnv() === 'development') {
+const maskError = (
+  error: GraphQLError,
+  nodeEnv: ConstructiveNodeEnv,
+): GraphQLError | GraphQLFormattedError => {
+  if (nodeEnv === 'development') {
     return error;
   }
 
@@ -208,10 +210,14 @@ const buildPreset = (
   anonRole: string,
   roleName: string,
   databaseSettings?: DatabaseSettings,
+  nodeEnv: ConstructiveNodeEnv = 'development',
+  inflectorLog = false,
+  runtimeOptions?: ConstructiveOptions,
 ): GraphileConfig.Preset => {
+  setInflectorLogEnabled(inflectorLog);
   return {
-  extends: [createConstructivePreset(databaseSettings)],
-  plugins: [AuthCookiePlugin],
+  extends: [createConstructivePreset(databaseSettings, runtimeOptions)],
+  plugins: [createAuthCookiePlugin(nodeEnv)],
   pgServices: [
     makePgService({
       pool,
@@ -223,10 +229,10 @@ const buildPreset = (
     graphiqlPath: '/graphiql',
     graphiql: true,
     graphiqlOnGraphQLGET: false,
-    maskError,
+    maskError: (error) => maskError(error, nodeEnv),
   },
   grafast: {
-    explain: process.env.NODE_ENV === 'development',
+    explain: nodeEnv === 'development',
     context: (requestContext: Partial<Grafast.RequestContext>) => {
       // In grafserv/express/v4, the request is available at requestContext.expressv4.req
       const req = (requestContext as { expressv4?: { req?: Request } })?.expressv4?.req;
@@ -303,7 +309,7 @@ const buildPreset = (
 };
 
 export const graphile = (opts: ConstructiveOptions): RequestHandler => {
-  const observabilityEnabled = isGraphqlObservabilityEnabled(opts.server?.host);
+  const observabilityEnabled = isGraphqlObservabilityEnabled(opts.server?.host, opts);
 
   return async (req: Request, res: Response, next: NextFunction) => {
     const label = reqLabel(req);
@@ -380,7 +386,16 @@ export const graphile = (opts: ConstructiveOptions): RequestHandler => {
       const pool = getPgPool(pgConfig);
 
       // Create promise and store in in-flight map BEFORE try block
-      const preset = buildPreset(pool, schema || [], anonRole, roleName, api.databaseSettings);
+      const preset = buildPreset(
+        pool,
+        schema || [],
+        anonRole,
+        roleName,
+        api.databaseSettings,
+        opts.runtime?.nodeEnv ?? 'development',
+        opts.graphileRuntime?.inflectorLog ?? false,
+        opts,
+      );
       const creationPromise = observeGraphileBuild(
         {
           cacheKey: key,

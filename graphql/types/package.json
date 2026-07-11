@@ -2,7 +2,7 @@
   "name": "@constructive-io/graphql-types",
   "version": "3.13.1",
   "author": "Constructive <developers@constructive.io>",
-  "description": "Constructive GraphQL/Graphile types for PostGraphile integration",
+  "description": "Constructive configuration types for GraphQL and runtime integrations",
   "main": "index.js",
   "module": "esm/index.js",
   "types": "index.d.ts",

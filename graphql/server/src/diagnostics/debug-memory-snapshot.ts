@@ -1,5 +1,7 @@
 import os from 'node:os';
 import v8 from 'node:v8';
+import { getNodeEnv } from '@constructive-io/graphql-env';
+import type { ConstructiveNodeEnv } from '@constructive-io/graphql-types';
 import { svcCache, SVC_CACHE_TTL_MS } from '@pgpmjs/server-utils';
 import { getCacheStats } from 'graphile-cache';
 import { getInFlightCount, getInFlightKeys } from '../middleware/graphile';
@@ -57,7 +59,9 @@ export interface DebugMemorySnapshot {
   timestamp: string;
 }
 
-export const getDebugMemorySnapshot = (): DebugMemorySnapshot => {
+export const getDebugMemorySnapshot = (
+  nodeEnv: ConstructiveNodeEnv = getNodeEnv()
+): DebugMemorySnapshot => {
   const mem = process.memoryUsage();
   const heapSpaces = v8.getHeapSpaceStatistics().map((space) => ({
     spaceName: space.space_name,
@@ -69,7 +73,7 @@ export const getDebugMemorySnapshot = (): DebugMemorySnapshot => {
 
   return {
     pid: process.pid,
-    nodeEnv: process.env.NODE_ENV,
+    nodeEnv,
     memory: {
       heapUsedBytes: mem.heapUsed,
       heapTotalBytes: mem.heapTotal,

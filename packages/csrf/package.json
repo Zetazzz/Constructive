@@ -19,6 +19,9 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
+  "dependencies": {
+    "@constructive-io/graphql-env": "workspace:^"
+  },
   "devDependencies": {
     "@types/node": "^22.19.11",
     "makage": "^0.3.0",

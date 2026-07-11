@@ -1,5 +1,7 @@
-import type { PgpmOptions } from '@pgpmjs/types';
-import type { ApiOptions as ApiConfig } from '@constructive-io/graphql-types';
+import type {
+  ApiOptions as ApiConfig,
+  ConstructiveOptions
+} from '@constructive-io/graphql-types';
 
 // Re-export shared types from express-context (single source of truth)
 export type {
@@ -17,4 +19,4 @@ export type {
   WebauthnSettings,
 } from '@constructive-io/express-context';
 
-export type ApiOptions = PgpmOptions & { api?: ApiConfig };
+export type ApiOptions = ConstructiveOptions & { api?: ApiConfig };

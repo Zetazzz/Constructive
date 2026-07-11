@@ -11,8 +11,9 @@ import {
 } from '../src';
 import { QueryClientProvider, QueryClient } from 'react-query';
 import { useQuery } from 'react-query';
+import { getTestEnvOptions } from '@constructive-io/graphql-env';
 
-const TESTING_URL = process.env.TESTING_URL;
+const TESTING_URL = getTestEnvOptions().testingUrl;
 if (!TESTING_URL) {
   throw new Error(
     'process.env.TESTING_URL required. Please set a GraphQL Endpoint.'

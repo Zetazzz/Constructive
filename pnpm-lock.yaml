@@ -238,15 +238,15 @@ importers:
 
   functions/send-email:
     dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
       '@constructive-io/knative-job-fn':
         specifier: workspace:^
         version: link:../../jobs/knative-job-fn/dist
       '@constructive-io/postmaster':
         specifier: workspace:^
         version: link:../../packages/postmaster/dist
-      '@pgpmjs/env':
-        specifier: workspace:^
-        version: link:../../pgpm/env/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
@@ -261,6 +261,9 @@ importers:
 
   functions/send-verification-link:
     dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
       '@constructive-io/knative-job-fn':
         specifier: workspace:^
         version: link:../../jobs/knative-job-fn/dist
@@ -273,9 +276,6 @@ importers:
       '@launchql/styled-email':
         specifier: 0.1.0
         version: 0.1.0(@babel/core@7.29.0)(encoding@0.1.13)(react-dom@19.2.5(react@19.2.5))(react-is@19.2.6)(react@19.2.5)
-      '@pgpmjs/env':
-        specifier: workspace:^
-        version: link:../../pgpm/env/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
@@ -378,6 +378,12 @@ importers:
 
   graphile/graphile-cache:
     dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
+      '@constructive-io/graphql-types':
+        specifier: workspace:^
+        version: link:../../graphql/types/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
@@ -710,6 +716,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1052.0
         version: 3.1052.0
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
@@ -1240,6 +1249,9 @@ importers:
       '@babel/types':
         specifier: ^7.29.0
         version: 7.29.0
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../env/dist
       '@constructive-io/graphql-query':
         specifier: workspace:^
         version: link:../query/dist
@@ -1338,6 +1350,9 @@ importers:
       '@pgpmjs/env':
         specifier: workspace:^
         version: link:../../pgpm/env/dist
+      '@pgpmjs/logger':
+        specifier: workspace:^
+        version: link:../../pgpm/logger/dist
       deepmerge:
         specifier: ^4.3.1
         version: 4.3.1
@@ -1574,6 +1589,9 @@ importers:
         specifier: ^3.39.3
         version: 3.39.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     devDependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../env/dist
       '@testing-library/jest-dom':
         specifier: 5.11.10
         version: 5.11.10
@@ -1667,9 +1685,6 @@ importers:
       '@graphile-contrib/pg-many-to-many':
         specifier: 2.0.0-rc.2
         version: 2.0.0-rc.2
-      '@pgpmjs/env':
-        specifier: workspace:^
-        version: link:../../pgpm/env/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
@@ -1934,6 +1949,9 @@ importers:
       '@0no-co/graphql.web':
         specifier: ^1.2.0
         version: 1.2.0(graphql@16.13.0)
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../env/dist
       '@constructive-io/graphql-types':
         specifier: workspace:^
         version: link:../types/dist
@@ -2040,15 +2058,15 @@ importers:
 
   jobs/job-utils:
     dependencies:
-      '@pgpmjs/env':
+      '@constructive-io/graphql-env':
         specifier: workspace:^
-        version: link:../../pgpm/env/dist
+        version: link:../../graphql/env/dist
+      '@constructive-io/graphql-types':
+        specifier: workspace:^
+        version: link:../../graphql/types/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
-      '@pgpmjs/types':
-        specifier: workspace:^
-        version: link:../../pgpm/types/dist
       pg-cache:
         specifier: workspace:^
         version: link:../../postgres/pg-cache/dist
@@ -2080,6 +2098,9 @@ importers:
 
   jobs/knative-job-example:
     dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
       '@constructive-io/knative-job-fn':
         specifier: workspace:^
         version: link:../knative-job-fn/dist
@@ -2128,6 +2149,9 @@ importers:
 
   jobs/knative-job-service:
     dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
       '@constructive-io/job-pg':
         specifier: workspace:^
         version: link:../job-pg/dist
@@ -2152,9 +2176,6 @@ importers:
       '@constructive-io/send-verification-link-fn':
         specifier: workspace:^
         version: link:../../functions/send-verification-link/dist
-      '@pgpmjs/env':
-        specifier: workspace:^
-        version: link:../../pgpm/env/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
@@ -2269,6 +2290,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1052.0
         version: 3.1052.0
+      '@constructive-io/graphql-types':
+        specifier: workspace:^
+        version: link:../../graphql/types/dist
       '@constructive-io/s3-utils':
         specifier: workspace:^
         version: link:../../uploads/s3-utils/dist
@@ -2385,6 +2409,10 @@ importers:
     publishDirectory: dist
 
   packages/csrf:
+    dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
     devDependencies:
       '@types/node':
         specifier: ^22.19.11
@@ -2434,9 +2462,6 @@ importers:
       '@constructive-io/url-domains':
         specifier: workspace:^
         version: link:../url-domains/dist
-      '@pgpmjs/env':
-        specifier: workspace:^
-        version: link:../../pgpm/env/dist
       '@pgpmjs/logger':
         specifier: workspace:^
         version: link:../../pgpm/logger/dist
@@ -2474,6 +2499,13 @@ importers:
     publishDirectory: dist
 
   packages/llm-env:
+    dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
+      '@constructive-io/graphql-types':
+        specifier: workspace:^
+        version: link:../../graphql/types/dist
     devDependencies:
       makage:
         specifier: ^0.3.0
@@ -2511,6 +2543,9 @@ importers:
       '@constructive-io/csrf':
         specifier: workspace:^
         version: link:../csrf/dist
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
     devDependencies:
       '@types/node':
         specifier: ^22.19.11
@@ -2539,9 +2574,12 @@ importers:
 
   packages/postmaster:
     dependencies:
-      12factor-env:
+      '@constructive-io/graphql-env':
         specifier: workspace:^
-        version: link:../12factor-env/dist
+        version: link:../../graphql/env/dist
+      '@constructive-io/graphql-types':
+        specifier: workspace:^
+        version: link:../../graphql/types/dist
       form-data:
         specifier: ^4.0.0
         version: 4.0.5
@@ -2635,12 +2673,12 @@ importers:
 
   packages/smtppostmaster:
     dependencies:
-      '@pgpmjs/env':
+      '@constructive-io/graphql-env':
         specifier: workspace:^
-        version: link:../../pgpm/env/dist
-      '@pgpmjs/types':
+        version: link:../../graphql/env/dist
+      '@constructive-io/graphql-types':
         specifier: workspace:^
-        version: link:../../pgpm/types/dist
+        version: link:../../graphql/types/dist
       nodemailer:
         specifier: ^6.9.13
         version: 6.10.1
@@ -3195,6 +3233,9 @@ importers:
 
   postgres/pgsql-test:
     dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
       '@pgpmjs/env':
         specifier: workspace:^
         version: link:../../pgpm/env/dist
@@ -3279,6 +3320,9 @@ importers:
       '@agentic-kit/ollama':
         specifier: workspace:*
         version: link:../../agentic/ollama/dist
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
       '@constructive-io/graphql-query':
         specifier: workspace:^
         version: link:../../graphql/query/dist
@@ -3468,6 +3512,10 @@ importers:
     publishDirectory: dist
 
   uploads/mime-bytes:
+    dependencies:
+      '@constructive-io/graphql-env':
+        specifier: workspace:^
+        version: link:../../graphql/env/dist
     devDependencies:
       glob:
         specifier: ^13.0.6
@@ -3491,13 +3539,10 @@ importers:
       '@constructive-io/s3-utils':
         specifier: workspace:^
         version: link:../s3-utils/dist
-      '@pgpmjs/types':
-        specifier: workspace:^
-        version: link:../../pgpm/types/dist
     devDependencies:
-      '@pgpmjs/env':
+      '@constructive-io/graphql-env':
         specifier: workspace:^
-        version: link:../../pgpm/env/dist
+        version: link:../../graphql/env/dist
       glob:
         specifier: ^13.0.6
         version: 13.0.6
@@ -3517,6 +3562,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1052.0
         version: 3.1052.0
+      '@constructive-io/graphql-types':
+        specifier: workspace:^
+        version: link:../../graphql/types/dist
     devDependencies:
       '@types/node':
         specifier: ^22.19.11

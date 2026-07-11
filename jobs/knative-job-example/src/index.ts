@@ -1,4 +1,5 @@
 import { createJobApp } from '@constructive-io/knative-job-fn';
+import { getKnativeJobExamplePort } from '@constructive-io/graphql-env';
 
 const app = createJobApp();
 
@@ -14,5 +15,5 @@ app.post('/', async (req: any, res: any, next: any) => {
   }
 });
 
-const port = Number(process.env.PORT) || 10101;
+const port = getKnativeJobExamplePort();
 app.listen(port);

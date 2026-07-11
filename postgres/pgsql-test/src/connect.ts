@@ -1,4 +1,5 @@
 import { getConnEnvOptions } from '@pgpmjs/env';
+import { getTestEnvOptions } from '@constructive-io/graphql-env';
 import { PgTestConnectionOptions } from '@pgpmjs/types';
 import { randomUUID } from 'crypto';
 import { teardownPgPools } from 'pg-cache';
@@ -80,8 +81,9 @@ export const getConnections = async (
 
   const admin = new DbAdmin(config as PgConfig, false, connOpts);
   
-  if (process.env.TEST_DB) {
-    config.database = process.env.TEST_DB;
+  const testDatabase = getTestEnvOptions().testDb;
+  if (testDatabase) {
+    config.database = testDatabase;
   } else if (connOpts.template) {
     admin.createFromTemplate(connOpts.template, config.database);
   } else {

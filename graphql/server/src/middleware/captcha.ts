@@ -1,3 +1,4 @@
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
 import { Logger } from '@pgpmjs/logger';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import './types'; // for Request type
@@ -78,7 +79,9 @@ const verifyToken = async (token: string, secretKey: string): Promise<boolean> =
  *  - The request is not a protected mutation
  *  - No secret key is configured server-side
  */
-export const createCaptchaMiddleware = (): RequestHandler => {
+export const createCaptchaMiddleware = (configuredSecretKey?: string): RequestHandler => {
+  const secretKey = configuredSecretKey ?? getConstructiveEnvOptions().captcha?.recaptchaSecretKey;
+
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const authSettings = req.api?.authSettings;
 
@@ -94,7 +97,6 @@ export const createCaptchaMiddleware = (): RequestHandler => {
     }
 
     // Secret key must be set server-side (env var, not stored in DB for security)
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
     if (!secretKey) {
       log.warn('[captcha] enable_captcha is true but RECAPTCHA_SECRET_KEY env var is not set; skipping verification');
       return next();

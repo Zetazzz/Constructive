@@ -10,7 +10,7 @@ import express, { Express, NextFunction, Request, RequestHandler, Response } fro
 import type { Server as HttpServer } from 'http';
 import graphqlUpload from 'graphql-upload';
 import { Pool, PoolClient } from 'pg';
-import { graphileCache, closeAllCaches } from 'graphile-cache';
+import { graphileCache, closeAllCaches, configureGraphileCache } from 'graphile-cache';
 import { getPgPool } from 'pg-cache';
 import requestIp from 'request-ip';
 
@@ -25,13 +25,13 @@ import {
 import { createApiMiddleware } from './middleware/api';
 import { createAuthenticateMiddleware } from './middleware/auth';
 import { cors } from './middleware/cors';
-import { errorHandler, notFoundHandler } from './middleware/error-handler';
+import { createErrorHandler, notFoundHandler } from './middleware/error-handler';
 import { favicon } from './middleware/favicon';
 import { flush, flushService } from './middleware/flush';
 import { graphile } from './middleware/graphile';
 import { multipartBridge } from './middleware/multipart-bridge';
 import { createDebugDatabaseMiddleware } from './middleware/observability/debug-db';
-import { debugMemory } from './middleware/observability/debug-memory';
+import { createDebugMemoryMiddleware } from './middleware/observability/debug-memory';
 import { localObservabilityOnly } from './middleware/observability/guard';
 import { createRequestLogger } from './middleware/observability/request-logger';
 // Auth cookie handling is done via AuthCookiePlugin in grafserv
@@ -84,8 +84,9 @@ class Server {
   constructor(opts: ConstructiveOptions) {
     this.opts = getEnvOptions(opts);
     const effectiveOpts = this.opts;
-    const observabilityRequested = isGraphqlObservabilityRequested();
-    const observabilityEnabled = isGraphqlObservabilityEnabled(effectiveOpts.server?.host);
+    configureGraphileCache(effectiveOpts);
+    const observabilityRequested = isGraphqlObservabilityRequested(effectiveOpts);
+    const observabilityEnabled = isGraphqlObservabilityEnabled(effectiveOpts.server?.host, effectiveOpts);
 
     const app = express();
     const api = createApiMiddleware(effectiveOpts);
@@ -111,7 +112,7 @@ class Server {
 
     if (observabilityRequested && !observabilityEnabled) {
       const reasons = [];
-      if (!isDevelopmentObservabilityMode()) {
+      if (!isDevelopmentObservabilityMode(effectiveOpts)) {
         reasons.push('NODE_ENV must be development');
       }
       if (!isLoopbackHost(effectiveOpts.server?.host)) {
@@ -127,7 +128,11 @@ class Server {
 
     healthz(app);
     if (observabilityEnabled) {
-      app.get('/debug/memory', localObservabilityOnly, debugMemory);
+      app.get(
+        '/debug/memory',
+        localObservabilityOnly,
+        createDebugMemoryMiddleware(effectiveOpts.runtime?.nodeEnv),
+      );
       app.get('/debug/db', localObservabilityOnly, createDebugDatabaseMiddleware(effectiveOpts));
     } else {
       app.use('/debug', (_req, res) => {
@@ -138,7 +143,7 @@ class Server {
     trustProxy(app, effectiveOpts.server.trustProxy);
     // Warn if a global CORS override is set in production
     const fallbackOrigin = effectiveOpts.server?.origin?.trim();
-    if (fallbackOrigin && process.env.NODE_ENV === 'production') {
+    if (fallbackOrigin && effectiveOpts.runtime?.nodeEnv === 'production') {
       if (fallbackOrigin === '*') {
         log.warn(
           'CORS wildcard ("*") is enabled in production; this effectively disables CORS and is not recommended. Prefer per-API CORS via meta schema.',
@@ -165,14 +170,14 @@ class Server {
     app.use(api);
     app.use(authenticate);
     app.use(createContextMiddleware({ pg: effectiveOpts.pg }));
-    app.use(createCaptchaMiddleware());
+    app.use(createCaptchaMiddleware(effectiveOpts.captcha?.recaptchaSecretKey));
 
     // CSRF protection for cookie-authenticated requests
     // Skip CSRF for Bearer token auth (not vulnerable to CSRF) and anonymous requests
     const csrf = createCsrfMiddleware({
       cookieOptions: {
         httpOnly: false, // SPA clients need to read this via document.cookie
-        secure: process.env.NODE_ENV === 'production',
+        secure: effectiveOpts.runtime?.nodeEnv === 'production',
         sameSite: 'lax',
       },
     });
@@ -198,14 +203,19 @@ class Server {
 
     // LLM Agent REST API — mounted before graphile so SSE streaming
     // routes are handled without going through PostGraphile
-    app.use(createAgenticRouter());
+    app.use(
+      createAgenticRouter({
+        embedding: effectiveOpts.llm?.embedder,
+        chat: effectiveOpts.llm?.chat,
+      }),
+    );
 
     app.use(graphile(effectiveOpts));
     app.use(flush);
 
     // Error handling - MUST be LAST
     app.use(notFoundHandler); // Catches unmatched routes (404)
-    app.use(errorHandler); // Catches all thrown errors
+    app.use(createErrorHandler(effectiveOpts.runtime?.nodeEnv)); // Catches all thrown errors
 
     this.app = app;
     this.debugSampler = observabilityEnabled ? startDebugSampler(effectiveOpts) : null;

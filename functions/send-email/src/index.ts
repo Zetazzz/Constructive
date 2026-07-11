@@ -1,7 +1,10 @@
 import { createJobApp } from '@constructive-io/knative-job-fn';
 import { send as sendSmtp } from 'simple-smtp-server';
 import { send as sendPostmaster } from '@constructive-io/postmaster';
-import { parseEnvBoolean } from '@pgpmjs/env';
+import {
+  getConstructiveEnvOptions,
+  getSendEmailPort,
+} from '@constructive-io/graphql-env';
 import { createLogger } from '@pgpmjs/logger';
 
 type SimpleEmailPayload = {
@@ -27,8 +30,9 @@ const getRequiredField = (
   return value;
 };
 
-const isDryRun = parseEnvBoolean(process.env.SEND_EMAIL_DRY_RUN ?? process.env.SIMPLE_EMAIL_DRY_RUN) ?? false;
-const useSmtp = parseEnvBoolean(process.env.EMAIL_SEND_USE_SMTP) ?? false;
+const startupOptions = getConstructiveEnvOptions();
+const isDryRun = startupOptions.functions?.sendEmail?.dryRun ?? false;
+const useSmtp = startupOptions.functions?.useSmtp ?? false;
 const logger = createLogger('send-email');
 const app = createJobApp();
 
@@ -46,7 +50,10 @@ app.post('/', async (req: any, res: any, next: any) => {
       throw new Error("Either 'html' or 'text' must be provided");
     }
 
-    const fromEnv = useSmtp ? process.env.SMTP_FROM : process.env.MAILGUN_FROM;
+    const requestOptions = getConstructiveEnvOptions();
+    const fromEnv = useSmtp
+      ? requestOptions.smtp?.from
+      : requestOptions.mailgun?.from;
     const from = isNonEmptyString(payload.from)
       ? payload.from
       : isNonEmptyString(fromEnv)
@@ -63,7 +70,7 @@ app.post('/', async (req: any, res: any, next: any) => {
       from,
       replyTo,
       hasHtml: Boolean(html),
-      hasText: Boolean(text)
+      hasText: Boolean(text),
     };
 
     if (isDryRun) {
@@ -77,7 +84,7 @@ app.post('/', async (req: any, res: any, next: any) => {
         ...(html && { html }),
         ...(text && { text }),
         ...(from && { from }),
-        ...(replyTo && { replyTo })
+        ...(replyTo && { replyTo }),
       });
 
       logger.info('Sent email', logContext);
@@ -94,7 +101,7 @@ export default app;
 // When executed directly (e.g. `node dist/index.js` in Knative),
 // start an HTTP server on the provided PORT (default 8080).
 if (require.main === module) {
-  const port = Number(process.env.PORT ?? 8080);
+  const port = getSendEmailPort();
   // @constructive-io/knative-job-fn exposes a .listen method that delegates to the underlying Express app
   (app as any).listen(port, () => {
     logger.info(`listening on port ${port}`);

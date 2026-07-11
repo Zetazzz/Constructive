@@ -1,6 +1,7 @@
 import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
 import { BulkMutationPreset } from 'graphile-bulk-mutations';
 import type { GraphileConfig } from 'graphile-config';
+import type { ConstructiveOptions } from '@constructive-io/graphql-types';
 import { ConnectionFilterPreset } from 'graphile-connection-filter';
 import { I18nPreset } from 'graphile-i18n';
 import { createFolderOperatorFactory, GraphileLtreePreset } from 'graphile-ltree';
@@ -12,7 +13,7 @@ import { createMatchesOperatorFactory, createTrgmOperatorFactories,UnifiedSearch
 import { GraphileLlmPreset } from 'graphile-llm';
 import { UploadPreset } from 'graphile-upload-plugin';
 
-import { getBucketProvisionerConnection } from '../bucket-provisioner-resolver';
+import { createBucketProvisionerConnectionResolver } from '../bucket-provisioner-resolver';
 import {
   ConflictDetectorPreset,
   EnableAllFilterColumnsPreset,
@@ -25,8 +26,8 @@ import {
   PgTypeMappingsPreset,
   RequiredInputPreset
 } from '../plugins';
-import { createBucketNameResolver, createEnsureBucketProvisioned, getAllowedOrigins,getPresignedUrlS3Config } from '../presigned-url-resolver';
-import { constructiveUploadFieldDefinitions } from '../upload-resolver';
+import { createBucketNameResolver, createEnsureBucketProvisioned, createPresignedUrlS3ConfigResolver, getAllowedOrigins } from '../presigned-url-resolver';
+import { createConstructiveUploadFieldDefinitions } from '../upload-resolver';
 
 /**
  * Feature flags that control which optional Graphile plugins are included
@@ -123,7 +124,8 @@ const DEFAULTS: Required<ConstructivePresetOptions> = {
  * ```
  */
 export function createConstructivePreset(
-  options?: ConstructivePresetOptions
+  options?: ConstructivePresetOptions,
+  runtimeOptions?: Pick<ConstructiveOptions, 'cdn' | 'server' | 'runtime' | 'llm'>
 ): GraphileConfig.Preset {
   const opts = { ...DEFAULTS, ...options };
 
@@ -168,7 +170,7 @@ export function createConstructivePreset(
   if (opts.enableDirectUploads) {
     presets.push(
       UploadPreset({
-        uploadFieldDefinitions: constructiveUploadFieldDefinitions,
+        uploadFieldDefinitions: createConstructiveUploadFieldDefinitions(runtimeOptions),
         maxFileSize: 10 * 1024 * 1024 // 10MB
       })
     );
@@ -177,13 +179,13 @@ export function createConstructivePreset(
   if (opts.enablePresignedUploads) {
     presets.push(
       PresignedUrlPreset({
-        s3: getPresignedUrlS3Config,
-        resolveBucketName: createBucketNameResolver(),
-        ensureBucketProvisioned: createEnsureBucketProvisioned()
+        s3: createPresignedUrlS3ConfigResolver(runtimeOptions),
+        resolveBucketName: createBucketNameResolver(runtimeOptions),
+        ensureBucketProvisioned: createEnsureBucketProvisioned(runtimeOptions)
       }),
       BucketProvisionerPreset({
-        connection: getBucketProvisionerConnection,
-        allowedOrigins: getAllowedOrigins()
+        connection: createBucketProvisionerConnectionResolver(runtimeOptions),
+        allowedOrigins: getAllowedOrigins(runtimeOptions)
       })
     );
   }
@@ -205,7 +207,18 @@ export function createConstructivePreset(
   }
 
   if (opts.enableLlm) {
-    presets.push(GraphileLlmPreset());
+    const embedder = runtimeOptions?.llm?.embedder;
+    const chat = runtimeOptions?.llm?.chat;
+    presets.push(
+      GraphileLlmPreset({
+        ...(embedder?.provider && {
+          defaultEmbedder: { ...embedder, provider: embedder.provider }
+        }),
+        ...(chat?.provider && {
+          defaultChatCompleter: { ...chat, provider: chat.provider }
+        })
+      })
+    );
   }
 
   // ----- connectionFilterOperatorFactories -----

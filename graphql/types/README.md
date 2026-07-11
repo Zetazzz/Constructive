@@ -14,7 +14,7 @@
 
 GraphQL/Graphile types for the Constructive framework.
 
-This package contains TypeScript type definitions for PostGraphile/Graphile configuration used by Constructive server, explorer, and related packages.
+This package contains the complete typed Constructive configuration surface: PGPM composition, GraphQL/Graphile, HTTP server, storage, jobs, SMTP/Mailgun, functions, runtime switches, observability, codegen, and LLM settings.
 
 ## Installation
 
@@ -47,6 +47,10 @@ const config: ConstructiveOptions = {
     simpleInflection: true,
     postgis: true,
   },
+  server: {
+    host: 'localhost',
+    port: 3000,
+  },
 };
 ```
 
@@ -68,6 +72,4 @@ Configuration for the Constructive API including meta API settings, exposed sche
 
 Feature flags for GraphQL/Graphile including inflection settings and PostGIS support.
 
-## Re-exports
-
-This package re-exports all types from `@pgpmjs/types` for convenience, so you can import both core PGPM types and GraphQL types from a single package.
+The aggregate extends core `PgpmOptions`, but PGPM itself does not own GraphQL server, storage, jobs, email, functions, or provider configuration. Those types and defaults live here so `@constructive-io/graphql-env` can remain the single Constructive resolver without introducing additional env packages.

@@ -1,9 +1,9 @@
 /**
  * @constructive-io/llm-env — LLM Environment Configuration
  *
- * Single source of truth for all LLM-related environment variables and defaults.
- * Both graphile-llm and agentic-server import from here — no direct process.env
- * reads elsewhere.
+ * Compatibility facade over @constructive-io/graphql-env. The Constructive
+ * aggregate is the source of truth; this package preserves the historical
+ * `embedding` field used by graphile-llm and agentic-server.
  *
  * Follows the same conventions as @pgpmjs/env:
  *   - getEnvVars(env)    → raw env parser, no defaults, conditional spread
@@ -18,6 +18,12 @@
  *   CHAT_MODEL         - Chat model (default: 'llama3')
  *   CHAT_BASE_URL      - Chat provider URL (default: 'http://localhost:11434')
  */
+
+import {
+  getConstructiveEnvOptions,
+  getGraphQLEnvVars
+} from '@constructive-io/graphql-env';
+import { llmDefaults as constructiveLlmDefaults } from '@constructive-io/graphql-types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,16 +47,8 @@ export interface ResolvedLlmEnvOptions {
 // ─── Defaults ───────────────────────────────────────────────────────────────
 
 export const llmDefaults: ResolvedLlmEnvOptions = {
-  embedding: {
-    provider: 'ollama',
-    model: 'nomic-embed-text',
-    baseUrl: 'http://localhost:11434'
-  },
-  chat: {
-    provider: 'ollama',
-    model: 'llama3',
-    baseUrl: 'http://localhost:11434'
-  }
+  embedding: { ...constructiveLlmDefaults.embedder },
+  chat: { ...constructiveLlmDefaults.chat }
 };
 
 // ─── Env Parsing ────────────────────────────────────────────────────────────
@@ -64,30 +62,11 @@ export const llmDefaults: ResolvedLlmEnvOptions = {
  * @param env - Environment object to read from (defaults to process.env)
  */
 export const getEnvVars = (env: NodeJS.ProcessEnv = process.env): LlmEnvOptions => {
-  const {
-    EMBEDDER_PROVIDER,
-    EMBEDDER_MODEL,
-    EMBEDDER_BASE_URL,
-    CHAT_PROVIDER,
-    CHAT_MODEL,
-    CHAT_BASE_URL,
-  } = env;
+  const llm = getGraphQLEnvVars(env).llm;
 
   return {
-    ...((EMBEDDER_PROVIDER || EMBEDDER_MODEL || EMBEDDER_BASE_URL) && {
-      embedding: {
-        ...(EMBEDDER_PROVIDER && { provider: EMBEDDER_PROVIDER }),
-        ...(EMBEDDER_MODEL && { model: EMBEDDER_MODEL }),
-        ...(EMBEDDER_BASE_URL && { baseUrl: EMBEDDER_BASE_URL }),
-      },
-    }),
-    ...((CHAT_PROVIDER || CHAT_MODEL || CHAT_BASE_URL) && {
-      chat: {
-        ...(CHAT_PROVIDER && { provider: CHAT_PROVIDER }),
-        ...(CHAT_MODEL && { model: CHAT_MODEL }),
-        ...(CHAT_BASE_URL && { baseUrl: CHAT_BASE_URL }),
-      },
-    }),
+    ...(llm?.embedder && { embedding: llm.embedder }),
+    ...(llm?.chat && { chat: llm.chat })
   };
 };
 
@@ -106,18 +85,25 @@ export const getEnvOptions = (
   overrides: LlmEnvOptions = {},
   env: NodeJS.ProcessEnv = process.env
 ): ResolvedLlmEnvOptions => {
-  const envOptions = getEnvVars(env);
+  const resolved = getConstructiveEnvOptions(
+    {
+      llm: {
+        ...(overrides.embedding && { embedder: overrides.embedding }),
+        ...(overrides.chat && { chat: overrides.chat })
+      }
+    },
+    process.cwd(),
+    env
+  ).llm;
 
   return {
     embedding: {
       ...llmDefaults.embedding,
-      ...envOptions.embedding,
-      ...overrides.embedding,
+      ...resolved?.embedder
     },
     chat: {
       ...llmDefaults.chat,
-      ...envOptions.chat,
-      ...overrides.chat,
+      ...resolved?.chat
     },
   };
 };

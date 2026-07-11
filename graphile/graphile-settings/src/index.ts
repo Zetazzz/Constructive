@@ -59,7 +59,15 @@ export * from './presets/index';
 export { makePgService };
 
 // Presigned URL utilities
-export { getPresignedUrlS3Config } from './presigned-url-resolver';
+export {
+  getPresignedUrlS3Config,
+  createPresignedUrlS3ConfigResolver,
+  createBucketNameResolver,
+  createEnsureBucketProvisioned,
+  getAllowedOrigins,
+} from './presigned-url-resolver';
 
 // Bucket provisioner utilities
-export { getBucketProvisionerConnection } from './bucket-provisioner-resolver';
+export { getBucketProvisionerConnection, createBucketProvisionerConnectionResolver } from './bucket-provisioner-resolver';
+
+export { createConstructiveUploadFieldDefinitions } from './upload-resolver';

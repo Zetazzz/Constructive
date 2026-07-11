@@ -1,6 +1,7 @@
 // Main file type detector class with stream-focused API
 
 import { Readable } from 'stream';
+import { getNodeEnv } from '@constructive-io/graphql-env';
 
 import {
   detectCharset,
@@ -68,7 +69,7 @@ export class FileTypeDetector {
     } catch (error) {
       // Handle stream errors gracefully
       // Only log errors in non-test environments
-      if (process.env.NODE_ENV !== 'test') {
+      if (getNodeEnv() !== 'test') {
         console.error('Error detecting file type from stream:', error);
       }
       return null;
@@ -383,7 +384,7 @@ export class FileTypeDetector {
       return null;
     } catch (error) {
       // Only log errors in non-test environments
-      if (process.env.NODE_ENV !== 'test') {
+      if (getNodeEnv() !== 'test') {
         console.error('Error in detectWithFallback:', error);
       }
       return null;

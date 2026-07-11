@@ -3,6 +3,7 @@ import { createServer, type Server as HttpServer } from 'http';
 import type { AddressInfo } from 'net';
 import supertest from 'supertest';
 import { Server as GraphQLServer } from '@constructive-io/graphql-server';
+import { getTestEnvOptions } from '@constructive-io/graphql-env';
 import type { ConstructiveOptions } from '@constructive-io/graphql-types';
 import { createJobApp } from '@constructive-io/knative-job-fn';
 
@@ -40,11 +41,9 @@ const buildGraphqlClient = (
 };
 
 const getGraphqlClient = (): GraphqlClient => {
-  const rawUrl =
-    process.env.TEST_GRAPHQL_URL ||
-    process.env.GRAPHQL_URL ||
-    'http://localhost:3000/graphql';
-  const host = process.env.TEST_GRAPHQL_HOST || process.env.GRAPHQL_HOST;
+  const options = getTestEnvOptions();
+  const rawUrl = options.graphqlUrl ?? 'http://localhost:3000/graphql';
+  const host = options.graphqlHost;
 
   return buildGraphqlClient(rawUrl, host);
 };

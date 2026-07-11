@@ -31,6 +31,10 @@
   "devDependencies": {
     "makage": "^0.3.0"
   },
+  "dependencies": {
+    "@constructive-io/graphql-env": "workspace:^",
+    "@constructive-io/graphql-types": "workspace:^"
+  },
   "keywords": [
     "llm",
     "env",

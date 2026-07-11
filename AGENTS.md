@@ -66,23 +66,32 @@ This guide helps AI agents quickly navigate the Constructive monorepo. Construct
 
 ### Environment Configuration
 
-Always use the unified environment configuration system — never read `process.env` directly for config values.
+There are two configuration levels:
 
-- **PGPM packages** (`pgpm/*`): `import { getEnvOptions } from '@pgpmjs/env'`
-- **GraphQL/Constructive packages** (`graphql/*`, `packages/cli`): `import { getEnvOptions } from '@constructive-io/graphql-env'`
-- **PostgreSQL tools** (`postgres/*`): `import { getPgEnvOptions } from 'pg-env'` or `@pgpmjs/env`
+| Scope | Resolver | Guidance |
+|-------|----------|----------|
+| PGPM/PostgreSQL toolchain | `getPgpmEnvOptions()` from `@pgpmjs/env` | Canonical PGPM resolver. `getEnvOptions` is the same short-name alias but does not restore removed non-PGPM fields. |
+| Constructive application/runtime | `getConstructiveEnvOptions()` from `@constructive-io/graphql-env` | Complete view containing PGPM plus GraphQL, storage, jobs, SMTP/Mailgun, functions, runtime, Graphile, codegen, and LLM configuration. |
+| Constructive test harness | `getTestEnvOptions()` from `@constructive-io/graphql-env` | Test-only SMTP, GraphQL endpoint/credential, and database inputs. Keep secrets out of logs and snapshots. |
+| Low-level PostgreSQL utility | `getPgEnvOptions()` from `pg-env`, or `getPgpmEnvOptions()` when PGPM config-file merging is required | Choose the narrowest result the utility needs. |
 
-The system provides typed defaults, config file discovery (`pgpm.json`), env var parsing, and a clean merge hierarchy: **defaults → config file → env vars → runtime overrides**.
+`@pgpmjs/env` remains the lower layer and must never import `@constructive-io/graphql-env`. It projects defaults, config, environment, and overrides to PostgreSQL/PGPM-owned keys only. `@constructive-io/graphql-env` calls it and then adds all Constructive-owned groups; do not create another domain-specific env package.
+
+Constructive resolution uses **defaults → projected config section → environment variables → runtime overrides**. Arrays use replacement semantics. Required provider credentials and function URLs are validated lazily at the capability boundary, not while resolving the global object.
+
+`PORT` is context-sensitive. Use the process helper from `@constructive-io/graphql-env` so GraphQL (`3000`), email functions (`8080`), and the Knative example (`10101`) retain distinct defaults.
 
 ```typescript
-// GOOD
-import { getEnvOptions } from '@pgpmjs/env';
-const opts = getEnvOptions({ pg: { database: 'mydb' } });
+// GOOD: resolve once at a PGPM process root
+import { getPgpmEnvOptions } from '@pgpmjs/env';
+const opts = getPgpmEnvOptions({ pg: { database: 'mydb' } });
 
 // BAD — scattered, untyped, no defaults
 const host = process.env.PGHOST || 'localhost';
 const port = parseInt(process.env.PGPORT || '5432');
 ```
+
+The final ownership decision and variable inventory are recorded in [Environment Ownership Decision](docs/plan/environment-ownership-follow-up.md).
 
 ### Testing
 

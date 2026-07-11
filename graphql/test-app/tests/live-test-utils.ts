@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { QueryClient } from '@tanstack/react-query';
+import { getTestEnvOptions } from '@constructive-io/graphql-env';
 
 import { configure } from '../src/generated/hooks/client';
 import { createClient } from '../src/generated/orm';
@@ -26,10 +27,11 @@ function createDefaultCredentials(): { email: string; password: string } {
 }
 
 export function getLiveTestEnv(): LiveTestEnv | null {
-  const endpoint = process.env.GRAPHQL_TEST_ENDPOINT ?? DEFAULT_ENDPOINT;
+  const options = getTestEnvOptions();
+  const endpoint = options.liveGraphqlEndpoint ?? DEFAULT_ENDPOINT;
   const defaults = createDefaultCredentials();
-  const email = process.env.GRAPHQL_TEST_EMAIL ?? defaults.email;
-  const password = process.env.GRAPHQL_TEST_PASSWORD ?? defaults.password;
+  const email = options.liveGraphqlEmail ?? defaults.email;
+  const password = options.liveGraphqlPassword ?? defaults.password;
 
   return {
     endpoint,
@@ -49,7 +51,7 @@ export function assertLiveEnvConfigured(
   env: LiveTestEnv | null
 ): asserts env is LiveTestEnv {
   if (!env) {
-    if (process.env.GRAPHQL_TEST_LIVE_REQUIRED === '1') {
+    if (getTestEnvOptions().liveGraphqlRequired) {
       throw new Error(getLiveEnvHelpMessage());
     }
   }

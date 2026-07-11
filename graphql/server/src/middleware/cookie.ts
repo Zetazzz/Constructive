@@ -1,3 +1,5 @@
+import { getNodeEnv } from '@constructive-io/graphql-env';
+import type { ConstructiveNodeEnv } from '@constructive-io/graphql-types';
 import type { Request, Response } from 'express';
 import type { AuthSettings } from '../types';
 
@@ -20,7 +22,8 @@ export interface CookieConfig {
  */
 export const getSessionCookieConfig = (
   authSettings?: AuthSettings,
-  rememberMe = false
+  rememberMe = false,
+  nodeEnv: ConstructiveNodeEnv = getNodeEnv()
 ): CookieConfig => {
   const DEFAULT_MAX_AGE = 86400; // 24 hours
   let maxAge = DEFAULT_MAX_AGE;
@@ -33,7 +36,7 @@ export const getSessionCookieConfig = (
   }
 
   return {
-    secure: authSettings?.cookieSecure ?? process.env.NODE_ENV === 'production',
+    secure: authSettings?.cookieSecure ?? nodeEnv === 'production',
     sameSite: (authSettings?.cookieSamesite as 'strict' | 'lax' | 'none') ?? 'lax',
     domain: authSettings?.cookieDomain ?? undefined,
     httpOnly: authSettings?.cookieHttponly ?? true,
@@ -45,9 +48,12 @@ export const getSessionCookieConfig = (
 /**
  * Build cookie config for device token (long-lived, 90 days).
  */
-export const getDeviceTokenCookieConfig = (authSettings?: AuthSettings): CookieConfig => {
+export const getDeviceTokenCookieConfig = (
+  authSettings?: AuthSettings,
+  nodeEnv: ConstructiveNodeEnv = getNodeEnv()
+): CookieConfig => {
   return {
-    secure: authSettings?.cookieSecure ?? process.env.NODE_ENV === 'production',
+    secure: authSettings?.cookieSecure ?? nodeEnv === 'production',
     sameSite: (authSettings?.cookieSamesite as 'strict' | 'lax' | 'none') ?? 'lax',
     domain: authSettings?.cookieDomain ?? undefined,
     httpOnly: true,

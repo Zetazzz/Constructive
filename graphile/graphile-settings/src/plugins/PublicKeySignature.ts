@@ -5,6 +5,8 @@ import type { GraphileConfig } from 'graphile-config';
 import { extendSchema, gql } from 'graphile-utils';
 import { QuoteUtils } from '@pgsql/quotes';
 import pgQueryWithContext from 'pg-query-context';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
+import type { GraphileRuntimeOptions } from '@constructive-io/graphql-types';
 
 export interface PublicKeyChallengeConfig {
   schema: string;
@@ -36,9 +38,13 @@ function validateCryptoNetwork(name: string): void {
 const MAX_PUBLIC_KEY_LENGTH = 256;
 const MAX_MESSAGE_LENGTH = 4096;
 const MAX_SIGNATURE_LENGTH = 1024;
-const ENABLE_SIGNATURE_VERIFICATION = process.env.ENABLE_SIGNATURE_VERIFICATION === 'true';
-
-export const PublicKeySignature = (pubkey_challenge: PublicKeyChallengeConfig): GraphileConfig.Plugin => {
+export const PublicKeySignature = (
+  pubkey_challenge: PublicKeyChallengeConfig,
+  runtimeOptions?: GraphileRuntimeOptions
+): GraphileConfig.Plugin => {
+  const enableSignatureVerification =
+    (runtimeOptions ?? getConstructiveEnvOptions().graphileRuntime)
+      ?.signatureVerification ?? false;
   const {
     schema,
     crypto_network,
@@ -188,7 +194,7 @@ export const PublicKeySignature = (pubkey_challenge: PublicKeyChallengeConfig): 
               throw new Error('INVALID_SIGNATURE');
             }
 
-            if (!ENABLE_SIGNATURE_VERIFICATION) {
+            if (!enableSignatureVerification) {
               // Fail closed without mutating lockout counters while verification
               // is disabled.
               throw new Error('FEATURE_DISABLED');

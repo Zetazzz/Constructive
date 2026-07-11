@@ -8,9 +8,9 @@ import {
   getJobSupported,
   getJobsCallbackPort,
   getSchedulerHostname,
-  getWorkerHostname
+  getWorkerHostname,
 } from '@constructive-io/job-utils';
-import { parseEnvBoolean } from '@pgpmjs/env';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
 import { Logger } from '@pgpmjs/logger';
 import retry from 'async-retry';
 import { Client } from 'pg';
@@ -23,7 +23,7 @@ import {
   FunctionName,
   FunctionServiceConfig,
   FunctionsOptions,
-  StartedFunction
+  StartedFunction,
 } from './types';
 
 type FunctionRegistryEntry = {
@@ -34,12 +34,12 @@ type FunctionRegistryEntry = {
 const functionRegistry: Record<FunctionName, FunctionRegistryEntry> = {
   'send-email': {
     moduleName: '@constructive-io/send-email-fn',
-    defaultPort: 8081
+    defaultPort: 8081,
   },
   'send-verification-link': {
     moduleName: '@constructive-io/send-verification-link-fn',
-    defaultPort: 8082
-  }
+    defaultPort: 8082,
+  },
 };
 
 const log = new Logger('knative-job-service');
@@ -60,11 +60,15 @@ const loadFunctionApp = (moduleName: string) => {
   const moduleId = requireFn.resolve(moduleName);
   delete requireFn.cache[moduleId];
 
-  const mod = requireFn(moduleName) as { default?: { listen: (port: number, cb?: () => void) => unknown } };
+  const mod = requireFn(moduleName) as {
+    default?: { listen: (port: number, cb?: () => void) => unknown };
+  };
   const app = mod.default ?? mod;
 
   if (!app || typeof (app as { listen?: unknown }).listen !== 'function') {
-    throw new Error(`Function module "${moduleName}" does not export a listenable app.`);
+    throw new Error(
+      `Function module "${moduleName}" does not export a listenable app.`
+    );
   }
 
   return app as { listen: (port: number, cb?: () => void) => unknown };
@@ -83,7 +87,7 @@ const normalizeFunctionServices = (
 
   if (!options?.services?.length) {
     return Object.keys(functionRegistry).map((name) => ({
-      name: name as FunctionName
+      name: name as FunctionName,
     }));
   }
 
@@ -118,7 +122,9 @@ const startFunction = async (
     const server = app.listen(port, () => {
       log.info(`function:${service.name} listening on ${port}`);
       resolve();
-    }) as HttpServer & { on?: (event: string, cb: (err: Error) => void) => void };
+    }) as HttpServer & {
+      on?: (event: string, cb: (err: Error) => void) => void;
+    };
 
     if (server?.on) {
       server.on('error', (err) => {
@@ -200,7 +206,7 @@ export class KnativeJobsSvc {
   private started = false;
   private result: KnativeJobsSvcResult = {
     functions: [],
-    jobs: false
+    jobs: false,
   };
   private functionServers = new Map<FunctionName, HttpServer>();
   private jobsHttpServer?: HttpServer;
@@ -217,7 +223,7 @@ export class KnativeJobsSvc {
     this.started = true;
     this.result = {
       functions: [],
-      jobs: false
+      jobs: false,
     };
 
     if (shouldEnableFunctions(this.options.functions)) {
@@ -274,12 +280,12 @@ export class KnativeJobsSvc {
     this.worker = new Worker({
       pgPool,
       tasks,
-      workerId: getWorkerHostname()
+      workerId: getWorkerHostname(),
     });
     this.scheduler = new Scheduler({
       pgPool,
       tasks,
-      workerId: getSchedulerHostname()
+      workerId: getSchedulerHostname(),
     });
 
     this.jobsPoolManager = poolManager;
@@ -289,81 +295,44 @@ export class KnativeJobsSvc {
   }
 }
 
-const parseList = (value?: string): string[] => {
-  if (!value) return [];
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
-
-const parsePortMap = (value?: string): Record<string, number> => {
-  if (!value) return {};
-
-  const trimmed = value.trim();
-  if (!trimmed) return {};
-
-  if (trimmed.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(trimmed) as Record<string, number>;
-      return Object.entries(parsed).reduce<Record<string, number>>((acc, [key, port]) => {
-        const portNumber = Number(port);
-        if (Number.isFinite(portNumber)) {
-          acc[key] = portNumber;
-        }
-        return acc;
-      }, {});
-    } catch {
-      return {};
-    }
-  }
-
-  return trimmed.split(',').reduce<Record<string, number>>((acc, pair) => {
-    const [rawName, rawPort] = pair.split(/[:=]/).map((item) => item.trim());
-    const port = Number(rawPort);
-    if (rawName && Number.isFinite(port)) {
-      acc[rawName] = port;
-    }
-    return acc;
-  }, {});
-};
-
 const buildFunctionsOptionsFromEnv = (): KnativeJobsSvcOptions['functions'] => {
-  const rawFunctions = (process.env.CONSTRUCTIVE_FUNCTIONS || '').trim();
-  if (!rawFunctions) return undefined;
+  const knative = getConstructiveEnvOptions().knative;
+  const functions = knative?.functions;
+  if (!functions) return undefined;
 
-  const portMap = parsePortMap(process.env.CONSTRUCTIVE_FUNCTION_PORTS);
-  const normalized = rawFunctions.toLowerCase();
-
-  if (normalized === 'all' || normalized === '*') {
+  if (functions === 'all') {
     return { enabled: true };
   }
 
-  const names = parseList(rawFunctions) as FunctionName[];
+  const names = functions as FunctionName[];
   if (!names.length) return undefined;
 
   const services: FunctionServiceConfig[] = names.map((name) => ({
     name,
-    port: portMap[name]
+    port: knative?.functionPorts?.[name],
   }));
 
   return {
     enabled: true,
-    services
+    services,
   };
 };
 
-export const buildKnativeJobsSvcOptionsFromEnv = (): KnativeJobsSvcOptions => ({
-  jobs: {
-    enabled: parseEnvBoolean(process.env.CONSTRUCTIVE_JOBS_ENABLED) ?? true
-  },
-  functions: buildFunctionsOptionsFromEnv()
-});
-
-export const startKnativeJobsSvcFromEnv = async (): Promise<KnativeJobsSvcResult> => {
-  const server = new KnativeJobsSvc(buildKnativeJobsSvcOptionsFromEnv());
-  return server.start();
+export const buildKnativeJobsSvcOptionsFromEnv = (): KnativeJobsSvcOptions => {
+  const knative = getConstructiveEnvOptions().knative;
+  return {
+    jobs: {
+      enabled: knative?.jobsEnabled ?? true,
+    },
+    functions: buildFunctionsOptionsFromEnv(),
+  };
 };
+
+export const startKnativeJobsSvcFromEnv =
+  async (): Promise<KnativeJobsSvcResult> => {
+    const server = new KnativeJobsSvc(buildKnativeJobsSvcOptionsFromEnv());
+    return server.start();
+  };
 
 export const startJobsServices = () => {
   log.info('starting jobs services...');
@@ -379,13 +348,13 @@ export const startJobsServices = () => {
     const worker = new Worker({
       pgPool,
       workerId: getWorkerHostname(),
-      tasks
+      tasks,
     });
 
     const scheduler = new Scheduler({
       pgPool,
       workerId: getSchedulerHostname(),
-      tasks
+      tasks,
     });
 
     worker.listen();
@@ -405,7 +374,7 @@ export const waitForJobsPrereqs = async (): Promise<void> => {
       port: cfg.port,
       user: cfg.user,
       password: cfg.password,
-      database: cfg.database
+      database: cfg.database,
     });
     await client.connect();
     const schema = getJobSchema();
@@ -428,7 +397,7 @@ export const bootJobs = async (): Promise<void> => {
     },
     {
       retries: 10,
-      factor: 2
+      factor: 2,
     }
   );
 
@@ -447,7 +416,7 @@ export const bootJobs = async (): Promise<void> => {
     supportedTasks: getJobSupported(),
     jobsEnabled: options.jobs?.enabled ?? true,
     functionsEnabled: shouldEnableFunctions(options.functions),
-    functions: normalizeFunctionServices(options.functions).map(s => s.name)
+    functions: normalizeFunctionServices(options.functions).map((s) => s.name),
   });
 
   if (options.jobs?.enabled === false) {

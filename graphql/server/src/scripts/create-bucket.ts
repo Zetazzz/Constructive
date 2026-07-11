@@ -2,22 +2,21 @@
 
 import { createS3Client, createS3Bucket } from '@constructive-io/s3-utils';
 import type { StorageProvider } from '@constructive-io/s3-utils';
-import { getEnvOptions } from '@constructive-io/graphql-env';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
 import { Logger } from '@pgpmjs/logger';
 
 const log = new Logger('create-bucket');
 
 (async () => {
   try {
-    const opts = getEnvOptions();
-    const { cdn } = opts;
+    const cdn = getConstructiveEnvOptions().cdn ?? {};
 
-    const provider = (cdn?.provider || 'minio') as StorageProvider;
-    const bucket = cdn?.bucketName || 'test-bucket';
-    const region = cdn?.awsRegion || 'us-east-1';
-    const accessKey = cdn?.awsAccessKey || 'minioadmin';
-    const secretKey = cdn?.awsSecretKey || 'minioadmin';
-    const endpoint = cdn?.endpoint || 'http://localhost:9000';
+    const provider = (cdn.provider || 'minio') as StorageProvider;
+    const bucket = cdn.bucketName || 'test-bucket';
+    const region = cdn.awsRegion || 'us-east-1';
+    const accessKey = cdn.awsAccessKey || 'minioadmin';
+    const secretKey = cdn.awsSecretKey || 'minioadmin';
+    const endpoint = cdn.endpoint || 'http://localhost:9000';
 
     const client = createS3Client({
       provider,

@@ -1,7 +1,7 @@
 /**
  * Upload resolver for the Constructive upload plugin.
  *
- * Reads CDN/S3/MinIO configuration from environment variables (via getEnvOptions)
+ * Reads CDN/S3/MinIO configuration through the Constructive env resolver
  * and streams uploaded files to the configured storage backend.
  *
  * Lazily initializes the S3 streamer on first upload to avoid requiring
@@ -17,8 +17,9 @@
  */
 
 import Streamer from '@constructive-io/s3-streamer';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
+import type { ConstructiveOptions } from '@constructive-io/graphql-types';
 import uploadNames from '@constructive-io/upload-names';
-import { getEnvOptions } from '@constructive-io/graphql-env';
 import { Logger } from '@pgpmjs/logger';
 import { randomBytes } from 'crypto';
 import type {
@@ -30,43 +31,52 @@ import type {
 const log = new Logger('upload-resolver');
 const DEFAULT_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/svg+xml'];
 
-let streamer: Streamer | null = null;
-let bucketName: string;
+type UploadRuntimeOptions = Pick<ConstructiveOptions, 'cdn' | 'runtime'>;
+const uploadDefinitions = new WeakMap<
+	UploadRuntimeOptions,
+	UploadFieldDefinition[]
+>();
 
-function getStreamer(): Streamer {
-	if (streamer) return streamer;
+function createUploadResolver(runtimeOptions?: UploadRuntimeOptions) {
+	let streamer: Streamer | null = null;
+	let bucketName: string;
 
-	const opts = getEnvOptions();
-	const cdn = opts.cdn || {};
+	function getStreamer(): Streamer {
+		if (streamer) return streamer;
 
-	const provider = cdn.provider || 'minio';
-	bucketName = cdn.bucketName || 'test-bucket';
-	const awsRegion = cdn.awsRegion || 'us-east-1';
-	const awsAccessKey = cdn.awsAccessKey || 'minioadmin';
-	const awsSecretKey = cdn.awsSecretKey || 'minioadmin';
-	const endpoint = cdn.endpoint || 'http://localhost:9000';
+		const options = runtimeOptions ?? getConstructiveEnvOptions();
+		const cdn = options.cdn ?? {};
 
-	if (process.env.NODE_ENV === 'production') {
-		if (!cdn.awsAccessKey || !cdn.awsSecretKey) {
-			log.warn('[upload-resolver] WARNING: Using default credentials in production.');
+		const provider = cdn.provider || 'minio';
+		bucketName = cdn.bucketName || 'test-bucket';
+		const awsRegion = cdn.awsRegion || 'us-east-1';
+		const awsAccessKey = cdn.awsAccessKey || 'minioadmin';
+		const awsSecretKey = cdn.awsSecretKey || 'minioadmin';
+		const endpoint = cdn.endpoint || 'http://localhost:9000';
+
+		if (options.runtime?.nodeEnv === 'production') {
+			if (!cdn.awsAccessKey || !cdn.awsSecretKey) {
+				log.warn(
+					'[upload-resolver] WARNING: Using default credentials in production.',
+				);
+			}
 		}
+
+		log.info(
+			`[upload-resolver] Initializing: provider=${provider} bucket=${bucketName}`,
+		);
+
+		streamer = new Streamer({
+			defaultBucket: bucketName,
+			awsRegion,
+			awsSecretKey,
+			awsAccessKey,
+			endpoint,
+			provider,
+		});
+
+		return streamer;
 	}
-
-	log.info(
-		`[upload-resolver] Initializing: provider=${provider} bucket=${bucketName}`,
-	);
-
-	streamer = new Streamer({
-		defaultBucket: bucketName,
-		awsRegion,
-		awsSecretKey,
-		awsAccessKey,
-		endpoint,
-		provider,
-	});
-
-	return streamer;
-}
 
 /**
  * Generates a randomized storage key from a filename.
@@ -87,7 +97,7 @@ function generateKey(filename: string): string {
  * MIME validation happens before persistence: content type is detected from
  * stream bytes, validated against smart-tag/type rules, and only then uploaded.
  */
-async function uploadResolver(
+	return async function uploadResolver(
 	upload: FileUpload,
 	_args: unknown,
 	_context: unknown,
@@ -141,6 +151,7 @@ async function uploadResolver(
 		default:
 			return url;
 	}
+	};
 }
 
 /**
@@ -156,7 +167,16 @@ async function uploadResolver(
  * These domain types are part of the platform's core type system, deployed
  * to every application database. They rarely change, so this config is stable.
  */
-export const constructiveUploadFieldDefinitions: UploadFieldDefinition[] = [
+export const createConstructiveUploadFieldDefinitions = (
+	options?: UploadRuntimeOptions,
+): UploadFieldDefinition[] => {
+	if (options) {
+		const cached = uploadDefinitions.get(options);
+		if (cached) return cached;
+	}
+
+	const uploadResolver = createUploadResolver(options);
+	const definitions: UploadFieldDefinition[] = [
 	{
 		name: 'image',
 		namespaceName: 'public',
@@ -175,4 +195,10 @@ export const constructiveUploadFieldDefinitions: UploadFieldDefinition[] = [
 		type: 'attachment',
 		resolve: uploadResolver,
 	},
-];
+	];
+	if (options) uploadDefinitions.set(options, definitions);
+	return definitions;
+};
+
+export const constructiveUploadFieldDefinitions =
+	createConstructiveUploadFieldDefinitions();

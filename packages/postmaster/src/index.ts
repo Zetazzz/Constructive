@@ -1,24 +1,10 @@
 import Mailgun from 'mailgun.js';
 import type { MailgunMessageData } from 'mailgun.js';
 import FormData from 'form-data';
-import { str, email, host, env, cleanEnv } from '12factor-env';
-import type { CleanedEnv, ValidatorSpec } from '12factor-env';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
+import type { MailgunOptions } from '@constructive-io/graphql-types';
 
-/**
- * Mailgun configuration options
- */
-export interface MailgunOptions {
-  /** Mailgun API key */
-  key?: string;
-  /** Mailgun domain (e.g., 'mg.example.com') */
-  domain?: string;
-  /** Default sender email address */
-  from?: string;
-  /** Default reply-to email address */
-  replyTo?: string;
-  /** Development email address - when set, all emails are redirected to this address */
-  devEmail?: string;
-}
+export type { MailgunOptions } from '@constructive-io/graphql-types';
 
 type SendInput = {
   to: string | string[];
@@ -31,58 +17,21 @@ type SendInput = {
 
 type MailgunClient = ReturnType<Mailgun['client']>;
 
-// Lazy validation - env vars are validated on first use, not at module load time
-// This allows the module to be imported without env vars being set (useful for testing)
-type EnvConfig = {
-  MAILGUN_KEY: string;
-  MAILGUN_DOMAIN?: string;
-  MAILGUN_FROM?: string;
-  MAILGUN_REPLY?: string;
-};
-
-let cachedEnvConfig: EnvConfig | undefined;
-
-const getEnvConfig = (): EnvConfig => {
-  if (cachedEnvConfig) {
-    return cachedEnvConfig;
-  }
-  
-  cachedEnvConfig = env(
-    process.env,
-    {
-      MAILGUN_KEY: str()
-    },
-    {
-      MAILGUN_DOMAIN: host(),
-      MAILGUN_FROM: email(),
-      MAILGUN_REPLY: email()
-    }
-  ) as unknown as EnvConfig;
-  
-  return cachedEnvConfig;
-};
-
-// MAILGUN_DEV_EMAIL is read directly from process.env (not validated by 12factor-env)
-// to match the original behavior where it was accessed but not in the env validation
-const getEnvOptions = (): MailgunOptions => {
-  const envConfig = getEnvConfig();
-  return {
-    key: envConfig.MAILGUN_KEY,
-    domain: envConfig.MAILGUN_DOMAIN,
-    from: envConfig.MAILGUN_FROM,
-    replyTo: envConfig.MAILGUN_REPLY,
-    devEmail: process.env.MAILGUN_DEV_EMAIL
-  };
-};
+// Resolve on first actual send. Provider-specific required fields remain lazily
+// validated below, so importing this package never requires Mailgun credentials.
+const getEnvOptions = (): MailgunOptions =>
+  getConstructiveEnvOptions().mailgun ?? {};
 
 let client: MailgunClient | undefined;
 let cachedMailgunOpts: MailgunOptions | undefined;
 
-const getClient = (overrides?: MailgunOptions): { client: MailgunClient; mailgunOpts: MailgunOptions } => {
+const getClient = (
+  overrides?: MailgunOptions
+): { client: MailgunClient; mailgunOpts: MailgunOptions } => {
   const envOpts = getEnvOptions();
   const mailgunOpts: MailgunOptions = {
     ...envOpts,
-    ...overrides
+    ...overrides,
   };
 
   if (!client || overrides) {
@@ -96,7 +45,7 @@ const getClient = (overrides?: MailgunOptions): { client: MailgunClient; mailgun
     const mailgun = new Mailgun(FormData);
     client = mailgun.client({
       username: 'api',
-      key: mailgunOpts.key
+      key: mailgunOpts.key,
     });
     cachedMailgunOpts = mailgunOpts;
   }
@@ -104,15 +53,23 @@ const getClient = (overrides?: MailgunOptions): { client: MailgunClient; mailgun
   return { client, mailgunOpts: cachedMailgunOpts ?? mailgunOpts };
 };
 
-const resolveFrom = (from: string | undefined, mailgunOpts: MailgunOptions): string => {
+const resolveFrom = (
+  from: string | undefined,
+  mailgunOpts: MailgunOptions
+): string => {
   const resolved = from ?? mailgunOpts.from;
   if (!resolved) {
-    throw new Error('Missing from address. Set MAILGUN_FROM or pass from in send().');
+    throw new Error(
+      'Missing from address. Set MAILGUN_FROM or pass from in send().'
+    );
   }
   return resolved;
 };
 
-const resolveRecipient = (to: string | string[], mailgunOpts: MailgunOptions): string | string[] => {
+const resolveRecipient = (
+  to: string | string[],
+  mailgunOpts: MailgunOptions
+): string | string[] => {
   const devEmail = mailgunOpts.devEmail;
   if (!devEmail) {
     return to;
@@ -120,14 +77,17 @@ const resolveRecipient = (to: string | string[], mailgunOpts: MailgunOptions): s
 
   const [localPart, domainPart] = devEmail.split('@');
   const recipients = Array.isArray(to) ? to : [to];
-  
-  return recipients.map(recipient => {
+
+  return recipients.map((recipient) => {
     const encodedRecipient = recipient.replace('@', '_at_');
     return `${localPart}+${encodedRecipient}@${domainPart}`;
   });
 };
 
-export const send = async (options: SendInput, mailgunOverrides?: MailgunOptions): Promise<void> => {
+export const send = async (
+  options: SendInput,
+  mailgunOverrides?: MailgunOptions
+): Promise<void> => {
   if (!options.to) {
     throw new Error('Missing "to"');
   }
@@ -152,7 +112,7 @@ export const send = async (options: SendInput, mailgunOverrides?: MailgunOptions
     subject: options.subject,
     ...(options.html && { html: options.html }),
     ...(options.text && { text: options.text }),
-    ...(replyTo && { 'h:Reply-To': replyTo })
+    ...(replyTo && { 'h:Reply-To': replyTo }),
   };
 
   await mailgunClient.messages.create(mailgunOpts.domain!, messageData);
@@ -161,7 +121,6 @@ export const send = async (options: SendInput, mailgunOverrides?: MailgunOptions
 export const resetClient = (): void => {
   client = undefined;
   cachedMailgunOpts = undefined;
-  cachedEnvConfig = undefined;
 };
 
 export type { SendInput as SendOptions };

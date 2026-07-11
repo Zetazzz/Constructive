@@ -1,4 +1,5 @@
 import { Logger } from '@pgpmjs/logger';
+import { getNodeEnv } from '@constructive-io/graphql-env';
 import { LRUCache } from 'lru-cache';
 import { QuoteUtils } from '@pgsql/quotes';
 import type { StorageModuleConfig, BucketConfig } from './types';
@@ -10,7 +11,8 @@ const DEFAULT_UPLOAD_URL_EXPIRY_SECONDS = 900; // 15 minutes
 const DEFAULT_DOWNLOAD_URL_EXPIRY_SECONDS = 3600; // 1 hour
 const DEFAULT_MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 const DEFAULT_MAX_FILENAME_LENGTH = 1024;
-const DEFAULT_CACHE_TTL_SECONDS = process.env.NODE_ENV === 'development' ? 300 : 3600;
+const isDevelopment = getNodeEnv() === 'development';
+const DEFAULT_CACHE_TTL_SECONDS = isDevelopment ? 300 : 3600;
 const DEFAULT_MAX_BULK_FILES = 100;
 const DEFAULT_MAX_BULK_TOTAL_SIZE = 1073741824; // 1GB
 
@@ -29,7 +31,7 @@ const ONE_HOUR_MS = 1000 * 60 * 60;
  */
 const storageModuleCache = new LRUCache<string, StorageModuleConfig>({
   max: 50,
-  ttl: process.env.NODE_ENV === 'development' ? FIVE_MINUTES_MS : ONE_HOUR_MS,
+  ttl: isDevelopment ? FIVE_MINUTES_MS : ONE_HOUR_MS,
   updateAgeOnGet: true,
 });
 
@@ -397,7 +399,7 @@ export function resolveStorageConfigFromCodec(
  */
 const bucketCache = new LRUCache<string, BucketConfig>({
   max: 500, // many buckets across many databases
-  ttl: process.env.NODE_ENV === 'development' ? FIVE_MINUTES_MS : ONE_HOUR_MS,
+  ttl: isDevelopment ? FIVE_MINUTES_MS : ONE_HOUR_MS,
   updateAgeOnGet: true,
 });
 

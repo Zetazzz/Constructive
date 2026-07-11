@@ -1,6 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import { getEnvOptions } from '@pgpmjs/env';
 import { createS3Bucket } from '@constructive-io/s3-utils';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
 import { createReadStream } from 'fs';
 import { sync as glob } from 'glob';
 import { basename } from 'path';
@@ -9,19 +9,23 @@ import { getClient, Streamer, upload } from '../src';
 import type { AsyncUploadResult } from '../src/utils';
 
 // Use Constructive defaults with optional overrides
-const config = getEnvOptions({
-  cdn: {
-    bucketName: 'test-bucket'
-  }
-});
+const config = getConstructiveEnvOptions({
+  cdn: { bucketName: 'test-bucket' }
+}).cdn ?? {};
 
 const {
-  bucketName: BUCKET_NAME,
-  awsRegion: AWS_REGION,
-  awsSecretKey: AWS_SECRET_KEY,
-  awsAccessKey: AWS_ACCESS_KEY,
-  endpoint: ENDPOINT
-} = config.cdn;
+  bucketName: configuredBucketName,
+  awsRegion: configuredRegion,
+  awsSecretKey: configuredSecretKey,
+  awsAccessKey: configuredAccessKey,
+  endpoint: configuredEndpoint
+} = config;
+
+const BUCKET_NAME = configuredBucketName ?? 'test-bucket';
+const AWS_REGION = configuredRegion ?? 'us-east-1';
+const AWS_SECRET_KEY = configuredSecretKey ?? 'minioadmin';
+const AWS_ACCESS_KEY = configuredAccessKey ?? 'minioadmin';
+const ENDPOINT = configuredEndpoint ?? 'http://localhost:9000';
 
 // Initialize S3 client
 const s3Client = new S3Client({

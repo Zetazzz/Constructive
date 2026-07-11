@@ -1,3 +1,4 @@
+import { getNodeEnv } from '@constructive-io/graphql-env';
 import { OAuthClient } from '../oauth-client';
 import { OAuthClientConfig, OAuthProfile, createOAuthError } from '../types';
 import { generateState, verifyState } from '../utils/state';
@@ -64,7 +65,7 @@ export function createOAuthMiddleware(config: OAuthMiddlewareConfig): OAuthRoute
 
       res.cookie(clientConfig.stateCookieName!, state, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: getNodeEnv() === 'production',
         maxAge: (clientConfig.stateCookieMaxAge || 600) * 1000,
         sameSite: 'lax',
       });

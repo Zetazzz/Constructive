@@ -1,14 +1,15 @@
 # Environment Configuration with @pgpmjs/env
 
-Unified environment configuration for PGPM and Constructive projects. Provides config file discovery, environment variable parsing, and hierarchical option merging.
+Environment configuration for the PGPM and PostgreSQL toolchain. It provides PGPM config-file discovery, PGPM-owned environment parsing, and hierarchical option merging. It is not the universal runtime configuration package for Constructive.
 
 ## When to Apply
 
 Use this skill when:
+
 - Configuring PostgreSQL connections programmatically
 - Setting up PGPM environment options
 - Managing database configuration across environments
-- Writing code that needs consistent environment handling
+- Writing PGPM tooling that needs config-file and environment merging
 
 ## Installation
 
@@ -29,24 +30,28 @@ Options are merged in this order (later overrides earlier):
 
 ## Basic Usage
 
-### getEnvOptions()
+### getPgpmEnvOptions()
 
 Get merged PGPM options:
 
 ```typescript
-import { getEnvOptions } from '@pgpmjs/env';
+import { getPgpmEnvOptions } from '@pgpmjs/env';
 
-const options = getEnvOptions();
+const options = getPgpmEnvOptions();
 // Returns merged options from defaults + config + env vars
 
 // With runtime overrides
-const options = getEnvOptions({
+const databaseOptions = getPgpmEnvOptions({
   pg: { database: 'mydb' }
 });
 
 // With custom working directory
-const options = getEnvOptions({}, '/path/to/project');
+const projectOptions = getPgpmEnvOptions({}, '/path/to/project');
 ```
+
+`getPgpmEnvOptions()` is the canonical name. `getEnvOptions` remains the exact same function reference as a short-name alias; it does not preserve the removed non-PGPM result fields. Do not introduce new PGPM code with the generic alias.
+
+The resolver projects defaults, config-file content, environment values, and runtime overrides to PGPM-owned keys. GraphQL server, storage, jobs, and SMTP sections do not appear in its result.
 
 ### getConnEnvOptions()
 
@@ -96,9 +101,6 @@ const deployOptions = getDeploymentEnvOptions();
 
 | Variable | Description |
 |----------|-------------|
-| `DB_CONNECTION_USER` | App connection user |
-| `DB_CONNECTION_PASSWORD` | App connection password |
-| `DB_CONNECTION_ROLE` | App connection role |
 | `DB_CONNECTIONS_APP_USER` | App-level user |
 | `DB_CONNECTIONS_APP_PASSWORD` | App-level password |
 | `DB_CONNECTIONS_ADMIN_USER` | Admin-level user |
@@ -113,38 +115,13 @@ const deployOptions = getDeploymentEnvOptions();
 | `DEPLOYMENT_USE_PLAN` | Use deployment plan |
 | `DEPLOYMENT_CACHE` | Enable deployment caching |
 | `DEPLOYMENT_TO_CHANGE` | Deploy to specific change |
+| `DEPLOYMENT_HASH_METHOD` | Deployment hash method: `content` or `ast` |
 
-### Server Configuration
-
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Server port |
-| `SERVER_HOST` | Server host |
-| `SERVER_TRUST_PROXY` | Trust proxy headers |
-| `SERVER_ORIGIN` | Server origin URL |
-| `SERVER_STRICT_AUTH` | Strict authentication mode |
-
-### CDN/Storage
+### Migration Options
 
 | Variable | Description |
 |----------|-------------|
-| `BUCKET_PROVIDER` | Storage provider (s3, minio) |
-| `BUCKET_NAME` | Bucket name |
-| `AWS_REGION` | AWS region |
-| `AWS_ACCESS_KEY_ID` | AWS access key |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key |
-| `MINIO_ENDPOINT` | MinIO endpoint URL |
-
-### Jobs Configuration
-
-| Variable | Description |
-|----------|-------------|
-| `JOBS_SCHEMA` | Schema for job tables |
-| `JOBS_SUPPORT_ANY` | Support any job type |
-| `JOBS_SUPPORTED` | Comma-separated supported job types |
-| `INTERNAL_GATEWAY_URL` | Internal gateway URL |
-| `INTERNAL_JOBS_CALLBACK_URL` | Jobs callback URL |
-| `INTERNAL_JOBS_CALLBACK_PORT` | Jobs callback port |
+| `MIGRATIONS_CODEGEN_USE_TX` | Use a transaction for migration code generation |
 
 ### Error Output
 
@@ -154,7 +131,21 @@ const deployOptions = getDeploymentEnvOptions();
 | `PGPM_ERROR_MAX_LENGTH` | Max error message length |
 | `PGPM_ERROR_VERBOSE` | Verbose error output |
 
+## Choose the Resolver Level
+
+`@pgpmjs/env` owns only PGPM/PostgreSQL configuration. Constructive runtime configuration is intentionally centralized one level above it:
+
+| Need | Entry point |
+|------|-------------|
+| Full Constructive application or runtime | `getConstructiveEnvOptions()` from `@constructive-io/graphql-env` |
+| Constructive test harness inputs | `getTestEnvOptions()` from `@constructive-io/graphql-env` |
+| Process-specific `PORT` defaults | The corresponding port helper from `@constructive-io/graphql-env` |
+
+The Constructive resolver returns PGPM, GraphQL, storage, jobs, SMTP/Mailgun, function, Graphile, codegen, and LLM options. This broader dependency is an explicit project choice; do not create separate env packages for those groups. The dependency direction remains one-way: `graphql-env` may call `pgpmjs/env`, but PGPM packages must never import upward.
+
 ## Config File Discovery
+
+The discovery APIs below remain exported from `@pgpmjs/env`. `@constructive-io/graphql-env` reuses `loadConfigSync()` and projects only its own sections. Infrastructure reuse does not make those sections PGPM-owned.
 
 ### loadConfigSync()
 
@@ -236,26 +227,17 @@ const found = walkUp('/start/path', 'pgpm.json');
 
 ### getEnvVars()
 
-Parse environment variables into PgpmOptions:
+Parse PGPM-owned environment variables into `PgpmOptions` without applying defaults or config files:
 
 ```typescript
 import { getEnvVars } from '@pgpmjs/env';
 
 const envOptions = getEnvVars();
 // Or with custom env object
-const envOptions = getEnvVars(process.env);
+const suppliedEnvOptions = getEnvVars(process.env);
 ```
 
-### getNodeEnv()
-
-Get normalized NODE_ENV:
-
-```typescript
-import { getNodeEnv } from '@pgpmjs/env';
-
-const env = getNodeEnv();
-// Returns 'development' | 'production' | 'test'
-```
+The primitive parsing helpers below remain exported for PGPM and lower-level consumers. Runtime helpers such as `getNodeEnv()` belong to `@constructive-io/graphql-env` and are not exported from the PGPM package.
 
 ### parseEnvBoolean()
 
@@ -345,15 +327,17 @@ pgpm deploy --createdb
 
 ## Best Practices
 
-1. **Use getEnvOptions()**: Let the library handle merging
-2. **Config file for defaults**: Put project defaults in pgpm.json
-3. **Env vars for secrets**: Never commit passwords to pgpm.json
-4. **Override at runtime**: Pass overrides for test-specific config
-5. **Consistent cwd**: Pass explicit cwd when running from different directories
+1. **Use `getPgpmEnvOptions()`**: Let the PGPM resolver handle merging and runtime projection.
+2. **Choose the resolver level**: Use PGPM env only for PGPM/PostgreSQL. Use GraphQL env for every non-PGPM Constructive runtime group, including storage, jobs, SMTP/providers, and functions.
+3. **Resolve once**: Read configuration at a process composition root and inject typed options into reusable code.
+4. **Config file for non-secret defaults**: Put project defaults in `pgpm.json`.
+5. **Environment variables for secrets**: Never commit passwords to `pgpm.json`.
+6. **Override at runtime**: Pass overrides for test-specific configuration.
+7. **Consistent `cwd`**: Pass an explicit working directory when running from different directories.
 
 ## References
 
 - Related skill: `references/cli.md` for CLI commands
 - Related skill: `references/workspace.md` for workspace configuration
 - Related skill: `github-workflows-pgpm` for CI/CD environment setup
-- Related skill: `constructive-env` — Covers the full two-layer architecture (`@pgpmjs/env` + `@constructive-io/graphql-env`), GraphQL-specific env vars, SMTP config, and the "which package to import" decision guide
+- Decision: [Environment Ownership Decision](../../../../docs/plan/environment-ownership-follow-up.md) for the accepted two-level ownership model and complete variable inventory

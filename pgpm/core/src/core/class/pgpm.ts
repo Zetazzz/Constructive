@@ -1536,7 +1536,9 @@ ${dependencies.length > 0 ? dependencies.map(dep => `-- requires: ${dep}`).join(
               }
             } else {
               try {
-                const client = new PgpmMigrate(opts.pg as PgConfig);
+                const client = new PgpmMigrate(opts.pg as PgConfig, {
+                  hashMethod: opts.deployment?.hashMethod
+                });
               
                 // Only apply toChange to the target module, not its dependencies
                 const moduleToChange = extension === name ? toChange : undefined;
@@ -1576,7 +1578,9 @@ ${dependencies.length > 0 ? dependencies.map(dep => `-- requires: ${dep}`).join(
         throw errors.PATH_NOT_FOUND({ path: name, type: 'module' });
       }
 
-      const client = new PgpmMigrate(opts.pg as PgConfig);
+      const client = new PgpmMigrate(opts.pg as PgConfig, {
+        hashMethod: opts.deployment?.hashMethod
+      });
       const result = await client.deploy({
         modulePath,
         toChange,
@@ -1654,7 +1658,9 @@ ${dependencies.length > 0 ? dependencies.map(dep => `-- requires: ${dep}`).join(
             log.info(`📂 Reverting local module: ${extension}`);
           
             try {
-              const client = new PgpmMigrate(opts.pg as PgConfig);
+              const client = new PgpmMigrate(opts.pg as PgConfig, {
+                hashMethod: opts.deployment?.hashMethod
+              });
             
               // Only apply toChange to the target module, not its dependencies
               const moduleToChange = extension === name ? toChange : undefined;
@@ -1690,7 +1696,9 @@ ${dependencies.length > 0 ? dependencies.map(dep => `-- requires: ${dep}`).join(
         throw errors.PATH_NOT_FOUND({ path: name, type: 'module' });
       }
 
-      const client = new PgpmMigrate(opts.pg as PgConfig);
+      const client = new PgpmMigrate(opts.pg as PgConfig, {
+        hashMethod: opts.deployment?.hashMethod
+      });
       const result = await client.revert({
         modulePath,
         toChange,
@@ -1743,7 +1751,9 @@ ${dependencies.length > 0 ? dependencies.map(dep => `-- requires: ${dep}`).join(
             log.info(`📂 Verifying local module: ${extension}`);
 
             try {
-              const client = new PgpmMigrate(opts.pg as PgConfig);
+              const client = new PgpmMigrate(opts.pg as PgConfig, {
+                hashMethod: opts.deployment?.hashMethod
+              });
             
               // Only apply toChange to the target module, not its dependencies
               const moduleToChange = extension === name ? toChange : undefined;
@@ -1778,7 +1788,9 @@ ${dependencies.length > 0 ? dependencies.map(dep => `-- requires: ${dep}`).join(
         throw errors.PATH_NOT_FOUND({ path: name, type: 'module' });
       }
 
-      const client = new PgpmMigrate(opts.pg as PgConfig);
+      const client = new PgpmMigrate(opts.pg as PgConfig, {
+        hashMethod: opts.deployment?.hashMethod
+      });
       const result = await client.verify({
         modulePath,
         toChange

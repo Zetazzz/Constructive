@@ -23,6 +23,7 @@ export {
 export {
   InflectorLoggerPlugin,
   InflectorLoggerPreset,
+  setInflectorLogEnabled,
 } from './inflector-logger';
 
 // Enable filtering on all columns (not just indexed)

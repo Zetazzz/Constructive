@@ -12,11 +12,11 @@
  * @example
  * ```typescript
  * import { BucketProvisionerPreset } from 'graphile-bucket-provisioner-plugin';
- * import { getEnvOptions } from '@constructive-io/graphql-env';
+ * import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
  *
  * // Use a lazy getter so env vars are read at runtime, not import time
  * function getConnection() {
- *   const { cdn } = getEnvOptions();
+ *   const cdn = getConstructiveEnvOptions().cdn;
  *   return {
  *     provider: cdn?.provider || 'minio',
  *     region: cdn?.awsRegion || 'us-east-1',

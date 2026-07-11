@@ -1,6 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { streamContentType } from '@constructive-io/content-type-stream';
-import type { BucketProvider } from '@pgpmjs/types';
+import type { StorageProvider } from '@constructive-io/s3-utils';
 import type { Readable } from 'stream';
 
 import getS3 from './s3';
@@ -15,7 +15,7 @@ interface StreamerOptions {
   awsSecretKey: string;
   awsAccessKey: string;
   endpoint?: string;
-  provider?: BucketProvider;
+  provider?: StorageProvider;
   defaultBucket: string;
 }
 

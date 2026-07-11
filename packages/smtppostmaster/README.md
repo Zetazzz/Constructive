@@ -14,7 +14,7 @@
 
 SMTP-based email sender for Constructive services. This package exposes a `send` helper with the same call shape used by `@launchql/postmaster` (e.g. `{ to, subject, html, text }`).
 
-Configuration is managed through the centralized `@pgpmjs/env` system, which merges defaults, config files, environment variables, and runtime overrides.
+Configuration is owned by `@constructive-io/graphql-env`, which merges SMTP defaults, the `smtp` config-file section, environment variables, and runtime overrides. The provider validates required values only when a transport is first used.
 
 ## Install
 

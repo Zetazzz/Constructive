@@ -26,9 +26,14 @@ async function loadUploadResolverModule(opts: {
     upload: { Location: 'https://cdn.example.com/storage-upload' },
     contentType: 'application/octet-stream',
   } as MockUploadResult);
+  const mockStreamer = jest.fn().mockImplementation(() => ({
+    upload: mockUpload,
+    uploadWithContentType: mockUploadWithContentType,
+    detectContentType: mockDetectContentType,
+  }));
 
   jest.doMock('@constructive-io/graphql-env', () => ({
-    getEnvOptions: jest.fn(() => ({
+    getConstructiveEnvOptions: jest.fn(() => ({
       cdn: {
         provider: 'minio',
         bucketName: 'test-bucket',
@@ -41,14 +46,9 @@ async function loadUploadResolverModule(opts: {
   }));
 
   jest.doMock('@constructive-io/s3-streamer', () => {
-    const StreamerMock = jest.fn().mockImplementation(() => ({
-      upload: mockUpload,
-      uploadWithContentType: mockUploadWithContentType,
-      detectContentType: mockDetectContentType,
-    }));
     return {
       __esModule: true,
-      default: StreamerMock,
+      default: mockStreamer,
     };
   });
 
@@ -59,6 +59,7 @@ async function loadUploadResolverModule(opts: {
     mockDetectContentType,
     mockUploadWithContentType,
     mockUpload,
+    mockStreamer,
   };
 }
 
@@ -80,7 +81,7 @@ describe('uploadResolver MIME validation', () => {
     });
 
     const imageDef = constructiveUploadFieldDefinitions.find(
-      (def) => 'name' in def && def.name === 'image',
+      (def) => 'name' in def && def.name === 'image'
     );
     if (!imageDef) {
       throw new Error('Missing image upload field definition');
@@ -93,8 +94,8 @@ describe('uploadResolver MIME validation', () => {
         fakeUpload as any,
         {},
         {},
-        { uploadPlugin: { tags: {}, type: 'image' } },
-      ),
+        { uploadPlugin: { tags: {}, type: 'image' } }
+      )
     ).rejects.toThrow('UPLOAD_MIMETYPE');
 
     expect(mockDetectContentType).toHaveBeenCalledTimes(1);
@@ -112,7 +113,7 @@ describe('uploadResolver MIME validation', () => {
     });
 
     const imageDef = constructiveUploadFieldDefinitions.find(
-      (def) => 'name' in def && def.name === 'image',
+      (def) => 'name' in def && def.name === 'image'
     );
     if (!imageDef) {
       throw new Error('Missing image upload field definition');
@@ -124,7 +125,7 @@ describe('uploadResolver MIME validation', () => {
       fakeUpload as any,
       {},
       {},
-      { uploadPlugin: { tags: {}, type: 'image' } },
+      { uploadPlugin: { tags: {}, type: 'image' } }
     );
 
     expect(result).toEqual({
@@ -137,7 +138,60 @@ describe('uploadResolver MIME validation', () => {
     expect(mockUploadWithContentType).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: 'image/png',
-      }),
+      })
+    );
+  });
+
+  it('uses each explicit runtime storage override without reusing another config', async () => {
+    const { createConstructiveUploadFieldDefinitions, mockStreamer } =
+      await loadUploadResolverModule({ detectedContentType: 'image/png' });
+
+    const firstOptions = {
+      cdn: {
+        provider: 'minio' as const,
+        bucketName: 'first-bucket',
+        awsRegion: 'first-region',
+        awsAccessKey: 'first-access',
+        awsSecretKey: 'first-secret',
+        endpoint: 'http://first-storage',
+      },
+      runtime: { nodeEnv: 'test' as const },
+    };
+    const secondOptions = {
+      cdn: {
+        provider: 's3' as const,
+        bucketName: 'second-bucket',
+        awsRegion: 'second-region',
+        awsAccessKey: 'second-access',
+        awsSecretKey: 'second-secret',
+        endpoint: 'http://second-storage',
+      },
+      runtime: { nodeEnv: 'test' as const },
+    };
+
+    for (const options of [firstOptions, secondOptions]) {
+      const definition = createConstructiveUploadFieldDefinitions(options)[0];
+      await definition.resolve(
+        makeFakeUpload('photo.png') as any,
+        {},
+        {},
+        { uploadPlugin: { tags: {}, type: 'image' } }
+      );
+    }
+
+    expect(mockStreamer).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        defaultBucket: 'first-bucket',
+        endpoint: 'http://first-storage',
+      })
+    );
+    expect(mockStreamer).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        defaultBucket: 'second-bucket',
+        endpoint: 'http://second-storage',
+      })
     );
   });
 });

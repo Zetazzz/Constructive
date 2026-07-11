@@ -4,11 +4,16 @@ import gql from 'graphql-tag';
 import { generate } from '@launchql/mjml';
 import { send as sendPostmaster } from '@constructive-io/postmaster';
 import { send as sendSmtp } from 'simple-smtp-server';
-import { parseEnvBoolean } from '@pgpmjs/env';
+import {
+  getConstructiveEnvOptions,
+  getSendVerificationLinkPort,
+} from '@constructive-io/graphql-env';
 import { createLogger } from '@pgpmjs/logger';
 
-const isDryRun = parseEnvBoolean(process.env.SEND_VERIFICATION_LINK_DRY_RUN ?? process.env.SEND_EMAIL_LINK_DRY_RUN) ?? false;
-const useSmtp = parseEnvBoolean(process.env.EMAIL_SEND_USE_SMTP) ?? false;
+const startupOptions = getConstructiveEnvOptions();
+const isDryRun =
+  startupOptions.functions?.sendVerificationLink?.dryRun ?? false;
+const useSmtp = startupOptions.functions?.useSmtp ?? false;
 const logger = createLogger('send-verification-link');
 const app = createJobApp();
 
@@ -71,10 +76,10 @@ type GraphQLContext = {
   client: GraphQLClient;
   meta: GraphQLClient;
   databaseId: string;
+  localAppPort?: number;
 };
 
-const getRequiredEnv = (name: string): string => {
-  const value = process.env[name];
+const getRequiredConfig = (name: string, value?: string): string => {
   if (!value) {
     throw new Error(`Missing required environment variable ${name}`);
   }
@@ -82,7 +87,8 @@ const getRequiredEnv = (name: string): string => {
 };
 
 type GraphQLClientOptions = {
-  hostHeaderEnvVar?: string;
+  authToken?: string;
+  hostHeader?: string;
   databaseId?: string;
   useMetaSchema?: boolean;
   apiName?: string;
@@ -98,14 +104,12 @@ const createGraphQLClient = (
 ): GraphQLClient => {
   const headers: Record<string, string> = {};
 
-  if (process.env.GRAPHQL_AUTH_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.GRAPHQL_AUTH_TOKEN}`;
+  if (options.authToken) {
+    headers.Authorization = `Bearer ${options.authToken}`;
   }
 
-  const envName = options.hostHeaderEnvVar || 'GRAPHQL_HOST_HEADER';
-  const hostHeader = process.env[envName];
-  if (hostHeader) {
-    headers.host = hostHeader;
+  if (options.hostHeader) {
+    headers.host = options.hostHeader;
   }
 
   // Header-based routing for internal cluster services (API_IS_PUBLIC=false)
@@ -129,7 +133,12 @@ export const sendEmailLink = async (
   params: SendEmailParams,
   context: GraphQLContext
 ) => {
-  const { client, meta, databaseId } = context;
+  const {
+    client,
+    meta,
+    databaseId,
+    localAppPort: configuredLocalAppPort,
+  } = context;
 
   const validateForType = (): { missing?: string } | null => {
     switch (params.email_type) {
@@ -166,7 +175,7 @@ export const sendEmailLink = async (
   }
 
   const databaseInfo = await meta.request<any>(GetDatabaseInfo, {
-    databaseId
+    databaseId,
   });
 
   const database = databaseInfo?.databases?.nodes?.[0];
@@ -203,9 +212,8 @@ export const sendEmailLink = async (
     domain === '0.0.0.0';
 
   // For localhost, skip subdomain to generate cleaner URLs (http://localhost:3000)
-  const hostname = subdomain && !isLocalDomain
-    ? [subdomain, domain].join('.')
-    : domain;
+  const hostname =
+    subdomain && !isLocalDomain ? [subdomain, domain].join('.') : domain;
 
   // Treat localhost-style hosts specially so we can generate
   // http://localhost[:port]/... links for local dev without
@@ -217,8 +225,8 @@ export const sendEmailLink = async (
 
   // When localhost + LOCAL_APP_PORT: use http://localhost:PORT (local dev)
   // Otherwise: https (production)
-  const useLocalUrl = isLocalHost && process.env.LOCAL_APP_PORT;
-  const localPort = useLocalUrl ? `:${process.env.LOCAL_APP_PORT}` : '';
+  const useLocalUrl = isLocalHost && configuredLocalAppPort !== undefined;
+  const localPort = useLocalUrl ? `:${configuredLocalAppPort}` : '';
   const protocol = useLocalUrl ? 'http' : 'https';
   const url = new URL(`${protocol}://${hostname}${localPort}`);
 
@@ -241,7 +249,7 @@ export const sendEmailLink = async (
       url.searchParams.append('type', scope);
 
       const inviter = await client.request<any>(GetUser, {
-        userId: params.sender_id
+        userId: params.sender_id,
       });
       inviterName = inviter?.users?.nodes?.[0]?.displayName;
 
@@ -309,8 +317,8 @@ export const sendEmailLink = async (
       paddingLeft: '0px',
       paddingRight: '0px',
       paddingBottom: '0px',
-      paddingTop: '0'
-    }
+      paddingTop: '0',
+    },
   });
 
   if (isDryRun) {
@@ -318,20 +326,20 @@ export const sendEmailLink = async (
       email_type: params.email_type,
       email: params.email,
       subject,
-      link
+      link,
     });
   } else {
     const sendEmail = useSmtp ? sendSmtp : sendPostmaster;
     await sendEmail({
       to: params.email,
       subject,
-      html
+      html,
     });
   }
 
   return {
     complete: true,
-    ...(isDryRun ? { dryRun: true } : null)
+    ...(isDryRun ? { dryRun: true } : null),
   };
 };
 
@@ -339,23 +347,34 @@ export const sendEmailLink = async (
 app.post('/', async (req: any, res: any, next: any) => {
   try {
     const params = (req.body || {}) as SendEmailParams;
+    const requestOptions = getConstructiveEnvOptions();
+    const verificationOptions = requestOptions.functions?.sendVerificationLink;
+    const graphqlClientOptions = requestOptions.graphqlClient;
 
     const databaseId =
-      req.get('X-Database-Id') || req.get('x-database-id') || process.env.DEFAULT_DATABASE_ID;
+      req.get('X-Database-Id') ||
+      req.get('x-database-id') ||
+      verificationOptions?.defaultDatabaseId;
     if (!databaseId) {
-      return res.status(400).json({ error: 'Missing X-Database-Id header or DEFAULT_DATABASE_ID' });
+      return res
+        .status(400)
+        .json({ error: 'Missing X-Database-Id header or DEFAULT_DATABASE_ID' });
     }
 
-    const graphqlUrl = getRequiredEnv('GRAPHQL_URL');
-    const metaGraphqlUrl = process.env.META_GRAPHQL_URL || graphqlUrl;
+    const graphqlUrl = getRequiredConfig(
+      'GRAPHQL_URL',
+      graphqlClientOptions?.url
+    );
+    const metaGraphqlUrl = graphqlClientOptions?.metaUrl || graphqlUrl;
 
     // Get API name or schemata from env (for tenant queries like GetUser)
-    const apiName = process.env.GRAPHQL_API_NAME;
-    const schemata = process.env.GRAPHQL_SCHEMATA;
+    const apiName = graphqlClientOptions?.apiName;
+    const schemata = graphqlClientOptions?.schemata;
 
     // For GetUser query - needs tenant API access via X-Api-Name or X-Schemata
     const client = createGraphQLClient(graphqlUrl, {
-      hostHeaderEnvVar: 'GRAPHQL_HOST_HEADER',
+      authToken: graphqlClientOptions?.authToken,
+      hostHeader: graphqlClientOptions?.hostHeader,
       databaseId,
       ...(apiName && { apiName }),
       ...(schemata && { schemata }),
@@ -364,19 +383,23 @@ app.post('/', async (req: any, res: any, next: any) => {
     // For GetDatabaseInfo query - uses X-Meta-Schema to access platform data
     // (databases, sites, domains, siteThemes, siteModules are platform-level data)
     const meta = createGraphQLClient(metaGraphqlUrl, {
-      hostHeaderEnvVar: 'META_GRAPHQL_HOST_HEADER',
+      authToken: graphqlClientOptions?.authToken,
+      hostHeader: graphqlClientOptions?.metaHostHeader,
       useMetaSchema: true,
     });
 
     const result = await sendEmailLink(params, {
       client,
       meta,
-      databaseId
+      databaseId,
+      localAppPort: verificationOptions?.localAppPort,
     });
 
     // Validation failures return { missing: '...' } - treat as client error
     if (result && typeof result === 'object' && 'missing' in result) {
-      return res.status(400).json({ error: `Missing required field: ${result.missing}` });
+      return res
+        .status(400)
+        .json({ error: `Missing required field: ${result.missing}` });
     }
 
     res.status(200).json(result);
@@ -389,21 +412,25 @@ export default app;
 
 // When executed directly (e.g. via `node dist/index.js`), start an HTTP server.
 if (require.main === module) {
-  const port = Number(process.env.PORT ?? 8080);
+  const port = getSendVerificationLinkPort();
+  const runtimeOptions = getConstructiveEnvOptions();
+  const verificationOptions = runtimeOptions.functions?.sendVerificationLink;
+  const graphqlClientOptions = runtimeOptions.graphqlClient;
 
   // Log startup configuration (non-sensitive values only - no API keys or tokens)
   logger.info('[send-verification-link] Starting with config:', {
     port,
-    graphqlUrl: process.env.GRAPHQL_URL || 'not set',
-    metaGraphqlUrl: process.env.META_GRAPHQL_URL || process.env.GRAPHQL_URL || 'not set',
-    apiName: process.env.GRAPHQL_API_NAME || 'not set',
-    defaultDatabaseId: process.env.DEFAULT_DATABASE_ID || 'not set',
+    graphqlUrl: graphqlClientOptions?.url || 'not set',
+    metaGraphqlUrl:
+      graphqlClientOptions?.metaUrl || graphqlClientOptions?.url || 'not set',
+    apiName: graphqlClientOptions?.apiName || 'not set',
+    defaultDatabaseId: verificationOptions?.defaultDatabaseId || 'not set',
     dryRun: isDryRun,
     useSmtp,
-    mailgunDomain: process.env.MAILGUN_DOMAIN || 'not set',
-    mailgunFrom: process.env.MAILGUN_FROM || 'not set',
-    localAppPort: process.env.LOCAL_APP_PORT || 'not set',
-    hasAuthToken: !!process.env.GRAPHQL_AUTH_TOKEN
+    mailgunDomain: runtimeOptions.mailgun?.domain || 'not set',
+    mailgunFrom: runtimeOptions.mailgun?.from || 'not set',
+    localAppPort: verificationOptions?.localAppPort ?? 'not set',
+    hasAuthToken: Boolean(graphqlClientOptions?.authToken),
   });
 
   // @constructive-io/knative-job-fn exposes a .listen method that delegates to the Express app

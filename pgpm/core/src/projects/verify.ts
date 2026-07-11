@@ -58,7 +58,9 @@ export const verifyProject = async (
         log.debug(`→ Command: constructive migrate verify db:pg:${database}`);
 
         try {
-          const client = new PgpmMigrate(opts.pg as PgConfig);
+          const client = new PgpmMigrate(opts.pg as PgConfig, {
+            hashMethod: opts.deployment?.hashMethod
+          });
           
           const result = await client.verify({
             modulePath

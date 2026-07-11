@@ -24,6 +24,7 @@ import { Logger } from '@pgpmjs/logger';
 import express, { Request, Response,Router } from 'express';
 
 import { getEnvOptions as getLlmEnvOptions } from '@constructive-io/llm-env';
+import type { LlmEnvOptions } from '@constructive-io/llm-env';
 
 const log = new Logger('agentic-server');
 
@@ -87,10 +88,14 @@ interface ResolvedEmbeddingAdapter {
   provider: string;
 }
 
-function resolveChatAdapter(llm: LlmConfig | null): ResolvedChatAdapter | null {
-  const provider = llm?.chatProvider ?? getLlmEnvOptions().chat.provider;
-  const model = llm?.chatModel ?? getLlmEnvOptions().chat.model;
-  const baseUrl = llm?.chatBaseUrl ?? getLlmEnvOptions().chat.baseUrl;
+function resolveChatAdapter(
+  llm: LlmConfig | null,
+  fallbackOptions?: LlmEnvOptions
+): ResolvedChatAdapter | null {
+  const fallback = getLlmEnvOptions(fallbackOptions);
+  const provider = llm?.chatProvider ?? fallback.chat.provider;
+  const model = llm?.chatModel ?? fallback.chat.model;
+  const baseUrl = llm?.chatBaseUrl ?? fallback.chat.baseUrl;
 
   if (provider === 'ollama') {
     return { adapter: new OllamaAdapter(baseUrl), model, baseUrl, provider };
@@ -98,10 +103,14 @@ function resolveChatAdapter(llm: LlmConfig | null): ResolvedChatAdapter | null {
   return null;
 }
 
-function resolveEmbeddingAdapter(llm: LlmConfig | null): ResolvedEmbeddingAdapter | null {
-  const provider = llm?.embeddingProvider ?? getLlmEnvOptions().embedding.provider;
-  const model = llm?.embeddingModel ?? getLlmEnvOptions().embedding.model;
-  const baseUrl = llm?.embeddingBaseUrl ?? getLlmEnvOptions().embedding.baseUrl;
+function resolveEmbeddingAdapter(
+  llm: LlmConfig | null,
+  fallbackOptions?: LlmEnvOptions
+): ResolvedEmbeddingAdapter | null {
+  const fallback = getLlmEnvOptions(fallbackOptions);
+  const provider = llm?.embeddingProvider ?? fallback.embedding.provider;
+  const model = llm?.embeddingModel ?? fallback.embedding.model;
+  const baseUrl = llm?.embeddingBaseUrl ?? fallback.embedding.baseUrl;
 
   if (provider === 'ollama') {
     return { adapter: new OllamaAdapter(baseUrl), model, provider };
@@ -162,7 +171,8 @@ async function handleCreateThread(
 async function handleSendMessage(
   req: Request,
   res: Response,
-  entityId: string
+  entityId: string,
+  fallbackOptions?: LlmEnvOptions
 ): Promise<void> {
   const ctx = req.constructive;
   if (!ctx?.userId) {
@@ -205,7 +215,7 @@ async function handleSendMessage(
   // Resolve shared billing client and LLM config (lazy, cached per request)
   const [billing, llm] = await Promise.all([ctx.useBilling(), ctx.useLlm()]);
 
-  const chatAdapter = resolveChatAdapter(llm);
+  const chatAdapter = resolveChatAdapter(llm, fallbackOptions);
   if (!chatAdapter) {
     res.status(503).json({ error: 'No LLM provider configured' });
     return;
@@ -497,7 +507,11 @@ async function handleBatchResponse(
 
 // ─── Embedding Handler ──────────────────────────────────────────────────────
 
-async function handleEmbed(req: Request, res: Response): Promise<void> {
+async function handleEmbed(
+  req: Request,
+  res: Response,
+  fallbackOptions?: LlmEnvOptions
+): Promise<void> {
   const ctx = req.constructive;
   if (!ctx?.userId) {
     res.status(401).json({ error: 'Authentication required' });
@@ -511,7 +525,7 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
   }
 
   const llm = await ctx.useLlm();
-  const embedAdapter = resolveEmbeddingAdapter(llm);
+  const embedAdapter = resolveEmbeddingAdapter(llm, fallbackOptions);
   if (!embedAdapter) {
     res.status(503).json({ error: 'No embedding provider configured' });
     return;
@@ -587,7 +601,9 @@ async function handleEmbed(req: Request, res: Response): Promise<void> {
 
 // ─── Router Factory ─────────────────────────────────────────────────────────
 
-export function createAgenticRouter(): Router {
+export function createAgenticRouter(
+  fallbackOptions?: LlmEnvOptions
+): Router {
   const router = Router();
 
   router.use(express.json());
@@ -604,7 +620,7 @@ export function createAgenticRouter(): Router {
 
   router.post('/v1/orgs/:entity_id/threads/:thread_id/messages', async (req: Request, res: Response) => {
     try {
-      await handleSendMessage(req, res, req.params.entity_id);
+      await handleSendMessage(req, res, req.params.entity_id, fallbackOptions);
     } catch (err: any) {
       log.error('Error in messages endpoint:', err);
       if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
@@ -633,7 +649,7 @@ export function createAgenticRouter(): Router {
         res.status(401).json({ error: 'Authentication required' });
         return;
       }
-      await handleSendMessage(req, res, userId);
+      await handleSendMessage(req, res, userId, fallbackOptions);
     } catch (err: any) {
       log.error('Error in messages endpoint:', err);
       if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
@@ -643,7 +659,7 @@ export function createAgenticRouter(): Router {
   // Embedding endpoint
   router.post('/v1/embed', async (req: Request, res: Response) => {
     try {
-      await handleEmbed(req, res);
+      await handleEmbed(req, res, fallbackOptions);
     } catch (err: any) {
       log.error('Error in embed endpoint:', err);
       if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });

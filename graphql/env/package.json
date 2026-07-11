@@ -2,7 +2,7 @@
   "name": "@constructive-io/graphql-env",
   "version": "3.14.1",
   "author": "Constructive <developers@constructive.io>",
-  "description": "Constructive environment configuration with GraphQL/Graphile support",
+  "description": "Unified Constructive runtime environment configuration built on PGPM",
   "main": "index.js",
   "module": "esm/index.js",
   "types": "index.d.ts",
@@ -31,6 +31,7 @@
   "dependencies": {
     "@constructive-io/graphql-types": "workspace:^",
     "@pgpmjs/env": "workspace:^",
+    "@pgpmjs/logger": "workspace:^",
     "deepmerge": "^4.3.1"
   },
   "keywords": [

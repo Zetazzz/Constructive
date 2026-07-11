@@ -7,6 +7,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
 import { createJiti } from 'jiti';
 
 export const CONFIG_FILENAME = 'graphql-codegen.config.ts';
@@ -65,7 +66,7 @@ export async function loadConfigFile(
     // jiti handles .ts, .js, .mjs, .cjs and ESM/CJS interop
     const jiti = createJiti(__filename, {
       interopDefault: true,
-      debug: process.env.JITI_DEBUG === '1',
+      debug: getConstructiveEnvOptions().codegen?.jitiDebug ?? false,
     });
 
     // jiti.import() with { default: true } returns mod?.default ?? mod

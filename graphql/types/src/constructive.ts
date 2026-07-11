@@ -5,10 +5,7 @@ import {
   pgpmDefaults,
   PgTestConnectionOptions,
   DeploymentOptions,
-  ServerOptions,
-  CDNOptions,
   MigrationOptions,
-  JobsConfig
 } from '@pgpmjs/types';
 import {
   GraphileOptions,
@@ -16,9 +13,47 @@ import {
   ApiOptions,
   graphileDefaults,
   graphileFeatureDefaults,
-  apiDefaults
+  apiDefaults,
 } from './graphile';
-import { LlmOptions } from './llm';
+import {
+  CaptchaOptions,
+  CDNOptions,
+  cdnDefaults,
+  CodegenEnvironmentOptions,
+  FunctionRuntimeOptions,
+  functionRuntimeDefaults,
+  GraphileRuntimeOptions,
+  graphileRuntimeDefaults,
+  GraphqlObservabilityOptions,
+  graphqlObservabilityDefaults,
+  JobsConfig,
+  jobsDefaults,
+  KnativeRuntimeOptions,
+  knativeRuntimeDefaults,
+  MailgunOptions,
+  OutboundGraphQLClientOptions,
+  RuntimeOptions,
+  runtimeDefaults,
+  SmtpOptions,
+  smtpDefaults,
+} from './environment';
+import { LlmOptions, llmDefaults } from './llm';
+
+/**
+ * GraphQL HTTP server configuration.
+ */
+export interface ServerOptions {
+  /** Server host address */
+  host?: string;
+  /** Server port number */
+  port?: number;
+  /** Whether to trust proxy headers */
+  trustProxy?: boolean;
+  /** CORS origin configuration */
+  origin?: string;
+  /** Whether to enforce strict authentication */
+  strictAuth?: boolean;
+}
 
 /**
  * GraphQL-specific options for Constructive
@@ -30,13 +65,16 @@ export interface ConstructiveGraphQLOptions {
   features?: GraphileFeatureOptions;
   /** API configuration options */
   api?: ApiOptions;
+  /** GraphQL HTTP server configuration */
+  server?: ServerOptions;
 }
 
 /**
  * Full Constructive configuration options
  * Extends PgpmOptions with GraphQL/Graphile configuration
  */
-export interface ConstructiveOptions extends PgpmOptions, ConstructiveGraphQLOptions {
+export interface ConstructiveOptions
+  extends PgpmOptions, ConstructiveGraphQLOptions {
   /** Test database configuration options */
   db?: Partial<PgTestConnectionOptions>;
   /** PostgreSQL connection configuration */
@@ -57,6 +95,26 @@ export interface ConstructiveOptions extends PgpmOptions, ConstructiveGraphQLOpt
   migrations?: MigrationOptions;
   /** Job system configuration */
   jobs?: JobsConfig;
+  /** SMTP email configuration */
+  smtp?: SmtpOptions;
+  /** Mailgun provider configuration */
+  mailgun?: MailgunOptions;
+  /** Outbound GraphQL client configuration used by functions and jobs */
+  graphqlClient?: OutboundGraphQLClientOptions;
+  /** Function behavior and provider-selection configuration */
+  functions?: FunctionRuntimeOptions;
+  /** Shared process runtime values */
+  runtime?: RuntimeOptions;
+  /** Knative host-process configuration */
+  knative?: KnativeRuntimeOptions;
+  /** GraphQL observability and sampler configuration */
+  observability?: GraphqlObservabilityOptions;
+  /** CAPTCHA server configuration */
+  captcha?: CaptchaOptions;
+  /** Graphile cache and plugin switches */
+  graphileRuntime?: GraphileRuntimeOptions;
+  /** GraphQL code-generation environment switches */
+  codegen?: CodegenEnvironmentOptions;
   /** LLM provider configuration (embeddings, chat, RAG) */
   llm?: LlmOptions;
 }
@@ -67,7 +125,13 @@ export interface ConstructiveOptions extends PgpmOptions, ConstructiveGraphQLOpt
 export const constructiveGraphqlDefaults: ConstructiveGraphQLOptions = {
   graphile: graphileDefaults,
   features: graphileFeatureDefaults,
-  api: apiDefaults
+  api: apiDefaults,
+  server: {
+    host: 'localhost',
+    port: 3000,
+    trustProxy: false,
+    strictAuth: false,
+  },
 };
 
 /**
@@ -76,5 +140,16 @@ export const constructiveGraphqlDefaults: ConstructiveGraphQLOptions = {
  */
 export const constructiveDefaults: ConstructiveOptions = deepmerge.all([
   pgpmDefaults,
-  constructiveGraphqlDefaults
+  constructiveGraphqlDefaults,
+  {
+    cdn: cdnDefaults,
+    jobs: jobsDefaults,
+    smtp: smtpDefaults,
+    functions: functionRuntimeDefaults,
+    runtime: runtimeDefaults,
+    knative: knativeRuntimeDefaults,
+    observability: graphqlObservabilityDefaults,
+    graphileRuntime: graphileRuntimeDefaults,
+    llm: llmDefaults,
+  },
 ]) as ConstructiveOptions;

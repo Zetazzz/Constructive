@@ -27,38 +27,14 @@
  */
 
 import { S3Client } from '@aws-sdk/client-s3';
+import type { StorageConnectionConfig } from '@constructive-io/graphql-types';
 
 // --- Types ---
 
-/**
- * Supported storage provider identifiers.
- *
- * Used to select provider-specific behavior (e.g., path-style URLs for MinIO,
- * jurisdiction headers for R2).
- */
-export type StorageProvider = 's3' | 'minio' | 'r2' | 'gcs' | 'spaces';
-
-/**
- * Connection configuration for an S3-compatible storage backend.
- *
- * This is the input you provide to connect to your storage provider.
- * For AWS S3, only `region` and credentials are needed.
- * For MinIO/R2/etc., also provide `endpoint`.
- */
-export interface StorageConnectionConfig {
-  /** Storage provider type */
-  provider: StorageProvider;
-  /** S3 region (e.g., "us-east-1"). Required for AWS S3. */
-  region: string;
-  /** S3-compatible endpoint URL (e.g., "http://minio:9000"). Required for non-AWS providers. */
-  endpoint?: string;
-  /** AWS access key ID */
-  accessKeyId: string;
-  /** AWS secret access key */
-  secretAccessKey: string;
-  /** Use path-style URLs (required for MinIO, optional for others) */
-  forcePathStyle?: boolean;
-}
+export type {
+  StorageConnectionConfig,
+  StorageProvider
+} from '@constructive-io/graphql-types';
 
 // --- Error ---
 

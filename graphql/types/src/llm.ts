@@ -46,3 +46,19 @@ export interface LlmOptions {
   /** Chat completion provider configuration */
   chat?: LlmChatOptions;
 }
+
+export const llmDefaults: Required<{
+  embedder: Required<LlmEmbedderOptions>;
+  chat: Required<LlmChatOptions>;
+}> = {
+  embedder: {
+    provider: 'ollama',
+    model: 'nomic-embed-text',
+    baseUrl: 'http://localhost:11434',
+  },
+  chat: {
+    provider: 'ollama',
+    model: 'llama3',
+    baseUrl: 'http://localhost:11434',
+  },
+};

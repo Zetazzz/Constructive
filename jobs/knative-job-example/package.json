@@ -37,6 +37,7 @@
     "makage": "^0.3.0"
   },
   "dependencies": {
+    "@constructive-io/graphql-env": "workspace:^",
     "@constructive-io/knative-job-fn": "workspace:^"
   }
 }

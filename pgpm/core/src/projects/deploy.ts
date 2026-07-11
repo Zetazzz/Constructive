@@ -125,7 +125,9 @@ export const deployProject = async (
           log.debug(`→ Command: constructive migrate deploy db:pg:${database}`);
           
           try {
-            const client = new PgpmMigrate(mergedOpts.pg as PgConfig);
+            const client = new PgpmMigrate(mergedOpts.pg as PgConfig, {
+              hashMethod: mergedOpts.deployment?.hashMethod
+            });
             
             const result = await client.deploy({
               modulePath,

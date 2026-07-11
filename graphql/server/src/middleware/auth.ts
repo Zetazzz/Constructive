@@ -1,14 +1,11 @@
-import { getNodeEnv } from '@pgpmjs/env';
 import { Logger } from '@pgpmjs/logger';
-import { PgpmOptions } from '@pgpmjs/types';
+import type { ConstructiveOptions } from '@constructive-io/graphql-types';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 import { getPgPool } from 'pg-cache';
 import pgQueryContext from 'pg-query-context';
 import './types'; // for Request type
 
 const log = new Logger('auth');
-const isDev = () => getNodeEnv() === 'development';
-
 /** Default cookie name for session tokens. */
 const SESSION_COOKIE_NAME = 'constructive_session';
 
@@ -27,7 +24,7 @@ const parseCookieToken = (req: Request, cookieName: string): string | undefined 
 };
 
 export const createAuthenticateMiddleware = (
-  opts: PgpmOptions
+  opts: ConstructiveOptions
 ): RequestHandler => {
   return async (
     req: Request,

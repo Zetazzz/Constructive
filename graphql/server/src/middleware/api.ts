@@ -1,4 +1,3 @@
-import { getNodeEnv } from '@pgpmjs/env';
 import { Logger } from '@pgpmjs/logger';
 import { svcCache } from '@pgpmjs/server-utils';
 import { parseUrl } from '@constructive-io/url-domains';
@@ -422,7 +421,7 @@ const buildDevFallbackError = async (
   ctx: ResolveContext,
   req: Request
 ): Promise<ApiError | null> => {
-  if (getNodeEnv() !== 'development') return null;
+  if (ctx.opts.runtime?.nodeEnv !== 'development') return null;
 
   const isPublic = ctx.opts.api?.isPublic ?? false;
   const apis = await queryApiList(ctx.pool, isPublic);

@@ -1,4 +1,5 @@
-import { getNodeEnv } from '@pgpmjs/env';
+import { getNodeEnv } from '@constructive-io/graphql-env';
+import type { ConstructiveNodeEnv } from '@constructive-io/graphql-types';
 import { Logger } from '@pgpmjs/logger';
 import type { ErrorRequestHandler, NextFunction, Request, Response } from 'express';
 
@@ -9,15 +10,15 @@ import './types';
 
 const log = new Logger('error-handler');
 
-const isDevelopment = (): boolean => getNodeEnv() === 'development';
+const isDevelopment = (nodeEnv: ConstructiveNodeEnv): boolean => nodeEnv === 'development';
 
 const wantsJson = (req: Request): boolean => {
   const accept = req.get('Accept') || '';
   return accept.includes('application/json') || accept.includes('application/graphql-response+json');
 };
 
-const sanitizeMessage = (error: Error): string => {
-  if (isDevelopment()) return error.message;
+const sanitizeMessage = (error: Error, nodeEnv: ConstructiveNodeEnv): string => {
+  if (isDevelopment(nodeEnv)) return error.message;
   if (isApiError(error)) return error.message;
   if (error.message?.includes('ECONNREFUSED')) return 'Service temporarily unavailable';
   if (error.message?.includes('timeout') || error.message?.includes('ETIMEDOUT')) return 'Request timed out';
@@ -37,12 +38,12 @@ const isCsrfError = (err: Error): boolean => {
   return typeof code === 'string' && code.startsWith('CSRF_');
 };
 
-const categorizeError = (err: Error): ErrorResponse => {
+const categorizeError = (err: Error, nodeEnv: ConstructiveNodeEnv): ErrorResponse => {
   if (isApiError(err)) {
     return {
       statusCode: err.statusCode,
       code: err.code,
-      message: sanitizeMessage(err),
+      message: sanitizeMessage(err, nodeEnv),
       logLevel: err.statusCode >= 500 ? 'error' : 'warn',
     };
   }
@@ -51,12 +52,12 @@ const categorizeError = (err: Error): ErrorResponse => {
     return { statusCode: 403, code, message: err.message, logLevel: 'warn' };
   }
   if (err.message?.includes('ECONNREFUSED') || err.message?.includes('connection terminated')) {
-    return { statusCode: 503, code: 'SERVICE_UNAVAILABLE', message: sanitizeMessage(err), logLevel: 'error' };
+    return { statusCode: 503, code: 'SERVICE_UNAVAILABLE', message: sanitizeMessage(err, nodeEnv), logLevel: 'error' };
   }
   if (err.message?.includes('timeout') || err.message?.includes('ETIMEDOUT')) {
-    return { statusCode: 504, code: 'GATEWAY_TIMEOUT', message: sanitizeMessage(err), logLevel: 'error' };
+    return { statusCode: 504, code: 'GATEWAY_TIMEOUT', message: sanitizeMessage(err, nodeEnv), logLevel: 'error' };
   }
-  return { statusCode: 500, code: 'INTERNAL_ERROR', message: sanitizeMessage(err), logLevel: 'error' };
+  return { statusCode: 500, code: 'INTERNAL_ERROR', message: sanitizeMessage(err, nodeEnv), logLevel: 'error' };
 };
 
 const sendResponse = (req: Request, res: Response, { statusCode, code, message }: ErrorResponse): void => {
@@ -67,7 +68,7 @@ const sendResponse = (req: Request, res: Response, { statusCode, code, message }
   }
 };
 
-const logError = (err: Error, req: Request, level: 'warn' | 'error'): void => {
+const logError = (err: Error, req: Request, level: 'warn' | 'error', nodeEnv: ConstructiveNodeEnv): void => {
   const context = {
     requestId: req.requestId,
     path: req.path,
@@ -81,20 +82,24 @@ const logError = (err: Error, req: Request, level: 'warn' | 'error'): void => {
   if (isApiError(err)) {
     log[level]({ event: 'api_error', code: err.code, statusCode: err.statusCode, message: err.message, ...context });
   } else {
-    log[level]({ event: 'unexpected_error', name: err.name, message: err.message, stack: isDevelopment() ? err.stack : undefined, ...context });
+    log[level]({ event: 'unexpected_error', name: err.name, message: err.message, stack: isDevelopment(nodeEnv) ? err.stack : undefined, ...context });
   }
 };
 
-export const errorHandler: ErrorRequestHandler = (err: Error, req: Request, res: Response, _next: NextFunction): void => {
+export const createErrorHandler = (
+  nodeEnv: ConstructiveNodeEnv = getNodeEnv()
+): ErrorRequestHandler => (err: Error, req: Request, res: Response, _next: NextFunction): void => {
   if (res.headersSent) {
     log.warn({ event: 'headers_already_sent', requestId: req.requestId, path: req.path, errorMessage: err.message });
     return;
   }
 
-  const response = categorizeError(err);
-  logError(err, req, response.logLevel);
+  const response = categorizeError(err, nodeEnv);
+  logError(err, req, response.logLevel, nodeEnv);
   sendResponse(req, res, response);
 };
+
+export const errorHandler: ErrorRequestHandler = createErrorHandler();
 
 export const notFoundHandler = (req: Request, res: Response, _next: NextFunction): void => {
   log.warn({ event: 'route_not_found', path: req.path, method: req.method, requestId: req.requestId });

@@ -76,7 +76,9 @@ export const revertProject = async (
         log.debug(`→ Command: constructive migrate revert db:pg:${database}`);
         
         try {
-          const client = new PgpmMigrate(opts.pg as PgConfig);
+          const client = new PgpmMigrate(opts.pg as PgConfig, {
+            hashMethod: opts.deployment?.hashMethod
+          });
           
           const result = await client.revert({
             modulePath,

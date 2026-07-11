@@ -4,85 +4,91 @@
   <img height="250" src="https://raw.githubusercontent.com/constructive-io/constructive/refs/heads/main/assets/outline-logo.svg" />
 </p>
 
-<p align="center" width="100%">
-  <a href="https://github.com/constructive-io/constructive/actions/workflows/run-tests.yaml">
-    <img height="20" src="https://github.com/constructive-io/constructive/actions/workflows/run-tests.yaml/badge.svg" />
-  </a>
-   <a href="https://github.com/constructive-io/constructive/blob/main/LICENSE"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
-   <a href="https://www.npmjs.com/package/@constructive-io/graphql-env"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/constructive?filename=graphql%2Fenv%2Fpackage.json"/></a>
-</p>
+The single environment-configuration entrypoint for Constructive applications and runtimes.
 
-Constructive environment configuration with GraphQL/Graphile support.
-
-This package extends `@pgpmjs/env` with GraphQL-specific environment variable parsing and defaults for Constructive applications.
-
-## Installation
-
-```bash
-npm install @constructive-io/graphql-env
-```
+`@constructive-io/graphql-env` calls the lower-level `@pgpmjs/env` resolver and returns one complete `ConstructiveOptions` object. It owns parsing for GraphQL plus the surrounding Constructive runtime domains; it does not create separate storage, jobs, SMTP, function, or provider env packages.
 
 ## Usage
 
 ```typescript
-import { getEnvOptions } from '@constructive-io/graphql-env';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
 
-// Get merged options (core PGPM + GraphQL defaults + env vars + config)
-const options = getEnvOptions();
-
-// With overrides
-const options = getEnvOptions({
+const options = getConstructiveEnvOptions({
   graphile: { schema: ['public', 'app'] },
   features: { simpleInflection: true }
 });
 ```
 
-## Environment Variables
+`getEnvOptions` is the exact short-name alias of `getConstructiveEnvOptions`.
 
-In addition to all environment variables supported by `@pgpmjs/env`, this package parses:
+The merge order is:
 
-### GraphQL Schema
-- `GRAPHILE_SCHEMA` - Comma-separated list of PostgreSQL schemas to expose
-
-### Feature Flags
-- `FEATURES_SIMPLE_INFLECTION` - Enable simple inflection plugin
-- `FEATURES_OPPOSITE_BASE_NAMES` - Enable opposite base names
-- `FEATURES_POSTGIS` - Enable PostGIS support
-
-### API Configuration
-- `API_ENABLE_SERVICES` - Enable services API (domain/subdomain routing)
-- `API_IS_PUBLIC` - Whether API is public
-- `API_EXPOSED_SCHEMAS` - Comma-separated list of exposed schemas
-- `API_META_SCHEMAS` - Comma-separated list of meta schemas
-- `API_ANON_ROLE` - Anonymous role name
-- `API_ROLE_NAME` - Default role name
-- `API_DEFAULT_DATABASE_ID` - Default database ID
-
-## Defaults
-
-GraphQL defaults are provided by `@constructive-io/graphql-types`:
-
-```typescript
-{
-  graphile: { schema: [] },
-  features: {
-    simpleInflection: true,
-    oppositeBaseNames: true,
-    postgis: true
-  },
-  api: {
-    enableServicesApi: true,
-    exposedSchemas: [],
-    anonRole: 'administrator',
-    roleName: 'administrator',
-    defaultDatabaseId: 'hard-coded',
-    isPublic: true,
-    metaSchemas: ['services_public', 'metaschema_public', 'metaschema_modules_public']
-  }
-}
+```text
+Constructive and PGPM defaults
+→ PGPM-owned config and environment values
+→ Constructive sections from pgpm.json
+→ Constructive environment values
+→ runtime overrides
 ```
 
-## When to Use
+Arrays are replaced by the later layer rather than concatenated.
 
-- Use `@constructive-io/graphql-env` for Constructive applications that need GraphQL/Graphile configuration
-- Use `@pgpmjs/env` for pure PGPM tooling that doesn't need GraphQL support
+## Ownership boundary
+
+- `@pgpmjs/env` owns PostgreSQL connections, test databases, PGPM workspace/package settings, deployment, migrations, and PGPM error formatting.
+- `@constructive-io/graphql-env` owns all remaining Constructive environment parsing, including server/API, storage, jobs, email providers, functions, observability, Graphile switches, codegen, and LLM settings.
+- Types and defaults for the complete result live in `@constructive-io/graphql-types`.
+
+This intentionally means a jobs, storage, SMTP, or function runtime may depend on this package. The accepted tradeoff is a somewhat broader resolver dependency in exchange for one source of truth and no additional env packages.
+
+## Configuration groups
+
+The aggregate recognizes these groups:
+
+- GraphQL and API: `GRAPHILE_*`, `FEATURES_*`, `API_*`, `SERVER_*`, and GraphQL server `PORT`.
+- Storage/CDN: `BUCKET_*`, `AWS_REGION`, AWS access-key aliases, `CDN_ENDPOINT`, and `CDN_PUBLIC_URL_PREFIX`.
+- Jobs: `JOBS_*`, `HOSTNAME`, `INTERNAL_GATEWAY_*`, `INTERNAL_JOBS_CALLBACK_*`, `JOBS_CALLBACK_HOST`, and `KNATIVE_SERVICE_URL`.
+- Knative host startup: `CONSTRUCTIVE_JOBS_ENABLED`, `CONSTRUCTIVE_FUNCTIONS`, and `CONSTRUCTIVE_FUNCTION_PORTS`.
+- SMTP: all `SMTP_*` transport, authentication, TLS, pool, and debug settings.
+- Mailgun: `MAILGUN_KEY`, `MAILGUN_API_KEY`, their `_FILE` forms, `MAILGUN_DOMAIN`, `MAILGUN_FROM`, `MAILGUN_REPLY`, `MAILGUN_DEV_EMAIL`, and `ENV_SECRETS_PATH`.
+- Outbound GraphQL clients: `GRAPHQL_URL`, `META_GRAPHQL_URL`, `GRAPHQL_AUTH_TOKEN`, routing host headers, API name, and schemata.
+- Functions: dry-run aliases, `EMAIL_SEND_USE_SMTP`, `DEFAULT_DATABASE_ID`, and `LOCAL_APP_PORT`.
+- Runtime: `NODE_ENV`, `PORT`, and `LOG_SCOPE`.
+- LLM: `EMBEDDER_*` and `CHAT_*`.
+- GraphQL diagnostics: observability, debug sampler, and `RECAPTCHA_SECRET_KEY`.
+- Graphile/tooling: cache settings, signature verification, inflector logging, and `JITI_DEBUG`.
+
+Provider credentials and function-required URLs remain optional in the aggregate. The provider or function validates them only on a code path that actually needs them, so selecting SMTP does not require Mailgun and importing a function does not require an outbound GraphQL URL.
+
+Resolving the complete aggregate applies `runtime.logScope` to the shared logger, so config-file and runtime overrides have the same effect as `LOG_SCOPE`.
+
+## Process-specific `PORT`
+
+`PORT` is parsed once as a raw runtime value, but its default belongs to the process that binds the socket. Use the exported helpers:
+
+```typescript
+import {
+  getGraphQLServerPort,
+  getSendEmailPort,
+  getSendVerificationLinkPort,
+  getKnativeJobExamplePort
+} from '@constructive-io/graphql-env';
+```
+
+The defaults are respectively `3000`, `8080`, `8080`, and `10101`. Embedded Knative functions continue receiving explicit host-service ports instead of consulting global `PORT`.
+
+## Test-only variables
+
+Test harness inputs are parsed separately so they do not become production defaults:
+
+```typescript
+import { getTestEnvOptions } from '@constructive-io/graphql-env';
+
+const testOptions = getTestEnvOptions();
+```
+
+This covers `SMTP_TEST_*`, jobs GraphQL test routing, live GraphQL test credentials, `TESTING_URL`, and `TEST_DB`. Callers must not log or snapshot password/token fields.
+
+## Parsing helpers
+
+The package also exports `parseEnvBoolean`, `parseEnvNumber`, and `getNodeEnv`. PGPM retains its own lower-level helpers because `@pgpmjs/env` cannot depend upward on this package.

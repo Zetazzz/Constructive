@@ -3,6 +3,7 @@ import { GraphQLExplorer as explorer } from '@constructive-io/graphql-explorer';
 import type { ConstructiveOptions } from '@constructive-io/graphql-types';
 import { Logger } from '@pgpmjs/logger';
 import { CLIOptions, Inquirerer, Question } from 'inquirerer';
+import { getSafeConfigForLog } from '../utils';
 
 const log = new Logger('explorer');
 
@@ -104,9 +105,7 @@ export default async (
   });
 
   log.success('✅ Selected Configuration:');
-  for (const [key, value] of Object.entries(options)) {
-    log.debug(`${key}: ${JSON.stringify(value)}`);
-  }
+  log.debug(JSON.stringify(getSafeConfigForLog(options)));
 
   log.success('🚀 Launching Explorer...\n');
   explorer(options);

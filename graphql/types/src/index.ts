@@ -5,27 +5,27 @@ export {
   ApiOptions,
   graphileDefaults,
   graphileFeatureDefaults,
-  apiDefaults
+  apiDefaults,
 } from './graphile';
 
 // Export Constructive combined types
 export {
   ConstructiveGraphQLOptions,
   ConstructiveOptions,
+  ServerOptions,
   constructiveGraphqlDefaults,
-  constructiveDefaults
+  constructiveDefaults,
 } from './constructive';
 
 // Export GraphQL adapter types
-export {
-  GraphQLAdapter,
-  GraphQLError,
-  QueryResult
-} from './adapter';
+export { GraphQLAdapter, GraphQLError, QueryResult } from './adapter';
 
 // Export LLM types
 export {
   LlmOptions,
   LlmEmbedderOptions,
-  LlmChatOptions
+  LlmChatOptions,
+  llmDefaults,
 } from './llm';
+
+export * from './environment';

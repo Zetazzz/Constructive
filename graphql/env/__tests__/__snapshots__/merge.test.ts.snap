@@ -68,6 +68,15 @@ exports[`getEnvOptions merges pgpm defaults, graphql defaults, config, env, and 
     "postgis": false,
     "simpleInflection": true,
   },
+  "functions": {
+    "sendEmail": {
+      "dryRun": false,
+    },
+    "sendVerificationLink": {
+      "dryRun": false,
+    },
+    "useSmtp": false,
+  },
   "graphile": {
     "extends": [],
     "preset": {},
@@ -75,7 +84,19 @@ exports[`getEnvOptions merges pgpm defaults, graphql defaults, config, env, and 
       "override_schema",
     ],
   },
+  "graphileRuntime": {
+    "cacheMax": 50,
+    "cacheTtlMs": 300000,
+    "inflectorLog": false,
+    "signatureVerification": false,
+  },
   "jobs": {
+    "gateway": {
+      "callbackHost": "jobs-callback",
+      "callbackPort": 12345,
+      "callbackUrl": "http://jobs-callback:12345/callback",
+      "gatewayUrl": "http://gateway:8080",
+    },
     "scheduler": {
       "gracefulShutdown": true,
       "hostname": "scheduler-0",
@@ -96,10 +117,30 @@ exports[`getEnvOptions merges pgpm defaults, graphql defaults, config, env, and 
       "supported": [],
     },
   },
+  "knative": {
+    "jobsEnabled": true,
+  },
+  "llm": {
+    "chat": {
+      "baseUrl": "http://localhost:11434",
+      "model": "llama3",
+      "provider": "ollama",
+    },
+    "embedder": {
+      "baseUrl": "http://localhost:11434",
+      "model": "nomic-embed-text",
+      "provider": "ollama",
+    },
+  },
   "migrations": {
     "codegen": {
       "useTx": false,
     },
+  },
+  "observability": {
+    "debugSamplerEnabled": true,
+    "debugSamplerIntervalMs": 10000,
+    "enabled": false,
   },
   "pg": {
     "database": "config-db",
@@ -107,6 +148,9 @@ exports[`getEnvOptions merges pgpm defaults, graphql defaults, config, env, and 
     "password": "password",
     "port": 5432,
     "user": "env-user",
+  },
+  "runtime": {
+    "nodeEnv": "development",
   },
   "server": {
     "host": "localhost",

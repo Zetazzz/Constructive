@@ -20,6 +20,7 @@ export {
   // Cache configuration
   CacheConfig,
   getCacheConfig,
+  configureGraphileCache,
 
   // Cache stats
   CacheStats,

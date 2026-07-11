@@ -29,6 +29,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@constructive-io/graphql-env": "workspace:^",
+    "@constructive-io/graphql-types": "workspace:^",
     "@pgpmjs/logger": "workspace:^",
     "express": "^5.2.1",
     "grafserv": "1.0.0",

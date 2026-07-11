@@ -1,4 +1,6 @@
 import { EventEmitter } from 'events';
+import { getConstructiveEnvOptions } from '@constructive-io/graphql-env';
+import type { ConstructiveOptions } from '@constructive-io/graphql-types';
 import { Logger } from '@pgpmjs/logger';
 import { LRUCache } from 'lru-cache';
 import { pgCache } from 'pg-cache';
@@ -55,18 +57,14 @@ export interface CacheConfig {
  * NOTE: This value should be <= PG_CACHE_MAX (also default: 50) so that
  * every cached PostGraphile instance has a live pool backing it.
  */
-export function getCacheConfig(): CacheConfig {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
-  const max = process.env.GRAPHILE_CACHE_MAX
-    ? parseInt(process.env.GRAPHILE_CACHE_MAX, 10)
-    : 50;
-
-  const ttl = process.env.GRAPHILE_CACHE_TTL_MS
-    ? parseInt(process.env.GRAPHILE_CACHE_TTL_MS, 10)
-    : isDevelopment
-      ? FIVE_MINUTES_MS
-      : ONE_YEAR;
+export function getCacheConfig(
+  options?: Pick<ConstructiveOptions, 'graphileRuntime'>
+): CacheConfig {
+  const runtime = options
+    ? options.graphileRuntime
+    : getConstructiveEnvOptions().graphileRuntime;
+  const max = runtime?.cacheMax ?? 50;
+  const ttl = runtime?.cacheTtlMs ?? ONE_YEAR;
 
   return { max, ttl };
 }
@@ -109,7 +107,10 @@ const manualEvictionKeys = new Set<string>();
  * Uses disposedKeys set to prevent double-disposal when closeAllCaches()
  * explicitly disposes entries and then clear() triggers the dispose callback.
  */
-const disposeEntry = async (entry: GraphileCacheEntry, key: string): Promise<void> => {
+const disposeEntry = async (
+  entry: GraphileCacheEntry,
+  key: string
+): Promise<void> => {
   // Prevent double-disposal
   if (disposedKeys.has(key)) {
     return;
@@ -129,7 +130,10 @@ const disposeEntry = async (entry: GraphileCacheEntry, key: string): Promise<voi
       try {
         await entry.realtimeManager.stop();
       } catch (err) {
-        log.error(`Error stopping RealtimeManager for PostGraphile[${key}]:`, err);
+        log.error(
+          `Error stopping RealtimeManager for PostGraphile[${key}]:`,
+          err
+        );
       }
     }
     // Release PostGraphile instance (this also releases grafserv internally)
@@ -146,7 +150,10 @@ const disposeEntry = async (entry: GraphileCacheEntry, key: string): Promise<voi
 /**
  * Determine the eviction reason for a cache entry
  */
-const getEvictionReason = (key: string, entry: GraphileCacheEntry): EvictionReason => {
+const getEvictionReason = (
+  key: string,
+  entry: GraphileCacheEntry
+): EvictionReason => {
   if (manualEvictionKeys.has(key)) {
     manualEvictionKeys.delete(key);
     return 'manual';
@@ -154,38 +161,57 @@ const getEvictionReason = (key: string, entry: GraphileCacheEntry): EvictionReas
 
   // Check if TTL expired
   const age = Date.now() - entry.createdAt;
-  const config = getCacheConfig();
-  if (age >= config.ttl) {
+  if (age >= activeConfig.ttl) {
     return 'ttl';
   }
 
   return 'lru';
 };
 
-// Get initial cache configuration
-const initialConfig = getCacheConfig();
+let activeConfig = getCacheConfig();
+
+const createGraphileCache = (config: CacheConfig) =>
+  new LRUCache<string, GraphileCacheEntry>({
+    max: config.max,
+    ttl: config.ttl,
+    updateAgeOnGet: true,
+    dispose: (entry, key) => {
+      // Determine eviction reason before disposal
+      const reason = getEvictionReason(key, entry);
+
+      // Emit eviction event
+      cacheEvents.emitEviction({ key, reason, entry });
+
+      log.debug(`Evicting PostGraphile[${key}] (reason: ${reason})`);
+
+      // LRU dispose is synchronous, but v5 disposal is async
+      // Fire and forget the async cleanup
+      disposeEntry(entry, key).catch((err) => {
+        log.error(`Failed to dispose PostGraphile[${key}]:`, err);
+      });
+    },
+  });
 
 // --- Graphile Cache ---
-export const graphileCache = new LRUCache<string, GraphileCacheEntry>({
-  max: initialConfig.max,
-  ttl: initialConfig.ttl,
-  updateAgeOnGet: true,
-  dispose: (entry, key) => {
-    // Determine eviction reason before disposal
-    const reason = getEvictionReason(key, entry);
+export let graphileCache = createGraphileCache(activeConfig);
 
-    // Emit eviction event
-    cacheEvents.emitEviction({ key, reason, entry });
-
-    log.debug(`Evicting PostGraphile[${key}] (reason: ${reason})`);
-
-    // LRU dispose is synchronous, but v5 disposal is async
-    // Fire and forget the async cleanup
-    disposeEntry(entry, key).catch((err) => {
-      log.error(`Failed to dispose PostGraphile[${key}]:`, err);
-    });
+/** Apply the already-resolved Constructive runtime override before serving requests. */
+export function configureGraphileCache(
+  options: Pick<ConstructiveOptions, 'graphileRuntime'>
+): CacheConfig {
+  const nextConfig = getCacheConfig(options);
+  if (
+    nextConfig.max === activeConfig.max &&
+    nextConfig.ttl === activeConfig.ttl
+  ) {
+    return activeConfig;
   }
-});
+
+  graphileCache.clear();
+  activeConfig = nextConfig;
+  graphileCache = createGraphileCache(activeConfig);
+  return activeConfig;
+}
 
 // --- Cache Stats ---
 export interface CacheStats {
@@ -199,12 +225,11 @@ export interface CacheStats {
  * Get current cache statistics
  */
 export function getCacheStats(): CacheStats {
-  const config = getCacheConfig();
   return {
     size: graphileCache.size,
-    max: config.max,
-    ttl: config.ttl,
-    keys: [...graphileCache.keys()]
+    max: activeConfig.max,
+    ttl: activeConfig.ttl,
+    keys: [...graphileCache.keys()],
   };
 }
 
@@ -238,7 +263,9 @@ const unregister = pgCache.registerCleanupCallback((pgPoolKey: string) => {
   // Remove graphile entries that reference this pool key
   graphileCache.forEach((entry, k) => {
     if (entry.cacheKey.includes(pgPoolKey)) {
-      log.debug(`Removing graphileCache[${k}] due to pgPool[${pgPoolKey}] disposal`);
+      log.debug(
+        `Removing graphileCache[${k}] due to pgPool[${pgPoolKey}] disposal`
+      );
       manualEvictionKeys.add(k);
       graphileCache.delete(k);
     }

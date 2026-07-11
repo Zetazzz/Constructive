@@ -1,3 +1,4 @@
+import { getNodeEnv } from '@constructive-io/graphql-env';
 import { CsrfConfig, CookieOptions, createCsrfError } from './types';
 import { generateToken, verifyToken } from './token';
 
@@ -7,7 +8,7 @@ const DEFAULT_CONFIG: Required<CsrfConfig> = {
   fieldName: '_csrf',
   cookieOptions: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: getNodeEnv() === 'production',
     sameSite: 'lax',
     maxAge: 86400,
     path: '/',

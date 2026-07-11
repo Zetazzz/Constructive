@@ -1,19 +1,17 @@
-import { getEnvOptions } from '@pgpmjs/env';
-import { SmtpOptions } from '@pgpmjs/types';
+import {
+  getConstructiveEnvOptions,
+  getTestEnvOptions
+} from '@constructive-io/graphql-env';
+import type { SmtpOptions } from '@constructive-io/graphql-types';
 import { send } from '../src/index';
 import { createSmtpCatcher } from './smtp-catcher';
 
-const parseEnvBoolean = (val?: string): boolean | undefined => {
-  if (val === undefined) return undefined;
-  return ['true', '1', 'yes'].includes(val.toLowerCase());
-};
-
 const main = async () => {
-  const useCatcher = parseEnvBoolean(process.env.SMTP_TEST_USE_CATCHER) ?? false;
+  const testOptions = getTestEnvOptions();
+  const useCatcher = testOptions.smtpUseCatcher ?? false;
   const catcher = useCatcher ? await createSmtpCatcher() : null;
 
-  const envOpts = getEnvOptions();
-  const smtpFromEnv = envOpts.smtp ?? {};
+  const smtpFromEnv = getConstructiveEnvOptions().smtp ?? {};
 
   const smtpOverrides: SmtpOptions = catcher
     ? {
@@ -21,25 +19,25 @@ const main = async () => {
         port: catcher.port,
         secure: false,
         tlsRejectUnauthorized: false,
-        from: smtpFromEnv.from ?? process.env.SMTP_TEST_FROM ?? 'no-reply@example.com'
+        from: testOptions.smtpFrom ?? smtpFromEnv.from ?? 'no-reply@example.com'
       }
     : {};
 
   const to =
-    process.env.SMTP_TEST_TO ??
+    testOptions.smtpTo ??
     (catcher ? 'test-recipient@example.com' : smtpFromEnv.from);
   if (!to) {
     throw new Error('Missing SMTP_TEST_TO');
   }
 
-  const subject = process.env.SMTP_TEST_SUBJECT ?? 'SMTP postmaster test email';
+  const subject = testOptions.smtpSubject ?? 'SMTP postmaster test email';
   const html =
-    process.env.SMTP_TEST_HTML ??
+    testOptions.smtpHtml ??
     '<p>This is a test email from simple-smtp-server.</p>';
   const text =
-    process.env.SMTP_TEST_TEXT ??
+    testOptions.smtpText ??
     'This is a test email from simple-smtp-server.';
-  const from = process.env.SMTP_TEST_FROM;
+  const from = testOptions.smtpFrom;
 
   const start = Date.now();
 
