@@ -16,44 +16,214 @@ Working proposals, suggested values, evidence, and unresolved alternatives belon
 - Reuse the existing Constructive identity association and provisioning capabilities.
 - Make every successful authentication method converge on one Site handoff and local-credential completion path.
 
-## Architecture and Trust Boundaries
+## Public Concepts and Trust Boundaries
+
+### Roles and Ownership
 
 - Dashboard owns authentication-center presentation and sends the active unified login transaction identifier only to Constructive.
 - Constructive owns generic SSO orchestration, OAuth authorization-request state, Provider adapter selection, normalized identity consumption, and transition into shared post-authentication completion.
-- A protocol-neutral Provider Adapter contract covers Provider-specific authorization initiation and callback/code-to-normalized-identity completion. Google and GitHub each implement the contract; future Providers add another adapter. This decision requires neither an abstract base class nor inheritance.
-- Google/OIDC identity-token validation and GitHub/OAuth exchange or optional profile/email retrieval are adapter-internal examples, not generic SSO requirements. Login-transaction and state validation, account matching or provisioning, and shared handoff orchestration remain in the common Constructive service outside the adapters.
+- Provider Adapters own Provider-specific authorization and callback/code-to-normalized-identity behavior. Common login-transaction validation, account matching or provisioning, and shared handoff orchestration remain in Constructive; the adapter contract and Google/GitHub implementations are detailed in [Main Login 3](#main-login-3-external-provider).
 - Constructive DB owns durable identity association and the existing identity procedures. The browser and external Provider are outside the trusted transaction boundary.
+- The current Express Context remains the only request-level source for resolved Tenant, API, database, route, session, user, and request facts. Common orchestration uses its existing `authSurface` and `identityProviders` loaders for authentication-procedure discovery, enabled Tenant-scoped Provider configuration, and internal-secret resolution; it does not introduce parallel auth contexts or loaders.
+- Provider adapters receive the already selected and validated Provider configuration from common orchestration. They do not read environment variables, query Provider configuration or secrets directly from the database, infer Tenant or route facts, or implement legacy Tenant, secret, schema, or database-version fallbacks.
+- Existing `constructive_user_identifiers_private.connected_accounts`, `sign_in_identity`, and `sign_up_identity` ownership is preserved. The unified-login flow does not add a parallel identity store or duplicate those procedures.
 
-## Login Transactions
+### Tenant Isolation and SSO Groups
 
-Dashboard supplies the active opaque unified login transaction identifier and selected configured Provider to Constructive. Constructive creates an existing OAuth authorization request and associates it with that transaction server-side. Only a separate cryptographically random OAuth state value crosses the browser/Provider boundary; the unified login transaction identifier never does.
+- Tenant is the hard unified-authentication boundary. Every Site, login transaction, reusable authentication state, and handoff belongs to one Tenant and must never be reused across Tenants.
+- Sites within a Tenant share the Tenant default SSO group when no group is configured.
+- A Site Authentication Configuration may set an optional `sso_group_key` to create an additional SSO boundary within that Tenant. Only Sites with the same effective group may silently reuse authentication state; moving between groups requires a new sign-in.
+- `sso_group_key` is a nullable, normalized lowercase key, not a separately managed entity in v1. It must contain only lowercase letters, digits, and hyphens. A null value means the Tenant default group. Existing authorization groups and scopes are not SSO groups.
 
-On callback, Constructive validates and consumes OAuth state before restoring the configured Provider and original unified login transaction. The callback may contain a code or Provider error, but neither is accepted without valid server-side state.
+### Site Authentication Configuration, Callbacks, and Return Targets
 
-## Authentication Center and Site Sessions
+Each Site has one logical Site Authentication Configuration. It records whether unified authentication is enabled, the Site sign-in mode (`confirm` by default or `silent`), and the optional `sso_group_key`. This configuration extends rather than changes the existing Site deployment and routing records.
 
-Every successful route enters exactly one shared post-authentication path. Reused unified authentication may enter after silent Site handling or explicit account confirmation; local password and every supported external Provider enter after their authentication and identity resolution complete.
+Each Site may have multiple active, exact technical callback URLs. Wildcards, suffix matching, and arbitrary subdomains are not valid callback registrations. Constructive validates Site enablement, Tenant ownership, the callback, and `returnTo` at login start; an advisory discovery or preflight operation cannot replace this enforcement.
+
+The registered technical callback and the Site-internal, application-relative `returnTo` are separate values. An explicitly supplied callback requires an exact active registered match; when omitted, Constructive selects the earliest registered callback by `created_at` ascending and then ID ascending. Both values are validated at login start and retained only in server-side transaction context. After start, neither the opaque transaction identifier nor raw `returnTo` is carried in browser navigation.
+
+### Login Transactions
+
+The unified login transaction is short-lived, server-side, active-flow-only orchestration state. Dashboard receives only an opaque identifier from start-login and supplies it only to Constructive operations for the current branch. v1 exposes no transaction/status retrieval query: an interrupted flow starts again from the Site login entry. The transaction model is distinct from the Provider-specific OAuth authorization-request model, although both use short expiry and one-time-consumption lifecycle rules.
+
+For an external Provider branch, Constructive creates a separate OAuth authorization request and links it to the unified login transaction on the server. The browser and Provider never receive the unified login transaction identifier. The OAuth state and PKCE lifecycle is defined in [Main Login 3](#main-login-3-external-provider).
+
+### Credential Vocabulary
+
+- **Unified login transaction identifier:** An opaque active-flow identifier used only in Dashboard-to-Constructive operations. It is not a browser redirect parameter or credential.
+- **OAuth state:** An opaque, cryptographically random correlation value that the browser and Provider only carry and echo. Its authorization-request, Provider, and unified-transaction associations remain server-side.
+- **Provider authorization code:** A transient callback input exchanged only by Constructive after state validation. It is not a durable identity key or a Site credential.
+- **Provider token:** An access or identity token confined to the selected server-side Provider adapter. It is never a Dashboard or Site credential.
+- **Authentication-center credential:** The Dashboard Bearer result or authentication-domain first-party session Cookie. It remains local to the authentication center.
+- **Site-local credential:** A distinct credential issued after handoff redemption for one Site. That Site accepts it through its own first-party session Cookie or `Authorization: Bearer`; Bearer takes precedence when both are present.
+- **Handoff code:** A short-lived, Site-bound, one-time exchange artifact delivered by `POST`. It is not a reusable session credential.
+
+The following three main-flow chapters share one continuation contract. Constructive owns transaction, authentication, and Site-mode decisions; Dashboard renders safe context and submits user actions.
+
+## Main Login 1: Start and Existing Unified Authentication
+
+### Sequence
 
 ```mermaid
-flowchart LR
-    Silent["Existing unified auth: silent"] --> Shared["Shared post-authentication path"]
-    Confirm["Existing unified auth: confirm"] --> Shared
-    Password["Local password"] --> Shared
-    Provider["External Provider"] --> Shared
-    Shared --> Handoff["One-time Site-bound handoff"]
-    Handoff --> Callback["POST validated Site callback"]
-    Callback --> Redeem["Redeem GraphQL mutation and DB function"]
-    Redeem --> Credential["Distinct Site-local Bearer/Cookie"]
-    Credential --> Return["Verified Site-internal returnTo"]
+sequenceDiagram
+    actor U as User
+    participant S as Site
+    participant B as Browser
+    participant D as Dashboard
+    participant C as Common Constructive SSO service
+    participant DB as Constructive DB
+    participant P as Shared post-authentication continuation
+
+    U->>S: Choose sign-in
+    S-->>B: Navigate to Dashboard with Site ID, optional exact callback, and Site-internal returnTo
+    B->>D: Load unified login page
+    D->>C: Start-login mutation with Site inputs
+    C->>DB: Resolve exact callback, validate Tenant/Site/callback/returnTo, and create transaction
+    C->>DB: Resolve Provider display options and existing auth-center identity
+    DB-->>C: Opaque transaction ID + safe context + unified-auth decision
+    C-->>D: Opaque transaction ID + safe display/decision context
+    alt Existing identity and silent Site mode
+        C->>P: Continue with existing identity and transaction
+    else Existing identity and confirm-before-sign-in
+        D-->>U: Show lightweight account confirmation
+        U->>D: Continue with current account
+        D->>C: Confirm-account mutation with opaque transaction ID
+        C->>P: Continue with existing identity and transaction
+    else No reusable identity
+        D-->>U: Show local password and enabled Provider options
+    end
 ```
 
-## Handoff Codes and Callbacks
+Start-login returns enabled Provider display options for the transaction Tenant alongside safe Site display context and Constructive's authentication decision. Dashboard displays local-password and Provider choices only when there is no reusable unified authentication state.
 
-Constructive creates the Site-bound, short-lived, one-time handoff from the shared post-authentication path. Dashboard delivers the handoff code to the already validated technical Site callback through browser `POST`, never in a URL.
+## Main Login 2: Local Username/Password
 
-The target Site server calls the Constructive redeem-handoff GraphQL mutation backed by the handoff-redemption PostgreSQL function. Successful redemption consumes the handoff and returns a distinct Site-local credential plus the verified Site-internal, application-relative `returnTo`. The Site callback owns setting its first-party Cookie and delivering its Bearer result to its frontend before redirecting to `returnTo`.
+### Sequence
 
-## Provider Integration
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant D as Dashboard
+    participant C as Common Constructive SSO service
+    participant W as SSO password PostgreSQL wrapper
+    participant I as Existing sign_in_identity
+    participant P as Shared post-authentication continuation
+
+    U->>D: Submit local username and password
+    D->>C: Password mutation with opaque transaction ID and credentials
+    C->>W: Invoke SSO wrapper once
+    W->>W: Validate active transaction and Tenant/Site/SSO boundaries
+    alt Transaction or boundary validation fails
+        W-->>C: Safe classified validation failure
+        C-->>D: Render safe error
+    else Boundaries are valid
+        W->>I: Call unchanged sign_in_identity once
+        alt Password authentication fails
+            I-->>W: Existing safe authentication failure
+            W-->>C: Preserve safe failure without automatic retry
+            C-->>D: User may manually resubmit while transaction remains active
+        else Authentication succeeds
+            I-->>W: Existing identity and Dashboard credential outcome
+            W-->>C: Associate identity with transaction and preserve credential outcome
+            C->>P: Continue with authenticated identity and transaction
+        end
+    end
+```
+
+The SSO password wrapper validates the active transaction and Tenant, Site, and SSO boundaries, then calls the existing `sign_in_identity` primitive unchanged and exactly once for that submission. It performs no automatic retry; after a safe authentication failure, the user may manually resubmit while the transaction remains active. On success, the wrapper associates the existing identity outcome with the transaction and preserves the Dashboard credential outcome.
+
+`sign_in_identity` remains the general Tenant-local application-user authentication primitive and is not extended with SSO concerns. The Dashboard Bearer result and authentication-domain first-party Cookie behavior remain auth-center-local; they are not the target Site credential.
+
+## Main Login 3: External Provider
+
+### Sequence
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant D as Dashboard
+    participant C as Common Constructive SSO service
+    participant DB as Constructive DB
+    participant PA as Protocol-neutral Provider Adapter
+    participant B as Browser
+    participant IP as External Identity Provider
+    participant P as Shared post-authentication continuation
+
+    U->>D: Choose an enabled configured Provider
+    D->>C: Provider start with opaque transaction ID and Provider
+    C->>DB: Validate transaction/Provider and persist linked OAuth request
+    DB-->>C: Random OAuth state; high-entropy PKCE verifier remains server-side
+    C->>PA: Build authorization request with S256 challenge
+    C-->>B: Redirect with random state and S256 challenge only
+    B->>IP: Complete Provider interaction
+    IP-->>B: Authorization code + OAuth state, or error + OAuth state
+    B->>C: Provider callback
+    C->>DB: Validate match/expiry/unused state, consume it, and restore Provider + transaction
+    alt Invalid, expired, replayed, or mismatched OAuth state
+        DB-->>C: Classified state failure
+        C-->>D: Render safe error; restart from Site login entry
+    else State restores configured Provider and original transaction
+        DB-->>C: Restored transaction and Provider context
+        alt Callback contains Provider cancellation/error
+            C-->>D: Render safe error; restart from Site login entry
+        else Callback contains authorization code
+            C->>PA: Complete code + original verifier through configured adapter
+            alt Google/OIDC adapter example
+                PA->>IP: Exchange authorization code + verifier server-side
+                IP-->>PA: Identity token + optional access token + user data
+                PA->>PA: Validate identity token and normalize user data
+            else GitHub/OAuth adapter example
+                PA->>IP: Exchange authorization code + verifier server-side
+                IP-->>PA: Access token
+                PA->>IP: Query user and optional email endpoints
+                IP-->>PA: User and optional email data
+                PA->>PA: Normalize GitHub user data
+            else Another supported adapter
+                PA->>PA: Verify and normalize through its implementation
+            end
+            Note over B,IP: Browser never receives Provider tokens or unified transaction ID
+            alt Adapter exchange/verification fails
+                PA-->>C: Safe classified failure
+                C-->>D: Render safe error; restart from Site login entry
+            else Normalized external identity
+                PA-->>C: Service + stable identifier + optional email + safe profile
+                C->>DB: Resolve connected_accounts by service + identifier
+                alt Existing association
+                    DB-->>C: Linked local identity
+                    C->>P: Continue with linked identity and transaction
+                else Unlinked and email is unowned
+                    C->>DB: Call existing sign_up_identity provisioning path
+                    DB-->>C: Provisioned identity + connected account
+                    C->>P: Continue with provisioned identity and transaction
+                else Email belongs to another local account
+                    DB-->>C: Explicit account conflict
+                    C-->>D: Use existing sign-in method; restart login
+                end
+            end
+        end
+    end
+```
+
+### OAuth Authorization State and PKCE
+
+Before redirecting the browser, Constructive creates an OAuth authorization request with an opaque, cryptographically random OAuth state and persists its server-side association to the configured Provider and unified login transaction. Only that state and the S256 PKCE challenge cross the browser/Provider boundary; the unified login transaction identifier and PKCE verifier never do.
+
+On callback, Constructive verifies that OAuth state matches the stored authorization request, configured Provider, and unified login transaction, is unexpired, and remains unconsumed. It consumes the state before handling a Provider error or authorization code and before any code exchange. Invalid, expired, replayed, or mismatched state fails safely without authentication completion.
+
+Every OAuth/OIDC Provider branch uses Authorization Code with mandatory S256 PKCE. For each Provider authorization request, Constructive generates a fresh, cryptographically random, high-entropy `code_verifier`, derives its S256 `code_challenge`, and stores the verifier securely with the server-side authorization request. The browser authorization request carries only the challenge and `code_challenge_method=S256`. After OAuth state validation and consumption, only Constructive exchanges the callback authorization code with the original verifier for that request.
+
+The verifier and all Provider access or identity tokens remain server-side. They never enter browser-visible data, authorization or callback URLs, URL fragments, or logs. The browser and Provider only carry and echo opaque OAuth state and the protocol-required authorization code or safe Provider error.
+
+### Provider Adapter and Configuration
+
+One protocol-neutral Provider Adapter interface or contract covers Provider-specific authorization initiation and callback/code-to-normalized-identity completion. Google Adapter and GitHub Adapter each implement it, while common login orchestration remains in Constructive outside the adapters. The design does not prescribe a base class or inheritance.
+
+Provider endpoints, Provider-facing redirect configuration, scopes, and credentials come only from enabled, Tenant-scoped registered Provider configuration resolved through the existing Express Context `identityProviders` loader. The common Constructive service passes the selected validated configuration to the adapter. Adapters do not read this configuration from environment variables or query it directly from the database.
+
+Configured Provider endpoints and redirects must pass the existing allowlist and endpoint-safety validation before use. Provider network operations use bounded timeouts and safe redirect behavior. Configuration, transport, and Provider failures map to classified errors without exposing raw Provider responses, tokens, secrets, or private database details.
+
+### Provider Identity Resolution
 
 The Provider Adapter normalizes every successful Provider result to the same minimal external identity:
 
@@ -72,68 +242,44 @@ Durable association uses `constructive_user_identifiers_private.connected_accoun
 - An unlinked identity whose normalized email is not owned by a local account follows the existing `sign_up_identity` path, atomically provisioning the application user, email, and connected account.
 - An unlinked identity whose normalized email belongs to a different local account fails explicitly with guidance to use the existing sign-in method. This flow performs no automatic merge or binding and no password-confirmation linking.
 
-```mermaid
-sequenceDiagram
-    participant D as Dashboard
-    participant C as Common Constructive SSO service
-    participant DB as Constructive DB
-    participant PA as Protocol-neutral Provider Adapter
-    participant B as Browser
-    participant IP as External Identity Provider
-    participant P as Shared post-authentication path
-
-    D->>C: Provider start with transaction ID and configured Provider
-    C->>DB: Create OAuth request linked to unified transaction
-    DB-->>C: Random OAuth state; PKCE/nonce remain server-side
-    C->>PA: Build Provider-specific authorization request
-    C-->>B: Redirect with random OAuth state only
-    B->>IP: Complete Provider interaction
-    IP-->>B: Callback with code or error and OAuth state
-    B->>C: Provider callback
-    C->>DB: Validate state and restore Provider + unified transaction
-    C->>PA: Handle callback through configured adapter
-    alt Google/OIDC adapter example
-        PA->>IP: Exchange authorization code server-side
-        IP-->>PA: Identity token + optional access token + user data
-        PA->>PA: Validate identity token and normalize user data
-        Note over PA,IP: Optional access token is not retained or used for v1 SSO when identity data is sufficient
-    else GitHub/OAuth adapter example
-        PA->>IP: Exchange authorization code server-side
-        IP-->>PA: Access token
-        PA->>IP: Query GitHub user and optional email endpoints
-        IP-->>PA: User and optional email data
-        PA->>PA: Normalize GitHub user data
-    else Another supported adapter
-        PA->>PA: Run adapter-specific verification and normalize
-    end
-    Note over B,IP: Browser receives code/state or error, never Provider tokens
-    alt Provider flow fails
-        PA-->>C: Classified failure
-        C-->>D: Safe failure; restart from Site login entry
-    else Normalized external identity
-        PA-->>C: Service + stable identifier + optional email + safe profile
-        C->>DB: Resolve connected_accounts by service + identifier
-        alt Existing association
-            DB-->>C: Linked local user
-            C->>P: Continue with linked identity and transaction
-        else Unlinked and email is unowned
-            C->>DB: Call existing sign_up_identity path
-            DB-->>C: Provisioned user + email + connected account
-            C->>P: Continue with provisioned identity and transaction
-        else Email belongs to another local account
-            DB-->>C: Explicit account conflict
-            C-->>D: Use existing sign-in method; restart login
-        end
-    end
-```
-
 ### Future consideration (not current scope)
 
 An already authenticated local user may later bind Google, GitHub, or another Provider from account settings. Account-settings binding is not part of the current unified-login flow.
 
+## Shared Post-Authentication Completion
+
+Every successful route enters exactly one shared post-authentication continuation. Reused unified authentication may enter after silent Site handling or explicit account confirmation; local password and every supported external Provider enter after authentication and identity resolution.
+
+### Completion and Handoff Diagram
+
+```mermaid
+flowchart LR
+    Silent["Existing unified auth: silent"] --> Shared["Shared post-authentication continuation"]
+    Confirm["Existing unified auth: confirm"] --> Shared
+    Password["Local password"] --> Shared
+    Provider["External Provider"] --> Shared
+    Shared --> Center["Preserve, establish, or reuse auth-center Bearer/Cookie outcome"]
+    Center --> Handoff["One-time Site-bound handoff"]
+    Handoff --> Callback["POST validated Site callback"]
+    Callback --> Redeem["Redeem GraphQL mutation and DB function"]
+    Redeem --> Credential["Distinct Site-local Bearer/Cookie"]
+    Credential --> Return["Verified Site-internal returnTo"]
+```
+
+### Handoff Codes and Callbacks
+
+Constructive creates the Site-bound, short-lived, one-time handoff from the shared post-authentication path. Dashboard delivers the handoff code to the already validated technical Site callback through browser `POST`, never in a URL.
+
+The target Site server calls the Constructive redeem-handoff GraphQL mutation backed by the handoff-redemption PostgreSQL function. Successful redemption consumes the handoff and returns a distinct Site-local credential plus the verified Site-internal, application-relative `returnTo`. The Site callback owns setting its first-party Cookie and delivering its Bearer result to its frontend before redirecting to `returnTo`.
+
+An SSO handoff is a dedicated, minimal persistence model; it is not stored in the Provider OAuth request or session-credential model. It stores an internal ID, secure code hash, referenced login transaction ID, creation time, expiry time, and consumption time. The plaintext code is emitted once only. A handoff expires after one minute and is consumed only after successful redemption; a transient failure before consumption may retry the same code during that lifetime.
+
+Each Site accepts its local credential through either its first-party session Cookie or an `Authorization: Bearer` header. When both are present, Bearer takes precedence. Dashboard/authentication-center credentials are never handed to a Site and are not its local credentials.
+
 ## Routes and Interfaces
 
 - Provider authorization initiation and callback retain browser HTTP semantics. The callback accepts a Provider code or error only together with valid opaque OAuth state.
+- Provider discovery remains on the confirmed GraphQL surface; the legacy `/auth/providers` HTTP discovery endpoint is not restored.
 - Dashboard never sends the unified login transaction identifier to an external Provider.
 - Target Site handoff redemption uses a Constructive GraphQL mutation backed by a PostgreSQL function.
 
@@ -141,7 +287,7 @@ An already authenticated local user may later bind Google, GitHub, or another Pr
 
 - The existing `constructive_user_identifiers_private.connected_accounts` relation remains the durable Provider association; no parallel Provider-identity table is introduced.
 - `service` plus stable external `identifier` identifies the connected account and maps to `owner_id`. Safe non-key Provider profile attributes remain in `details`.
-- OAuth authorization-request state remains transient and server-side. A Provider authorization code is never persisted as an identity key.
+- OAuth authorization-request state and PKCE verifier remain transient and server-side. Their expiry, match, unused state, and one-time consumption are not implemented with browser state/PKCE Cookies or an in-process replay map. A Provider authorization code is never persisted as an identity key.
 
 ## Errors and Observability
 
@@ -150,13 +296,20 @@ Provider cancellation, a Provider-reported error, invalid OAuth state, exchange 
 ## Security
 
 - Unified login transaction identifiers stay within Dashboard-to-Constructive operations. Browser redirects carry only random OAuth state.
+- Parent-domain shared session Cookies are not an SSO mechanism in this design. The authentication center and each Site use their own first-party credential boundary and the confirmed one-time handoff.
+- Access tokens, session tokens, Provider tokens, user data, and handoff codes never appear in redirect URLs or URL fragments. PKCE verifiers never enter browser-visible data or logs.
+- Authentication middleware must not bypass RLS, repeat Tenant/database/route inference outside Express Context, or introduce secret or compatibility fallbacks.
 - Stable Provider identifier, not email or authorization code, is the durable identity key.
 - An email collision never authorizes automatic account merge, binding, or password-confirmation linking.
 - All successful Provider branches use the same Site-bound handoff, POST callback, redemption, Site-local credential, and verified `returnTo` path as local authentication and reused unified sessions.
 
 ## Testing and Migration
 
-Coverage must verify transaction-ID/OAuth-state separation, adapter normalization, existing connected-account login, `sign_up_identity` provisioning, email-conflict rejection, Provider failure restart, and convergence into the shared handoff path. Existing identity association data remains authoritative; no migration to a parallel identity store is permitted.
+Provider unit tests mock the external Provider boundary only. They cover Authorization Code + S256 PKCE, server-held verifier handling, OAuth state lifecycle, endpoint and redirect validation, timeout and failure mapping, Google/GitHub adapter behavior, and normalized identity output at the owning package.
+
+GraphQL server integration tests use the real Constructive server, Express Context, routing, Tenant/database resolution, registered Provider configuration loaders, database procedures, session/Cookie behavior, callback lifecycle, and shared handoff continuation. The external Provider remains the only mocked service boundary. Coverage verifies transaction-ID/OAuth-state separation, replay rejection, existing connected-account login, `sign_in_identity` and `sign_up_identity` reuse, email-conflict rejection, Provider failure restart, and convergence into the shared handoff path.
+
+Existing identity association data remains authoritative; no migration to a parallel identity store is permitted. Database-owned transaction, identity, and RLS invariants are tested at the database-owning layer rather than by querying private tables from higher-level integration tests.
 
 ## Open Design Items
 

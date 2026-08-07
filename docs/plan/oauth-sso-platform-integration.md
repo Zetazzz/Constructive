@@ -134,9 +134,12 @@ page. Site roles, permissions, and data access remain owned by existing
 Constructive authorization.
 
 The browser enters through a canonical unified-auth initiation surface with a
-Site identifier, exact callback URL, optional Site-internal application-relative
-`returnTo`, and public correlation values. Exact public route names are not fixed
-by this requirements document.
+Site identifier, optional exact callback URL, optional Site-internal
+application-relative `returnTo`, and public correlation values. When the
+callback is supplied, it must exactly match an active registered callback. When
+it is omitted, the center selects the earliest registered callback by
+`created_at` ascending and then ID ascending. Exact public route names
+are not fixed by this requirements document.
 
 ## OAuth flow requirements
 
@@ -353,95 +356,132 @@ background-sign-in every Site as B.
 
 ## Product interaction sequences
 
-### Site 1 starts without a unified session
+### Main Login Diagram 1: Start and Existing Unified Authentication
 
 ```mermaid
 sequenceDiagram
-    participant U as Browser
-    participant S1 as Site 1
-    participant A as Unified auth center
-    participant C as Tenant/Site configuration
-    participant I as Constructive identity or provider
+    participant U as User
+    participant S as Site
+    participant B as Browser
+    participant D as Dashboard unified-auth UI
+    participant A as Common Constructive SSO service
     participant DB as Constructive DB
+    participant P as Shared post-authentication continuation
 
-    U->>S1: Choose sign-in
-    S1->>A: Site identifier + exact callback + Site-internal returnTo
-    A->>C: Resolve and exactly validate Site/callback/mode/returnTo
-    C-->>A: Current trusted configuration
-    A->>A: Create browser-bound, short-lived login transaction
-    A-->>U: Show unified authentication page
-    U->>A: Password sign-in/register/recovery or dynamic provider
-    A->>I: Complete the selected authentication flow
-    I-->>A: Authentication result
-    A->>A: Establish unified session and issue Site 1 handoff
-    A-->>U: Submit one-time handoff to the validated callback
-    U->>S1: POST handoff code
-    S1->>A: Redeem-handoff GraphQL mutation
-    A->>DB: Invoke handoff-redemption function
-    DB-->>A: Consumed handoff + Site-local credential + verified returnTo
-    A-->>S1: Site-local credential result + verified returnTo
-    S1->>S1: Establish Site Bearer/Cookie state
-    S1-->>U: Redirect to verified Site-internal returnTo
+    U->>S: Choose sign-in
+    S-->>B: Navigate to Dashboard with Site ID, optional exact callback, and Site-internal returnTo
+    B->>D: Load unified-auth page
+    D->>A: Start-login mutation
+    A->>DB: Resolve exact callback, validate Tenant/Site/callback/returnTo, and create transaction
+    A->>DB: Resolve enabled Providers and existing unified identity from Bearer or auth-domain Cookie
+    DB-->>A: Opaque transaction ID + safe display context + authentication decision
+    A-->>D: Opaque ID, safe context, and decision
+    alt Existing identity and silent sign-in
+        A->>P: Continue as the authenticated identity
+    else Existing identity and confirm-before-sign-in
+        D-->>U: Show identity with continue, switch, or cancel
+        U->>D: Continue
+        D->>A: Confirm transaction
+        A->>P: Continue as the authenticated identity
+    else No reusable unified identity
+        D-->>U: Show local account and enabled Provider options
+    end
 ```
 
-Non-Provider cancellation or failure may return a safe result only when its
-interaction defines that behavior and the target remains trusted. A failed
-Provider subflow instead shows a safe authentication-center failure and requires
-a new login from the Site entry.
+Constructive, not Dashboard, owns transaction creation, existing-authentication
+validation, and the effective silent/confirm decision. The registered technical
+callback is distinct from the validated application-relative `returnTo`; both
+are retained in server-side transaction context. After login start, neither the
+transaction ID nor raw `returnTo` is carried in browser navigation.
 
-### External Provider branch
+### Main Login Diagram 2: Local Username/Password Branch
 
 ```mermaid
 sequenceDiagram
-    participant U as Browser and Dashboard
-    participant A as Constructive
+    participant U as User
+    participant D as Dashboard unified-auth UI
+    participant A as Common Constructive SSO service
+    participant DB as Constructive DB
+    participant P as Shared post-authentication continuation
+
+    U->>D: Submit local credentials
+    D->>A: Password mutation with opaque transaction ID + credentials
+    A->>DB: Invoke SSO password wrapper and validate transaction boundaries
+    alt Invalid transaction or password failure
+        DB-->>A: Existing safe authentication error
+        A-->>D: Safe failure
+        Note over U,D: User may manually resubmit while the transaction remains active; no automatic retry
+    else Successful local authentication
+        DB-->>A: Identity + existing Dashboard credential outcome
+        A->>P: Continue as the authenticated identity
+    end
+```
+
+The SSO wrapper calls the existing Tenant-local `sign_in_identity` primitive
+once and does not extend that primitive with SSO concerns. Any Dashboard Bearer
+result and auth-domain first-party Cookie are local to the authentication center;
+they are not the target Site's credential.
+
+### Main Login Diagram 3: External Provider Branch
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant D as Dashboard unified-auth UI
+    participant B as Browser
+    participant A as Common Constructive SSO service
     participant DB as Constructive DB
     participant PA as Protocol-neutral Provider Adapter
     participant IP as External Identity Provider
-    participant P as Shared post-authentication path
+    participant P as Shared post-authentication continuation
 
-    U->>A: Provider start with unified transaction ID + configured Provider
-    Note over U,A: Unified transaction ID is sent only to Constructive
-    A->>DB: Create OAuth authorization request linked to login transaction
+    U->>D: Choose an enabled configured Provider
+    D->>A: Provider-start operation with opaque transaction ID + Provider key
+    Note over D,A: Dashboard gives the unified transaction ID only to Constructive
+    A->>DB: Validate transaction/Provider and create linked OAuth authorization request
     DB-->>A: Random OAuth state; PKCE/nonce remain server-side
     A->>PA: Build Provider-specific authorization request
-    A-->>U: Redirect with random OAuth state only
-    U->>IP: Complete Provider interaction
-    IP-->>U: Callback with code or error + random OAuth state
-    U->>A: Provider callback
-    A->>DB: Validate state and restore Provider + original login transaction
-    A->>PA: Handle callback through selected configured adapter
-    alt Google/OIDC adapter example
-        PA->>IP: Exchange authorization code server-side
-        IP-->>PA: Identity token + optional access token + user data
-        PA->>PA: Validate identity token and normalize user data
-        Note over PA,IP: Optional access token is not retained or used for v1 SSO when identity data is sufficient
-    else GitHub/OAuth adapter example
-        PA->>IP: Exchange authorization code server-side
-        IP-->>PA: Access token
-        PA->>IP: Query GitHub user and, when needed, email endpoints
-        IP-->>PA: User and optional email data
-        PA->>PA: Normalize GitHub user data
-    else Another supported adapter
-        PA->>PA: Run adapter-specific verification and normalize
-    end
-    Note over U,IP: Browser receives callback code/state or error, never Provider tokens
-    alt Provider cancellation, error, invalid state, or verification failure
-        PA-->>A: Classified failure
-        A-->>U: Safe failure; restart from Site login entry
-    else Normalized external identity
-        PA-->>A: Service key + stable identifier + optional email + safe profile
-        A->>DB: Resolve connected_accounts by service + identifier
-        alt Existing association
-            DB-->>A: Linked owner_id
-            A->>P: Continue as linked local user
-        else Unlinked and email is unowned
-            A->>DB: Call existing sign_up_identity provisioning path
-            DB-->>A: Application user + email + connected account
-            A->>P: Continue as provisioned local user
-        else Unlinked and email belongs to another local account
-            DB-->>A: Explicit account conflict
-            A-->>U: Use existing sign-in method; restart login
+    A-->>B: Redirect with random OAuth state only
+    B->>IP: Complete Provider interaction
+    IP-->>B: Callback with code or error + random OAuth state
+    B->>A: Provider callback
+    A->>DB: Validate/consume OAuth state and restore Provider + original transaction
+    alt Invalid, expired, or replayed OAuth state
+        DB-->>A: Classified state failure
+        A-->>D: Safe failure; restart from Site login entry
+    else State restores configured Provider and original transaction
+        DB-->>A: Restored transaction and Provider context
+        alt Callback contains Provider cancellation/error
+            A-->>D: Safe Provider failure; restart from Site login entry
+        else Callback contains authorization code
+            A->>PA: Complete callback through the selected configured adapter
+            alt Google/OIDC adapter example
+                PA->>IP: Exchange authorization code server-side
+                IP-->>PA: Identity token + optional access token + user data
+                PA->>PA: Validate identity token and normalize user data
+            else GitHub/OAuth adapter example
+                PA->>IP: Exchange authorization code server-side
+                IP-->>PA: Access token
+                PA->>IP: Query user and optional email endpoints
+                IP-->>PA: User and optional email data
+                PA->>PA: Normalize GitHub user data
+            else Another supported adapter
+                PA->>PA: Run adapter-specific verification
+            end
+            PA-->>A: Normalized Provider key + stable identifier + optional email + safe profile
+            Note over B,IP: Browser sees code/state or error, never Provider tokens or the unified transaction ID
+            A->>DB: Resolve connected_accounts by Provider + stable identifier
+            alt Existing association
+                DB-->>A: Linked local user
+                A->>P: Continue as the linked identity
+            else Unlinked and email is unowned
+                A->>DB: Use existing sign_up_identity provisioning path
+                DB-->>A: New local user + email + connected account
+                A->>P: Continue as the provisioned identity
+            else Unlinked and email belongs to another local account
+                DB-->>A: Explicit account conflict
+                A-->>D: Use existing sign-in method; restart login
+            end
         end
     end
 ```
@@ -450,66 +490,62 @@ The authorization code is never an identity or durable association. Provider
 adapters keep Google/OIDC, GitHub/OAuth, and other protocol details internal;
 only the normalized external identity crosses into the common identity lifecycle.
 
-### A Site starts with an existing unified session
+### Shared Successful Completion
 
 ```mermaid
 sequenceDiagram
-    participant U as Browser
-    participant S as Target Site
-    participant A as Unified auth center
-    participant C as Tenant/Site configuration
+    participant P as Shared post-authentication continuation
+    participant A as Common Constructive SSO service
     participant DB as Constructive DB
+    participant D as Dashboard unified-auth UI
+    participant B as Browser
+    participant S as Target Site
 
-    U->>S: Start sign-in
-    S->>A: Site identifier + exact callback + Site-internal returnTo
-    A->>C: Revalidate Site/callback/mode/returnTo
-    C-->>A: Current trusted configuration
-    A->>A: Validate unified session and create login transaction
-    alt Confirm before sign-in (default)
-        A-->>U: Show account identity + continue/switch/cancel
-        U->>A: Continue
-    else Silent sign-in
-        A->>A: Skip only the confirmation page
-    end
-    A-->>U: Submit one-time handoff to the validated callback
-    U->>S: POST handoff code
+    P->>A: Authenticated identity + active transaction
+    A->>DB: Preserve/establish auth-center credential outcome and create one-time Site handoff
+    DB-->>A: Auth-center-local outcome + plaintext handoff emitted once
+    A-->>D: Minimal continuation result
+    D-->>B: Submit handoff to validated technical callback
+    B->>S: POST one-time handoff code
     S->>A: Redeem-handoff GraphQL mutation
     A->>DB: Invoke handoff-redemption function
-    DB-->>A: Site-local credential + verified returnTo; handoff consumed
+    DB-->>A: Distinct Site-local credential + verified returnTo; handoff consumed
     A-->>S: Site-local credential result + verified returnTo
-    S->>S: Establish Site Bearer/Cookie state
-    S-->>U: Redirect to verified Site-internal returnTo
+    S->>S: Set its first-party Cookie and/or deliver its Bearer result
+    S-->>B: Redirect to verified Site-internal returnTo
 ```
 
-Silent sign-in skips only the confirmation UI. It never skips Site/callback
-validation, transaction creation, unified-session validation, handoff, or local
-session binding.
+All successful routes in the three main diagrams enter this one continuation.
+The handoff is sent by POST to the fixed, registered technical callback; only
+after successful server-side redemption does the Site redirect to its separately
+validated, Site-internal `returnTo`. Authentication-center credentials and
+Site-local credentials remain distinct.
+
+### Existing unified session
+
+This case is the first diagram's silent or confirm branch. Silent sign-in skips
+only the confirmation UI; neither branch skips Site/callback validation,
+transaction creation, unified-session validation, handoff, or Site-local
+credential establishment.
 
 ### Switch from account A to account B
 
 ```mermaid
 sequenceDiagram
     participant U as Browser
-    participant S1 as Current Site
-    participant A as Unified auth center
-    participant DB as Constructive DB
+    participant A as Common Constructive SSO service
+    participant P as Shared post-authentication continuation
     participant SO as Other Sites
 
     U->>A: Select switch account
     A->>A: Revoke the browser's account A unified session
     U->>A: Authenticate account B
-    A-->>U: Submit B handoff to the validated Site callback
-    U->>S1: POST B handoff code
-    S1->>A: Redeem-handoff GraphQL mutation
-    A->>DB: Invoke handoff-redemption function
-    DB-->>A: Site-local credential + verified returnTo; handoff consumed
-    A-->>S1: Site-local credential result + verified returnTo
-    S1->>S1: Establish B Site Bearer/Cookie state
-    S1-->>U: Redirect to verified Site-internal returnTo
+    A->>P: Continue B for the current Site transaction
+    Note over P: Use the single shared handoff, callback, redemption, credential, and returnTo path
     Note over SO: Old A local sessions are rejected; no B session is created
     U->>SO: Visit later
-    SO->>A: Start a new Site transaction
-    A-->>SO: Follow the same confirm/silent and handoff completion path for B
+    SO->>A: Start a new Site login
+    Note over SO,A: Follow Main Login Diagram 1 and the shared completion for B
 ```
 
 ## Administrative management
