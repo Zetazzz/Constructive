@@ -78,9 +78,31 @@ Provider availability is registry- and configuration-driven.
 - An unconfigured or disabled provider is not advertised and cannot be used.
 - Adding another provider to the package registry must not require a separate
   server workflow or provider-specific route design.
-- Provider adapters may describe endpoint, request encoding, token-endpoint
-  authentication, and profile-normalization differences, but they must not
-  create separate state, PKCE, callback, identity, or session workflows.
+- The common SSO flow uses a protocol-neutral Provider Adapter. Provider-specific
+  OAuth or OIDC endpoint, request, token, verification, and profile-retrieval
+  behavior stays inside its adapter and must not create a separate SSO state,
+  identity, or session workflow.
+- The Adapter pattern is a protocol-neutral interface or contract covering
+  authorization initiation and callback/code-to-normalized-identity completion.
+  Google and GitHub each implement it, and future Providers add another adapter;
+  no abstract base class or inheritance hierarchy is required.
+- Login-transaction and OAuth-state validation, account matching or provisioning,
+  and shared post-authentication handoff orchestration remain in the common
+  Constructive service rather than any Provider adapter.
+- Every adapter normalizes success to the same minimal external identity:
+  Provider service key, stable Provider user identifier or subject, email when
+  available, and safe profile details. Constructive consumes only that normalized
+  identity outside the adapter.
+- The Google/OIDC adapter exchanges the authorization code server-side,
+  validates the returned identity token as identity proof, and normalizes the
+  resulting user data. An access token may also be returned, but v1 neither
+  retains nor uses it for SSO when the validated identity data is sufficient.
+- The GitHub/OAuth adapter exchanges the authorization code server-side for an
+  access token, uses it server-side to retrieve the GitHub user and, when needed,
+  email data, and then normalizes that result.
+- Provider callbacks return an authorization code plus OAuth state, or an error;
+  they do not return Provider tokens to the browser. Provider tokens remain
+  inside the server-to-Provider adapter boundary.
 - Unsupported provider capabilities or token authentication methods fail
   explicitly; they must not silently downgrade the security flow.
 - Provider credentials and metadata are resolved for the current tenant and
@@ -112,8 +134,9 @@ page. Site roles, permissions, and data access remain owned by existing
 Constructive authorization.
 
 The browser enters through a canonical unified-auth initiation surface with a
-Site identifier, exact callback URL, and public correlation values. Exact public
-route names are not fixed by this requirements document.
+Site identifier, exact callback URL, optional Site-internal application-relative
+`returnTo`, and public correlation values. Exact public route names are not fixed
+by this requirements document.
 
 ## OAuth flow requirements
 
@@ -127,13 +150,19 @@ route names are not fixed by this requirements document.
 - Every provider uses Authorization Code flow with S256 PKCE.
 - Each initiation creates a one-time verifier/challenge pair. The verifier is
   never placed in a redirect URL and is bound to the corresponding callback.
-- OAuth state is signed, short-lived, and bound to the login transaction,
-  provider, Tenant, database, Site, exact callback, originating API/host,
-  browser, and PKCE relation.
+- Dashboard sends the unified login transaction identifier and selected Provider
+  only to Constructive. Constructive creates the existing server-side OAuth
+  authorization-request state and associates it with that transaction.
+- The browser and external Provider receive only a cryptographically random,
+  opaque OAuth state value, never the unified login transaction identifier.
+  Server-side state binds the Provider, Tenant, database, Site, exact callback,
+  originating API/host, browser, PKCE relation, and original login transaction.
 - The callback re-resolves the current route and target application. Any
   expired, modified, replayed, or mismatched state, provider, tenant, database,
   Site, callback, browser, host, API, or PKCE value is rejected.
-- Return targets must be registered and validated. Open redirects are forbidden.
+- The technical callback must be registered and exactly validated. `returnTo`
+  is a separately validated Site-internal, application-relative destination;
+  it cannot name another Site or origin. Open redirects are forbidden.
 - Provider authorization, token, and user-info endpoints must use HTTPS and
   reject loopback, private, link-local, and reserved network destinations.
 - Server-to-provider requests use bounded timeouts and do not automatically
@@ -146,12 +175,17 @@ The browser HTTP surface is limited to semantics that GraphQL cannot replace:
 authorization initiation, provider callback, and the redirects or cookie
 operations required to complete authentication.
 
-When the login transaction and target remain trusted, OAuth provider rejection
-and safely classified callback failure return a registered result to the
-validated Site callback. A failure that breaks target trust remains at the
-authentication center as defined below. Raw provider error fields are not
-forwarded. Every failed callback performs the same transient-state cleanup and
-partial-work rollback as a successful callback.
+The Provider callback may contain a code or a Provider error. Constructive first
+validates and consumes the opaque OAuth state, restores the configured Provider
+and original unified login transaction server-side, and then asks the selected
+adapter to exchange or verify the Provider result.
+
+Provider cancellation, a Provider-reported error, invalid state, or Provider
+exchange or verification failure produces a clear, safe user-facing failure at
+the authentication center. No handoff is issued and the failed Provider flow is
+not resumed; the user restarts from the Site login entry with a new login
+transaction. Raw Provider error fields are not forwarded. Every failed callback
+performs the required transient-state cleanup and partial-work rollback.
 
 ## Login transaction and result routing
 
@@ -173,9 +207,14 @@ When the transaction, Site, and callback remain trusted, the same registered
 Site callback may receive:
 
 - **success:** an opaque, short-lived, single-use handoff code for server-side
-  consumption;
-- **user cancellation:** a stable cancellation result without a handoff; or
-- **a safely classified failure:** a registered, non-sensitive result category.
+  consumption through a browser `POST` rather than a URL;
+- **non-Provider user cancellation:** a stable cancellation result without a
+  handoff when that interaction explicitly supports returning to the Site; or
+- **a safely classified non-Provider failure:** a registered, non-sensitive
+  result category when its routing remains trustworthy.
+
+Provider cancellation and Provider-flow failures do not use this callback result
+path; they follow the restart behavior in the OAuth flow requirements above.
 
 The Site owns the presentation of these results on its callback page. The
 callback never receives raw provider errors, provider authorization or access
@@ -217,11 +256,22 @@ The center must not attempt a best-effort redirect using untrusted request data.
 
 ## Identity lifecycle
 
-- On first login, an unknown provider identity creates one Constructive user
-  and one provider-identity association.
-- Repeated login with the same provider identity returns the originally linked
-  user and never creates a duplicate user or duplicate association.
-- Provider subject/identity is the association key.
+- `constructive_user_identifiers_private.connected_accounts` is the durable
+  Provider-identity association. Its Provider service key plus stable external
+  identifier resolves the linked `owner_id`; safe additional Provider profile
+  attributes remain in `details`.
+- A Provider authorization code is transient protocol input and is never stored
+  or treated as an identity. A stable Provider identifier or subject, not email,
+  recognizes a returning Provider account.
+- If the Provider identity is already linked, sign-in authenticates the linked
+  local Constructive user and never creates a duplicate user or association.
+- If the Provider identity is unlinked and its normalized email is not owned by
+  a local account, the existing `sign_up_identity` path automatically provisions
+  the application user, email, and connected-account association atomically.
+- If the Provider identity is unlinked but its normalized email belongs to a
+  different local account, sign-in fails explicitly with guidance to use the
+  account's existing sign-in method. This flow does not automatically merge or
+  bind accounts and does not ask for password-confirmation linking.
 - Provider email verification is retained as metadata but does not block first
   login and does not authorize automatic account merging, recovery, or access.
 - Identity creation and linking must be atomic: a failed flow must not leave a
@@ -254,6 +304,14 @@ existing local MFA challenge before the final application session is created.
   to the browser and session security requirements above.
 - Authentication may be handed from the unified entry to a verified target
   only through a short-lived, replay-resistant, server-consumed exchange.
+- Dashboard submits the one-time handoff code to the validated technical Site
+  callback through `POST`; neither the handoff nor a reusable credential appears
+  in a redirect URL.
+- The target Site redeems the handoff through the Constructive GraphQL mutation
+  backed by the handoff-redemption database function. Successful redemption
+  consumes the handoff and returns a distinct Site-local credential result.
+- The Site callback owns its first-party Bearer/Cookie completion and then
+  redirects to the verified Site-internal, application-relative `returnTo`.
 - Reusable access tokens, session tokens, provider tokens, authorization codes,
   secrets, and user details must not be exposed in redirect URLs or fragments.
 - The target host, API, tenant, and database are revalidated before a target
@@ -304,10 +362,11 @@ sequenceDiagram
     participant A as Unified auth center
     participant C as Tenant/Site configuration
     participant I as Constructive identity or provider
+    participant DB as Constructive DB
 
     U->>S1: Choose sign-in
-    S1->>A: Site identifier + exact callback
-    A->>C: Resolve and exactly validate Site/callback/mode
+    S1->>A: Site identifier + exact callback + Site-internal returnTo
+    A->>C: Resolve and exactly validate Site/callback/mode/returnTo
     C-->>A: Current trusted configuration
     A->>A: Create browser-bound, short-lived login transaction
     A-->>U: Show unified authentication page
@@ -315,16 +374,81 @@ sequenceDiagram
     A->>I: Complete the selected authentication flow
     I-->>A: Authentication result
     A->>A: Establish unified session and issue Site 1 handoff
-    A-->>S1: Return to the registered callback with safe result
-    S1->>A: Consume handoff server-side
-    A-->>S1: Confirm identity and active unified session
-    S1->>S1: Establish a bound local session
-    S1-->>U: Show result and continue in Site 1
+    A-->>U: Submit one-time handoff to the validated callback
+    U->>S1: POST handoff code
+    S1->>A: Redeem-handoff GraphQL mutation
+    A->>DB: Invoke handoff-redemption function
+    DB-->>A: Consumed handoff + Site-local credential + verified returnTo
+    A-->>S1: Site-local credential result + verified returnTo
+    S1->>S1: Establish Site Bearer/Cookie state
+    S1-->>U: Redirect to verified Site-internal returnTo
 ```
 
-If the user cancels or a safely classified failure occurs while the target is
-still trusted, the center returns the corresponding safe result to the same
-registered Site 1 callback.
+Non-Provider cancellation or failure may return a safe result only when its
+interaction defines that behavior and the target remains trusted. A failed
+Provider subflow instead shows a safe authentication-center failure and requires
+a new login from the Site entry.
+
+### External Provider branch
+
+```mermaid
+sequenceDiagram
+    participant U as Browser and Dashboard
+    participant A as Constructive
+    participant DB as Constructive DB
+    participant PA as Protocol-neutral Provider Adapter
+    participant IP as External Identity Provider
+    participant P as Shared post-authentication path
+
+    U->>A: Provider start with unified transaction ID + configured Provider
+    Note over U,A: Unified transaction ID is sent only to Constructive
+    A->>DB: Create OAuth authorization request linked to login transaction
+    DB-->>A: Random OAuth state; PKCE/nonce remain server-side
+    A->>PA: Build Provider-specific authorization request
+    A-->>U: Redirect with random OAuth state only
+    U->>IP: Complete Provider interaction
+    IP-->>U: Callback with code or error + random OAuth state
+    U->>A: Provider callback
+    A->>DB: Validate state and restore Provider + original login transaction
+    A->>PA: Handle callback through selected configured adapter
+    alt Google/OIDC adapter example
+        PA->>IP: Exchange authorization code server-side
+        IP-->>PA: Identity token + optional access token + user data
+        PA->>PA: Validate identity token and normalize user data
+        Note over PA,IP: Optional access token is not retained or used for v1 SSO when identity data is sufficient
+    else GitHub/OAuth adapter example
+        PA->>IP: Exchange authorization code server-side
+        IP-->>PA: Access token
+        PA->>IP: Query GitHub user and, when needed, email endpoints
+        IP-->>PA: User and optional email data
+        PA->>PA: Normalize GitHub user data
+    else Another supported adapter
+        PA->>PA: Run adapter-specific verification and normalize
+    end
+    Note over U,IP: Browser receives callback code/state or error, never Provider tokens
+    alt Provider cancellation, error, invalid state, or verification failure
+        PA-->>A: Classified failure
+        A-->>U: Safe failure; restart from Site login entry
+    else Normalized external identity
+        PA-->>A: Service key + stable identifier + optional email + safe profile
+        A->>DB: Resolve connected_accounts by service + identifier
+        alt Existing association
+            DB-->>A: Linked owner_id
+            A->>P: Continue as linked local user
+        else Unlinked and email is unowned
+            A->>DB: Call existing sign_up_identity provisioning path
+            DB-->>A: Application user + email + connected account
+            A->>P: Continue as provisioned local user
+        else Unlinked and email belongs to another local account
+            DB-->>A: Explicit account conflict
+            A-->>U: Use existing sign-in method; restart login
+        end
+    end
+```
+
+The authorization code is never an identity or durable association. Provider
+adapters keep Google/OIDC, GitHub/OAuth, and other protocol details internal;
+only the normalized external identity crosses into the common identity lifecycle.
 
 ### A Site starts with an existing unified session
 
@@ -334,10 +458,11 @@ sequenceDiagram
     participant S as Target Site
     participant A as Unified auth center
     participant C as Tenant/Site configuration
+    participant DB as Constructive DB
 
     U->>S: Start sign-in
-    S->>A: Site identifier + exact callback
-    A->>C: Revalidate Site/callback/mode
+    S->>A: Site identifier + exact callback + Site-internal returnTo
+    A->>C: Revalidate Site/callback/mode/returnTo
     C-->>A: Current trusted configuration
     A->>A: Validate unified session and create login transaction
     alt Confirm before sign-in (default)
@@ -346,9 +471,14 @@ sequenceDiagram
     else Silent sign-in
         A->>A: Skip only the confirmation page
     end
-    A-->>S: Return safe result and one-time handoff
-    S->>A: Consume handoff server-side
-    S->>S: Establish a bound local session
+    A-->>U: Submit one-time handoff to the validated callback
+    U->>S: POST handoff code
+    S->>A: Redeem-handoff GraphQL mutation
+    A->>DB: Invoke handoff-redemption function
+    DB-->>A: Site-local credential + verified returnTo; handoff consumed
+    A-->>S: Site-local credential result + verified returnTo
+    S->>S: Establish Site Bearer/Cookie state
+    S-->>U: Redirect to verified Site-internal returnTo
 ```
 
 Silent sign-in skips only the confirmation UI. It never skips Site/callback
@@ -362,17 +492,24 @@ sequenceDiagram
     participant U as Browser
     participant S1 as Current Site
     participant A as Unified auth center
+    participant DB as Constructive DB
     participant SO as Other Sites
 
     U->>A: Select switch account
     A->>A: Revoke the browser's account A unified session
     U->>A: Authenticate account B
-    A-->>S1: Issue B handoff for the current transaction
-    S1->>S1: Establish B local session
+    A-->>U: Submit B handoff to the validated Site callback
+    U->>S1: POST B handoff code
+    S1->>A: Redeem-handoff GraphQL mutation
+    A->>DB: Invoke handoff-redemption function
+    DB-->>A: Site-local credential + verified returnTo; handoff consumed
+    A-->>S1: Site-local credential result + verified returnTo
+    S1->>S1: Establish B Site Bearer/Cookie state
+    S1-->>U: Redirect to verified Site-internal returnTo
     Note over SO: Old A local sessions are rejected; no B session is created
     U->>SO: Visit later
     SO->>A: Start a new Site transaction
-    A-->>SO: Confirm or silently establish B according to Site mode
+    A-->>SO: Follow the same confirm/silent and handoff completion path for B
 ```
 
 ## Administrative management
@@ -417,18 +554,21 @@ sequenceDiagram
 
 ## Protocol boundary
 
-The required protocol is OAuth 2.0 Authorization Code with mandatory S256 PKCE.
-The implementation must not claim complete OpenID Connect verification unless
-issuer, audience, nonce, discovery, and JWKS validation are separately defined
-and implemented. Provider-specific OIDC-shaped profile responses do not by
-themselves make CNC an OIDC provider or a complete OIDC relying party.
+The common SSO orchestration and normalized external-identity contract are
+protocol-neutral. Current OAuth-based adapters use OAuth 2.0 Authorization Code
+with mandatory S256 PKCE. An OIDC-capable adapter must not claim complete OpenID
+Connect verification unless issuer, audience, nonce, discovery, and JWKS
+validation are separately defined and implemented. Provider-specific
+OIDC-shaped responses do not by themselves make CNC an OIDC provider or make
+the generic SSO flow an OIDC relying party.
 
 ## Completion criteria
 
 The CNC implementation is complete when:
 
-1. All providers registered by `packages/oauth` follow the same secure flow and
-   tenant configuration controls their availability.
+1. All providers registered by `packages/oauth` use the protocol-neutral adapter
+   boundary and shared secure SSO flow, while Tenant configuration controls
+   their availability.
 2. Dashboard can host the unified-auth pages without making authentication
    depend on its management features.
 3. Tenant-managed Sites support stable identifiers, multiple exactly matched
@@ -438,19 +578,24 @@ The CNC implementation is complete when:
 5. Successful local account registration immediately establishes the unified
    session and continues the originating Site flow without an email-verification
    prerequisite.
-6. First and repeated provider login satisfy the identity lifecycle requirements.
+6. Provider login resolves durable identity through existing
+   `connected_accounts`; linked identities return their owner, eligible unlinked
+   identities use `sign_up_identity`, and an email owned by another account
+   fails without automatic merge or password-confirmation linking.
 7. Unified SSO establishes sessions across registered applications on different
    parent domains without exposing reusable credentials.
 8. Tenant/Site/callback/database/host boundaries are enforced during initiation,
    callback, identity resolution, and target-session establishment.
-9. OAuth-disabled, missing configuration, provider rejection, malformed state,
-   replay, routing mismatch, linking failure, and local MFA continuation have
-   explicit behavior and automated coverage at their owning layers.
-10. Success, cancellation, and safely classified failure can return to the same
-    still-trusted callback without exposing raw provider or sensitive data;
-    untrusted-target failures remain at the authentication center.
-11. Login transactions are stored server-side, while the browser receives only
-    an opaque random identifier with no transaction contents or sensitive state.
+9. OAuth-disabled, missing configuration, Provider cancellation or rejection,
+   malformed state, replay, Provider verification failure, routing mismatch,
+   identity conflict, and local MFA continuation have explicit behavior and
+   automated coverage at their owning layers.
+10. Every Provider-flow failure is safely presented at the authentication center
+    and requires a fresh login from the Site entry; it cannot resume the failed
+    flow or expose raw Provider or sensitive data.
+11. Login transactions and OAuth authorization requests are stored server-side.
+    Dashboard receives only the active opaque transaction identifier, while the
+    browser/Provider boundary receives only unrelated random OAuth state.
 12. Login transactions and handoffs are short-lived, single-use, and bound to
     the correct browser, Site, callback, Tenant, API, and database.
 13. The auth center and Sites use only narrowly scoped, protected first-party
@@ -463,8 +608,15 @@ The CNC implementation is complete when:
     only for the currently active Site transaction.
 16. Tenant provider changes and secret rotation take effect through the owned
    cache/invalidation lifecycle without leaking the secret.
-17. No private identity table, parallel configuration reader, parallel request
-   context, or duplicated OAuth workflow is introduced by server middleware.
+17. Existing `connected_accounts` and identity procedures are reused; no parallel
+    private identity table, configuration reader, request context, or duplicated
+    Provider workflow is introduced by server middleware.
+
+## Future consideration (not current scope)
+
+An already authenticated local user may later be allowed to bind Google, GitHub,
+or another Provider from account settings. Account-settings binding is not part
+of the current unified-login flow or release scope.
 
 ## Technical details still to design
 
@@ -473,7 +625,8 @@ observable behavior:
 
 - login-transaction storage schema, opaque-identifier hashing, expiry duration,
   cleanup, and the browser-binding implementation;
-- handoff persistence, database procedure, exchange, expiry, and replay marker;
+- whether the confirmed logical handoff model reuses or extends an existing
+  table or requires a new table, plus its cleanup implementation;
 - the exact public initiation, provider callback, Site callback, and failure-page
   route names; and
 - the server-side mechanism by which each protected Site request validates the

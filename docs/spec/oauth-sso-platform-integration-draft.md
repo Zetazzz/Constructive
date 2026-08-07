@@ -189,46 +189,120 @@ sequenceDiagram
 
 ##### External Provider Branch
 
+**Status:** Confirmed and promoted to the formal specification.
+
+The generic SSO flow uses a protocol-neutral Provider Adapter selected from the transaction Tenant's configured and enabled Providers. Dashboard sends the active unified login transaction identifier and selected Provider only to Constructive. Constructive creates the existing OAuth authorization-request state linked to that transaction; the browser and external Provider receive only the random OAuth state, never the unified login transaction identifier.
+
+The Adapter pattern is defined by a protocol-neutral interface or contract covering Provider-specific authorization initiation and callback/code-to-normalized-identity completion. Google and GitHub each implement that contract, and a future Provider adds another implementation. This decision does not require an abstract base class or inheritance. A common Constructive service keeps login-transaction and OAuth-state validation, account matching or provisioning, and shared post-authentication handoff orchestration outside every adapter.
+
+Each Provider-specific implementation owns its authorization and callback protocol details. Both Google and GitHub return an authorization code plus OAuth state, or a Provider error, to the callback; neither returns tokens directly to the browser. The Google/OIDC adapter exchanges the code server-side, validates the returned identity token as identity proof, and normalizes the resulting user data. An access token may also be returned, but v1 neither retains nor uses it for SSO when the validated identity data is sufficient. The GitHub/OAuth adapter exchanges the code server-side for an access token, uses it server-side to query GitHub user and, when needed, email endpoints, and normalizes the result. These are adapter-internal examples, not separate top-level SSO flows or requirements imposed on every future Provider.
+
+Every implementation normalizes success to one external identity outcome containing at least the Provider key or name, external subject or user ID, email when available, and safe profile basics. Generic SSO and the unchanged account-association and identity logic consume only this normalized outcome. Provider tokens never cross the server-side adapter boundary.
+
 ```mermaid
 sequenceDiagram
     actor U as User
     participant D as Dashboard unified login page
-    participant C as Constructive
+    participant C as Common Constructive SSO service
     participant DB as Constructive DB
+    participant PA as Protocol-neutral Provider Adapter
     participant B as Browser
     participant IP as External Identity Provider
+    participant A as Existing account association and identity logic
     participant P as Common post-authentication continuation
 
     Note over U,D: No reusable unified state
     U->>D: Choose Google, GitHub, or another enabled Provider
     D->>C: Provider-start operation with opaque transaction ID and Provider
-    C->>DB: Validate active unified login transaction
+    Note over D,C: Unified transaction ID is sent only to Constructive
+    C->>DB: Validate transaction and selected configured Provider
     C->>DB: Create Provider-only OAuth request linked to unified transaction
     Note over C,DB: oauth_authorization_requests is Provider-only state, not the unified login transaction
     DB-->>C: Opaque browser state; PKCE verifier and nonce remain server-held
-    C-->>B: Redirect browser to selected Provider
+    C->>PA: Begin authorization with configured Provider and random OAuth state
+    PA-->>C: Authorization redirect details
+    C-->>B: Redirect browser with random OAuth state only
+    Note over B,IP: Unified transaction ID never crosses this boundary
     B->>IP: Follow authorization redirect with opaque state and PKCE challenge
-    IP-->>B: Redirect to Constructive callback
-    B->>C: Provider callback with code and opaque state
-    C->>DB: Consume Provider state and resolve linked unified transaction
-    DB-->>C: Active transaction context with server-held PKCE and nonce
-    Note over C,DB: Callback continuation is server-side; Dashboard performs no status query
-    C->>IP: Exchange code and verify Provider identity
-    alt Provider authentication fails
-        IP-->>C: Failure
+    IP-->>B: Authorization code + OAuth state, or error + OAuth state
+    B->>C: Provider callback
+    C->>DB: Consume OAuth state and restore Provider context and linked unified transaction
+    alt OAuth state is invalid, expired, or mismatched
+        DB-->>C: Classified state failure
         C-->>D: Safe classified error
-        D-->>U: Render safe error
-    else Provider authentication succeeds
-        IP-->>C: Verified external identity
-        C->>P: Enter common continuation with authenticated identity and transaction
+        D-->>U: Render safe error and require restart from Site login entry
+    else State restores configured Provider and original transaction
+        DB-->>C: Active transaction and configured Provider context with server-held PKCE and nonce
+        Note over C,DB: State validation stays in the common service; Dashboard performs no status query
+        alt Callback contains Provider cancellation or error
+            C-->>D: Safe classified Provider failure
+            D-->>U: Render safe error and require restart from Site login entry
+        else Callback contains authorization code
+            C->>PA: Complete code-to-normalized-identity through configured adapter
+            alt Google/OIDC adapter implementation
+                PA->>IP: Exchange authorization code server-side
+                IP-->>PA: Identity token + optional access token + user data
+                PA->>PA: Validate identity token and normalize user data
+                Note over PA,IP: Optional access token is not retained or used for v1 SSO when identity data is sufficient
+            else GitHub/OAuth adapter implementation
+                PA->>IP: Exchange authorization code server-side
+                IP-->>PA: Access token
+                PA->>IP: Query GitHub user and, when needed, email endpoints
+                IP-->>PA: User and optional email data
+                PA->>PA: Normalize GitHub user data
+            else Another supported adapter implementation
+                PA->>PA: Run Provider-specific verification and normalize
+            end
+            Note over B,IP: Browser never receives Provider tokens
+            alt Provider exchange or verification fails
+                PA-->>C: Classified Provider failure
+                C-->>D: Safe classified error
+                D-->>U: Render safe error and require restart from Site login entry
+            else Provider returns normalized external identity
+                PA-->>C: Provider key/name + stable subject/user ID + optional email + safe profile
+                C->>A: Resolve unchanged identity lifecycle from normalized outcome
+                A->>DB: Lookup connected_accounts by service + identifier
+                alt Existing connected account
+                    DB-->>A: Linked owner_id and details
+                    A-->>C: Linked local identity
+                    C->>P: Enter common continuation with identity and transaction
+                else Unlinked and email is not locally owned
+                    A->>DB: Call existing sign_up_identity path
+                    DB-->>A: Application user + email + connected account; other profile data in details
+                    A-->>C: Provisioned local identity
+                    C->>P: Enter common continuation with identity and transaction
+                else Unlinked and email belongs to another local account
+                    DB-->>A: Explicit account conflict
+                    A-->>C: Use-existing-sign-in guidance
+                    C-->>D: Safe conflict without merge, binding, or password confirmation
+                    D-->>U: Use existing sign-in method and restart login
+                end
+            end
+        end
     end
 ```
+
+#### Provider Identity Association and Provisioning
+
+**Status:** Confirmed and promoted to the formal specification.
+
+- `constructive_user_identifiers_private.connected_accounts` remains the durable association from Provider `service` plus stable `identifier` to `owner_id`; safe additional profile data remains in `details`.
+- The Provider authorization code is transient protocol input, never the identity. Returning accounts are recognized by stable Provider identifier or subject, not email.
+- An existing association authenticates its linked local user. An unlinked identity whose normalized email is not owned locally uses the existing `sign_up_identity` path to provision the application user, email, and connected account atomically.
+- An unlinked identity whose normalized email belongs to another local account fails explicitly with guidance to use the existing sign-in method. This flow performs no automatic merge or binding and no password-confirmation linking.
+- Provider cancellation or error, invalid state, exchange or verification failure, and email conflict produce safe user-facing failures. The failed Provider flow is never resumed; the user restarts from the Site login entry with a new transaction.
+
+#### Future Provider Binding Consideration
+
+**Status:** Future consideration; not current scope.
+
+An already authenticated local user may later bind Google, GitHub, or another Provider from account settings. This is not part of the current unified-login flow.
 
 Both branches enter the same common post-authentication continuation described below. Neither branch exposes transaction retrieval or status polling to Dashboard.
 
 ### Common Post-Authentication and Cross-Site Completion
 
-**Status:** Confirmed; pending promotion to the formal specification.
+**Status:** Confirmed and promoted to the formal specification.
 
 Every successful route enters exactly this shared continuation: an already unified-authenticated user proceeding silently, an already unified-authenticated user confirming the current account, a successful local-password sign-in, or a successful external-Provider sign-in. No successful branch bypasses the handoff, callback, redemption, Site-local credential, or verified `returnTo` stages below.
 
