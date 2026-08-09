@@ -112,6 +112,11 @@ Provider discovery is exposed through GraphQL. The old HTTP provider-list or
 landing endpoint is not part of the target API. The unified authentication page
 reads the current Tenant's enabled providers through the existing registry and
 configuration surfaces; page code must not contain a fixed provider list.
+Provider names used as concrete adapter or test examples, including Google and
+GitHub, never form a release-specific product allowlist. Any Provider supported
+by the running server's adapter registry and enabled with complete configuration
+for the current Tenant appears through the same discovery and UI flow without a
+Dashboard workflow change.
 
 ## Unified authentication experience
 
@@ -133,13 +138,27 @@ The confirmation page is not a verbose permissions or authorization-consent
 page. Site roles, permissions, and data access remain owned by existing
 Constructive authorization.
 
-The browser enters through a canonical unified-auth initiation surface with a
-Site identifier, optional exact callback URL, optional Site-internal
-application-relative `returnTo`, and public correlation values. When the
-callback is supplied, it must exactly match an active registered callback. When
-it is omitted, the center selects the earliest registered callback by
-`created_at` ascending and then ID ascending. Exact public route names
-are not fixed by this requirements document.
+The browser enters through the current Tenant's canonical, Tenant-scoped
+unified-authentication origin with a Site identifier, optional exact callback
+URL, optional Site-internal application-relative `returnTo`, and a Site-created
+`site_state` correlation value. The authentication origin must resolve through
+the existing authoritative Host routing and full Express request context; the
+flow does not accept a browser-supplied Tenant/database selector or search
+another Tenant's authentication state. When the callback is supplied, it must
+exactly match an active registered callback. When it is omitted, the center
+selects the earliest registered callback by `created_at` ascending and then ID
+ascending. Exact public route names are not fixed by this requirements
+document.
+
+Before navigation, the Site creates a cryptographically random, short-lived,
+one-time `site_state` and records it under the current browser in its own
+first-party server-side session boundary. Constructive binds that value to the
+server-side login transaction and returns it beside the handoff code at the
+exact Site callback. The Site must match the callback value to the same
+browser's pending login before redemption and consume it after successful
+redemption. Missing, expired, mismatched, or replayed `site_state` fails safely.
+The value is public correlation only: it contains no identity, session,
+credential, callback, or `returnTo` data.
 
 ## OAuth flow requirements
 
@@ -211,7 +230,7 @@ When the transaction, Site, and callback remain trusted, the same registered
 Site callback may receive:
 
 - **success:** an opaque, short-lived, single-use handoff code for server-side
-  consumption through a browser `POST` rather than a URL;
+  consumption as a query parameter on a top-level browser `GET` navigation;
 - **non-Provider user cancellation:** a stable cancellation result without a
   handoff when that interaction explicitly supports returning to the Site; or
 - **a safely classified non-Provider failure:** a registered, non-sensitive
@@ -242,10 +261,19 @@ The center must not attempt a best-effort redirect using untrusted request data.
   with the existing CSRF protections.
 - Cookie domain, path, and lifetime are scoped as narrowly as the owning flow
   permits. Tenant configuration cannot broaden or weaken required protections.
-- OAuth state and PKCE cookies are short-lived, `HttpOnly`, narrowly scoped,
-  and cleared on callback success and failure.
+- OAuth authorization-request state and PKCE verifier associations remain
+  short-lived and server-side and are consumed on callback success or failure;
+  they are not implemented as browser state/PKCE cookies.
 - OAuth responses prevent caching and referrer leakage. Shared request logging
   redacts `/auth/*` query strings containing codes, state, or provider errors.
+- The Site handoff callback redeems its query-carried code before rendering a
+  page or loading third-party resources, prevents caching and referrer leakage,
+  and immediately redirects to a clean `returnTo` after success. Proxy, access,
+  APM, analytics, and error logging must redact the raw handoff and `site_state`
+  query values.
+- Site-side pending `site_state` records must be process-independent and support
+  more than one concurrent login attempt for the same browser. A single
+  overwrite-prone Cookie value or process-local replay map is not sufficient.
 - A stale or existing application session must not change the pre-authentication
   privilege boundary used for identity lookup, linking, or session creation.
 - OAuth and SSO do not bypass the target application's existing CORS or CSRF
@@ -308,9 +336,11 @@ an actual use case.
   to the browser and session security requirements above.
 - Authentication may be handed from the unified entry to a verified target
   only through a short-lived, replay-resistant, server-consumed exchange.
-- Dashboard submits the one-time handoff code to the validated technical Site
-  callback through `POST`; neither the handoff nor a reusable credential appears
-  in a redirect URL.
+- After a successful Provider callback, Constructive issues an HTTP `303`
+  redirect to the validated technical Site callback with the one-time handoff
+  code as a query parameter. Dashboard-mediated success paths perform the
+  equivalent top-level `GET` navigation using a minimal, Constructive-validated
+  continuation; Dashboard does not construct or alter the callback target.
 - The target Site redeems the handoff through the Constructive GraphQL mutation
   backed by the handoff-redemption database function. Redemption additionally
   authenticates the target Site/runtime through the existing platform
@@ -321,8 +351,11 @@ an actual use case.
   distinct Site-local credential result.
 - The Site callback owns its first-party Bearer/Cookie completion and then
   redirects to the verified Site-internal, application-relative `returnTo`.
-- Reusable access tokens, session tokens, provider tokens, authorization codes,
-  secrets, and user details must not be exposed in redirect URLs or fragments.
+- The handoff is an opaque one-time authorization code only; it contains no
+  identity, session, or long-lived credential. Reusable access tokens, session
+  tokens, Provider tokens, PKCE verifiers, secrets, user details, raw `returnTo`,
+  and unified login transaction identifiers must not appear in the Site callback
+  URL or URL fragments.
 - The target host, API, tenant, and database are revalidated before a target
   session is established.
 - A handoff issued for one host, API, tenant, or database cannot be consumed by
@@ -375,10 +408,12 @@ sequenceDiagram
     participant P as Shared post-authentication continuation
 
     U->>S: Choose sign-in
-    S-->>B: Navigate to Dashboard with Site ID, optional exact callback, and Site-internal returnTo
+    S->>S: Create one-time site_state under this browser's first-party session
+    S-->>B: Navigate to Tenant auth origin with Site ID, optional exact callback, returnTo, and site_state
     B->>D: Load unified-auth page
-    D->>A: Start-login mutation
-    A->>DB: Resolve exact callback, validate Tenant/Site/callback/returnTo, and create transaction
+    D->>A: Start-login mutation with Site inputs and site_state
+    A->>A: Resolve Tenant/API/database from canonical Host routing and Express Context
+    A->>DB: Resolve exact callback, validate Tenant/Site/callback/returnTo/site_state, and create transaction
     A->>DB: Resolve enabled Providers and existing unified identity from Bearer or auth-domain Cookie
     DB-->>A: Opaque transaction ID + safe display context + authentication decision
     A-->>D: Opaque ID, safe context, and decision
@@ -512,9 +547,14 @@ sequenceDiagram
     P->>A: Authenticated identity + active transaction
     A->>DB: Preserve/establish auth-center credential outcome and create one-time Site handoff
     DB-->>A: Auth-center-local outcome + plaintext handoff emitted once
-    A-->>D: Minimal continuation result
-    D-->>B: Submit handoff to validated technical callback
-    B->>S: POST one-time handoff code
+    alt Provider callback terminates at Constructive
+        A-->>B: 303 to exact callback with handoff code + site_state query
+    else Dashboard-mediated successful branch
+        A-->>D: Minimal validated GET continuation
+        D-->>B: Navigate to exact callback with handoff code + site_state query
+    end
+    B->>S: GET exact registered callback
+    S->>S: Match site_state to this browser's pending login
     S->>A: Redeem-handoff GraphQL mutation
     A->>DB: Invoke handoff-redemption function
     DB-->>A: Distinct Site-local credential + verified returnTo; handoff consumed
@@ -524,10 +564,14 @@ sequenceDiagram
 ```
 
 All successful routes in the three main diagrams enter this one continuation.
-The handoff is sent by POST to the fixed, registered technical callback; only
-after successful server-side redemption does the Site redirect to its separately
-validated, Site-internal `returnTo`. Authentication-center credentials and
-Site-local credentials remain distinct.
+The handoff is carried only as an opaque, one-minute, one-time query value on a
+top-level `GET` navigation to the fixed, registered technical callback. The Site
+first matches `site_state` to the current browser, then redeems the handoff
+before rendering or loading third-party resources. After successful server-side
+redemption it consumes the pending Site state and immediately redirects to its
+separately validated, Site-internal `returnTo` so the browser leaves the
+code-bearing URL.
+Authentication-center credentials and Site-local credentials remain distinct.
 
 ### Existing unified session
 
@@ -648,12 +692,12 @@ The CNC implementation is complete when:
     session cookies and retain the existing CSRF boundary; neither third-party
     cookies nor cross-parent-domain cookie sharing are required.
 14. Endpoint validation, transient-cookie cleanup, cache/referrer protection,
-   safe provider failure, and stale-session privilege boundaries are tested.
+    safe provider failure, and stale-session privilege boundaries are tested.
 15. Current-browser logout causes every bound Site-local session to be rejected
     on protected requests, and account switching establishes the new account
     only for the currently active Site transaction.
 16. Tenant provider changes and secret rotation take effect through the owned
-   cache/invalidation lifecycle without leaking the secret.
+    cache/invalidation lifecycle without leaking the secret.
 17. Existing `connected_accounts` and identity procedures are reused; no parallel
     private identity table, configuration reader, request context, or duplicated
     Provider workflow is introduced by server middleware.
@@ -664,20 +708,16 @@ An already authenticated local user may later be allowed to bind Google, GitHub,
 or another Provider from account settings. Account-settings binding is not part
 of the current unified-login flow or release scope.
 
-## Technical details still to design
+## Implementation-owned details
 
-The following implementation choices remain open but must preserve the required
-observable behavior:
+The following choices do not require additional product decisions. Their owning
+PRs select repository-conventional representations while preserving this
+document and the formal Spec:
 
-- login-transaction storage schema, opaque-identifier hashing, cleanup, and the
-  browser-binding implementation;
-- whether the confirmed logical handoff model reuses or extends an existing
-  table or requires a new table, plus its cleanup implementation;
-- the exact public initiation, provider callback, Site callback, and failure-page
-  route names; and
-- the server-side mechanism by which each protected Site request validates the
-  bound unified session without depending on cross-parent-domain cookies or
-  Site notification endpoints.
+- login-transaction physical storage, opaque-identifier hashing, and cleanup;
+- handoff indexes, cleanup scheduling, and bounded operational retention; and
+- database constraint, locking, and migration mechanics that do not alter the
+  confirmed security or product behavior.
 
 ## References
 
