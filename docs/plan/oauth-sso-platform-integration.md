@@ -148,14 +148,15 @@ are not fixed by this requirements document.
   initiation/callback routes are not mounted.
 - Enabling OAuth requires valid server configuration at options/startup time.
 - Before any authentication begins, the center validates the Site and exact
-  callback against current Tenant configuration and creates a short-lived,
+  callback against current Tenant configuration and creates a ten-minute,
   single-use login transaction bound to that Site, callback, and browser.
 - Every provider uses Authorization Code flow with S256 PKCE.
 - Each initiation creates a one-time verifier/challenge pair. The verifier is
   never placed in a redirect URL and is bound to the corresponding callback.
 - Dashboard sends the unified login transaction identifier and selected Provider
   only to Constructive. Constructive creates the existing server-side OAuth
-  authorization-request state and associates it with that transaction.
+  authorization-request state, associates it with that transaction, and gives
+  that Provider request its own ten-minute expiry.
 - The browser and external Provider receive only a cryptographically random,
   opaque OAuth state value, never the unified login transaction identifier.
   Server-side state binds the Provider, Tenant, database, Site, exact callback,
@@ -201,10 +202,10 @@ holds only an opaque, cryptographically random transaction identifier; it does
 not carry transaction contents, credentials, tokens, Site trust data, or other
 sensitive state.
 
-The server-side transaction is short-lived and single-use. It binds the Tenant,
-Site, exact callback, and current browser. Every confirmation action, provider
-callback, authentication result, handoff issuance, and handoff consumption must
-match the same live, unused transaction.
+The server-side transaction expires ten minutes after creation and is
+single-use. It binds the Tenant, Site, exact callback, and current browser.
+Every confirmation action, provider callback, authentication result, handoff
+issuance, and handoff consumption must match the same live, unused transaction.
 
 When the transaction, Site, and callback remain trusted, the same registered
 Site callback may receive:
@@ -254,8 +255,6 @@ The center must not attempt a best-effort redirect using untrusted request data.
 - The initial release does not provide a browser-session experience when the
   user disables all cookies. This is distinct from third-party-cookie blocking:
   the supported flow continues to use each domain's own first-party cookies.
-- Trusted-device cookies must not receive a broader domain scope merely because
-  SSO is enabled; any trusted-device participation requires an explicit policy.
 
 ## Identity lifecycle
 
@@ -280,9 +279,11 @@ The center must not attempt a best-effort redirect using untrusted request data.
 - Identity creation and linking must be atomic: a failed flow must not leave a
   partial user or association.
 
-Provider-owned MFA is completed by the provider. If the tenant's existing
-Constructive policy requires local MFA, OAuth authentication continues into the
-existing local MFA challenge before the final application session is created.
+Provider-owned MFA remains entirely within the Provider flow. Sites or flows
+that require Constructive `strictAuth`, local MFA, or step-up authentication are
+outside v1 SSO integration and fail closed rather than downgrading or bypassing
+that policy. Their integration is deferred to a separate future design based on
+an actual use case.
 
 ### Constructive local accounts
 
@@ -311,8 +312,13 @@ existing local MFA challenge before the final application session is created.
   callback through `POST`; neither the handoff nor a reusable credential appears
   in a redirect URL.
 - The target Site redeems the handoff through the Constructive GraphQL mutation
-  backed by the handoff-redemption database function. Successful redemption
-  consumes the handoff and returns a distinct Site-local credential result.
+  backed by the handoff-redemption database function. Redemption additionally
+  authenticates the target Site/runtime through the existing platform
+  capability wherever available; it does not add an SSO-specific secret or
+  credential system. If the live capability cannot express that identity, the
+  implementation must identify the correct platform owner and integration point
+  before proceeding. Successful redemption consumes the handoff and returns a
+  distinct Site-local credential result.
 - The Site callback owns its first-party Bearer/Cookie completion and then
   redirects to the verified Site-internal, application-relative `returnTo`.
 - Reusable access tokens, session tokens, provider tokens, authorization codes,
@@ -417,10 +423,12 @@ sequenceDiagram
     end
 ```
 
-The SSO wrapper calls the existing Tenant-local `sign_in_identity` primitive
-once and does not extend that primitive with SSO concerns. Any Dashboard Bearer
-result and auth-domain first-party Cookie are local to the authentication center;
-they are not the target Site's credential.
+The SSO wrapper calls the existing Tenant-local
+`constructive_auth_public.sign_in` email/password primitive once and does not
+extend that primitive with SSO concerns. The separate `sign_in_identity`
+primitive remains owned by Provider external-identity authentication. Any
+Dashboard Bearer result and auth-domain first-party Cookie are local to the
+authentication center; they are not the target Site's credential.
 
 ### Main Login Diagram 3: External Provider Branch
 
@@ -624,16 +632,18 @@ The CNC implementation is complete when:
    callback, identity resolution, and target-session establishment.
 9. OAuth-disabled, missing configuration, Provider cancellation or rejection,
    malformed state, replay, Provider verification failure, routing mismatch,
-   identity conflict, and local MFA continuation have explicit behavior and
-   automated coverage at their owning layers.
+   identity conflict, and exclusion of strict-auth/MFA/step-up flows have
+   explicit fail-closed behavior and automated coverage at their owning layers.
 10. Every Provider-flow failure is safely presented at the authentication center
     and requires a fresh login from the Site entry; it cannot resume the failed
     flow or expose raw Provider or sensitive data.
-11. Login transactions and OAuth authorization requests are stored server-side.
-    Dashboard receives only the active opaque transaction identifier, while the
-    browser/Provider boundary receives only unrelated random OAuth state.
-12. Login transactions and handoffs are short-lived, single-use, and bound to
-    the correct browser, Site, callback, Tenant, API, and database.
+11. Login transactions and OAuth authorization requests are stored server-side
+    and each expires ten minutes after its own creation. Dashboard receives only
+    the active opaque transaction identifier, while the browser/Provider
+    boundary receives only unrelated random OAuth state.
+12. Login transactions and handoffs are single-use and bound to the correct
+    browser, Site, callback, Tenant, API, and database; handoffs retain their
+    separately confirmed one-minute lifetime.
 13. The auth center and Sites use only narrowly scoped, protected first-party
     session cookies and retain the existing CSRF boundary; neither third-party
     cookies nor cross-parent-domain cookie sharing are required.
@@ -659,8 +669,8 @@ of the current unified-login flow or release scope.
 The following implementation choices remain open but must preserve the required
 observable behavior:
 
-- login-transaction storage schema, opaque-identifier hashing, expiry duration,
-  cleanup, and the browser-binding implementation;
+- login-transaction storage schema, opaque-identifier hashing, cleanup, and the
+  browser-binding implementation;
 - whether the confirmed logical handoff model reuses or extends an existing
   table or requires a new table, plus its cleanup implementation;
 - the exact public initiation, provider callback, Site callback, and failure-page
@@ -668,21 +678,6 @@ observable behavior:
 - the server-side mechanism by which each protected Site request validates the
   bound unified session without depending on cross-parent-domain cookies or
   Site notification endpoints.
-
-## Requirements still to confirm
-
-The previous SSO implementation made choices that cannot be carried into the
-unified cross-parent-domain design without an explicit product decision:
-
-- **SSO trust scope:** whether SSO is restricted to APIs sharing one tenant and
-  physical database, or supports a defined cross-database identity boundary.
-- **Strict authentication:** whether unified SSO must support `strictAuth=true`;
-  the previous shared-cookie SSO supported only `strictAuth=false` and did not
-  bypass `authenticate_strict`.
-- **Trusted devices:** whether an existing Constructive trusted-device result is
-  eligible for reuse across target applications and, if so, under what scope.
-- **Configuration policy:** whether tenants need controls beyond provider
-  enablement for disabling first-time OAuth user creation or OAuth sign-in.
 
 ## References
 

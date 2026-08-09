@@ -15,6 +15,7 @@ Working proposals, suggested values, evidence, and unresolved alternatives belon
 - Integrate external Providers through one protocol-neutral adapter boundary rather than duplicating the unified-login workflow per Provider.
 - Reuse the existing Constructive identity association and provisioning capabilities.
 - Make every successful authentication method converge on one Site handoff and local-credential completion path.
+- Keep Sites or flows requiring Constructive `strictAuth`, local MFA, or step-up authentication outside v1 SSO integration. Their future integration requires a separate design based on a real use case and must never downgrade or bypass the existing policy.
 
 ## Public Concepts and Trust Boundaries
 
@@ -45,7 +46,7 @@ The registered technical callback and the Site-internal, application-relative `r
 
 ### Login Transactions
 
-The unified login transaction is short-lived, server-side, active-flow-only orchestration state. Dashboard receives only an opaque identifier from start-login and supplies it only to Constructive operations for the current branch. v1 exposes no transaction/status retrieval query: an interrupted flow starts again from the Site login entry. The transaction model is distinct from the Provider-specific OAuth authorization-request model, although both use short expiry and one-time-consumption lifecycle rules.
+The unified login transaction is server-side, active-flow-only orchestration state and expires ten minutes after creation. Dashboard receives only an opaque identifier from start-login and supplies it only to Constructive operations for the current branch. v1 exposes no transaction/status retrieval query: an interrupted flow starts again from the Site login entry. The transaction model is distinct from the Provider-specific OAuth authorization-request model; each linked Provider OAuth authorization request also expires ten minutes after creation and uses its own one-time-consumption lifecycle.
 
 For an external Provider branch, Constructive creates a separate OAuth authorization request and links it to the unified login transaction on the server. The browser and Provider never receive the unified login transaction identifier. The OAuth state and PKCE lifecycle is defined in [Main Login 3](#main-login-3-external-provider).
 
@@ -107,10 +108,10 @@ sequenceDiagram
     participant D as Dashboard
     participant C as Common Constructive SSO service
     participant W as SSO password PostgreSQL wrapper
-    participant I as Existing sign_in_identity
+    participant I as Existing constructive_auth_public.sign_in
     participant P as Shared post-authentication continuation
 
-    U->>D: Submit local username and password
+    U->>D: Submit local email and password
     D->>C: Password mutation with opaque transaction ID and credentials
     C->>W: Invoke SSO wrapper once
     W->>W: Validate active transaction and Tenant/Site/SSO boundaries
@@ -118,7 +119,7 @@ sequenceDiagram
         W-->>C: Safe classified validation failure
         C-->>D: Render safe error
     else Boundaries are valid
-        W->>I: Call unchanged sign_in_identity once
+        W->>I: Call unchanged sign_in once
         alt Password authentication fails
             I-->>W: Existing safe authentication failure
             W-->>C: Preserve safe failure without automatic retry
@@ -131,9 +132,9 @@ sequenceDiagram
     end
 ```
 
-The SSO password wrapper validates the active transaction and Tenant, Site, and SSO boundaries, then calls the existing `sign_in_identity` primitive unchanged and exactly once for that submission. It performs no automatic retry; after a safe authentication failure, the user may manually resubmit while the transaction remains active. On success, the wrapper associates the existing identity outcome with the transaction and preserves the Dashboard credential outcome.
+The SSO password wrapper validates the active transaction and Tenant, Site, and SSO boundaries, then calls the existing `constructive_auth_public.sign_in` primitive unchanged and exactly once for that submission. It performs no automatic retry; after a safe authentication failure, the user may manually resubmit while the transaction remains active. On success, the wrapper associates the existing identity outcome with the transaction and preserves the Dashboard credential outcome.
 
-`sign_in_identity` remains the general Tenant-local application-user authentication primitive and is not extended with SSO concerns. The Dashboard Bearer result and authentication-domain first-party Cookie behavior remain auth-center-local; they are not the target Site credential.
+`constructive_auth_public.sign_in` remains the general Tenant-local email/password authentication primitive and is not extended with SSO concerns. `sign_in_identity` remains the separate Provider external-identity primitive keyed by `service` plus stable `identifier`. The Dashboard Bearer result and authentication-domain first-party Cookie behavior remain auth-center-local; they are not the target Site credential.
 
 ## Main Login 3: External Provider
 
@@ -270,7 +271,7 @@ flowchart LR
 
 Constructive creates the Site-bound, short-lived, one-time handoff from the shared post-authentication path. Dashboard delivers the handoff code to the already validated technical Site callback through browser `POST`, never in a URL.
 
-The target Site server calls the Constructive redeem-handoff GraphQL mutation backed by the handoff-redemption PostgreSQL function. Successful redemption consumes the handoff and returns a distinct Site-local credential plus the verified Site-internal, application-relative `returnTo`. The Site callback owns setting its first-party Cookie and delivering its Bearer result to its frontend before redirecting to `returnTo`.
+The target Site server calls the Constructive redeem-handoff GraphQL mutation backed by the handoff-redemption PostgreSQL function. In addition to the handoff and transaction-bound Site context, redemption authenticates the target Site/runtime through the existing platform capability wherever available. It does not introduce an SSO-specific parallel secret or credential system; if the live capability cannot express the runtime identity, the implementing PR must identify the correct platform owner and integration point before proceeding. Successful redemption consumes the handoff and returns a distinct Site-local credential plus the verified Site-internal, application-relative `returnTo`. The Site callback owns setting its first-party Cookie and delivering its Bearer result to its frontend before redirecting to `returnTo`.
 
 An SSO handoff is a dedicated, minimal persistence model; it is not stored in the Provider OAuth request or session-credential model. It stores an internal ID, secure code hash, referenced login transaction ID, creation time, expiry time, and consumption time. The plaintext code is emitted once only. A handoff expires after one minute and is consumed only after successful redemption; a transient failure before consumption may retry the same code during that lifetime.
 
@@ -281,7 +282,7 @@ Each Site accepts its local credential through either its first-party session Co
 - Provider authorization initiation and callback retain browser HTTP semantics. The callback accepts a Provider code or error only together with valid opaque OAuth state.
 - Provider discovery remains on the confirmed GraphQL surface; the legacy `/auth/providers` HTTP discovery endpoint is not restored.
 - Dashboard never sends the unified login transaction identifier to an external Provider.
-- Target Site handoff redemption uses a Constructive GraphQL mutation backed by a PostgreSQL function.
+- Target Site handoff redemption uses a Constructive GraphQL mutation backed by a PostgreSQL function and reuses existing platform Site/runtime authentication wherever available.
 
 ## Data Model
 
@@ -299,6 +300,7 @@ Provider cancellation, a Provider-reported error, invalid OAuth state, exchange 
 - Parent-domain shared session Cookies are not an SSO mechanism in this design. The authentication center and each Site use their own first-party credential boundary and the confirmed one-time handoff.
 - Access tokens, session tokens, Provider tokens, user data, and handoff codes never appear in redirect URLs or URL fragments. PKCE verifiers never enter browser-visible data or logs.
 - Authentication middleware must not bypass RLS, repeat Tenant/database/route inference outside Express Context, or introduce secret or compatibility fallbacks.
+- v1 rejects SSO integration for Sites or flows that require Constructive `strictAuth`, local MFA, or step-up authentication. It never treats SSO success as satisfying or disabling those policies; support is deferred to a separate future design.
 - Stable Provider identifier, not email or authorization code, is the durable identity key.
 - An email collision never authorizes automatic account merge, binding, or password-confirmation linking.
 - All successful Provider branches use the same Site-bound handoff, POST callback, redemption, Site-local credential, and verified `returnTo` path as local authentication and reused unified sessions.
@@ -307,7 +309,7 @@ Provider cancellation, a Provider-reported error, invalid OAuth state, exchange 
 
 Provider unit tests mock the external Provider boundary only. They cover Authorization Code + S256 PKCE, server-held verifier handling, OAuth state lifecycle, endpoint and redirect validation, timeout and failure mapping, Google/GitHub adapter behavior, and normalized identity output at the owning package.
 
-GraphQL server integration tests use the real Constructive server, Express Context, routing, Tenant/database resolution, registered Provider configuration loaders, database procedures, session/Cookie behavior, callback lifecycle, and shared handoff continuation. The external Provider remains the only mocked service boundary. Coverage verifies transaction-ID/OAuth-state separation, replay rejection, existing connected-account login, `sign_in_identity` and `sign_up_identity` reuse, email-conflict rejection, Provider failure restart, and convergence into the shared handoff path.
+GraphQL server integration tests use the real Constructive server, Express Context, routing, Tenant/database resolution, registered Provider configuration loaders, database procedures, session/Cookie behavior, callback lifecycle, and shared handoff continuation. The external Provider remains the only mocked service boundary. Coverage verifies transaction-ID/OAuth-state separation, ten-minute expiry, replay rejection, existing connected-account login, `sign_in_identity` and `sign_up_identity` reuse, email-conflict rejection, Provider failure restart, Site/runtime authentication at redemption, fail-closed exclusion of strict-auth/MFA/step-up flows, and convergence into the shared handoff path.
 
 Existing identity association data remains authoritative; no migration to a parallel identity store is permitted. Database-owned transaction, identity, and RLS invariants are tested at the database-owning layer rather than by querying private tables from higher-level integration tests.
 
