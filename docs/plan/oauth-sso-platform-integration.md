@@ -343,12 +343,14 @@ an actual use case.
   continuation; Dashboard does not construct or alter the callback target.
 - The target Site redeems the handoff through the Constructive GraphQL mutation
   backed by the handoff-redemption database function. Redemption additionally
-  authenticates the target Site/runtime through the existing platform
-  capability wherever available; it does not add an SSO-specific secret or
-  credential system. If the live capability cannot express that identity, the
-  implementation must identify the correct platform owner and integration point
-  before proceeding. Successful redemption consumes the handoff and returns a
-  distinct Site-local credential result.
+  requires authoritative runtime `site_id`, `api_id`, and `principal_id` from
+  trusted routing/runtime authentication. The transaction Site and the exact
+  tuple authorized by `site_runtime_clients` must match before credential
+  issuance or handoff consumption. Site is never inferred from API, and
+  `Origin`/`Referer` are auxiliary checks rather than identity sources. This
+  does not add an SSO-specific secret or credential system. Successful
+  redemption consumes the handoff and returns a distinct Site-local credential
+  result.
 - The Site callback owns its first-party Bearer/Cookie completion and then
   redirects to the verified Site-internal, application-relative `returnTo`.
 - The handoff is an opaque one-time authorization code only; it contains no
@@ -356,10 +358,11 @@ an actual use case.
   tokens, Provider tokens, PKCE verifiers, secrets, user details, raw `returnTo`,
   and unified login transaction identifiers must not appear in the Site callback
   URL or URL fragments.
-- The target host, API, tenant, and database are revalidated before a target
-  session is established.
-- A handoff issued for one host, API, tenant, or database cannot be consumed by
-  another.
+- The target Site, API, service principal, host, tenant, and database are
+  revalidated before a target session is established. Multiple Sites may use
+  the same API; API identity alone never selects a Site.
+- A handoff issued for one Site/runtime tuple, host, tenant, or database cannot
+  be consumed through another Site, API, or service principal.
 - Each Site-local session is bound to the unified session that established it.
   Every protected Site request validates that the bound unified session remains
   active. Revoking the unified session causes old Site-local sessions to be

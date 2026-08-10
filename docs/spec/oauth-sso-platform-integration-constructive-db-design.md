@@ -9,7 +9,7 @@ This document is the detailed database design input for a future Constructive DB
 
 It does not supersede either document. The product requirements define user-visible behavior, and the formal Spec defines the confirmed cross-component design. This document translates those decisions into database responsibilities and delegates repository-local physical choices to the implementing DB PR. No user-facing product/security questions remain in this DB design.
 
-The current Constructive DB evidence was inspected at `origin/main` commit `bd59a523c17e542fbbed3ef3463c720feb29c97c`. Paths under `application/constructive/` are generated evidence only; implementation must change the owning source modules or generators and regenerate the application output.
+The original Constructive DB evidence was inspected at `origin/main` commit `bd59a523c17e542fbbed3ef3463c720feb29c97c`. The second-round runtime review also uses the Constructive DB foundation PR at `7692146ee12563ea3e66d4245a07261c9218c1ae`, Constructive PR7 at `cffd1624318ea78f4b2fdd7b6118f6cf672f5889`, and the Dashboard implementation branch at `add6bd8820b46ae347d308638a1525bbf7ecae93` as implementation evidence. Paths under `application/constructive/` are generated evidence only; implementation must change the owning source modules or generators and regenerate the application output.
 
 ### Decision labels
 
@@ -28,6 +28,7 @@ This design covers the Constructive DB work needed to support:
 - short-lived, one-time Site handoff creation and atomic redemption;
 - issuance and validation of a distinct local credential for the target Site;
 - Tenant and optional SSO-group isolation;
+- trusted Site runtime identity and Site-to-API/service-principal authorization;
 - database authorization, retention, cleanup, migration, and test boundaries; and
 - the GraphQL operations whose authoritative state transition is owned by PostgreSQL.
 
@@ -41,6 +42,7 @@ This design covers the Constructive DB work needed to support:
 - Storing Provider authorization codes, Provider tokens, raw Provider responses, password credentials, plaintext handoff codes, or other browser secrets as durable identity data.
 - Prescribing unknown physical SQL or GraphQL names before the owning Constructive DB module and deployment topology are confirmed.
 - Backward-compatible fallbacks for legacy Tenant, schema, database, secret, callback, or shared-cookie behavior.
+- Treating `Origin`, `Referer`, a caller-supplied Site ID, or an API-to-Site reverse lookup as authoritative Site identity.
 - Integrating Sites or flows that require Constructive `strictAuth`, local MFA, or step-up authentication. Those policies are not bypassed; support requires a separate future design based on an actual use case.
 
 ## Confirmed Database Invariants
@@ -56,19 +58,22 @@ This design covers the Constructive DB work needed to support:
 9. Provider OAuth authorization-request state is separate from the unified login transaction, has a server-side link back to it, and expires ten minutes after creation. The browser and Provider receive only opaque OAuth state, never the unified transaction identifier or PKCE verifier.
 10. An SSO handoff is a dedicated minimal logical entity containing only an internal ID, a secure code hash, a login-transaction reference, and creation, expiry, and consumption timestamps.
 11. A handoff expires one minute after creation. Plaintext is emitted once, never persisted, and the handoff is marked consumed only as part of successful redemption and Site-local credential issuance.
-12. A transient redemption failure before consumption may retry the same handoff during its one-minute lifetime. Replay after successful consumption fails. Redemption additionally authenticates the target Site/runtime through the existing platform capability wherever available; it never introduces an SSO-specific parallel secret or credential system.
+12. A transient redemption failure before consumption may retry the same handoff during its one-minute lifetime. Replay after successful consumption fails. Redemption additionally requires authoritative Site/runtime context and an exact `site_runtime_clients` tuple; it never introduces an SSO-specific parallel secret or credential system.
 13. The browser carries the plaintext handoff as a query parameter on a top-level `GET` navigation to the exact registered Site callback. The handoff contains no identity, session, or long-lived credential; raw `returnTo` and unified transaction state remain server-side.
 14. External identity association remains owned by `connected_accounts`, keyed by Provider `service` plus stable external `identifier`, never email or an authorization code.
 15. `sign_in_identity` and `sign_up_identity` remain unchanged general Tenant **external-identity** authentication primitives. SSO-specific validation and orchestration belong in wrappers or coordinating functions.
 16. Every successful authentication method converges on the same handoff and Site-local credential path.
 17. Caught database errors are either mapped to a registered stable domain error or rethrown with their cause preserved. Logging or fallback behavior does not replace failure semantics.
 18. Site/browser correlation uses a Site-generated, cryptographically random, short-lived, one-time `site_state`. The Site keeps its expected value in a process-independent first-party session boundary; the unified transaction binds the public value and returns it beside the handoff. It does not replace handoff validation, Tenant isolation, or target Site/runtime authentication.
+19. `site_id` is a first-class trusted runtime security fact. Site-originated redemption, Site credential issuance, and later Site-session authentication must receive authoritative `(site_id, api_id, principal_id)` context from the routing/runtime-authentication boundary and validate the complete tuple in PostgreSQL. `site_id` is never inferred from `api_id`; multiple Sites may intentionally share one API.
+20. The logical `site_runtime_clients` relation defines which exact API/service-principal pairs may act for each Site. Possession of a handoff, an otherwise valid API key, or a matching API alone is insufficient. `Origin` and `Referer` may support defense-in-depth checks but never establish Site identity or replace the tuple authorization.
 
 ## Existing Owners and Reuse
 
 | Capability | Verified current owner | Reuse decision | Evidence |
 | --- | --- | --- | --- |
 | Site identity and Tenant/database association | **Existing:** `catalog_private.sites`, including `id`, `database_id`, `created_at`, and `updated_at` | Extend around the existing Site; do not create a parallel Site registry | `platform-schema/catalog/deploy/schemas/catalog_private/tables/sites/` |
+| API and service-principal runtime facts | **Existing in part:** current authentication and pgSettings propagate `api_id` and `principal_id`; Constructive PR7 does not propagate an authoritative `site_id` | Extend the correct routing/runtime-context owner to carry `site_id`; never infer it from `api_id` | Constructive PR7 `packages/express-context/src/pg-settings.ts` and `graphql/server/src/auth/sso/handoff-db-contract.ts` |
 | Site administration authorization | **Existing:** RLS policies on `catalog_private.sites` based on Constructive membership permissions | Reuse the current permission model for Site-auth configuration administration; the DB PR selects the exact predicates from the live permission registry | `platform-schema/catalog-security/deploy/schemas/catalog_private/tables/sites/policies/` |
 | Tenant Provider configuration | **Existing:** generated `identity_providers_module`; the current Constructive relation includes enabled status, endpoints, scopes, client identifier, secret reference, PKCE setting, OIDC metadata, and policy flags | Reuse; no SSO-only Provider registry or secret store | `packages/metaschema-generators/.../identity_providers_module.sql` and generated `constructive_auth_private.identity_providers` |
 | Provider secret storage | **Existing:** identity-provider rows refer to the existing internal-secrets capability | Reuse its ownership, resolution, rotation, and access boundary | `identity_providers_module` plus `internal_secrets_module` |
@@ -102,6 +107,7 @@ Adding password parameters or SSO transaction concerns to `sign_in_identity` is 
 | --- | --- | --- | --- | --- |
 | Site authentication configuration | Existing Site (**Confirmed**) | None verified | Add the confirmed one-to-one Site-owned model | Physical placement, naming, and migration mechanics are DB PR decisions |
 | Exact Site callbacks | Existing Site (**Confirmed**) | None verified for unified-auth callbacks | Add the confirmed one-to-many Site-owned model | Physical placement, naming, and migration mechanics are DB PR decisions |
+| Site runtime client authorization | Existing Site/runtime-auth boundary (**Confirmed**) | No exact Site/API/principal relation verified | Add the logical `site_runtime_clients` relation and validate exact `(site_id, api_id, principal_id)` tuples | Logical authorization is confirmed; physical placement and identifiers are DB PR decisions |
 | Unified login transaction | Constructive SSO | None | Add a dedicated short-lived model inside each enabled Tenant's provisioned private SSO schema | Per-Tenant ownership is confirmed; representation is a DB PR decision |
 | Provider OAuth authorization request | Constructive SSO Provider subflow | Logical template relation `sso_private.oauth_authorization_requests` exists | **Confirmed:** evolve/reuse the Tenant-local table and link each Provider request to its Tenant-local unified transaction | Legacy column/data migration timing is a DB PR decision |
 | External identity association | Connected-accounts module | `constructive_user_identifiers_private.connected_accounts` | Reuse unchanged | **Confirmed reuse** |
@@ -162,6 +168,22 @@ Required constraints and behavior:
 - Tenant is derived through the Site reference and must be checked on every lookup (**Confirmed**).
 
 Lifecycle: administrators add, activate, deactivate, or remove callbacks. A removed or disabled callback invalidates an in-flight flow at the required final revalidation boundary. The DB must not infer or backfill callbacks from CORS configuration, current Host headers, routing suffixes, or legacy redirect values.
+
+### Site Runtime Client Authorization
+
+**Logical owner:** **Confirmed.** `site_runtime_clients` is the Site/runtime-authentication authorization relation. It is distinct from Site callbacks, CORS/origin configuration, Tenant membership, API routing, and SSO groups.
+
+Each row authorizes one exact tuple:
+
+| Logical column | Requirement | Status |
+| --- | --- | --- |
+| Site reference | The Site whose runtime is being authenticated | **Confirmed** |
+| API reference | An API this Site may use; the same API may be referenced by multiple Sites | **Confirmed** |
+| Service-principal reference | The authenticated runtime principal allowed to act for that Site through that API | **Confirmed** |
+
+The exact `(site_id, api_id, principal_id)` tuple is unique. There is no wildcard Site, API, or principal authorization in v1. The DB PR selects the owning source module, physical schema/table name, key types, foreign-key targets, and administration surface from live repository conventions; those choices do not reopen the tuple security model.
+
+Lifecycle: an authorized administrator creates or removes mappings. Removing a mapping must make later handoff redemption, Site credential issuance, and protected Site authentication fail closed for that tuple. Existing Sites receive no inferred mapping from their API, domain, callback, `Origin`, or `Referer`; rollout provisions explicit mappings before enabling unified authentication.
 
 ### Unified Login Transaction
 
@@ -279,8 +301,9 @@ All names below are logical operation names. The DB PR selects exact Tenant-pref
 | Consume Provider OAuth request | Callback OAuth state and current callback route context | Provider key/config reference, verifier, nonce, redirect URI, and unified transaction reference | Lock by state; follow the linked transaction; require the same authoritative Tenant/route, exact match, unexpired, and unused; stamp consumption before any Provider error/code handling. Invalid, expired, replayed, cross-Tenant, or mismatched state raises a stable safe error. |
 | Apply normalized external identity | Active transaction plus normalized `service`, stable `identifier`, optional email, and safe details | Existing or newly provisioned local identity and authentication-center credential outcome | In one transaction: resolve `(service, identifier)`; existing association uses unchanged `sign_in_identity`; unlinked/unowned email uses unchanged `sign_up_identity`; email owned by another account raises explicit conflict. Unique email and connected-account constraints must arbitrate concurrency. The DB PR selects the narrow wrapper composition without changing the general identity primitives. |
 | Create SSO handoff | Authenticated transaction plus a Constructive-server-generated secure code hash | Handoff creation result and expiry; the service emits its plaintext exactly once | Lock transaction; revalidate its authoritative Tenant/Site/callback/group; insert only the secure hash and confirmed minimal fields; enforce one-minute expiry. Plaintext generation and hashing use Constructive's owning service and never enter durable storage. |
-| Redeem SSO handoff | Constructive-server-computed code hash plus authenticated target Site/runtime and request context | Distinct Site-local credential result and verified Site-internal `returnTo` | Lock the candidate row by hash; follow its transaction; reuse the existing platform Site/runtime authentication capability wherever available; require the authenticated Site/request context to resolve to the same Tenant; validate unexpired/unused and all other boundaries; issue Site-local credential; stamp `consumed_at` only after issuance succeeds. If the current capability cannot express the Site/runtime identity, the DB PR must identify the correct integration point from live evidence and must not invent a new SSO credential system. The whole success path commits or rolls back together. |
-| Validate Site-local session | Current Site credential and request context | Principal/session facts or a classified invalid/revoked result | On every protected request, require the Site, Site-local session, and bound unified session to share the same Tenant, then validate local expiry/revocation. The DB PR selects the function/relation shape in the correct owner. |
+| Authorize Site runtime | Authoritative `site_id`, `api_id`, and `principal_id` from request pgSettings/runtime context | Authorized Site/runtime tuple or one safe authorization failure | Require an exact `site_runtime_clients` match inside the current Tenant/database boundary. Never derive Site from API, caller input, `Origin`, or `Referer`. This check is a reusable internal boundary for redemption, issuance, and later Site authentication, not a public discovery API. |
+| Redeem SSO handoff | Constructive-server-computed code hash plus authoritative `site_id`, `api_id`, and `principal_id` request context | Distinct Site-local credential result and verified Site-internal `returnTo` | Lock the candidate row by hash; follow its transaction; require the transaction Site to equal runtime `site_id`; require the exact runtime tuple through `site_runtime_clients`; validate Tenant, callback, group, unified session, expiry, and unused state; issue the Site-local credential; stamp `consumed_at` only after issuance succeeds. The whole success path commits or rolls back together. |
+| Validate Site-local session | Current Site credential plus authoritative `site_id`, `api_id`, and `principal_id` request context | Principal/session facts or a classified invalid/revoked result | On every protected request, require an exact authorized runtime tuple and require the Site, Site-local session, and bound unified session to share the same Tenant, then validate local expiry/revocation. A valid credential presented through another Site, API, or principal fails closed. |
 | Purge transient SSO state | Operational retention cutoff(s) | Deleted-row counts per entity | Delete only artifacts no longer redeemable, respecting operational/audit grace. Cleanup failure is observable and retryable; it never extends authentication validity. |
 
 ### Existing Function Contracts That Must Remain Unchanged
@@ -308,7 +331,7 @@ Names in this section describe logical operations. The DB PR selects exact Graph
 | Start Provider authentication mutation | Dashboard | Active unified transaction, selected Provider, and current Tenant request context | Creates the linked OAuth request with Constructive-generated state/verifier/nonce, then returns only the opaque state or same-origin authorization-initiation continuation needed by Constructive. |
 | Provider authorization initiation | Browser HTTP operation coordinated by Constructive | Opaque OAuth state plus current Tenant route/context; no unified transaction ID | Reads and revalidates the already persisted linked OAuth request without consuming it, then redirects to the configured Provider. This remains HTTP because redirect semantics are not replaceable by GraphQL. |
 | Provider callback | Browser HTTP callback to Constructive | Opaque OAuth state plus Provider code/error; no unified transaction ID | Atomically consumes OAuth state, restores transaction/Provider, and passes the normalized identity to DB identity orchestration. |
-| Redeem Site handoff mutation | Target Site server | Handoff proof plus authoritative request context and target Site/runtime identity authenticated through the existing platform capability wherever available | Calls the atomic redemption function and returns only the distinct Site-local credential result plus verified `returnTo`. If live platform evidence cannot express the runtime identity, implementation stops at identifying the correct owner/integration point rather than adding an SSO-specific secret. |
+| Redeem Site handoff mutation | Target Site server | Handoff proof plus authoritative runtime `site_id`, `api_id`, and `principal_id`; the complete tuple must be registered for the Site | Calls the atomic redemption function and returns only the distinct Site-local credential result plus verified `returnTo`. Site identity is supplied by trusted routing/runtime authentication, never by mutation input or API reverse lookup. |
 | Site auth configuration/callback administration | Authorized Tenant administrator | Existing membership/permission model; the DB PR selects exact permission bits/scopes from the live registry | CRUD through the correct owner with RLS and audit behavior. Full callback lists are administrative, not public discovery data. |
 | Login transaction status/recovery query | No caller | Not exposed | **Explicitly absent in v1.** |
 
@@ -331,8 +354,8 @@ The Site callback itself remains an exact registered browser `GET` destination. 
 | New Provider identity | Connected accounts plus email ownership | Unchanged `sign_up_identity` through SSO orchestration | Only when email is unowned; no automatic merge/link. |
 | Shared post-auth completion | Authenticated transaction plus live Site/callback/group config | Create handoff | All successful methods converge here. |
 | Browser callback delivery | No private DB read in browser | No DB write | Constructive issues `303` after Provider success; Dashboard-mediated successes perform the equivalent top-level `GET`. The exact callback query carries the plaintext one-time code and public `site_state`, but no identity or reusable credential. |
-| Site redemption | Handoff hash, referenced transaction, session state | Redeem function issues Site credential and consumes handoff | One atomic success; retry allowed only before consumption and before one-minute expiry. |
-| Protected Site request | Site session/credential plus unified-session binding | Session validation/touch behavior as owned by current auth system | Unified revocation invalidates the Site-local session; the DB PR implements the binding in the correct owner. |
+| Site redemption | Handoff hash, referenced transaction, session state, exact runtime tuple | Redeem function authorizes `(site_id, api_id, principal_id)`, issues Site credential, and consumes handoff | One atomic success; Site must equal the transaction Site, and retry is allowed only before consumption and before one-minute expiry. |
+| Protected Site request | Site session/credential, exact runtime tuple, and unified-session binding | Session validation/touch behavior as owned by current auth system | The exact runtime tuple remains authorized; unified revocation or mapping removal invalidates the Site-local session. |
 | Logout/switch account | Current-browser unified session and its Site bindings | Revoke the current unified session and make all of its bound Site sessions unusable | Current-browser scope only; no Site notification callback and no “all devices” feature. |
 | Cleanup | Expired transaction, OAuth request, and handoff rows | Purge functions or existing scheduler integration | The DB PR selects cadence, bounded batches, and post-expiry operational retention. |
 
@@ -344,6 +367,8 @@ The Site callback itself remains an exact registered browser `GET` destination. 
 - Start derives Tenant from the validated Site and Site-owned authentication configuration. Later operations derive it from the already-bound unified transaction and revalidate it against the current authoritative Site/request context; callers cannot replace it with a Tenant input.
 - A Provider OAuth request must reference a unified transaction in the same Tenant. State consumption restores that relationship server-side and rejects a callback whose current route/context resolves to another Tenant.
 - A handoff references its unified transaction rather than duplicating Tenant. Redemption follows that reference, validates the target Site belongs to the same Tenant, and rejects cross-Tenant code presentation before credential issuance or consumption.
+- Site-originated security decisions use the authoritative `(site_id, api_id, principal_id)` runtime tuple. `site_id` is propagated independently and must equal the transaction/session Site; it is never recovered by searching for a Site that happens to use `api_id`.
+- `site_runtime_clients` is the authorization source for the tuple. Multiple Sites may share the same API without becoming interchangeable, and the same API key/principal cannot act for an unregistered Site.
 - Authentication-center and Site-local sessions cannot be linked or reused across Tenants. Globally unique identifiers, opaque state, a valid handoff code, or physical co-location in one database do not establish Tenant authorization.
 - Every owning DB function must enforce this boundary in its predicates and locked transition. RLS is defense in depth and does not replace function-level validation.
 - The DB PR resolves concrete Tenant-prefix naming, module discovery, and one-database versus cross-database routing according to the deployed repository topology. Every enabled Tenant still receives its own provisioned private SSO schema; Tenant/schema isolation is not open for reconsideration. A Tenant without enabled/provisioned SSO must fail explicitly rather than falling back to another or global schema.
@@ -366,12 +391,15 @@ The Site callback itself remains an exact registered browser `GET` destination. 
 
 - Dashboard start/password/confirm operations run under the current resolved Tenant/database/request context.
 - Provider callback restores its Tenant, Provider, and unified transaction exclusively from consumed server-side OAuth state and revalidated route context.
-- Site redemption must prove possession of the one-time code, the target Site context derived from the referenced transaction, and the target Site/runtime identity through the existing platform authentication capability wherever available. If live evidence cannot express that identity, the implementation must identify the correct platform integration point and must not introduce an SSO-specific secret or credential system.
+- Site redemption must prove possession of the one-time code and receive authoritative `site_id`, `api_id`, and `principal_id` from the trusted routing/runtime-authentication path. PostgreSQL requires the transaction Site and an exact `site_runtime_clients` tuple match before issuing credentials or consuming the code.
+- `Origin` and `Referer` may be checked against registered Site data as auxiliary browser-request evidence, but missing or matching headers never create Site authority and cannot compensate for a missing/mismatched runtime tuple.
 - No operation may bypass RLS through a manually inferred Tenant/database, direct secret query, legacy schema fallback, or alternate auth context.
 
 ## Indexes and Constraints
 
 The DB PR should include query-plan tests or inspection for the following access patterns. It selects exact index names and shapes using current repository conventions.
+
+At minimum, `site_runtime_clients` requires an exact unique lookup path for `(site_id, api_id, principal_id)` and owner-oriented lookup paths needed for administration and revocation. No index or alternate query may collapse this boundary to API-only Site selection.
 
 | Relation | Required/proposed index or constraint | Status |
 | --- | --- | --- |
@@ -403,7 +431,7 @@ Foreign keys must prevent cross-owner orphaning while respecting short-lived cle
 
 - Do not edit generated files under `application/constructive/` directly.
 - Add or evolve the correct platform/metaschema/integration source module, its generator inputs, deploy/revert/verify units, and then regenerate committed application artifacts according to Constructive DB conventions.
-- The physical source module/schema placement for the confirmed Site-owned configuration/callback models, plus physical table/function names and source layout for SSO transient state, must be selected before writing migrations. Site logical ownership/cardinality and per-enabled-Tenant SSO schema ownership are already fixed.
+- The physical source module/schema placement for the confirmed Site-owned configuration/callback and logical `site_runtime_clients` models, plus physical table/function names and source layout for SSO transient state, must be selected before writing migrations. Site logical ownership/cardinality, exact runtime-tuple authorization, and per-enabled-Tenant SSO schema ownership are already fixed.
 - SSO module provisioning creates a separate Tenant-prefixed private SSO schema for each Tenant that enables SSO. Migration and module-discovery changes must target only that Tenant's provisioned schema, must not cross schemas, and must not assume the schema exists for a Tenant where SSO is not enabled/provisioned.
 
 ### Rollout shape
@@ -418,6 +446,7 @@ Foreign keys must prevent cross-owner orphaning while respecting short-lived cle
 
 - `connected_accounts`, current users/emails, identity providers, sessions, and session credentials remain authoritative and are not copied into new SSO tables.
 - Existing Sites are backfilled with unified authentication disabled and `confirm` as the stored/default sign-in mode. This follows the confirmed default-off feature policy and avoids enabling a new trust path during migration. The DB PR selects the migration mechanics.
+- Existing Sites and API/service-principal credentials do not receive inferred `site_runtime_clients` rows. Administrators provision explicit exact tuples before enabling unified authentication for a Site; until then Site redemption and Site-session authentication fail closed.
 - Callback rows must not be inferred from existing routes, domains, CORS origins, Provider redirect URIs, or Host history. Administrators register each exact trusted callback explicitly.
 - Existing `integrations/sso` OAuth requests are short-lived. Before changing that table, the DB PR verifies whether the integration is installed and selects a repository-compatible rollout for in-flight rows (for example, drain before deploy or a bounded migration). The new flow does not read `lane` or legacy `return_to`, and no compatibility fallback survives rollout.
 - `pending_identity_links` data is not migrated into unified transactions or handoffs.
@@ -434,6 +463,7 @@ Required coverage:
 - module provisioning creates an isolated Tenant-prefixed private SSO schema only for each enabled/provisioned Tenant; runtime discovery selects the current Tenant's schema, rejects cross-schema substitution, and fails explicitly when the current Tenant has no SSO module;
 - Site configuration one-to-one constraint, mode default/check, group normalization/check, and Tenant isolation;
 - exact callback acceptance and rejection, disabled callbacks, no-callback deterministic selection, and stable tie-breaking;
+- exact `site_runtime_clients` tuple authorization, duplicate prevention, removal/revocation, wrong Site/API/principal rejection, and two Sites safely sharing one API without identity ambiguity;
 - transaction creation rollback on any invalid Site/callback/`returnTo`/Tenant input;
 - no public read/status path for transaction rows;
 - transaction expiry, wrong browser/Tenant/Site/group, duplicate completion, and concurrent transitions;
@@ -441,7 +471,7 @@ Required coverage:
 - SSO password wrapper boundary validation, exactly-one local `sign_in` invocation per submission, preserved safe failure, manual resubmission, and unchanged credential outcome;
 - local registration wrapper reuse of `sign_up`, immediate auth-center session outcome, transaction association, rollback, and shared-completion convergence;
 - normalized external identity: existing `(service, identifier)` login, unowned-email provisioning, owned-email conflict, connected-account uniqueness race, and rollback of partial provisioning;
-- handoff one-minute expiry, plaintext-not-persisted assertion, hash uniqueness, wrong Site/Tenant rejection, transient pre-consume rollback/retry, and exactly one winner under concurrent redemption;
+- handoff one-minute expiry, plaintext-not-persisted assertion, hash uniqueness, wrong Site/Tenant/runtime-tuple rejection, transient pre-consume rollback/retry, and exactly one winner under concurrent redemption;
 - Site credential issuance and handoff consumption in one transaction;
 - Site-local session rejection after the DB PR implements the required unified-session binding;
 - RLS/grant checks for anonymous, authenticated, Site-server, Tenant administrator, wrong Tenant, and direct-table access;
@@ -460,6 +490,7 @@ The DB PR should expose stable seams for Constructive's higher-level tests, whic
 - Concurrent callback and handoff replay attempts.
 - Callback/Site reassignment or disablement during an in-flight transaction.
 - Cross-Tenant, cross-database, cross-Site, and cross-group substitution.
+- API-only Site inference, principal substitution, shared-API cross-Site redemption, caller-supplied Site substitution, and spoofed/missing `Origin`/`Referer` cases proving those headers are not authority.
 - Provider state linked to the wrong unified transaction.
 - Exact GET callback and query encoding, Site-side `site_state` correlation, immediate clean redirect after redemption, and prevention of handoff/`site_state` leakage through cache, referrer, proxy/access/APM/analytics, or error logs at the Constructive integration owner.
 - Logging/error snapshots proving that secrets, raw codes, hashes, verifier, tokens, Provider payloads, callback lists, and internal SQL details are absent.
@@ -480,7 +511,7 @@ The following items are settled by the requirements, formal Spec, verified DB co
 - Site, callback, Tenant, SSO group, and current enablement are revalidated at the final handoff/redemption boundaries. A snapshot may support deterministic processing but never replaces live trust validation.
 - A completed transaction creates at most one handoff. The same unconsumed code may be retried after a transient exchange failure during its one-minute lifetime; no replacement code is minted for that transaction in v1.
 - Current-browser global logout revokes the unified session, and every bound Site-local session becomes unusable on its next protected request. The physical binding belongs to the sessions/SSO owner.
-- Handoff redemption authenticates the target Site/runtime through the existing platform capability wherever available, in addition to validating the code and transaction-bound context. If the live capability is insufficient, the DB PR documents the correct integration owner and does not add a parallel SSO-specific secret or credential system.
+- Handoff redemption authenticates the target Site/runtime through the exact `(site_id, api_id, principal_id)` tuple carried by routing/runtime authentication and pgSettings and authorized by `site_runtime_clients`, in addition to validating the code and transaction-bound context. Site is not inferred from API, `Origin`/`Referer` are never authoritative, and no parallel SSO-specific secret or credential system is added.
 - Unified login transactions and Provider OAuth authorization requests each expire ten minutes after creation.
 - Local password and registration reuse unchanged `sign_in` and `sign_up`; Provider identities reuse unchanged `sign_in_identity`, `sign_up_identity`, and `connected_accounts` through narrow SSO wrappers.
 - Sites or flows requiring Constructive `strictAuth`, local MFA, or step-up authentication are outside v1 SSO integration and fail closed. A future implementation requires a separate design based on an actual use case and cannot downgrade or bypass those policies.
@@ -491,7 +522,7 @@ The following items are settled by the requirements, formal Spec, verified DB co
 
 The implementing DB PR resolves the following from the live repository's owner, generator, migration, error, authorization, and test conventions. These choices require evidence and review in the PR, but are not user-facing open decisions:
 
-- physical module/schema/table/column/function/GraphQL names, SQL and GraphQL types, IDs, FKs, state/timestamp representation, and Tenant-prefix discovery mechanics;
+- physical module/schema/table/column/function/GraphQL names, including the repository-local physical name and placement of logical `site_runtime_clients`, SQL and GraphQL types, IDs, FKs, state/timestamp representation, and Tenant-prefix discovery mechanics;
 - opaque identifier/state/hash-at-rest representations and repository-approved PostgreSQL storage/index types for Constructive-generated secure random material;
 - exact wrapper composition, session/credential primitive integration, unified-to-Site session-binding relation, and one-database versus cross-database routing mechanics while preserving confirmed Tenant isolation;
 - snapshots versus references, authenticated-outcome references, browser-binding storage, locking, uniqueness, indexes, query plans, cascades, and transaction-state representation;

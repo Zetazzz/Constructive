@@ -14,10 +14,12 @@ behavior. This document fixes Constructive package ownership, request lifecycle,
 server interfaces, configuration, security controls, testing, and PR slicing.
 Physical database objects and SQL atomicity remain owned by the DB design.
 
-The live repository evidence in this design was inspected on branch
-`feat/oauth-sso-platform-integration` at Constructive commit `5af7e77b4`.
-Implementation must freeze and record the final Constructive and Constructive DB
-SHAs before the first code PR.
+The original repository evidence in this design was inspected on branch
+`feat/oauth-sso-platform-integration` at Constructive commit `5af7e77b4`. The
+second-round convergence review additionally uses Constructive PR7 commit
+`cffd1624318ea78f4b2fdd7b6118f6cf672f5889`, Constructive DB foundation commit
+`7692146ee12563ea3e66d4245a07261c9218c1ae`, and Dashboard branch commit
+`add6bd8820b46ae347d308638a1525bbf7ecae93` as implementation evidence.
 
 ## Scope
 
@@ -32,6 +34,7 @@ This design covers:
 - authentication-center Cookie/Bearer completion;
 - creation and browser delivery of the one-time Site handoff;
 - Site-side `site_state` and redemption integration contracts;
+- trusted Site runtime identity propagation and Site/API/principal authorization;
 - configuration, errors, observability, tests, rollout, and package ownership.
 
 ## Non-Goals
@@ -76,22 +79,31 @@ This design covers:
 8. Local password, local registration, reused unified authentication, and every
    registered Provider adapter all enter the same post-authentication
    continuation.
+9. Site-originated handoff redemption, Site credential issuance, and later Site
+   authentication use an authoritative `(site_id, api_id, principal_id)` runtime
+   tuple. `site_id` is a first-class routing/runtime fact and is never inferred
+   from `api_id`; multiple Sites may share one API.
+10. The DB-owned logical `site_runtime_clients` relation authorizes exact Site,
+    API, and service-principal tuples. `Origin` and `Referer` are optional
+    defense-in-depth signals, not Site identity sources.
 
 ## Verified Baseline and Required Evolution
 
-| Area                     | Current baseline                                                                                                                                                                  | Target decision                                                                                                              |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Request routing          | `graphql/server/src/middleware/api.ts` resolves Host only through the canonical scoped routing plane, with no legacy fallback                                                     | Reuse unchanged as the Tenant auth-origin trust root; do not add path-based Tenant parsing                                   |
-| Request context          | `packages/express-context` builds one lazy `req.constructive` context after routing and authentication                                                                            | Reuse it; add only the SSO physical-surface loader described below                                                           |
-| Identity procedures      | `authSurface` discovers Tenant-prefixed identity procedure schemas and connected-account views                                                                                    | Reuse for `sign_in_identity` and `sign_up_identity`; do not duplicate discovery SQL                                          |
-| Provider configuration   | `identityProviders` resolves Tenant provider rows and current internal secrets, is opt-in, and has a 30-second cache                                                              | Register it only for the auth service; reuse its cache/rotation lifecycle and map its result to a public DTO                 |
-| OAuth package            | `packages/oauth` currently has a hard-coded Provider registry, browser state Cookie middleware, no PKCE, unbounded native fetches, raw Provider error text, and `/auth/providers` | Replace the new-flow surface with protocol primitives and adapters; do not wire the legacy middleware into the platform flow |
-| GraphQL configuration    | `graphql/types` and `graphql/env` own GraphQL options/defaults/env merging; no OAuth options exist yet                                                                            | Add typed OAuth server options and final validation here; middleware never reads `process.env`                               |
-| Authentication           | `graphql/server` prefers Bearer over `constructive_session`; session Cookie attributes come from auth settings                                                                    | Preserve credential precedence and Cookie ownership; enforce the auth-center host-only minimum                               |
-| Cookie lifecycle         | `AuthCookiePlugin` recognizes an allowlist of auth mutations and extracts the existing access-token result                                                                        | Extend the correct owner for SSO mutations and share the same Cookie writer with HTTP callback completion                    |
-| Request logging          | the shared request logger currently logs `req.originalUrl`                                                                                                                        | Add sensitive-query redaction before OAuth and handoff-bearing URLs can reach logs                                           |
-| Errors                   | `@constructive-io/errors` is the canonical registry/factory; current OAuth uses a separate error shape                                                                            | Register stable business codes and remove the separate runtime error surface from the new flow                               |
-| Server integration tests | `graphql-server-test` runs the real server, routed database, Express Context, SuperTest, and seed lifecycle                                                                       | Extend its typed options and mock only the external Provider                                                                 |
+| Area                       | Current baseline                                                                                                                                                                  | Target decision                                                                                                                                                        |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request routing            | `graphql/server/src/middleware/api.ts` resolves Host through the canonical scoped routing plane; PR7 redemption has routed API facts but no authoritative Site fact               | Preserve the Tenant auth-origin behavior and extend the correct routing/runtime-identity owner so Site-originated requests resolve `site_id` independently of `api_id` |
+| Request context            | `packages/express-context` builds one lazy `req.constructive` context after routing and authentication; PR7 exposes API/token principal but no trusted Site ID                    | Reuse the single context and add the resolved Site runtime fact there; do not create an SSO context or accept Site identity from GraphQL input                         |
+| PostgreSQL settings        | PR7 forwards `api_id`, token/session facts, and `principal_id`; it does not forward `site_id`                                                                                     | Forward trusted `site_id` as `jwt.claims.site_id` beside `jwt.claims.api_id` and `jwt.claims.principal_id`; DB functions require the complete tuple                    |
+| Site runtime authorization | PR7 requires an API-key principal for redemption but has no exact Site/API/principal authorization relation                                                                       | Reuse normal runtime authentication and validate the exact tuple through DB-owned `site_runtime_clients`; never infer Site from API or add an SSO secret               |
+| Identity procedures        | `authSurface` discovers Tenant-prefixed identity procedure schemas and connected-account views                                                                                    | Reuse for `sign_in_identity` and `sign_up_identity`; do not duplicate discovery SQL                                                                                    |
+| Provider configuration     | `identityProviders` resolves Tenant provider rows and current internal secrets, is opt-in, and has a 30-second cache                                                              | Register it only for the auth service; reuse its cache/rotation lifecycle and map its result to a public DTO                                                           |
+| OAuth package              | `packages/oauth` currently has a hard-coded Provider registry, browser state Cookie middleware, no PKCE, unbounded native fetches, raw Provider error text, and `/auth/providers` | Replace the new-flow surface with protocol primitives and adapters; do not wire the legacy middleware into the platform flow                                           |
+| GraphQL configuration      | `graphql/types` and `graphql/env` own GraphQL options/defaults/env merging; no OAuth options exist yet                                                                            | Add typed OAuth server options and final validation here; middleware never reads `process.env`                                                                         |
+| Authentication             | `graphql/server` prefers Bearer over `constructive_session`; session Cookie attributes come from auth settings                                                                    | Preserve credential precedence and Cookie ownership; enforce the auth-center host-only minimum                                                                         |
+| Cookie lifecycle           | `AuthCookiePlugin` recognizes an allowlist of auth mutations and extracts the existing access-token result                                                                        | Extend the correct owner for SSO mutations and share the same Cookie writer with HTTP callback completion                                                              |
+| Request logging            | the shared request logger currently logs `req.originalUrl`                                                                                                                        | Add sensitive-query redaction before OAuth and handoff-bearing URLs can reach logs                                                                                     |
+| Errors                     | `@constructive-io/errors` is the canonical registry/factory; current OAuth uses a separate error shape                                                                            | Register stable business codes and remove the separate runtime error surface from the new flow                                                                         |
+| Server integration tests   | `graphql-server-test` runs the real server, routed database, Express Context, SuperTest, and seed lifecycle                                                                       | Extend its typed options and mock only the external Provider                                                                                                           |
 
 ## Component Ownership
 
@@ -137,6 +149,13 @@ Remains the only request context. It continues to own `authSurface` and
 is to resolve the current database's provisioned Tenant-prefixed SSO private
 schema/surface from Constructive DB module metadata.
 
+PR8 also extends the canonical routed request facts with trusted `siteId` for a
+Site-originated runtime request. This is not an SSO-only field or loader result:
+the routing/runtime-identity owner resolves it before SSO code runs, the same
+`req.constructive` instance carries it beside API/database/token facts, and
+pgSettings forwards it as `jwt.claims.site_id`. A browser or GraphQL caller
+cannot set or override it.
+
 The loader returns `undefined` when the current Tenant has no provisioned SSO
 module. It never searches another Tenant, falls back to a global `sso_private`,
 or reads Provider configuration/secrets. Procedure names remain fixed by the DB
@@ -180,6 +199,13 @@ plane. The concrete DNS naming pattern is deployment configuration; the runtime
 contract is exact Host resolution to the intended Tenant, API, database, role,
 and public/private surface.
 
+For a Site-originated runtime request, the routing/runtime-authentication plane
+must additionally resolve the exact Site independently of the API. An API route
+or service-principal credential may be shared by multiple Sites, so `api_id`
+cannot be reverse-mapped to a unique Site. The concrete routing/runtime identity
+representation follows the live platform owner, but its result is a trusted
+`site_id` fact before Express Context and PostgreSQL settings are built.
+
 The existing middleware order is preserved:
 
 1. domain parsing;
@@ -191,9 +217,11 @@ The existing middleware order is preserved:
 7. OAuth HTTP routes and GraphQL;
 8. canonical error handling.
 
-An SSO handler starts by requiring `req.constructive`, the routed API/database,
-and the current Tenant's `ssoSurface`. It never performs a second Tenant, API,
-database, or route lookup from request parameters.
+An auth-center SSO handler starts by requiring `req.constructive`, the routed
+API/database, and the current Tenant's `ssoSurface`. A Site redemption handler
+additionally requires trusted `siteId` and an authenticated principal from the
+same context. Neither handler performs a second Tenant, Site, API, database, or
+route lookup from request parameters.
 
 ### Tenant Isolation Consequences
 
@@ -204,6 +232,9 @@ database, or route lookup from request parameters.
 - Provider callback URI construction uses the validated current auth Host and
   the fixed callback path; an arbitrary `Host`, `Origin`, `Referer`, or query
   value does not select the redirect URI.
+- A Site request with a valid API/principal but no trusted Site fact, or with a
+  tuple not registered by `site_runtime_clients`, fails before redemption or
+  Site credential issuance. Matching `Origin`/`Referer` cannot repair it.
 - The auth-center Cookie has no `Domain` attribute and therefore is not shared
   with another Tenant auth Host or target Site.
 - If a future deployment needs shared-host path routing, it must first extend
@@ -318,6 +349,8 @@ The server builds one registry during startup:
 All SSO code uses:
 
 - `req.constructive.api` for the routed API facts;
+- trusted `req.constructive.siteId` for the routed Site fact when the operation
+  is Site-originated; auth-center operations do not synthesize one;
 - `req.constructive.databaseId` and `withPgClient` for the current Tenant DB;
 - `req.constructive.userId` and current token/session facts for reusable auth;
 - `req.constructive.useModule('ssoSurface')` for the provisioned SSO surface;
@@ -330,6 +363,13 @@ The Graphile request context is extended with a reference to the same
 `req.constructive` object so SSO schema-extension plans can use it. This is not a
 second auth context: the extension forwards the already resolved object rather
 than reconstructing selected fields.
+
+`buildPgSettings` forwards trusted Site identity as `jwt.claims.site_id` beside
+the existing `jwt.claims.api_id` and normalized
+`jwt.claims.principal_id`. It omits the Site claim when the routed operation is
+not Site-originated; a DB operation that requires Site authority then fails
+closed. SSO services never fill the claim from mutation arguments, transaction
+rows, `Origin`, `Referer`, or an API lookup.
 
 `identityProvidersLoader` currently throws plain `Error` for missing/disabled
 configuration. The SSO integration maps those failures at the loader/service
@@ -671,8 +711,8 @@ sequenceDiagram
     end
     B->>S: GET exact callback with handoff + site_state
     S->>S: Match pending site_state for this browser
-    S->>C: Redeem GraphQL mutation from Site server
-    C->>DB: Atomic redeem with routed Site/runtime context
+    S->>C: Redeem GraphQL mutation through trusted Site runtime
+    C->>DB: Atomic redeem with site_id + api_id + principal_id
     DB-->>C: Site-local credential + verified returnTo; handoff consumed
     C-->>S: Site-local result + verified returnTo
     S->>S: Consume site_state; set Site Cookie and/or deliver Site Bearer
@@ -687,12 +727,17 @@ server-built continuation URL. Dashboard must not receive decomposed callback,
 handoff, group, or transaction internals or synthesize the target.
 
 The target Site redeems from its server. Constructive hashes the presented code
-before the DB lookup. The DB function authenticates the target Site/runtime via
-the existing platform capability, verifies all Tenant/Site/transaction/session
-bindings, issues a distinct Site-local credential, and marks the handoff
-consumed in one transaction. If the frozen baseline cannot express the required
-Site/runtime identity, implementation stops at the correct platform owner; it
-does not add an SSO-specific secret or weaken redemption to possession-only.
+before the DB lookup. Trusted routing/runtime authentication must already have
+placed `site_id`, `api_id`, and `principal_id` in the one Express Context and its
+pgSettings. The DB function requires the transaction Site and the exact
+`site_runtime_clients` tuple, verifies all Tenant/transaction/session bindings,
+issues a distinct Site-local credential, and marks the handoff consumed in one
+transaction. Constructive does not infer Site from API, accept Site identity in
+the mutation input, or add an SSO-specific runtime secret.
+
+`Origin` and `Referer` may be compared with registered Site information as
+auxiliary request checks, but they do not create Site authority and cannot
+replace a missing or mismatched runtime tuple.
 
 Constructive cannot set another parent domain's Cookie. The Site response owns
 its Cookie and frontend Bearer-storage behavior. Auth-center and Site-local
@@ -894,6 +939,10 @@ Required integration cases include:
 - shared handoff convergence for every successful branch;
 - one-minute handoff expiry, callback URL encoding, Site/runtime authentication,
   atomic redemption, transient pre-consume retry, and replay rejection;
+- authoritative `site_id` Context/pgSettings propagation, exact
+  `(site_id, api_id, principal_id)` authorization, two Sites sharing one API,
+  wrong/missing Site facts, principal substitution, and proof that
+  `Origin`/`Referer` cannot establish Site identity;
 - auth-center versus Site-local credential separation;
 - host-only auth-center Cookie, Bearer precedence, CSRF, no-store/no-referrer;
 - raw query/token/Provider response absence from logs; and
@@ -907,16 +956,16 @@ browser E2E later.
 
 ## Package and File Change Inventory
 
-| Owner                      | Expected change                                                                                                                                                          |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `packages/oauth`           | Replace new-flow client/middleware API with primitives, adapter contract and registry, concrete adapters, endpoint/network safety, normalized types, tests, and README   |
-| `packages/errors`          | Register missing stable SSO/OAuth errors; add tested `cause` support only if wrapping requires it                                                                        |
-| `packages/express-context` | Add typed opt-in `ssoSurface` loader; reuse existing `authSurface` and `identityProviders`; tests/docs                                                                   |
-| `graphql/types`            | Add typed OAuth server options and honest defaults                                                                                                                       |
-| `graphql/env`              | Parse/merge/finally validate OAuth options with existing 12-factor helpers; tests/docs                                                                                   |
-| `graphql/server`           | Register loaders, forward full context to Graphile, add SSO Graphile plugin/service, OAuth routes, Cookie integration, URL redaction, errors, and unit/integration tests |
-| `graphql/server-test`      | Add small typed options forwarding and local Provider fixture support                                                                                                    |
-| Constructive DB dependency | Pin the DB commit that supplies the reviewed SSO surface metadata/functions before server integration merges                                                             |
+| Owner                      | Expected change                                                                                                                                                                                      |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/oauth`           | Replace new-flow client/middleware API with primitives, adapter contract and registry, concrete adapters, endpoint/network safety, normalized types, tests, and README                               |
+| `packages/errors`          | Register missing stable SSO/OAuth errors; add tested `cause` support only if wrapping requires it                                                                                                    |
+| `packages/express-context` | Add typed opt-in `ssoSurface` loader; carry trusted routed `siteId`; forward `jwt.claims.site_id`; reuse existing `authSurface` and `identityProviders`; tests/docs                                  |
+| `graphql/types`            | Add typed OAuth server options and honest defaults                                                                                                                                                   |
+| `graphql/env`              | Parse/merge/finally validate OAuth options with existing 12-factor helpers; tests/docs                                                                                                               |
+| `graphql/server`           | Register loaders, preserve trusted Site/runtime routing facts, forward full context to Graphile, add SSO Graphile plugin/service, OAuth routes, Cookie integration, URL redaction, errors, and tests |
+| `graphql/server-test`      | Add small typed options forwarding and local Provider fixture support                                                                                                                                |
+| Constructive DB dependency | Pin the DB commit that supplies the reviewed SSO surface metadata/functions before server integration merges                                                                                         |
 
 No change is planned for `pgpm/env`; no OAuth configuration belongs there.
 
@@ -958,16 +1007,56 @@ No change is planned for `pgpm/env`; no OAuth configuration belongs there.
 Each PR is independently testable and must not include speculative compatibility
 paths for a later slice.
 
+## PR8 Runtime Contract Convergence
+
+PR8 is stacked on PR7 commit
+`cffd1624318ea78f4b2fdd7b6118f6cf672f5889`. It adds no new product flow; it
+converges the seven-PR implementation on the reviewed Constructive DB runtime
+PR and removes the temporary database simulation.
+
+Required PR8 work:
+
+1. Pin the final Constructive DB runtime commit and replace
+   `graphql/server-test/__fixtures__/seed/oauth-sso/contract.sql` plus any mock
+   functions, temporary DB contracts, or compensation logic with the real
+   generated Constructive DB application and PostgreSQL functions.
+2. Extend the canonical routing/runtime-identity owner to resolve a trusted
+   `siteId` for Site-originated requests. Do not infer it from `apiId`, mutation
+   input, transaction data, `Origin`, or `Referer`; the design must support two
+   or more Sites using the same API.
+3. Carry that fact through the existing `ConstructiveContext`, the forwarded
+   Graphile context reference, and `buildPgSettings` as
+   `jwt.claims.site_id`, beside `jwt.claims.api_id` and
+   `jwt.claims.principal_id`. Do not create a parallel SSO/runtime context.
+4. Keep the public handoff-redemption input limited to the handoff proof. The
+   service obtains Site/API/principal only from trusted context, and the DB
+   contract requires the exact `site_runtime_clients` tuple before issuance and
+   atomic consumption.
+5. Reconcile every GraphQL/DB function parameter, result, and registered error
+   with the real generated runtime. A runtime-tuple failure is a safe stable
+   authorization failure; logs may retain only redacted structured identifiers
+   permitted by the observability policy.
+6. Move Site/API/principal tuple, RLS, concurrency, session-binding, and
+   revocation invariants into real Constructive DB tests. Retain server
+   integration assertions for routing, Context/pgSettings forwarding,
+   GraphQL/HTTP behavior, Cookies, redirects, and safe errors.
+7. Run the final integration path through generated Constructive DB →
+   PostgreSQL → Constructive GraphQL/OAuth HTTP. Mock only the external Provider
+   boundary. After this contract is frozen, Dashboard updates its existing
+   `feat/unified-auth-center` branch, regenerates its SDK, validates the browser
+   flow, and creates its PR.
+
 ## Implementation Evidence Gates
 
 These are repository-integration checks, not product decisions:
 
 1. The Constructive DB PR must expose authoritative current-Tenant SSO surface
    metadata and reviewed function contracts before `ssoSurfaceLoader` is coded.
-2. The frozen platform baseline must demonstrate the existing Site/runtime
-   authentication capability used by handoff redemption. If it cannot, the PR
-   identifies and extends the correct platform owner; it does not invent an SSO
-   secret or accept possession-only redemption.
+2. PR8 must demonstrate trusted Site/runtime identity from the canonical
+   routing/runtime-authentication owner through Express Context and pgSettings.
+   If the PR7 API/principal path cannot express `site_id`, PR8 extends that
+   owner; it may not infer Site from API, invent an SSO secret, accept a caller
+   Site ID, or reduce redemption to possession-only.
 3. Google ID-token verification must use a maintained dependency and validated
    JWKS/discovery inputs. A handwritten JWT verifier is not acceptable.
 4. Any removal of current `packages/oauth` public exports follows repository
@@ -978,8 +1067,10 @@ These are repository-integration checks, not product decisions:
 
 The Constructive implementation is complete when:
 
-1. every auth request resolves the Tenant through the canonical Host routing
-   and uses one full Express Context;
+1. every auth request resolves the Tenant through canonical routing and uses
+   one full Express Context; every Site-originated security operation also
+   carries trusted `site_id`, `api_id`, and `principal_id` through Context and
+   pgSettings and is authorized by the exact `site_runtime_clients` tuple;
 2. auth-center Cookies and state are Tenant-host-local and cannot cross Tenants;
 3. `site_state` binds the initiating Site browser to the exact callback and is
    validated before handoff redemption;
